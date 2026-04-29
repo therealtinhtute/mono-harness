@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TINHTUTE Skills · Abstraction layers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Layer stack · Repository Structure</p>
+    <h1>TINHTUTE Skills · Abstraction layers</h1>
+
+    <svg viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+      <!-- Clean paper background, no dot pattern -->
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- Direction column (left margin) -->
+      <text x="60" y="68" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">ABSTRACTION</text>
+      <line x1="80" y1="80" x2="80" y2="272" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <polygon points="76,80 84,80 80,72" fill="#4f5d75"/>
+      <text x="60" y="288" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">INSTALL</text>
+
+      <!-- Stack container hairlines (top + bottom edges) -->
+      <line x1="120" y1="80" x2="960" y2="80" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+      <line x1="120" y1="272" x2="960" y2="272" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+
+      <!-- L2 — Skills (FOCAL, coral tint + coral stroke) -->
+      <rect x="120" y="80" width="840" height="64" fill="rgba(235,108,54,0.08)"/>
+      <rect x="120" y="80" width="840" height="64" fill="none" stroke="#eb6c36" stroke-width="1"/>
+      <text x="140" y="116" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em" font-weight="600">L2</text>
+      <text x="260" y="118" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Skills</text>
+      <text x="940" y="118" fill="#eb6c36" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.08em">13 agent skills · SKILL.md</text>
+
+      <!-- L1 — Config & Rules -->
+      <rect x="120" y="144" width="840" height="64" fill="#ffffff"/>
+      <line x1="120" y1="208" x2="960" y2="208" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+      <text x="140" y="180" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">L1</text>
+      <text x="260" y="182" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Config &amp; Rules</text>
+      <text x="940" y="182" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.08em">settings.json · english.md · CLAUDE.md</text>
+
+      <!-- L0 — Install &amp; Distribution -->
+      <rect x="120" y="208" width="840" height="64" fill="#ececec"/>
+      <text x="140" y="244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">L0</text>
+      <text x="260" y="246" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">Install &amp; Distribution</text>
+      <text x="940" y="246" fill="#4f5d75" font-size="10" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.08em">npx skills add · curl | bash · sync-from-kit.sh</text>
+
+      <!-- Caption -->
+      <text x="120" y="328" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">FOCAL LAYER</text>
+      <text x="240" y="328" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" font-style="italic">Skills are the user-facing interface — everything below is scaffolding to make them installable, discoverable, and consistent.</text>
+    </svg>
+  </div>
+</body>
+</html>

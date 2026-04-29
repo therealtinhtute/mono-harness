@@ -2,6 +2,18 @@
 
 A collection of personal Claude Code skills following the [skills.sh](https://skills.sh) ecosystem format.
 
+## Structure
+
+![Layer stack — 3 abstraction layers of the repository](assets/diagram-layer-stack.png)
+
+```mermaid
+flowchart TB
+    L2[\"Skills<br/>13 agent skills · SKILL.md\"]
+    L1[\"Config & Rules<br/>settings.json · english.md · CLAUDE.md\"]
+    L0[\"Install & Distribution<br/>npx skills add · curl | bash · sync-from-kit.sh\"]
+    L0 --> L1 --> L2
+```
+
 ## Install
 
 ```bash
