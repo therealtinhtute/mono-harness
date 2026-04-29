@@ -1,0 +1,90 @@
+{
+  "_comment": "Example Claude Code settings. Copy to ~/.claude/settings.json and edit as needed. Requires hooks from kit/setup/hooks/ if using the hooks block below.",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "BASH_DEFAULT_TIMEOUT_MS": "3000000",
+    "BASH_MAX_TIMEOUT_MS": "3000000",
+    "MAX_THINKING_TOKENS": "16000",
+    "ENABLE_STREAMING": "true",
+    "MAX_MCP_OUTPUT_TOKENS": "50000",
+    "ENABLE_TOOL_SEARCH": "true",
+    "USE_BUILTIN_RIPGREP": "0",
+    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
+    "ANTHROPIC_AUTH_TOKEN": "YOUR_AUTH_TOKEN_HERE",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "150000",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "true"
+  },
+  "attribution": {
+    "commit": "from therealTINHTUTE with love",
+    "pr": "from therealTINHTUTE with love"
+  },
+  "fileSuggestion": {
+    "type": "command",
+    "command": "~/.claude/file-suggestion.sh"
+  },
+  "includeCoAuthoredBy": false,
+  "model": "opus",
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "xhigh",
+  "skipDangerousModePermissionPrompt": true,
+  "teammateMode": "in-process",
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  },
+  "hooks": {
+    "_comment": "These hooks require the .cjs files from kit/setup/hooks/. Remove this block if you haven't installed them.",
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/mandatory-instructions.cjs",
+            "statusMessage": "Injecting mandatory instructions"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|Grep|Glob|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/scout-block.cjs",
+            "statusMessage": "Checking scout-block patterns"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/privacy-guard.cjs",
+            "statusMessage": "Checking privacy guard"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/question-validator.cjs",
+            "statusMessage": "Validating question usage"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {},
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
+  }
+}

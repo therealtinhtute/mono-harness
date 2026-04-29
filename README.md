@@ -26,6 +26,44 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
 | [`/verifier`](skills/verifier/SKILL.md) | Before commit, merge, or ship | Run quality gates and confirm work is ready with evidence, not assumptions. |
 
+## Extras
+
+These are **not** installable via `npx skills add`. Install them separately with `curl` or manual copy.
+
+### English Coaching
+
+Corrects your English in place, tags patterns so you learn the rule. Installs as a Claude Code rule.
+
+```bash
+mkdir -p ~/.claude/rules \
+  && curl -fsSL https://raw.githubusercontent.com/therealtinhtute/skills/main/rules/english.md \
+     -o ~/.claude/rules/english.md
+```
+
+### Statusline
+
+Minimal statusline: `✦ model  ▰▱ N%  ϟ tpm  ⌥ branch`. Model-first layout with battery-style progress bar.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/therealtinhtute/skills/main/scripts/setup-statusline.sh | bash
+```
+
+Then add to `~/.claude/settings.json`:
+
+```json
+"statusLine": { "type": "command", "command": "bash ~/.claude/statusline.sh" }
+```
+
+### Settings Config
+
+Example `settings.json` with env vars, model defaults, hooks, and attribution:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/therealtinhtute/skills/main/setup/settings.json \
+  -o ~/.claude/settings.json
+# Edit ANTHROPIC_AUTH_TOKEN and review hooks before using
+```
+
 ## Local Development
 
 This repo is the stable release. The incubator workspace lives at `/Users/tinhtute/Lab/orkit-tui/kit/skills/`.

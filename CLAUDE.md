@@ -12,7 +12,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 .
 ├── README.md              # Skill directory and install instructions
 ├── CLAUDE.md              # This file
-├── skills/                # Installable agent skills
+├── skills/                # Installable agent skills (npx skills add)
 │   ├── bash-tui/
 │   ├── brainstorm/
 │   ├── git/
@@ -26,7 +26,13 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── strategist/
 │   ├── turbo-mono-platform/
 │   └── verifier/
-└── scripts/               # Utility scripts (sync, validate, etc.)
+├── rules/                 # Claude Code rules (curl install)
+│   └── english.md
+├── scripts/               # Utility scripts
+│   ├── sync-from-kit.sh   # Incubator → repo sync
+│   └── setup-statusline.sh # Statusline installer
+├── setup/                 # Example configs
+│   └── settings.json      # Claude Code settings template
 ```
 
 Each skill directory contains:
