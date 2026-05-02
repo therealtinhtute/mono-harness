@@ -1,9 +1,9 @@
 ---
 name: interview
 description: "👨‍💻 Interview me about the plan"
-argument-hint: "[plan-file]"
+argument-hint: "[plan-file] [mode:fast|deep]"
 model: opus
-version: 1.0.0
+version: 1.1.0
 ---
 
 <role>
@@ -43,10 +43,17 @@ This skill handles plan validation through structured interviews. Does NOT handl
 
 ## Arguments
 - `[plan-file]`: Path to plan file to interview about (default: search for recent plan files)
+- `[mode]`: Execution mode (default: deep)
+  - `fast` — 1-2 rounds, focus on critical decisions only (goal, approach, risks)
+  - `deep` — Full interview cycle, all 5 question categories, write validated spec
 </context>
 
 <instructions>
 ## Core Workflow
+
+### Step 0: Determine Mode
+
+Parse arguments to detect mode (default: deep). See `references/modes.md` for mode details.
 
 ### Step 1: Load Plan
 If plan file provided, read it with Read tool.
@@ -64,7 +71,7 @@ Extract goal, approach, scope, decisions, unknowns. Identify interview focus are
 
 ### Step 3: Generate Interview Questions
 
-See `references/question-guidelines.md` for question quality criteria and categories.
+See `references/question-guidelines.md` and `references/modes.md` for mode-specific question categories and depth.
 
 ### Step 4: Conduct Interview
 
@@ -76,13 +83,15 @@ See `references/question-guidelines.md` for completeness checklist.
 
 ### Step 6: Write Validated Spec
 
-See `references/spec-template.md` for validated spec format.
+**Fast mode:** Skip spec generation, provide console summary only.
+
+**Deep mode:** See `references/spec-template.md` for validated spec format.
 
 ---
 
 ## Output Format
 
-See `references/examples.md` for output formats during interview and after completion.
+See `references/modes.md` for mode-specific output formats (console only vs console + spec file).
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 name: watzup
 description: "Review recent changes and wrap up the current work session."
-argument-hint: "[branch]"
-version: 1.0.0
+argument-hint: "[branch] [mode:fast|deep]"
+version: 1.1.0
 ---
 
 <role>
@@ -41,10 +41,17 @@ This skill handles session wrap-up and change review. Does NOT handle code imple
 
 ## Arguments
 - `[branch]`: Branch to review (default: current branch)
+- `[mode]`: Execution mode (default: fast)
+  - `fast` — Last 10 commits, console output only, quick summary
+  - `deep` — Last 30-50 commits, save detailed report to `.kit/reports/watzup/`
 </context>
 
 <instructions>
 ## Core Workflow
+
+### Step 0: Determine Mode
+
+Parse arguments to detect mode (default: fast). See `references/modes.md` for mode details.
 
 ### Step 1: Capture Current State
 ```bash
@@ -57,21 +64,18 @@ Identify:
 - Untracked files
 
 ### Step 2: Analyze Recent Commits
-```bash
-git log --oneline --graph --decorate -10
-```
+
+See `references/modes.md` for mode-specific commit ranges and commands.
 
 Extract:
-- Commit count (last 10)
+- Commit count
 - Commit types (feat, fix, docs, refactor, test, chore)
 - Scope distribution
 - Commit messages quality
 
 ### Step 3: Review Changes
-```bash
-git diff HEAD~5..HEAD --stat
-git diff HEAD~5..HEAD --shortstat
-```
+
+See `references/modes.md` for mode-specific diff ranges and commands.
 
 Analyze:
 - Files modified/added/removed
@@ -97,7 +101,7 @@ Analyze:
 
 ### Step 5: Generate Summary
 
-See `references/examples.md` for output format templates.
+See `references/modes.md` for mode-specific output formats (console only vs console + file).
 
 ### Step 6: Actionable Recommendations
 
@@ -112,7 +116,7 @@ Based on analysis, suggest:
 
 ## Output Format
 
-See `references/examples.md` for console output and detailed review formats.
+See `references/modes.md` for mode-specific output formats.
 
 ---
 
