@@ -22,9 +22,7 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | [`/brainstorm`](skills/brainstorm/SKILL.md) | Ideation, architecture decisions, technical debates | Brainstorm solutions with trade-off analysis and brutal honesty. |
 | [`/git`](skills/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
 | [`/handoff`](skills/handoff/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
-| [`/handoff-manager`](skills/handoff-manager/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
 | [`/interview`](skills/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
-| [`/interviewer`](skills/interviewer/SKILL.md) | Vague requirements, unclear specs | Extract complete, unambiguous requirements through relentless questioning before implementation. |
 | [`/investigator`](skills/investigator/SKILL.md) | Exploring unfamiliar code, finding definitions | Rapidly locate relevant files and understand code structure before planning or implementing. |
 | [`/media-processing`](skills/media-processing/SKILL.md) | Video, audio, image conversion/optimization | Process media using FFmpeg and ImageMagick. Convert, encode, resize, crop, optimize, composite. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
