@@ -56,6 +56,7 @@ This skill handles plan validation through structured interviews. Does NOT handl
 Parse arguments to detect mode (default: deep). See `references/modes.md` for mode details.
 
 ### Step 1: Load Plan
+
 If plan file provided, read it with Read tool.
 
 If no file provided, search for recent plans:
@@ -75,7 +76,7 @@ See `references/question-guidelines.md` and `references/modes.md` for mode-speci
 
 ### Step 4: Conduct Interview
 
-Use AskUserQuestion tool with max 4 questions per round, multiple choice when possible. See `references/question-guidelines.md` for interview flow and iteration rules.
+Call AskUserQuestion with max 4 questions per round. Use multiple choice when possible. See `references/question-guidelines.md` for interview flow and iteration rules.
 
 ### Step 5: Validate Completeness
 

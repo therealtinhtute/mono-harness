@@ -28,6 +28,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── verifier/
 │   └── watzup/
 ├── rules/                  # Claude Code rules
+│   ├── ask-user-question.md   # Global force rule: all questions MUST use AskUserQuestion
 │   └── english.md
 ├── scripts/                # Repo utility scripts
 │   ├── sync-from-kit.sh    # Incubator → repo sync
