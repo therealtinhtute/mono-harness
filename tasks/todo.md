@@ -1,43 +1,56 @@
-# TODO — `spec` + `plan` Skills
+# TODO — Mini-GSD Planning System
 
 ## Goal
-Pivot PR #2 from a single all-in-one planning skill to a smaller spec-driven skill pair:
+Build a **mini-GSD clone for Claude Code** focused on planning/spec work, using **2 core skills**:
 - `spec`
 - `plan`
 
-## Must keep
-- `spec` can start from idea, file(s), project bootstrap, or new feature/module bootstrap
-- `plan` must depend on `.planning/SPEC.md`
-- existing skills remain in the system for execution/review/verify/git
+## Product shape
+- GSD-style `.planning/` folder
+- artifact-first workflow
+- `spec` locks WHAT
+- `plan` derives HOW from locked spec
+- existing skills stay available for repo scouting, review, verification, git, and wrap-up
 
-## Implementation checklist
+## v1 must support
 
-### Phase 1 — Finalize design
-- [ ] review updated `plans/spec-skill/SPEC.md`
-- [ ] confirm `.planning/` artifact structure
-- [ ] confirm `fast` vs `deep` behavior for both skills
+### `spec`
+- [ ] input mode: `idea`
+- [ ] input mode: `files`
+- [ ] scenario: project bootstrap
+- [ ] scenario: feature bootstrap
+- [ ] scenario: module bootstrap
+- [ ] write `.planning/IDEA.md`
+- [ ] write `.planning/SPEC.md`
+- [ ] ambiguity / clarity gate before lock
 
-### Phase 2 — Implement `spec`
-- [ ] create `skills/spec/SKILL.md`
-- [ ] define invocation / argument shape
-- [ ] define bootstrap modes
-- [ ] define `SPEC.md` output template
-- [ ] define ambiguity gate behavior
+### `plan`
+- [ ] require `.planning/SPEC.md`
+- [ ] read spec and derive `.planning/ROADMAP.md`
+- [ ] create per-phase `{phase}-CONTEXT.md`
+- [ ] create per-phase `{phase}-PLAN.md`
+- [ ] keep tasks wave-grouped and executable
 
-### Phase 3 — Implement `plan`
-- [ ] create `skills/plan/SKILL.md`
-- [ ] enforce SPEC precondition
-- [ ] define `ROADMAP.md` generation
-- [ ] define `{phase}-CONTEXT.md` generation
-- [ ] define `{phase}-PLAN.md` generation
+## v1 artifact chain
+- [ ] IDEA.md
+- [ ] SPEC.md
+- [ ] ROADMAP.md
+- [ ] phases/{slug}/{phase}-CONTEXT.md
+- [ ] phases/{slug}/{phase}-PLAN.md
 
-### Phase 4 — Integration polish
-- [ ] define how `spec` suggests `plan`
-- [ ] define how `plan` suggests `investigator` / `strategist` / `verifier` / `reviewer`
-- [ ] keep the system composable, not monolithic
+## integration expectations
+- [ ] suggest `plan` after `spec`
+- [ ] suggest `investigator` when codebase understanding is weak
+- [ ] suggest `reviewer` / `verifier` after implementation later
+- [ ] suggest `git` / `watzup` / `handoff` when relevant
 
-## Explicitly out of scope for now
-- [ ] auto-execution
+## explicitly not in v1
+- [ ] full execution engine
 - [ ] giant all-in-one skill
-- [ ] multi-agent orchestration
-- [ ] CI / packaging work
+- [ ] forced multi-agent orchestration
+- [ ] full GSD command ecosystem clone
+
+## next implementation order
+1. [ ] implement `spec`
+2. [ ] implement `plan`
+3. [ ] wire suggestions into existing skill ecosystem
