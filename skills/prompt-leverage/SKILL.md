@@ -1,6 +1,8 @@
 ---
 name: prompt-leverage
-description: Strengthen a raw user prompt into an execution-ready instruction set for Amp, Claude Code, or another AI agent. Use when the user wants to improve an existing prompt, build a reusable prompting framework, wrap the current request with better structure, add clearer tool rules, or create a hook that upgrades prompts before execution.
+description: Strengthen a raw prompt into an execution-ready instruction set for Claude Code or another AI agent.
+argument-hint: "[raw prompt or prompting goal]"
+version: 1.0.0
 ---
 
 <role>
@@ -28,7 +30,7 @@ task complexity and risk level.
 
 ## Defer To Instead
 - `skill-creator` — creating new skills from scratch
-- `interviewer` — extracting requirements before prompt engineering
+- `interview` — extracting requirements before prompt engineering
 - `strategist` — comparing multiple prompting approaches
 </context>
 

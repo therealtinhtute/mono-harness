@@ -41,7 +41,7 @@ not a verification result.
 - `strategist` — planning and trade-off selection
 - `investigator` — discovery and evidence gathering
 - `debugging` — diagnosing a specific failure found during verification
-- `documenter` — authoring docs, changelog, or release-note content
+- docs/notes workflows — authoring docs, changelog, or release-note content
 </context>
 
 <process>

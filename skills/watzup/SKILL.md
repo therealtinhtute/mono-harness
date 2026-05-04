@@ -1,6 +1,6 @@
 ---
 name: watzup
-description: "Review recent changes and wrap up the current work session."
+description: "Review recent changes, summarize impact, and wrap up the current work session."
 argument-hint: "[branch] [mode:fast|deep]"
 version: 1.1.0
 ---

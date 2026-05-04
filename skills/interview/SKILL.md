@@ -1,6 +1,6 @@
 ---
 name: interview
-description: "👨‍💻 Interview me about the plan"
+description: "Validate a plan by interviewing requirements, trade-offs, and edge cases before implementation."
 argument-hint: "[plan-file] [mode:fast|deep]"
 model: opus
 version: 1.1.0

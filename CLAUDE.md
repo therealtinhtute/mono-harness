@@ -10,14 +10,14 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 
 ```
 .
-├── README.md              # Skill directory and install instructions
-├── CLAUDE.md              # This file
-├── skills/                # Installable agent skills (npx skills add)
+├── README.md               # Skill directory and install instructions
+├── CLAUDE.md               # This file
+├── skills/                 # Installable agent skills (npx skills add)
 │   ├── bash-tui/
 │   ├── brainstorm/
 │   ├── git/
-│   ├── handoff-manager/
-│   ├── interviewer/
+│   ├── handoff/
+│   ├── interview/
 │   ├── investigator/
 │   ├── media-processing/
 │   ├── prompt-leverage/
@@ -25,14 +25,16 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── skill-creator/
 │   ├── strategist/
 │   ├── turbo-mono-platform/
-│   └── verifier/
-├── rules/                 # Claude Code rules (curl install)
+│   ├── verifier/
+│   └── watzup/
+├── rules/                  # Claude Code rules
 │   └── english.md
-├── scripts/               # Utility scripts
-│   ├── sync-from-kit.sh   # Incubator → repo sync
+├── scripts/                # Repo utility scripts
+│   ├── sync-from-kit.sh    # Incubator → repo sync
 │   └── setup-statusline.sh # Statusline installer
-├── setup/                 # Example configs
-│   └── settings.json      # Claude Code settings template
+├── setup/                  # Example configs
+│   └── settings.json       # Claude Code settings template
+└── assets/                 # README visuals
 ```
 
 Each skill directory contains:
@@ -57,4 +59,5 @@ bash scripts/sync-from-kit.sh
 
 - **Stable vs. incubator:** This repo is the stable release. The incubator workspace is `/Users/tinhtute/Lab/orkit-tui/kit/skills/`.
 - **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, and optional `references/` and `scripts/` directories.
+- **Current repo shape:** This is a curated skills collection, not a full app/monorepo. Prefer lightweight docs and validation over heavy tooling.
 - **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/skills.git`) as long as local SSH keys are configured.

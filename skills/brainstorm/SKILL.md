@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: "Brainstorm solutions with trade-off analysis and brutal honesty. Use for ideation, architecture decisions, technical debates, feature exploration, feasibility assessment, design discussions."
+description: "Explore solution space before choosing an approach. Use for ideation, feasibility assessment, architecture discussion, and trade-off discovery with honest pushback."
 license: MIT
 version: 2.0.0
 argument-hint: "[topic or problem]"
@@ -35,7 +35,7 @@ assumptions, and consider all stakeholders.
 ## Defer To Instead
 - `strategist` — creating implementation plans once requirements are clear
 - `investigator` — gathering codebase evidence before brainstorming
-- `interviewer` — extracting detailed requirements from vague requests
+- `interview` — extracting detailed requirements from vague requests
 - `verifier` — checking implementation quality after brainstorming
 
 ## Communication Style
