@@ -10,6 +10,7 @@ description: >
   Trigger on: TUI, bash menu, interactive script, arrow key, terminal UI, bash wizard,
   bash selector, bash checklist, bash installer, bash cleanup tool, fzf menu.
   DO NOT use for non-interactive scripts, cron jobs, or scripts that run without a TTY.
+version: 1.0.0
 effort: high
 context: fork
 ---

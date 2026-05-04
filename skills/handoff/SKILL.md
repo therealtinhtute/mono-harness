@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "📝 Update session handoff for continuity"
+description: "📝 Capture session state into a handoff artifact for seamless continuation next session."
 argument-hint: "[context]"
 version: 1.0.0
 ---
