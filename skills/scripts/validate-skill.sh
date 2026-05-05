@@ -48,7 +48,43 @@ else:
     print(len(rest.strip('"\'')))
 PY
   else
-    grep -A 5 "^description:" "$SKILL_FILE" | wc -c | tr -d ' '
+    awk '
+      BEGIN { in_frontmatter=0; in_description=0; desc="" }
+      /^---$/ {
+        if (in_frontmatter == 0) { in_frontmatter=1; next }
+        else { exit }
+      }
+      in_frontmatter == 1 {
+        if (in_description == 0 && $0 ~ /^description:[[:space:]]*/) {
+          line = $0
+          sub(/^description:[[:space:]]*/, "", line)
+          desc = line
+          if (line ~ /^[>|]/) {
+            desc = ""
+            in_description = 1
+          } else {
+            print length(desc)
+            exit
+          }
+          next
+        }
+        if (in_description == 1) {
+          if ($0 ~ /^[ \t]/) {
+            gsub(/^[ \t]+/, "", $0)
+            if (desc != "") desc = desc " "
+            desc = desc $0
+            next
+          }
+          print length(desc)
+          exit
+        }
+      }
+      END {
+        if (in_description == 1) print length(desc)
+        else if (desc != "") print length(desc)
+        else print 0
+      }
+    ' "$SKILL_FILE"
   fi
 }
 

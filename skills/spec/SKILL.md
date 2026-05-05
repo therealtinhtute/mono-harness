@@ -48,6 +48,8 @@ This skill handles idea/files intake, clarification, ambiguity reduction, and `S
    - module bootstrap
    - refine existing spec
 4. Run a clarification loop until the spec is good enough to lock.
+   - All clarification questions must be asked through `AskUserQuestion`.
+   - Batch at most 4 questions per call and prefer structured choices when possible.
 5. Write `.planning/SPEC.md` using the template in `references/spec-template.md`.
 6. If clarity is still weak, surface gaps explicitly in `Open Questions` and `Ambiguity Report`.
 7. End by suggesting `plan` as the next step.
