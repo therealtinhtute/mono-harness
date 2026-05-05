@@ -27,7 +27,7 @@ Act as a session wrap-up specialist. Review current branch state, analyze recent
 - Quality checkpoint before merge
 
 ## Defer To Instead
-- `reviewer` — detailed code quality audit
+- `review` — detailed code quality audit and gate checks
 - `git` — commit operations and PR creation
 - `handoff` — session state capture for continuity
 
@@ -115,26 +115,30 @@ Based on analysis, suggest:
 ---
 
 ## Output Format
-
+Save to: `.kit/reports/watzup/{YYYYMMDD}-{slug}.md` in deep mode.
+Frontmatter: title, description, status, created, tags.
 See `references/modes.md` for mode-specific output formats.
 
----
-
 ## Error Handling
-
-| Error | Action |
-|-------|--------|
-| No commits | Report clean state, exit |
-| Detached HEAD | Warn, suggest branch checkout |
-| Uncommitted changes | Flag as blocker, suggest commit/stash |
-| Merge conflicts | Flag as critical, suggest resolution |
+- No commits: report clean state, exit
+- Detached HEAD: warn, suggest branch checkout
+- Uncommitted changes: flag as blocker, suggest commit/stash
+- Merge conflicts: flag as critical, suggest resolution
 </instructions>
 
 ## Examples
 
-See `references/examples.md` for detailed usage examples.
+### Example 1: Pre-PR wrap-up
+**Input**: `/watzup feature/add-auth`
+**Output**: Summarizes commits/files changed, confirms tests/docs, and marks PR readiness.
 
----
+### Example 2: Session summary
+**Input**: `/watzup`
+**Output**: Reviews recent commits, groups changes by type, flags uncommitted blockers.
+
+### Example 3: Refactor check
+**Input**: `/watzup feature/refactor-db deep`
+**Output**: Flags schema, rollback, and test risks; saves report to `.kit/reports/watzup/`.
 
 <references>
 Load as needed from `{baseDir}/references/`:

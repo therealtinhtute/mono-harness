@@ -26,8 +26,7 @@ Act as a planning specialist. Read a locked `.planning/SPEC.md`, then turn it in
 
 ## Defer To Instead
 - `spec` — clarifying the WHAT before planning
-- `investigator` — scouting the repo when implementation context is missing
-- `reviewer` / `verifier` — checking code after execution
+- `review` — checking code quality and gates after execution
 
 ## Scope
 This skill reads `.planning/SPEC.md` and writes planning artifacts inside `.planning/`. It does NOT clarify product scope from scratch, execute code, or replace code review/testing.
@@ -80,7 +79,7 @@ Each context file should lock:
 - rejected options
 - deferred ideas
 
-If the repo context is too unclear, suggest `investigator` before locking weak context.
+If the repo context is too unclear, note it explicitly in the context file as an open assumption.
 
 ### Step 4: Create executable phase plans
 For each roadmap phase, write `.planning/phases/{phase-slug}/{phase-slug}-PLAN.md` using `references/phase-plan-template.md`.
@@ -96,11 +95,14 @@ Task rules:
 
 ### Step 5: Handoff guidance
 At the end:
-- suggest `investigator` when codebase discovery is still needed
-- suggest `reviewer` / `verifier` after implementation
+- suggest `review` after implementation for quality gates and code analysis
 - suggest `git`, `watzup`, or `handoff` when wrap-up or status transfer is relevant
 
 ## Output Format
+Save to: `.planning/ROADMAP.md` and `.planning/phases/{phase-slug}/`.
+
+Frontmatter: not required.
+
 Write only inside `.planning/`:
 - `.planning/ROADMAP.md`
 - `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`

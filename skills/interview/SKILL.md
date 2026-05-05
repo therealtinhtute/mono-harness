@@ -28,9 +28,8 @@ Act as a technical interviewer. Conduct in-depth interviews about plans using As
 - Converting rough ideas into detailed specs
 
 ## Defer To Instead
-- `think` — creating initial plans from scratch
-- `reviewer` — reviewing implemented code
-- `verifier` — running tests and quality checks
+- `spec` — locking scope when the WHAT is still unclear before validation
+- `review` — reviewing and verifying implemented code
 
 ## Scope
 This skill handles plan validation through structured interviews. Does NOT handle plan creation, code implementation, or testing.
@@ -92,6 +91,10 @@ See `references/question-guidelines.md` for completeness checklist.
 
 ## Output Format
 
+Save to: the plan/spec file selected by mode.
+
+Frontmatter: preserve existing target-file frontmatter when present.
+
 See `references/modes.md` for mode-specific output formats (console only vs console + spec file).
 
 ---
@@ -109,7 +112,17 @@ See `references/modes.md` for mode-specific output formats (console only vs cons
 
 ## Examples
 
-See `references/examples.md` for detailed usage examples.
+### Example 1: Validating a new feature plan
+**Input**: `/interview tasks/plans/auth-redesign.md`
+**Output**: The skill reads the plan, runs 2-3 rounds of AskUserQuestion covering goal clarity, edge cases (token expiry, concurrent sessions), and rollout risk, then writes a validated spec back to the plan file with all decisions recorded.
+
+### Example 2: Clarifying vague requirements
+**Input**: `/interview tasks/plans/dashboard.md mode:fast`
+**Output**: The skill identifies the ambiguous areas (undefined KPIs, unclear audience), asks targeted multiple-choice questions in one round, and prints a console summary of the clarified requirements without writing a spec file.
+
+### Example 3: Exposing hidden constraints before building
+**Input**: `/interview tasks/plans/payment-integration.md`
+**Output**: The skill probes for unstated constraints (PCI compliance scope, existing vendor contracts, rollback plan), surfaces conflicts between stated approach and real-world limits, and blocks spec sign-off until contradictions are resolved.
 
 ---
 

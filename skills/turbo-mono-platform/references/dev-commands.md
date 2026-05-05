@@ -1,5 +1,18 @@
 # Dev Commands
 
+## Daily workflow
+
+```bash
+bun install
+bun run dev          # next dev --turbopack
+bun run build
+bun run lint         # Biome
+bun run type-check
+bun run db:push && bun run db:generate && bun run db:studio
+```
+
+## Script helpers
+
 ```bash
 # Analyze project → define package tiers
 bash scripts/analyze-project.sh

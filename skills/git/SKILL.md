@@ -30,13 +30,9 @@ isolate verbose output.
 - Pushing commits to remote
 - Creating pull requests
 - Merging branches
-- Conventional commit formatting
-- Secret detection before commits
 
 ## Defer To Instead
-- `reviewer` — code quality audits before committing
-- `verifier` — running tests and quality checks
-- `investigator` — finding files or understanding git history
+- `review` — code quality audits before committing and release-ready review workflows
 
 ## Default Behavior
 If invoked without arguments, use `AskUserQuestion` to present available git operations:
@@ -50,22 +46,13 @@ If invoked without arguments, use `AskUserQuestion` to present available git ope
 
 Present as options via `AskUserQuestion` with header "Git Operation", question "What would you like to do?".
 
-Activate `ck:context-engineering` skill.
-
-**IMPORTANT:**
-- Sacrifice grammar for the sake of concision
-- Ensure token efficiency while maintaining high quality
-- Pass these rules to subagents
+Activate `ck:context-engineering` skill. Sacrifice grammar for concision. Pass token-efficiency rules to subagents.
 
 ## Arguments
 - `cm`: Stage files & create commits
 - `cp`: Stage files, create commits and push
-- `pr`: Create Pull Request [to-branch] [from-branch]
-  - `to-branch`: Target branch (default: main)
-  - `from-branch`: Source branch (default: current branch)
-- `merge`: Merge [to-branch] [from-branch]
-  - `to-branch`: Target branch (default: main)
-  - `from-branch`: Source branch (default: current branch)
+- `pr`: Create Pull Request [to-branch] [from-branch] (defaults: main, current)
+- `merge`: Merge [to-branch] [from-branch] (defaults: main, current)
 </context>
 
 <instructions>
@@ -77,31 +64,21 @@ git add -A && git diff --cached --stat && git diff --cached --name-only
 ```
 
 ### Step 2: Security Check
-Scan for secrets before commit:
-```bash
-git diff --cached | grep -iE "(api[_-]?key|token|password|secret|credential)"
-```
-**If secrets found:** STOP, warn user, suggest `.gitignore`.
+Scan for secrets — see `safety-protocols.md`. If found: STOP, warn user, suggest `.gitignore`.
 
 ### Step 3: Split Decision
+See `workflow-commit.md` for full split logic.
 
-**NOTE:**
-- Search for related issues on GitHub and add to body
-- Only use `feat`, `fix`, or `perf` prefixes for files in `.claude` directory (do not use `docs`)
+**Split if:** mixed types (feat+fix), multiple scopes, config/deps+code, FILES > 10 unrelated.
+**Single if:** same type/scope, FILES ≤ 3, LINES ≤ 50.
 
-**Split commits if:**
-- Different types mixed (feat + fix, code + docs)
-- Multiple scopes (auth + payments)
-- Config/deps + code mixed
-- FILES > 10 unrelated
-
-**Single commit if:**
-- Same type/scope, FILES ≤ 3, LINES ≤ 50
+NOTE: Only use `feat`, `fix`, or `perf` for `.claude/` directory files (no `docs`).
 
 ### Step 4: Commit
 ```bash
 git commit -m "type(scope): description"
 ```
+Search for related GitHub issues and add to PR body. See `commit-standards.md`.
 
 ---
 
@@ -129,13 +106,6 @@ tags: [git, {operation}]
 ---
 ```
 
-Include:
-- Operation performed
-- Files affected
-- Commits created
-- Security scan results
-- Next steps
-
 ---
 
 ## Error Handling
@@ -148,121 +118,6 @@ Include:
 | Merge conflicts | Suggest manual resolution |
 </instructions>
 
-## Examples
-
-### Example 1: Standard Commit Workflow
-**Scenario**: Commit changes to multiple files with proper conventional commit format
-
-**Input**:
-```bash
-/git cm
-```
-
-**Output**:
-```
-✓ staged: 3 files (+45/-12 lines)
-  - src/auth/login.ts
-  - src/auth/logout.ts
-  - tests/auth.test.ts
-✓ security: passed
-✓ commit: a1b2c3d feat(auth): add logout functionality
-
-from therealTINHTUTE with love
-```
-
-**Explanation**: The skill automatically stages all changes, scans for secrets, and creates a commit with conventional format. The type `feat` is chosen because new functionality was added, and scope `auth` groups related authentication changes.
-
----
-
-### Example 2: Create Pull Request
-**Scenario**: Create a PR from feature branch to main with description
-
-**Input**:
-```bash
-/git pr main feature/add-auth
-```
-
-**Output**:
-```
-✓ pushed: feature/add-auth → origin
-✓ PR created: #123
-  Title: feat(auth): add authentication system
-  URL: https://github.com/user/repo/pull/123
-  
-Report saved: .kit/reports/git/20260416-pr-123.md
-```
-
-**Explanation**: The skill pushes the feature branch, generates a PR title from commits, and creates the PR using gh CLI. A detailed report is saved for reference.
-
----
-
-### Example 3: Safe Merge with Conflict Detection
-**Scenario**: Merge feature branch into main, detecting conflicts before merge
-
-**Input**:
-```bash
-/git merge main feature/add-auth
-```
-
-**Output**:
-```
-✓ fetched: origin/main
-✓ conflict check: passed
-✓ merged: feature/add-auth → main
-✓ commits: 3 new commits
-  - a1b2c3d feat(auth): add login
-  - b2c3d4e feat(auth): add logout
-  - c3d4e5f test(auth): add auth tests
-```
-
-**Explanation**: The skill fetches latest changes, checks for conflicts before merging, and provides a summary of merged commits. If conflicts were detected, it would stop and suggest manual resolution.
-
----
-
-### Example 4: Revert Bad Commit
-**Scenario**: Safely revert a commit that broke tests without losing history
-
-**Input**:
-```bash
-git revert a1b2c3d
-```
-
-**Output**:
-```
-✓ reverted: a1b2c3d feat(auth): add logout
-✓ commit: d4e5f6g revert: feat(auth): add logout
-
-This reverts commit a1b2c3d which broke authentication tests.
-```
-
-**Explanation**: Using `git revert` creates a new commit that undoes changes, preserving history. This is safer than `git reset --hard` which would lose the commit entirely.
-
----
-
-### Example 5: Commit with Secret Detection
-**Scenario**: Attempt to commit code containing API keys, blocked by security scan
-
-**Input**:
-```bash
-/git cm
-```
-
-**Output**:
-```
-✓ staged: 2 files (+30/-5 lines)
-❌ security: FAILED
-  
-Secrets detected in:
-  - src/config.ts:12 (API_KEY)
-  - src/config.ts:15 (SECRET_TOKEN)
-
-⚠️  Commit blocked. Add these to .gitignore or use environment variables.
-```
-
-**Explanation**: The security scan detects potential secrets before committing. The commit is blocked to prevent credential exposure. User should move secrets to `.env` files and add to `.gitignore`.
-
----
-
 <references>
 Load as needed from `{baseDir}/references/`:
 - `workflow-commit.md` — Commit workflow with split logic
@@ -273,4 +128,5 @@ Load as needed from `{baseDir}/references/`:
 - `safety-protocols.md` — Secret detection, branch protection
 - `branch-management.md` — Naming, lifecycle, strategies
 - `gh-cli-guide.md` — GitHub CLI commands reference
+- `examples.md` — Worked examples for all operations
 </references>

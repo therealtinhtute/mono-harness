@@ -30,7 +30,7 @@ Act as a session continuity specialist. Capture current session state, document 
 ## Defer To Instead
 - `watzup` — session review and change analysis
 - `git` — commit operations and PR creation
-- `reviewer` — code quality audit
+- `review` — code quality audit and gate checks
 
 ## Scope
 This skill handles session state capture and handoff documentation. Does NOT handle code implementation, testing, or deployment.
@@ -110,23 +110,29 @@ See `references/context-guidelines.md` for completeness checklist.
 
 ## Output Format
 
+Save to: `.kit/HANDOFF.md`. Frontmatter: not required.
 See `references/examples.md` for console output and file output formats.
 
----
-
 ## Error Handling
-
-| Error | Action |
-|-------|--------|
-| .kit/ directory missing | Create directory, write handoff |
-| No git repository | Document working directory state only |
-| No recent commits | Focus on current working tree state |
-| Sensitive data detected | Sanitize before writing, warn user |
+- .kit/ missing: create directory, write handoff
+- No git repo: document working directory only
+- No commits: focus on working tree
+- Sensitive data: sanitize before writing, warn user
 </instructions>
 
 ## Examples
 
-See `references/examples.md` for detailed usage examples.
+### Example 1: End-of-session handoff
+**Input**: "/handoff wrapping up auth refactor for today"
+**Output**: Captures git state, uncommitted changes, and open tasks, then writes `.kit/HANDOFF.md` with branch status, what was completed, and the next steps to resume the auth refactor tomorrow.
+
+### Example 2: Mid-feature context switch
+**Input**: "/handoff switching to hotfix, will return to this feature later"
+**Output**: Snapshots the current feature branch state — staged files, recent commits, and known blockers — into `.kit/HANDOFF.md` so the feature can be resumed cleanly after the hotfix.
+
+### Example 3: Handing off to another developer
+**Input**: "/handoff Dan is taking over the payments integration"
+**Output**: Writes a developer-facing `.kit/HANDOFF.md` with environment setup notes, where the implementation is blocked, which files are in progress, and the immediate next action for the incoming developer.
 
 ---
 

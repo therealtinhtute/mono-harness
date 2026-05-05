@@ -19,20 +19,16 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | Skill | When | What it does |
 | :--- | :--- | :--- |
 | [`/bash-tui`](skills/bash-tui/SKILL.md) | Building interactive terminal UIs | Build bash/shell TUI apps with menus, selectors, forms, progress bars, spinners, banners, and color output. |
-| [`/brainstorm`](skills/brainstorm/SKILL.md) | Ideation, architecture decisions, technical debates | Brainstorm solutions with trade-off analysis and brutal honesty. |
+| [`/brainstorm`](skills/brainstorm/SKILL.md) | Ideation, architecture decisions, multi-option choices | Explore options, evaluate trade-offs, and recommend the simplest viable path. |
 | [`/git`](skills/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
 | [`/handoff`](skills/handoff/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
 | [`/interview`](skills/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
-| [`/investigator`](skills/investigator/SKILL.md) | Exploring unfamiliar code, finding definitions | Rapidly locate relevant files and understand code structure before planning or implementing. |
-| [`/media-processing`](skills/media-processing/SKILL.md) | Video, audio, image conversion/optimization | Process media using FFmpeg and ImageMagick. Convert, encode, resize, crop, optimize, composite. |
 | [`/plan`](skills/plan/SKILL.md) | After spec, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
-| [`/reviewer`](skills/reviewer/SKILL.md) | Before commit or merge | Expert code review covering security, performance, architecture, and maintainability. |
+| [`/review`](skills/review/SKILL.md) | Before commit, PR, or merge | Pre-commit gate (tests, lint, build) + code review (security, architecture, maintainability) in one skill. |
 | [`/skill-creator`](skills/skill-creator/SKILL.md) | Creating or updating Claude skills | Create or update Claude skills optimized for Skillmark benchmarks. |
 | [`/spec`](skills/spec/SKILL.md) | Before roadmap or implementation planning | Turn an idea or files into a locked `.planning/SPEC.md` with scope, constraints, and acceptance criteria. |
-| [`/strategist`](skills/strategist/SKILL.md) | Multiple valid approaches, planning | Evaluate options, expose trade-offs, and recommend the simplest viable path. |
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
-| [`/verifier`](skills/verifier/SKILL.md) | Before commit, merge, or ship | Run quality gates and confirm work is ready with evidence, not assumptions. |
 | [`/watzup`](skills/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
 
 ## Recommended workflow: `spec` + `plan` + friends
@@ -48,15 +44,13 @@ Use `spec` when you have a raw idea, notes, or a feature request and want a clea
 Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files.
 
 ### 3. Pull in support skills only when needed
-- use [`/investigator`](skills/investigator/SKILL.md) if repo context is still unclear
-- use [`/reviewer`](skills/reviewer/SKILL.md) and [`/verifier`](skills/verifier/SKILL.md) after implementation
+- use [`/review`](skills/review/SKILL.md) after implementation for gate checks and code analysis
 - use [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) to close or transfer a work session cleanly
 
 ### Mental model
 - `spec` = lock **WHAT**
 - `plan` = lock **HOW**
-- `investigator` = learn the codebase
-- `reviewer` / `verifier` = catch risk and prove readiness
+- `review` = catch risk and prove readiness (gate + analysis)
 - `git` / `watzup` / `handoff` = wrap up with discipline
 
 ## Extras

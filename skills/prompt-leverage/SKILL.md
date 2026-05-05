@@ -31,7 +31,7 @@ task complexity and risk level.
 ## Defer To Instead
 - `skill-creator` — creating new skills from scratch
 - `interview` — extracting requirements before prompt engineering
-- `strategist` — comparing multiple prompting approaches
+- `brainstorm` — comparing multiple prompting approaches
 </context>
 
 <instructions>
@@ -136,19 +136,13 @@ Load from `{baseDir}/scripts/`:
 ## Examples
 
 ### Example 1: Inline Enhancement
-**Scenario**: Improve vague prompt.
 **Input**: "Make the code better"
-**Output**: "Refactor the authentication code in src/auth/ to improve readability and add error handling. Focus on: 1) Extract duplicate logic, 2) Add try-catch blocks, 3) Improve variable names. Verify: code still passes tests."
-**Explanation**: Adds specificity, structure, and verification criteria.
+**Output**: Add target files, concrete focus areas, and verification criteria.
 
 ### Example 2: Template Mode
-**Scenario**: Create reusable code review template.
 **Input**: "Create code review template"
-**Output**: Template with sections: Security (check for [X]), Performance (check for [Y]), Architecture (check for [Z]), Output: findings with severity levels.
-**Explanation**: Converts to fill-in-the-blank template for repeated use.
+**Output**: Template with Security, Performance, Architecture, and severity sections.
 
 ### Example 3: Multi-turn Optimization
-**Scenario**: Maintain context across long session.
 **Input**: "Optimize this conversation"
-**Output**: Adds context summary at start of each turn, references previous decisions, maintains key facts list.
-**Explanation**: Compresses context, maintains continuity.
+**Output**: Adds context summary, previous decisions, and key facts list.

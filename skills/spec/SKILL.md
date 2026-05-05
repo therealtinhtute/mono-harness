@@ -26,7 +26,6 @@ Act as a spec-first planning specialist. Convert raw ideas or provided files int
 
 ## Defer To Instead
 - `plan` — generating roadmap, context, and executable phase tasks from a locked spec
-- `investigator` — scouting the codebase when repo context is missing
 - `prompt-leverage` — improving prompts without creating planning artifacts
 
 ## Scope
@@ -61,6 +60,11 @@ Ask toward these outcomes:
 3. Boundary clarity — what is in scope vs out of scope
 4. Constraint clarity — technical, product, timeline, policy limits
 5. Acceptance clarity — what would prove the spec is good enough
+
+## Output Format
+Save to: `.planning/SPEC.md` and `.planning/IDEA.md`.
+
+Frontmatter: not required.
 
 ## Output Rules
 - Always write inside `.planning/`

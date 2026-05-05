@@ -18,16 +18,12 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── git/
 │   ├── handoff/
 │   ├── interview/
-│   ├── investigator/
-│   ├── media-processing/
 │   ├── plan/
 │   ├── prompt-leverage/
-│   ├── reviewer/
+│   ├── review/
 │   ├── skill-creator/
 │   ├── spec/
-│   ├── strategist/
 │   ├── turbo-mono-platform/
-│   ├── verifier/
 │   └── watzup/
 ├── rules/                  # Claude Code rules
 │   ├── ask-user-question.md   # Global force rule: all questions MUST use AskUserQuestion
