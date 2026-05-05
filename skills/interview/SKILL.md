@@ -87,6 +87,8 @@ See `references/question-guidelines.md` for completeness checklist.
 
 **Deep mode:** See `references/spec-template.md` for validated spec format.
 
+Prefix your first line with `🥷` inline. Be direct: sharp questions, plain contradictions. No filler.
+
 ---
 
 ## Output Format

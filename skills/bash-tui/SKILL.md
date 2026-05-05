@@ -59,6 +59,8 @@ bash-tui app/
 4. For visual styling, consult `references/visual-design.md` and `references/escape-sequences.md`.
 5. Write output per `references/output-format.md`.
 
+Prefix your first line with `🥷` inline. Be direct: toolkit first, UI shape next. No filler.
+
 ## Output Format
 
 Save to: `scripts/{script-name}.sh` (reusable) or `.kit/reports/bash-tui/{YYYYMMDD}-{slug}.md` (docs).
