@@ -25,13 +25,39 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | [`/interview`](skills/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
 | [`/investigator`](skills/investigator/SKILL.md) | Exploring unfamiliar code, finding definitions | Rapidly locate relevant files and understand code structure before planning or implementing. |
 | [`/media-processing`](skills/media-processing/SKILL.md) | Video, audio, image conversion/optimization | Process media using FFmpeg and ImageMagick. Convert, encode, resize, crop, optimize, composite. |
+| [`/plan`](skills/plan/SKILL.md) | After spec, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
 | [`/reviewer`](skills/reviewer/SKILL.md) | Before commit or merge | Expert code review covering security, performance, architecture, and maintainability. |
 | [`/skill-creator`](skills/skill-creator/SKILL.md) | Creating or updating Claude skills | Create or update Claude skills optimized for Skillmark benchmarks. |
+| [`/spec`](skills/spec/SKILL.md) | Before roadmap or implementation planning | Turn an idea or files into a locked `.planning/SPEC.md` with scope, constraints, and acceptance criteria. |
 | [`/strategist`](skills/strategist/SKILL.md) | Multiple valid approaches, planning | Evaluate options, expose trade-offs, and recommend the simplest viable path. |
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
 | [`/verifier`](skills/verifier/SKILL.md) | Before commit, merge, or ship | Run quality gates and confirm work is ready with evidence, not assumptions. |
 | [`/watzup`](skills/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
+
+## Recommended workflow: `spec` + `plan` + friends
+
+Use the two new planning skills as the front door, then hand off to the existing execution / review / wrap-up skills.
+
+![Recommended workflow for spec + plan with supporting skills](assets/spec-plan-workflow.svg)
+
+### 1. Lock the problem with `spec`
+Use `spec` when you have a raw idea, notes, or a feature request and want a clean `.planning/SPEC.md` before implementation.
+
+### 2. Derive execution with `plan`
+Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files.
+
+### 3. Pull in support skills only when needed
+- use [`/investigator`](skills/investigator/SKILL.md) if repo context is still unclear
+- use [`/reviewer`](skills/reviewer/SKILL.md) and [`/verifier`](skills/verifier/SKILL.md) after implementation
+- use [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) to close or transfer a work session cleanly
+
+### Mental model
+- `spec` = lock **WHAT**
+- `plan` = lock **HOW**
+- `investigator` = learn the codebase
+- `reviewer` / `verifier` = catch risk and prove readiness
+- `git` / `watzup` / `handoff` = wrap up with discipline
 
 ## Extras
 

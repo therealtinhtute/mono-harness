@@ -1,0 +1,84 @@
+<svg width="960" height="760" viewBox="0 0 960 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.9" fill="rgba(28,25,23,0.10)"/>
+    </pattern>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#57534e"/>
+    </marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#b5523a"/>
+    </marker>
+    <style>
+      .title { font: 400 28px 'Instrument Serif', Georgia, serif; fill: #1c1917; }
+      .label { font: 600 12px 'Inter', 'Segoe UI', Arial, sans-serif; fill: #1c1917; }
+      .mono { font: 500 9px 'SFMono-Regular', Consolas, monospace; fill: #57534e; }
+      .arrowLabel { font: 500 8px 'SFMono-Regular', Consolas, monospace; fill: #57534e; letter-spacing: 0.08em; }
+      .legend { font: 500 8px 'SFMono-Regular', Consolas, monospace; fill: #57534e; letter-spacing: 0.14em; }
+    </style>
+  </defs>
+
+  <rect width="960" height="760" fill="#faf7f2"/>
+  <rect width="960" height="760" fill="url(#dots)" opacity="0.55"/>
+
+  <text x="72" y="68" class="title">How `spec` + `plan` fits with the rest of the repo</text>
+
+  <rect x="388" y="96" width="184" height="44" rx="22" fill="#faf7f2"/>
+  <rect x="388" y="96" width="184" height="44" rx="22" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
+  <text x="480" y="122" class="label" text-anchor="middle">Idea / files / feature</text>
+
+  <path d="M480 140 L480 180" stroke="#b5523a" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+  <rect x="352" y="180" width="256" height="88" rx="8" fill="#faf7f2"/>
+  <rect x="352" y="180" width="256" height="88" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
+  <rect x="368" y="194" width="44" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
+  <text x="390" y="204" class="legend" text-anchor="middle">SPEC</text>
+  <text x="480" y="224" class="label" text-anchor="middle">`spec`</text>
+  <text x="480" y="244" class="mono" text-anchor="middle">locks WHAT • scope • constraints • acceptance</text>
+
+  <path d="M480 268 L480 316" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <polygon points="480,316 592,388 480,460 368,388" fill="#faf7f2" stroke="#57534e" stroke-width="1"/>
+  <text x="480" y="382" class="label" text-anchor="middle">Need repo</text>
+  <text x="480" y="400" class="label" text-anchor="middle">context?</text>
+
+  <path d="M592 388 L744 388" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="646" y="370" width="42" height="12" rx="2" fill="#faf7f2"/>
+  <text x="667" y="379" class="arrowLabel" text-anchor="middle">YES</text>
+
+  <rect x="720" y="344" width="176" height="88" rx="8" fill="#faf7f2"/>
+  <rect x="720" y="344" width="176" height="88" rx="8" fill="rgba(28,25,23,0.03)" stroke="rgba(28,25,23,0.30)" stroke-width="1"/>
+  <rect x="736" y="358" width="58" height="14" rx="3" fill="transparent" stroke="rgba(28,25,23,0.30)" stroke-width="0.8"/>
+  <text x="765" y="368" class="legend" text-anchor="middle">DISCOVERY</text>
+  <text x="808" y="390" class="label" text-anchor="middle">`investigator`</text>
+  <text x="808" y="410" class="mono" text-anchor="middle">maps code surface before planning</text>
+
+  <path d="M808 432 L808 516 L480 516 L480 548" stroke="#57534e" stroke-width="1" fill="none" marker-end="url(#arrow)"/>
+
+  <path d="M480 460 L480 548" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="506" y="492" width="34" height="12" rx="2" fill="#faf7f2"/>
+  <text x="523" y="501" class="arrowLabel" text-anchor="middle">NO</text>
+
+  <rect x="340" y="548" width="280" height="88" rx="8" fill="#faf7f2"/>
+  <rect x="340" y="548" width="280" height="88" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
+  <rect x="356" y="562" width="44" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
+  <text x="378" y="572" class="legend" text-anchor="middle">PLAN</text>
+  <text x="480" y="592" class="label" text-anchor="middle">`plan`</text>
+  <text x="480" y="612" class="mono" text-anchor="middle">writes ROADMAP + phase CONTEXT + phase PLAN</text>
+
+  <path d="M480 636 L480 676" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+
+  <rect x="160" y="676" width="220" height="52" rx="8" fill="#ffffff" stroke="#1c1917" stroke-width="1"/>
+  <text x="270" y="706" class="label" text-anchor="middle">Implement the phase</text>
+
+  <rect x="404" y="676" width="184" height="52" rx="8" fill="#ffffff" stroke="#1c1917" stroke-width="1"/>
+  <text x="496" y="698" class="label" text-anchor="middle">`reviewer` + `verifier`</text>
+  <text x="496" y="716" class="mono" text-anchor="middle">review code • prove it works</text>
+
+  <rect x="612" y="676" width="188" height="52" rx="8" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
+  <text x="706" y="698" class="label" text-anchor="middle">`git` / `watzup` / `handoff`</text>
+  <text x="706" y="716" class="mono" text-anchor="middle">commit • wrap • transfer context</text>
+
+  <line x1="72" y1="740" x2="888" y2="740" stroke="rgba(28,25,23,0.12)" stroke-width="0.8"/>
+  <text x="72" y="754" class="legend">FLOW: SPEC → CONTEXT → PLAN → EXECUTE → REVIEW / VERIFY → WRAP</text>
+</svg>

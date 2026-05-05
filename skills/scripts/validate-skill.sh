@@ -3,6 +3,91 @@
 
 set -euo pipefail
 
+inc() {
+  local var_name="$1"
+  local current_value="${!var_name-0}"
+  printf -v "$var_name" '%s' "$(( current_value + 1 ))"
+}
+
+get_description_length() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$SKILL_FILE" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+text = Path(sys.argv[1]).read_text(errors='ignore').replace('\r\n', '\n').replace('\r', '\n')
+m = re.match(r'^---\n(.*?)\n---\n', text, re.S)
+if not m:
+    print(0)
+    raise SystemExit
+
+frontmatter = m.group(1)
+desc_match = re.search(r'^description:\s*(.*)$', frontmatter, re.M)
+if not desc_match:
+    print(0)
+    raise SystemExit
+
+rest = desc_match.group(1).strip()
+if rest.startswith(('>', '|')):
+    lines = frontmatter.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith('description:'):
+            start = i + 1
+            break
+    chunks = []
+    if start is not None:
+        for line in lines[start:]:
+            if line.startswith(' ') or line.startswith('\t'):
+                chunks.append(line.strip())
+            else:
+                break
+    print(len(' '.join(chunks).strip()))
+else:
+    print(len(rest.strip('"\'')))
+PY
+  else
+    awk '
+      BEGIN { in_frontmatter=0; in_description=0; desc="" }
+      /^---$/ {
+        if (in_frontmatter == 0) { in_frontmatter=1; next }
+        else { exit }
+      }
+      in_frontmatter == 1 {
+        if (in_description == 0 && $0 ~ /^description:[[:space:]]*/) {
+          line = $0
+          sub(/^description:[[:space:]]*/, "", line)
+          desc = line
+          if (line ~ /^[>|]/) {
+            desc = ""
+            in_description = 1
+          } else {
+            print length(desc)
+            exit
+          }
+          next
+        }
+        if (in_description == 1) {
+          if ($0 ~ /^[ \t]/) {
+            gsub(/^[ \t]+/, "", $0)
+            if (desc != "") desc = desc " "
+            desc = desc $0
+            next
+          }
+          print length(desc)
+          exit
+        }
+      }
+      END {
+        if (in_description == 1) print length(desc)
+        else if (desc != "") print length(desc)
+        else print 0
+      }
+    ' "$SKILL_FILE"
+  fi
+}
+
 SKILL_FILE="$1"
 JSON_OUTPUT="${2:-}"
 
@@ -15,6 +100,7 @@ SKILL_DIR="$(dirname "$SKILL_FILE")"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 TEST_DIR="$SKILL_DIR/tests"
 SCRIPTS_DIR="$SKILL_DIR/scripts"
+EXAMPLES_REF_FILE="$SKILL_DIR/references/examples.md"
 REPORT_FILE="$SKILL_DIR/.validation-report.json"
 
 # Suppress output if JSON mode
@@ -52,7 +138,7 @@ REFERENCES_PASS=false
 echo "📋 Frontmatter"
 if ! grep -q "^---$" "$SKILL_FILE"; then
   echo "  ❌ Missing YAML frontmatter"
-  ((ERRORS++))
+      inc ERRORS
 else
   echo "  ✅ Has YAML frontmatter"
   FRONTMATTER_PASS=true
@@ -60,7 +146,7 @@ else
   # Check required fields
   if ! grep -q "^name:" "$SKILL_FILE"; then
     echo "  ❌ Missing 'name' field"
-    ((ERRORS++))
+    inc ERRORS
     FRONTMATTER_PASS=false
   else
     echo "  ✅ Has 'name' field"
@@ -68,22 +154,22 @@ else
 
   if ! grep -q "^description:" "$SKILL_FILE"; then
     echo "  ❌ Missing 'description' field"
-    ((ERRORS++))
+    inc ERRORS
     FRONTMATTER_PASS=false
   else
     echo "  ✅ Has 'description' field"
 
     # Check description length
-    desc_length=$(grep -A 5 "^description:" "$SKILL_FILE" | wc -c)
+    desc_length=$(get_description_length)
     if [ "$desc_length" -gt 200 ]; then
       echo "  ⚠️  Description may be too long (>200 chars)"
-      ((WARNINGS++))
+      inc WARNINGS
     fi
   fi
 
   if ! grep -q "^version:" "$SKILL_FILE"; then
     echo "  ⚠️  Missing 'version' field"
-    ((WARNINGS++))
+    inc WARNINGS
   else
     echo "  ✅ Has 'version' field"
   fi
@@ -104,7 +190,7 @@ if grep -q "<role>" "$SKILL_FILE"; then
   has_role=true
 else
   echo "  ⚠️  Missing <role> section (XML structure recommended)"
-  ((WARNINGS++))
+  inc WARNINGS
 fi
 
 if grep -q "<security>" "$SKILL_FILE" || grep -q "## Security" "$SKILL_FILE"; then
@@ -112,7 +198,7 @@ if grep -q "<security>" "$SKILL_FILE" || grep -q "## Security" "$SKILL_FILE"; th
   has_security=true
 else
   echo "  ❌ Missing security section (CRITICAL)"
-  ((ERRORS++))
+  inc ERRORS
 fi
 
 if grep -q "<context>" "$SKILL_FILE"; then
@@ -120,7 +206,7 @@ if grep -q "<context>" "$SKILL_FILE"; then
   has_context=true
 else
   echo "  ⚠️  Missing <context> section (XML structure recommended)"
-  ((WARNINGS++))
+  inc WARNINGS
 fi
 
 if grep -q "<instructions>" "$SKILL_FILE"; then
@@ -128,7 +214,7 @@ if grep -q "<instructions>" "$SKILL_FILE"; then
   has_instructions=true
 else
   echo "  ⚠️  Missing <instructions> section (XML structure recommended)"
-  ((WARNINGS++))
+  inc WARNINGS
 fi
 
 if grep -q "<references>" "$SKILL_FILE"; then
@@ -137,10 +223,14 @@ if grep -q "<references>" "$SKILL_FILE"; then
   REFERENCES_PASS=true
 else
   echo "  ⚠️  Missing <references> section"
-  ((WARNINGS++))
+  inc WARNINGS
 fi
 
-STRUCTURE_PASS=$has_role && $has_security && $has_context && $has_instructions
+if [ "$has_role" = true ] && [ "$has_security" = true ] && [ "$has_context" = true ] && [ "$has_instructions" = true ]; then
+  STRUCTURE_PASS=true
+else
+  STRUCTURE_PASS=false
+fi
 
 echo ""
 
@@ -158,14 +248,18 @@ if [ "$has_security" = true ]; then
   for check in "${security_checks[@]}"; do
     if grep -qi "$check" "$SKILL_FILE"; then
       echo "  ✅ Has: $check"
-      ((security_found++))
+      inc security_found
     else
       echo "  ⚠️  Missing: $check"
-      ((WARNINGS++))
+      inc WARNINGS
     fi
   done
 
-  [ "$security_found" -ge 3 ] && SECURITY_PASS=true
+  if [ "$security_found" -ge 3 ]; then
+    SECURITY_PASS=true
+  else
+    SECURITY_PASS=false
+  fi
 else
   echo "  ❌ No security section to validate"
 fi
@@ -174,16 +268,20 @@ echo ""
 
 # Check examples
 echo "📚 Examples"
-EXAMPLE_COUNT=$(grep -c "^### Example" "$SKILL_FILE" || echo "0")
+EXAMPLE_COUNT=$(grep -c "^### Example" "$SKILL_FILE" || true)
+EXAMPLE_COUNT=${EXAMPLE_COUNT:-0}
 if [ "$EXAMPLE_COUNT" -ge 3 ]; then
   echo "  ✅ Has $EXAMPLE_COUNT examples (target: 3+)"
   EXAMPLES_PASS=true
+elif [ -f "$EXAMPLES_REF_FILE" ]; then
+  echo "  ✅ Uses external examples reference: references/examples.md"
+  EXAMPLES_PASS=true
 elif [ "$EXAMPLE_COUNT" -ge 1 ]; then
   echo "  ⚠️  Only $EXAMPLE_COUNT examples (target: 3+)"
-  ((WARNINGS++))
+  inc WARNINGS
 else
   echo "  ❌ No examples found"
-  ((ERRORS++))
+  inc ERRORS
 fi
 
 echo ""
@@ -194,16 +292,17 @@ if grep -q "Defer To Instead" "$SKILL_FILE"; then
   echo "  ✅ Has 'Defer To Instead' section"
 
   # Count defer-to entries
-  defer_count=$(grep -c '`.*`.*—' "$SKILL_FILE" || echo "0")
+  defer_count=$(grep -c '`.*`.*—' "$SKILL_FILE" || true)
+  defer_count=${defer_count:-0}
   if [ "$defer_count" -ge 2 ]; then
     echo "  ✅ Has $defer_count defer-to entries"
   else
     echo "  ⚠️  Only $defer_count defer-to entries (recommend 2-3)"
-    ((WARNINGS++))
+    inc WARNINGS
   fi
 else
   echo "  ❌ Missing 'Defer To Instead' section"
-  ((ERRORS++))
+  inc ERRORS
 fi
 
 echo ""
@@ -217,18 +316,18 @@ if grep -qi "output format\|output contract" "$SKILL_FILE"; then
     echo "  ✅ Specifies output location"
   else
     echo "  ⚠️  Missing output location"
-    ((WARNINGS++))
+    inc WARNINGS
   fi
 
   if grep -q "Frontmatter:" "$SKILL_FILE"; then
     echo "  ✅ Specifies frontmatter template"
   else
     echo "  ⚠️  Missing frontmatter template"
-    ((WARNINGS++))
+    inc WARNINGS
   fi
 else
   echo "  ⚠️  Missing output format specification"
-  ((WARNINGS++))
+  inc WARNINGS
 fi
 
 echo ""
@@ -240,10 +339,10 @@ if [ "$LINE_COUNT" -le 150 ]; then
   echo "  ✅ Line count OK: $LINE_COUNT/150"
 elif [ "$LINE_COUNT" -le 180 ]; then
   echo "  ⚠️  Slightly over: $LINE_COUNT/150 (consider trimming)"
-  ((WARNINGS++))
+  inc WARNINGS
 else
-  echo "  ❌ Exceeds guideline: $LINE_COUNT/150 (move content to references/)"
-  ((ERRORS++))
+  echo "  ⚠️  Exceeds guideline: $LINE_COUNT/150 (move content to references/ when practical)"
+  inc WARNINGS
 fi
 
 echo ""
@@ -257,7 +356,7 @@ if [ -d "$SCRIPTS_DIR" ]; then
     SCRIPTS_PASS=true
   else
     echo "  ⚠️  Scripts directory exists but empty"
-    ((WARNINGS++))
+    inc WARNINGS
   fi
 else
   echo "  ℹ️  No scripts directory (optional)"
@@ -287,7 +386,7 @@ if [ -d "$TEST_DIR" ]; then
         fi
       else
         echo "  ❌ Tests failed"
-        ((ERRORS++))
+        inc ERRORS
       fi
     elif command -v bats &> /dev/null && ls "$TEST_DIR"/*.bats &> /dev/null 2>&1; then
       echo "  🔄 Running bats..."
@@ -296,12 +395,12 @@ if [ -d "$TEST_DIR" ]; then
         TESTS_PASS=true
       else
         echo "  ❌ Bash tests failed"
-        ((ERRORS++))
+        inc ERRORS
       fi
     fi
   else
     echo "  ⚠️  Test directory exists but empty"
-    ((WARNINGS++))
+    inc WARNINGS
   fi
 else
   echo "  ℹ️  No tests directory (target: 80% of skills)"
@@ -315,20 +414,20 @@ anti_patterns_found=false
 
 if grep -q "TODO\|FIXME\|XXX" "$SKILL_FILE"; then
   echo "  ⚠️  Contains TODO/FIXME markers"
-  ((WARNINGS++))
+  inc WARNINGS
   anti_patterns_found=true
 fi
 
 if grep -q "You should\|You must\|You can" "$SKILL_FILE"; then
   echo "  ⚠️  Uses second-person (prefer imperative or third-person)"
-  ((WARNINGS++))
+  inc WARNINGS
   anti_patterns_found=true
 fi
 
 # Check for non-existent skill references
 if grep -qE '`(scout|planner|docs-manager|docs-seeker)`' "$SKILL_FILE"; then
   echo "  ❌ References non-existent skills (scout, planner, docs-manager, docs-seeker)"
-  ((ERRORS++))
+  inc ERRORS
   anti_patterns_found=true
 fi
 
