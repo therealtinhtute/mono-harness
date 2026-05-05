@@ -5,7 +5,51 @@ set -euo pipefail
 
 inc() {
   local var_name="$1"
-  printf -v "$var_name" '%s' "$(( ${!var_name} + 1 ))"
+  local current_value="${!var_name-0}"
+  printf -v "$var_name" '%s' "$(( current_value + 1 ))"
+}
+
+get_description_length() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$SKILL_FILE" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+text = Path(sys.argv[1]).read_text(errors='ignore').replace('\r\n', '\n').replace('\r', '\n')
+m = re.match(r'^---\n(.*?)\n---\n', text, re.S)
+if not m:
+    print(0)
+    raise SystemExit
+
+frontmatter = m.group(1)
+desc_match = re.search(r'^description:\s*(.*)$', frontmatter, re.M)
+if not desc_match:
+    print(0)
+    raise SystemExit
+
+rest = desc_match.group(1).strip()
+if rest.startswith(('>', '|')):
+    lines = frontmatter.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith('description:'):
+            start = i + 1
+            break
+    chunks = []
+    if start is not None:
+        for line in lines[start:]:
+            if line.startswith(' ') or line.startswith('\t'):
+                chunks.append(line.strip())
+            else:
+                break
+    print(len(' '.join(chunks).strip()))
+else:
+    print(len(rest.strip('"\'')))
+PY
+  else
+    grep -A 5 "^description:" "$SKILL_FILE" | wc -c | tr -d ' '
+  fi
 }
 
 SKILL_FILE="$1"
@@ -80,43 +124,7 @@ else
     echo "  ✅ Has 'description' field"
 
     # Check description length
-    desc_length=$(python3 - "$SKILL_FILE" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-text = Path(sys.argv[1]).read_text()
-m = re.match(r'^---\n(.*?)\n---\n', text, re.S)
-if not m:
-    print(0)
-    raise SystemExit
-
-frontmatter = m.group(1)
-desc_match = re.search(r'^description:\s*(.*)$', frontmatter, re.M)
-if not desc_match:
-    print(0)
-    raise SystemExit
-
-rest = desc_match.group(1).strip()
-if rest in {'>', '|'}:
-    lines = frontmatter.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.startswith('description:'):
-            start = i + 1
-            break
-    chunks = []
-    if start is not None:
-        for line in lines[start:]:
-            if line.startswith(' ') or line.startswith('\t'):
-                chunks.append(line.strip())
-            else:
-                break
-    print(len(' '.join(chunks).strip()))
-else:
-    print(len(rest.strip('"\'')))
-PY
-)
+    desc_length=$(get_description_length)
     if [ "$desc_length" -gt 200 ]; then
       echo "  ⚠️  Description may be too long (>200 chars)"
       inc WARNINGS
