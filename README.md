@@ -35,6 +35,30 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | [`/verifier`](skills/verifier/SKILL.md) | Before commit, merge, or ship | Run quality gates and confirm work is ready with evidence, not assumptions. |
 | [`/watzup`](skills/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
 
+## Recommended workflow: `spec` + `plan` + friends
+
+Use the two new planning skills as the front door, then hand off to the existing execution / review / wrap-up skills.
+
+![Recommended workflow for spec + plan with supporting skills](assets/spec-plan-workflow.svg)
+
+### 1. Lock the problem with `spec`
+Use `spec` when you have a raw idea, notes, or a feature request and want a clean `.planning/SPEC.md` before implementation.
+
+### 2. Derive execution with `plan`
+Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files.
+
+### 3. Pull in support skills only when needed
+- use [`/investigator`](skills/investigator/SKILL.md) if repo context is still unclear
+- use [`/reviewer`](skills/reviewer/SKILL.md) and [`/verifier`](skills/verifier/SKILL.md) after implementation
+- use [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) to close or transfer a work session cleanly
+
+### Mental model
+- `spec` = lock **WHAT**
+- `plan` = lock **HOW**
+- `investigator` = learn the codebase
+- `reviewer` / `verifier` = catch risk and prove readiness
+- `git` / `watzup` / `handoff` = wrap up with discipline
+
 ## Extras
 
 These are **not** installable via `npx skills add`. Copy them from a local clone of this repo.
