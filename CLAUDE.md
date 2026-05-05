@@ -20,9 +20,11 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── interview/
 │   ├── investigator/
 │   ├── media-processing/
+│   ├── plan/
 │   ├── prompt-leverage/
 │   ├── reviewer/
 │   ├── skill-creator/
+│   ├── spec/
 │   ├── strategist/
 │   ├── turbo-mono-platform/
 │   ├── verifier/

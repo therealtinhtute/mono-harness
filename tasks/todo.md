@@ -25,18 +25,18 @@ Build a **mini-GSD clone for Claude Code** focused on planning/spec work, using 
 - [ ] ambiguity / clarity gate before lock
 
 ### `plan`
-- [ ] require `.planning/SPEC.md`
-- [ ] read spec and derive `.planning/ROADMAP.md`
-- [ ] create per-phase `{phase}-CONTEXT.md`
-- [ ] create per-phase `{phase}-PLAN.md`
-- [ ] keep tasks wave-grouped and executable
+- [x] require `.planning/SPEC.md`
+- [x] read spec and derive `.planning/ROADMAP.md`
+- [x] create per-phase `{phase}-CONTEXT.md`
+- [x] create per-phase `{phase}-PLAN.md`
+- [x] keep tasks wave-grouped and executable
 
 ## v1 artifact chain
 - [ ] IDEA.md
 - [ ] SPEC.md
-- [ ] ROADMAP.md
-- [ ] phases/{slug}/{phase}-CONTEXT.md
-- [ ] phases/{slug}/{phase}-PLAN.md
+- [x] ROADMAP.md
+- [x] phases/{slug}/{phase}-CONTEXT.md
+- [x] phases/{slug}/{phase}-PLAN.md
 
 ## integration expectations
 - [ ] suggest `plan` after `spec`
@@ -52,5 +52,5 @@ Build a **mini-GSD clone for Claude Code** focused on planning/spec work, using 
 
 ## next implementation order
 1. [ ] implement `spec`
-2. [ ] implement `plan`
+2. [x] implement `plan`
 3. [ ] wire suggestions into existing skill ecosystem
