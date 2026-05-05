@@ -106,6 +106,8 @@ See `references/handoff-template.md` for complete template.
 
 See `references/context-guidelines.md` for completeness checklist.
 
+Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
+
 ---
 
 ## Output Format
@@ -138,8 +140,7 @@ See `references/examples.md` for console output and file output formats.
 
 <references>
 Load as needed from `{baseDir}/references/`:
-- `handoff-templates.md` — Handoff document templates by scenario
-- `blocker-patterns.md` — Common blocker types and resolution strategies
-- `context-capture.md` — Context capture best practices
-- `sanitization-rules.md` — Sensitive data sanitization patterns
+- `handoff-template.md` — canonical HANDOFF.md structure
+- `context-guidelines.md` — context, blockers, and completeness checklist
+- `examples.md` — example outputs and concise phrasing patterns
 </references>

@@ -43,6 +43,8 @@ task complexity and risk level.
 4. Keep the result proportional: do not over-specify a simple task.
 5. Return both the improved prompt and a short explanation of what changed when useful.
 
+Prefix your first line with `🥷` inline. Be direct: upgraded prompt early. No filler.
+
 ## Transformation Rules
 
 - Preserve the user's objective, constraints, and tone unless they conflict.
@@ -93,6 +95,7 @@ Before finalizing, check the upgraded prompt:
 - does not add unnecessary ceremony
 - includes the right verification level for the task
 - gives the agent a clear definition of done
+- sounds materially more executable than the original, not merely more verbose
 
 If the prompt is already strong, say so and make only minimal edits.
 

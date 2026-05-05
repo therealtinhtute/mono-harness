@@ -80,6 +80,8 @@ git commit -m "type(scope): description"
 ```
 Search for related GitHub issues and add to PR body. See `commit-standards.md`.
 
+Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
+
 ---
 
 ## Output Format

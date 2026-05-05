@@ -53,6 +53,8 @@ This skill handles idea/files intake, clarification, ambiguity reduction, and `S
 6. If clarity is still weak, surface gaps explicitly in `Open Questions` and `Ambiguity Report`.
 7. End by suggesting `plan` as the next step.
 
+Prefix your first line with `🥷` inline. Be direct: lock the problem before polishing prose. No filler.
+
 ## Clarification Priorities
 Ask toward these outcomes:
 1. Goal clarity — what is being built and why

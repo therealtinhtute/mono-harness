@@ -82,6 +82,8 @@ See `references/dev-commands.md` for full command reference.
 See `references/output-format.md` for full spec.
 - Scaffolding: console output with created files and next steps.
 - Analysis: Save to: `.kit/reports/turbo/{YYYYMMDD}-analysis.md` — Frontmatter: title, description, status, created, tags.
+
+Prefix your first line with `🥷` inline. Be direct: layer decision or next command first. No filler.
 </instructions>
 
 <references>
@@ -126,4 +128,3 @@ Load as needed from `{baseDir}/references/`:
 ### Example 5: Deploy to Vercel
 **Input**: "Deploy web app to Vercel"
 **Output**: Configured `vercel.json` with root directory `apps/web`, set build command `cd ../.. && bun run build --filter=web`, added environment variables, deployed.
-

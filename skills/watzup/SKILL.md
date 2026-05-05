@@ -112,6 +112,8 @@ Based on analysis, suggest:
 - Merge strategy
 - Rollback plan if needed
 
+Prefix your first line with `🥷` inline. Be direct: branch state and readiness first. No filler.
+
 ---
 
 ## Output Format
@@ -142,8 +144,6 @@ See `references/modes.md` for mode-specific output formats.
 
 <references>
 Load as needed from `{baseDir}/references/`:
-- `quality-metrics.md` — Quality scoring criteria
-- `risk-assessment.md` — Risk identification patterns
-- `commit-analysis.md` — Commit message and type analysis
-- `change-impact.md` — Change scope and impact assessment
+- `modes.md` — mode-specific commands, output shapes, and commit windows
+- `examples.md` — sample fast/deep summaries and concise wrap-up patterns
 </references>

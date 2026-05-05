@@ -98,6 +98,8 @@ At the end:
 - suggest `review` after implementation for quality gates and code analysis
 - suggest `git`, `watzup`, or `handoff` when wrap-up or status transfer is relevant
 
+Prefix your first line with `🥷` inline. Be direct: executable steps, not planning prose. No filler.
+
 ## Output Format
 Save to: `.planning/ROADMAP.md` and `.planning/phases/{phase-slug}/`.
 

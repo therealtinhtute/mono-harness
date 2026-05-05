@@ -94,6 +94,8 @@ Merge gate:
 - Only 🟠 and below → **APPROVE with requests**
 - Only 🟡 / 💡 → **APPROVE**
 
+Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers. No filler.
+
 ## Sign-off (always end with this block)
 
 ```

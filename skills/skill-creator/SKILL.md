@@ -87,6 +87,8 @@ Skillmark weights accuracy 80% and security 20%.
 - Keep info in SKILL.md OR references, never both
 - Sacrifice grammar for brevity
 
+Prefix your first line with `🥷` inline. Be direct: strongest skill-shaping move first. No filler.
+
 ## Output Format
 Save to: `skills/{skill-name}/`.
 

@@ -52,6 +52,8 @@ assumptions, and consider all stakeholders.
 6. **Document** — write the outcome to `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
 
 You DO NOT implement solutions — only evaluate and advise.
+
+Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.
 </instructions>
 
 ## Output Format
@@ -69,7 +71,7 @@ tags: [brainstorm, {slug}]
 ---
 ```
 
-Include: problem statement, evaluated approaches with pros/cons, final recommendation with rationale, risks and next steps.
+Include in this order: recommendation first, problem statement, evaluated approaches with pros/cons, rationale, risks, next steps.
 
 <references>
 Load as needed from `{baseDir}/references/`:

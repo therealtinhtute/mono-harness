@@ -31,6 +31,17 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
 | [`/watzup`](skills/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
 
+## Response convention
+
+This repo follows a shared output convention inspired by Waza for active skills:
+
+- the first response line should start inline with `🥷`
+- the opening line should contain the verdict, recommendation, state, or next move
+- outputs should be sharp, compressed, and decision-useful
+- generic "default assistant" filler is considered a quality failure
+
+The icon is the visible mode switch. The real standard is the writing: concrete, direct, and specific to the skill.
+
 ## Recommended workflow: `spec` + `plan` + friends
 
 Use the two new planning skills as the front door, then hand off to the existing execution / review / wrap-up skills.
