@@ -292,7 +292,8 @@ if grep -q "Defer To Instead" "$SKILL_FILE"; then
   echo "  ✅ Has 'Defer To Instead' section"
 
   # Count defer-to entries
-  defer_count=$(grep -c '`.*`.*—' "$SKILL_FILE" || echo "0")
+  defer_count=$(grep -c '`.*`.*—' "$SKILL_FILE" || true)
+  defer_count=${defer_count:-0}
   if [ "$defer_count" -ge 2 ]; then
     echo "  ✅ Has $defer_count defer-to entries"
   else

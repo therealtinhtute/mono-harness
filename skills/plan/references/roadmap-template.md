@@ -7,7 +7,7 @@ Use this structure for `.planning/ROADMAP.md`:
 
 ## Planning Basis
 - source spec: `.planning/SPEC.md`
-- planning mode: `full` | `phase-refresh`
+- planning mode: `full` | `phase`
 
 ## Phase 1: {phase name}
 **Goal:** {what this phase achieves}
