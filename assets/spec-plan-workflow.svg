@@ -1,4 +1,4 @@
-<svg width="960" height="760" viewBox="0 0 960 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="960" height="780" viewBox="0 0 960 780" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
       <circle cx="1" cy="1" r="0.9" fill="rgba(28,25,23,0.10)"/>
@@ -18,10 +18,10 @@
     </style>
   </defs>
 
-  <rect width="960" height="760" fill="#faf7f2"/>
-  <rect width="960" height="760" fill="url(#dots)" opacity="0.55"/>
+  <rect width="960" height="780" fill="#faf7f2"/>
+  <rect width="960" height="780" fill="url(#dots)" opacity="0.55"/>
 
-  <text x="72" y="68" class="title">How `spec` + `plan` fits with the rest of the repo</text>
+  <text x="72" y="68" class="title">How `brainstorm` + `plan` + `cook` fit with the rest of the repo</text>
 
   <rect x="388" y="96" width="184" height="44" rx="22" fill="#faf7f2"/>
   <rect x="388" y="96" width="184" height="44" rx="22" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
@@ -29,56 +29,62 @@
 
   <path d="M480 140 L480 180" stroke="#b5523a" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
 
-  <rect x="352" y="180" width="256" height="88" rx="8" fill="#faf7f2"/>
-  <rect x="352" y="180" width="256" height="88" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
-  <rect x="368" y="194" width="44" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
-  <text x="390" y="204" class="legend" text-anchor="middle">SPEC</text>
-  <text x="480" y="224" class="label" text-anchor="middle">`spec`</text>
-  <text x="480" y="244" class="mono" text-anchor="middle">locks WHAT • scope • constraints • acceptance</text>
+  <rect x="320" y="180" width="320" height="84" rx="8" fill="#faf7f2"/>
+  <rect x="320" y="180" width="320" height="84" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
+  <rect x="336" y="194" width="68" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
+  <text x="370" y="204" class="legend" text-anchor="middle">BRAINSTORM</text>
+  <text x="480" y="224" class="label" text-anchor="middle">`brainstorm`</text>
+  <text x="480" y="244" class="mono" text-anchor="middle">explore options • lock WHAT into `.planning/SPEC.md`</text>
 
-  <path d="M480 268 L480 316" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+  <path d="M480 264 L480 304" stroke="#b5523a" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+  <rect x="494" y="276" width="46" height="14" rx="3" fill="#faf7f2"/>
+  <text x="517" y="286" class="arrowLabel" text-anchor="middle">SPEC</text>
 
-  <polygon points="480,316 592,388 480,460 368,388" fill="#faf7f2" stroke="#57534e" stroke-width="1"/>
-  <text x="480" y="382" class="label" text-anchor="middle">Need repo</text>
-  <text x="480" y="400" class="label" text-anchor="middle">context?</text>
+  <rect x="320" y="304" width="320" height="84" rx="8" fill="#faf7f2"/>
+  <rect x="320" y="304" width="320" height="84" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
+  <rect x="336" y="318" width="40" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
+  <text x="356" y="328" class="legend" text-anchor="middle">PLAN</text>
+  <text x="480" y="348" class="label" text-anchor="middle">`plan`</text>
+  <text x="480" y="368" class="mono" text-anchor="middle">writes `ROADMAP.md` + phase `CONTEXT.md` + phase `PLAN.md`</text>
 
-  <path d="M592 388 L744 388" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
-  <rect x="646" y="370" width="42" height="12" rx="2" fill="#faf7f2"/>
-  <text x="667" y="379" class="arrowLabel" text-anchor="middle">YES</text>
+  <path d="M480 388 L480 428" stroke="#b5523a" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+  <rect x="486" y="400" width="62" height="14" rx="3" fill="#faf7f2"/>
+  <text x="517" y="410" class="arrowLabel" text-anchor="middle">PHASES</text>
 
-  <rect x="720" y="344" width="176" height="88" rx="8" fill="#faf7f2"/>
-  <rect x="720" y="344" width="176" height="88" rx="8" fill="rgba(28,25,23,0.03)" stroke="rgba(28,25,23,0.30)" stroke-width="1"/>
-  <rect x="736" y="358" width="58" height="14" rx="3" fill="transparent" stroke="rgba(28,25,23,0.30)" stroke-width="0.8"/>
-  <text x="765" y="368" class="legend" text-anchor="middle">DISCOVERY</text>
-  <text x="808" y="390" class="label" text-anchor="middle">`investigator`</text>
-  <text x="808" y="410" class="mono" text-anchor="middle">maps code surface before planning</text>
+  <rect x="320" y="428" width="320" height="84" rx="8" fill="#faf7f2"/>
+  <rect x="320" y="428" width="320" height="84" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
+  <rect x="336" y="442" width="40" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
+  <text x="356" y="452" class="legend" text-anchor="middle">COOK</text>
+  <text x="480" y="472" class="label" text-anchor="middle">`cook`</text>
+  <text x="480" y="492" class="mono" text-anchor="middle">runs waves • dispatches subagents • verifies per task</text>
 
-  <path d="M808 432 L808 516 L480 516 L480 548" stroke="#57534e" stroke-width="1" fill="none" marker-end="url(#arrow)"/>
+  <path d="M480 512 L480 552" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="486" y="524" width="78" height="14" rx="3" fill="#faf7f2"/>
+  <text x="525" y="534" class="arrowLabel" text-anchor="middle">PHASE DIFF</text>
 
-  <path d="M480 460 L480 548" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
-  <rect x="506" y="492" width="34" height="12" rx="2" fill="#faf7f2"/>
-  <text x="523" y="501" class="arrowLabel" text-anchor="middle">NO</text>
+  <rect x="340" y="552" width="280" height="72" rx="8" fill="#faf7f2"/>
+  <rect x="340" y="552" width="280" height="72" rx="8" fill="rgba(28,25,23,0.04)" stroke="#1c1917" stroke-width="1"/>
+  <rect x="356" y="566" width="44" height="14" rx="3" fill="transparent" stroke="rgba(28,25,23,0.40)" stroke-width="0.8"/>
+  <text x="378" y="576" class="legend" text-anchor="middle">CHECK</text>
+  <text x="480" y="596" class="label" text-anchor="middle">`check`</text>
+  <text x="480" y="614" class="mono" text-anchor="middle">tests • lint • build • security • architecture • quality</text>
 
-  <rect x="340" y="548" width="280" height="88" rx="8" fill="#faf7f2"/>
-  <rect x="340" y="548" width="280" height="88" rx="8" fill="rgba(181,82,58,0.08)" stroke="#b5523a" stroke-width="1.2"/>
-  <rect x="356" y="562" width="44" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
-  <text x="378" y="572" class="legend" text-anchor="middle">PLAN</text>
-  <text x="480" y="592" class="label" text-anchor="middle">`plan`</text>
-  <text x="480" y="612" class="mono" text-anchor="middle">writes ROADMAP + phase CONTEXT + phase PLAN</text>
+  <path d="M480 624 L480 664" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="492" y="636" width="50" height="14" rx="3" fill="#faf7f2"/>
+  <text x="517" y="646" class="arrowLabel" text-anchor="middle">CLEAN</text>
 
-  <path d="M480 636 L480 676" stroke="#57534e" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="200" y="664" width="180" height="56" rx="8" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
+  <text x="290" y="688" class="label" text-anchor="middle">`git`</text>
+  <text x="290" y="706" class="mono" text-anchor="middle">commit • push • PR</text>
 
-  <rect x="160" y="676" width="220" height="52" rx="8" fill="#ffffff" stroke="#1c1917" stroke-width="1"/>
-  <text x="270" y="706" class="label" text-anchor="middle">Implement the phase</text>
+  <rect x="390" y="664" width="180" height="56" rx="8" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
+  <text x="480" y="688" class="label" text-anchor="middle">`watzup`</text>
+  <text x="480" y="706" class="mono" text-anchor="middle">retro • risks • PR readiness</text>
 
-  <rect x="404" y="676" width="184" height="52" rx="8" fill="#ffffff" stroke="#1c1917" stroke-width="1"/>
-  <text x="496" y="698" class="label" text-anchor="middle">`reviewer` + `verifier`</text>
-  <text x="496" y="716" class="mono" text-anchor="middle">review code • prove it works</text>
+  <rect x="580" y="664" width="180" height="56" rx="8" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
+  <text x="670" y="688" class="label" text-anchor="middle">`handoff`</text>
+  <text x="670" y="706" class="mono" text-anchor="middle">save state • resume next</text>
 
-  <rect x="612" y="676" width="188" height="52" rx="8" fill="#f2ede4" stroke="#78716c" stroke-width="1"/>
-  <text x="706" y="698" class="label" text-anchor="middle">`git` / `watzup` / `handoff`</text>
-  <text x="706" y="716" class="mono" text-anchor="middle">commit • wrap • transfer context</text>
-
-  <line x1="72" y1="740" x2="888" y2="740" stroke="rgba(28,25,23,0.12)" stroke-width="0.8"/>
-  <text x="72" y="754" class="legend">FLOW: SPEC → CONTEXT → PLAN → EXECUTE → REVIEW / VERIFY → WRAP</text>
+  <line x1="72" y1="752" x2="888" y2="752" stroke="rgba(28,25,23,0.12)" stroke-width="0.8"/>
+  <text x="72" y="768" class="legend">FLOW: BRAINSTORM → PLAN → COOK → CHECK → GIT / WATZUP / HANDOFF</text>
 </svg>

@@ -1,6 +1,6 @@
 ---
 name: check
-description: "Pre-commit and pre-merge gate. Executes approved plans from /think. Runs tests, lint, build then reviews security, performance, architecture, and code quality. Also triages issues and PRs when the user mentions them."
+description: "Pre-commit and pre-merge gate. Runs tests, lint, build then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/cook` and triages issues and PRs when the user mentions them."
 model: claude-opus-4-6
 allowed-tools: "Read Grep Glob Bash"
 argument-hint: "[gate|review|full]"

@@ -68,7 +68,8 @@ bash scripts/setup-statusline.sh
 | [`/librarian`](skills/librarian/SKILL.md) | Researching external GitHub repos | GitHub code research via gh CLI. Find symbols, grep code, gather evidence without cloning. |
 | [`/plan`](skills/plan/SKILL.md) | After brainstorm, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
-| [`/check`](skills/check/SKILL.md) | Before commit, PR, or merge; after implementing a plan | Gate (tests, lint, build) + code review (security, architecture, quality). Also executes approved plans from `/think`. |
+| [`/check`](skills/check/SKILL.md) | Before commit, PR, or merge; phase gate after `/cook` | Gate (tests, lint, build) + code review (security, architecture, quality). |
+| [`/cook`](skills/cook/SKILL.md) | "Implement this plan", "build it end-to-end" | Execution orchestrator after `brainstorm` + `plan`. Routes to upstream skills if artifacts are missing; runs phase waves; verifies every task; gates via `/check`. |
 | [`/skill-creator`](skills/skill-creator/SKILL.md) | Creating or updating Claude skills | Create or update Claude skills optimized for Skillmark benchmarks. |
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
 | [`/watzup`](skills/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
@@ -84,15 +85,15 @@ This repo follows a shared output convention inspired by Waza for active skills:
 
 The icon is the visible mode switch. The real standard is the writing: concrete, direct, and specific to the skill.
 
-## Recommended workflow: `brainstorm` + `plan` + friends
+## Recommended workflow: `brainstorm` + `plan` + `cook` + friends
 
-Use the two planning skills as the front door, then hand off to the existing execution / check / wrap-up skills.
+Three planning/execution skills as the front door, then hand off to the existing check + wrap-up skills.
 
-![Recommended workflow for brainstorm + plan with supporting skills](assets/spec-plan-workflow.svg)
+![Recommended workflow for brainstorm + plan + cook with supporting skills](assets/spec-plan-workflow.svg)
 
 Canonical pipeline:
 ```
-brainstorm → plan → interview → implement → check → handoff/watzup
+brainstorm → plan → cook → check → git / watzup / handoff
 ```
 
 ### 1. Lock the problem with `brainstorm`
@@ -101,13 +102,17 @@ Use `brainstorm` when you have a raw idea, notes, markdown files, or a trade-off
 ### 2. Derive execution with `plan`
 Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files. If the spec is missing or too weak, `plan` fails fast and points back to `brainstorm`.
 
-### 3. Pull in support skills only when needed
-- use [`/check`](skills/check/SKILL.md) after implementation for gate checks and code analysis
-- use [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) to close or transfer a work session cleanly
+### 3. Run the kitchen with `cook`
+Use `cook` to execute the plan. It checks for missing artifacts and routes back to `brainstorm` or `plan` if needed; otherwise it runs the active phase wave-by-wave, dispatches subagents for heavy tasks, verifies every task, and calls `/check` as the phase gate. It never auto-commits — handoffs are suggested, not executed.
+
+### 4. Pull in support skills only when needed
+- [`/check`](skills/check/SKILL.md) is invoked by `cook` per phase, or directly for ad-hoc gate/review
+- [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) close or transfer a work session cleanly
 
 ### Mental model
 - `brainstorm` = lock **WHAT**
 - `plan` = lock **HOW**
+- `cook` = run **the kitchen** (execute, verify, gate)
 - `check` = catch risk and prove readiness (gate + analysis)
 - `git` / `watzup` / `handoff` = wrap up with discipline
 
