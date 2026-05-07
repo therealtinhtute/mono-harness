@@ -1,8 +1,10 @@
 ---
 name: plan
 description: Generate roadmap, phase context, and executable phase plans from a locked `.planning/SPEC.md`. Use after `spec` for artifact-first implementation planning.
-version: 1.0.0
 argument-hint: "[mode:full|phase] [phase-name?]"
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: executable steps, not planning prose. No filler.

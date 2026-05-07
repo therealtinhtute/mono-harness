@@ -1,10 +1,12 @@
 ---
 name: librarian
 description: GitHub code research via gh CLI. Use when investigating external repos, searching GitHub code without cloning, finding where symbols are defined in GitHub projects, or gathering evidence from GitHub repositories. Triggers on search GitHub, investigate repo, find in GitHub, where is symbol defined in owner/repo, show examples in GitHub, any GitHub code discovery task.
-allowed-tools: "Read,Bash"
-version: 1.0.0
+allowed-tools: "Read Bash"
 argument-hint: "[owner/repo or search query]"
 tags: [github, research, evidence, gh-cli]
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: evidence first, exact file locations. No filler.

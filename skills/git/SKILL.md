@@ -2,7 +2,9 @@
 name: git
 description: "Git operations with conventional commits. Use for staging, committing, pushing, PRs, merges. Auto-splits commits by type/scope. Security scans for secrets."
 argument-hint: "cm|cp|pr|merge [args]"
-version: 1.0.0
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.

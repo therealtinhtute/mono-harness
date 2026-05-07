@@ -2,7 +2,9 @@
 name: watzup
 description: "Retrospective: analyze what changed this session, assess commit quality and impact, and flag readiness for PR or merge."
 argument-hint: "[branch] [mode:fast|deep]"
-version: 2.0.0
+compatibility: Designed for Claude Code
+metadata:
+  version: "2.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: branch state and readiness first. No filler.

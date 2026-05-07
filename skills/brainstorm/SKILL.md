@@ -2,8 +2,10 @@
 name: brainstorm
 description: "Explore options, evaluate trade-offs, and recommend the simplest viable path. Use for ideation, architecture decisions, technical debates, and any choice between multiple valid approaches."
 license: MIT
-version: 3.0.0
 argument-hint: "[topic or problem]"
+compatibility: Designed for Claude Code
+metadata:
+  version: "3.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.

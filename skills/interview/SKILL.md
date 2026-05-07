@@ -3,7 +3,9 @@ name: interview
 description: "Validate a plan by interviewing requirements, trade-offs, and edge cases before implementation."
 argument-hint: "[plan-file] [mode:fast|deep]"
 model: opus
-version: 2.0.0
+compatibility: Designed for Claude Code
+metadata:
+  version: "2.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: sharp questions, plain contradictions. No filler.

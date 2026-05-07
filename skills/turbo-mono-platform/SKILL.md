@@ -1,14 +1,13 @@
 ---
 name: turbo-mono-platform
-version: "1.0.0"
 argument-hint: "[layer or feature]"
 description: >
   Full-stack TypeScript monorepo specialist: Turborepo, Next.js, Hono, tRPC, Drizzle,
   Postgres. Use when working on this stack or any layer (auth, db, trpc, ui, kv, api).
-allowed-tools:
-  - bash
-  - Edit
+allowed-tools: "Bash Edit"
+compatibility: Designed for Claude Code
 metadata:
+  version: "1.0.0"
   stack-version: "2026-q2"
   shadcn-preset: "b1tMcUv91"
   package-scope: "@rp/"

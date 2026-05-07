@@ -4,9 +4,11 @@ description: >
   Builds interactive bash/shell TUI apps (menus, selectors, forms, progress bars, spinners,
   banners, color output). Use when a user needs arrow-key navigation, wizards, or terminal UI.
 argument-hint: "[component or script type]"
-version: 1.0.0
 effort: high
 context: fork
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: toolkit first, UI shape next. No filler.

@@ -2,7 +2,9 @@
 name: handoff
 description: "Prospective: capture current session state into .kit/HANDOFF.md so the next session can resume without context loss."
 argument-hint: "[context]"
-version: 1.0.0
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.

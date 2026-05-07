@@ -1,8 +1,10 @@
 ---
 name: spec
 description: Create a locked planning spec from an idea prompt or specified files. Use for project bootstrap, feature/module scoping, and spec-first planning in `.planning/`.
-version: 1.0.0
 argument-hint: "[mode:idea|files] [prompt or @file references]"
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: lock the problem before polishing prose. No filler.

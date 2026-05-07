@@ -1,8 +1,10 @@
 ---
 name: skill-creator
 description: Create or update Claude skills with stronger structure, references, and benchmark-oriented instructions.
-version: 3.0.0
 argument-hint: "[skill-name or description]"
+compatibility: Designed for Claude Code
+metadata:
+  version: "3.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: strongest skill-shaping move first. No filler.

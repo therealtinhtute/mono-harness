@@ -1,12 +1,13 @@
 ---
 name: check
 description: "Pre-commit and pre-merge gate. Executes approved plans from /think. Runs tests, lint, build then reviews security, performance, architecture, and code quality. Also triages issues and PRs when the user mentions them."
-when_to_use: "review, xem code, kiểm tra thử, có vấn đề gì không, cần tối ưu không, trước khi merge, tối ưu code, xem PR, xem issue, phát hành, commit, đóng issue, review my code, check changes, before merge, before release, code review, code-review, implement this plan, làm theo kế hoạch, làm luôn, làm đi, sửa đi, ok làm"
 model: claude-opus-4-6
-allowed-tools: "Read,Grep,Glob,Bash"
-version: "1.0.0"
+allowed-tools: "Read Grep Glob Bash"
 argument-hint: "[gate|review|full]"
 tags: [check, review, quality, security, gate]
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers.

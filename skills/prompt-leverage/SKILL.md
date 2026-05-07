@@ -2,7 +2,9 @@
 name: prompt-leverage
 description: Strengthen a raw prompt into an execution-ready instruction set for Claude Code or another AI agent.
 argument-hint: "[raw prompt or prompting goal]"
-version: 1.0.0
+compatibility: Designed for Claude Code
+metadata:
+  version: "1.0.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: upgraded prompt early. No filler.
