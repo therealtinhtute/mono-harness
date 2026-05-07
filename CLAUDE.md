@@ -15,13 +15,13 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 ├── skills/                 # Installable agent skills (npx skills add)
 │   ├── bash-tui/
 │   ├── brainstorm/
+│   ├── check/
 │   ├── git/
 │   ├── handoff/
 │   ├── interview/
 │   ├── librarian/
 │   ├── plan/
 │   ├── prompt-leverage/
-│   ├── review/
 │   ├── skill-creator/
 │   ├── spec/
 │   ├── turbo-mono-platform/
@@ -60,14 +60,14 @@ bash scripts/sync-from-kit.sh
 
 Canonical order for complex work:
 ```
-brainstorm → spec → plan → interview → implement → review/check → handoff/watzup
+brainstorm → spec → plan → interview → implement → check → handoff/watzup
 ```
 - `brainstorm` — explore options, evaluate trade-offs
 - `spec` — lock requirements into `.planning/SPEC.md`
 - `plan` — generate executable phase plans from spec
 - `interview` — validate plan before implementation
 - implement — actual coding
-- `review` / `check` — pre-commit gate
+- `check` — pre-commit gate and post-implementation review
 - `handoff` / `watzup` — session close-out
 
 ## Architecture Notes

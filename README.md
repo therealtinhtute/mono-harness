@@ -68,7 +68,7 @@ bash scripts/setup-statusline.sh
 | [`/librarian`](skills/librarian/SKILL.md) | Researching external GitHub repos | GitHub code research via gh CLI. Find symbols, grep code, gather evidence without cloning. |
 | [`/plan`](skills/plan/SKILL.md) | After spec, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
-| [`/review`](skills/review/SKILL.md) | Before commit, PR, or merge | Pre-commit gate (tests, lint, build) + code review (security, architecture, maintainability) in one skill. |
+| [`/check`](skills/check/SKILL.md) | Before commit, PR, or merge; after implementing a plan | Gate (tests, lint, build) + code review (security, architecture, quality). Also executes approved plans from `/think`. |
 | [`/skill-creator`](skills/skill-creator/SKILL.md) | Creating or updating Claude skills | Create or update Claude skills optimized for Skillmark benchmarks. |
 | [`/spec`](skills/spec/SKILL.md) | Before roadmap or implementation planning | Turn an idea or files into a locked `.planning/SPEC.md` with scope, constraints, and acceptance criteria. |
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
@@ -87,7 +87,7 @@ The icon is the visible mode switch. The real standard is the writing: concrete,
 
 ## Recommended workflow: `spec` + `plan` + friends
 
-Use the two planning skills as the front door, then hand off to the existing execution / review / wrap-up skills.
+Use the two planning skills as the front door, then hand off to the existing execution / check / wrap-up skills.
 
 ![Recommended workflow for spec + plan with supporting skills](assets/spec-plan-workflow.svg)
 
@@ -103,13 +103,13 @@ Use `spec` when you have a raw idea, notes, or a feature request and want a clea
 Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files.
 
 ### 3. Pull in support skills only when needed
-- use [`/review`](skills/review/SKILL.md) after implementation for gate checks and code analysis
+- use [`/check`](skills/check/SKILL.md) after implementation for gate checks and code analysis
 - use [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) to close or transfer a work session cleanly
 
 ### Mental model
 - `spec` = lock **WHAT**
 - `plan` = lock **HOW**
-- `review` = catch risk and prove readiness (gate + analysis)
+- `check` = catch risk and prove readiness (gate + analysis)
 - `git` / `watzup` / `handoff` = wrap up with discipline
 
 ## Local Development
