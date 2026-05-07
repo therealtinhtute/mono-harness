@@ -84,7 +84,7 @@ only when real evidence (100K+ users, specific bottlenecks) appears.
 
 ---
 
-## Example 3 — Lock-from-files: Extract from PRD
+## Example 3 — Lock-from-files: Extract from PRD (with HARD-GATE)
 
 **Input**: "lock @file:docs/auth-rfc.md @file:docs/notes.md"
 
@@ -93,11 +93,21 @@ only when real evidence (100K+ users, specific bottlenecks) appears.
 **Workflow**:
 1. Read both files
 2. Surface the proposed core change in one paragraph
-3. Identify gaps via `clarification-rubric.md`: missing acceptance criteria, unclear actor boundaries, undefined constraints
-4. Clarify gaps via `AskUserQuestion`
-5. Write `.planning/SPEC.md` referencing the source files in `Dependencies / Assumptions`
+3. **Name 1-2 alternatives the source rejected** (HARD-GATE) — even when the source has decided, articulate the road not taken. Example: "RFC chose JWT; rejected sessions because of mobile sync requirement and rejected OAuth-only because of B2B partner integration cost."
+4. Identify gaps via `clarification-rubric.md`: missing acceptance criteria, unclear actor boundaries, undefined constraints
+5. Clarify gaps via `AskUserQuestion` (1-2 questions per turn during exploration)
+6. Write `.planning/SPEC.md` referencing the source files in `Dependencies / Assumptions`; capture rejected alternatives in `Key Decisions`
+7. Run `lock-checklist.md` self-review; fix inline
+8. User review gate before suggesting `plan`
 
-**Output**: `.planning/SPEC.md` with traceability back to the source markdown. `IDEA.md` optional — only if the source files are loose notes rather than a structured RFC.
+**Output**: `.planning/SPEC.md` with traceability back to the source markdown and an explicit `Key Decisions` section showing what was *not* chosen and why. `IDEA.md` optional — only if the source files are loose notes rather than a structured RFC.
+
+### Why HARD-GATE matters here
+
+A PRD with a decision still has implicit alternatives. Naming them produces:
+- A traceable record of why this path beat others (useful when the decision is questioned 6 months later)
+- Early detection of cases where the source's reasoning doesn't apply to your context
+- A natural prompt for `Key Decisions` content in the SPEC
 
 ---
 
