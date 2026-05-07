@@ -16,6 +16,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── bash-tui/
 │   ├── brainstorm/
 │   ├── check/
+│   ├── cook/
 │   ├── git/
 │   ├── handoff/
 │   ├── interview/
@@ -59,14 +60,15 @@ bash scripts/sync-from-kit.sh
 
 Canonical order for complex work:
 ```
-brainstorm → plan → interview → implement → check → handoff/watzup
+brainstorm → plan → cook → check → git / handoff / watzup
 ```
 - `brainstorm` — explore options and lock requirements into `.planning/SPEC.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
 - `plan` — generate executable phase plans from the locked spec
-- `interview` — validate plan before implementation
-- implement — actual coding
-- `check` — pre-commit gate and post-implementation review
-- `handoff` / `watzup` — session close-out
+- `cook` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
+- `check` — pre-commit gate and post-implementation review (also invoked per phase by `cook`)
+- `git` / `handoff` / `watzup` — session close-out
+
+`interview` is optional and only used when a plan needs human-in-the-loop validation before `cook`.
 
 ## Architecture Notes
 
