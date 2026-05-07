@@ -29,6 +29,17 @@ backup() {
   fi
 }
 
+# Copy src→dest only if contents differ. Backs up dest before overwrite.
+sync_file() {
+  local src="$1"
+  local dest="$2"
+  if [ -e "$dest" ] && cmp -s "$src" "$dest"; then
+    return 0
+  fi
+  backup "$dest"
+  cp "$src" "$dest"
+}
+
 echo ""
 echo "Claude Code Bootstrap"
 echo "====================="
@@ -41,30 +52,27 @@ mkdir -p "$CLAUDE_DIR/rules" "$CLAUDE_DIR/hooks/lib"
 green "✓ Directories ready"
 
 # --- Step 2: CLAUDE.md ---
-backup "$CLAUDE_DIR/CLAUDE.md"
-cp "$REPO_DIR/setup/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+sync_file "$REPO_DIR/setup/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 green "✓ CLAUDE.md installed"
 
 # --- Step 3: Rules ---
 for f in "$REPO_DIR/rules/"*.md; do
   [ -f "$f" ] || continue
-  name="$(basename "$f")"
-  cp "$f" "$CLAUDE_DIR/rules/$name"
+  sync_file "$f" "$CLAUDE_DIR/rules/$(basename "$f")"
 done
 green "✓ Rules installed ($(ls "$CLAUDE_DIR/rules/"*.md 2>/dev/null | wc -l | tr -d ' ') files)"
 
 # --- Step 4: Hooks ---
 for f in "$REPO_DIR/setup/hooks/"*; do
   [ -f "$f" ] || continue
-  name="$(basename "$f")"
-  cp "$f" "$CLAUDE_DIR/hooks/$name"
+  sync_file "$f" "$CLAUDE_DIR/hooks/$(basename "$f")"
 done
 for f in "$REPO_DIR/setup/hooks/lib/"*; do
   [ -f "$f" ] || continue
-  name="$(basename "$f")"
-  cp "$f" "$CLAUDE_DIR/hooks/lib/$name"
+  sync_file "$f" "$CLAUDE_DIR/hooks/lib/$(basename "$f")"
 done
-chmod +x "$CLAUDE_DIR/hooks/post-compact-reminder.sh" 2>/dev/null || true
+# Make all executable hook scripts runnable
+find "$CLAUDE_DIR/hooks" -maxdepth 1 -type f \( -name "*.sh" -o -name "*.cjs" \) -exec chmod +x {} +
 green "✓ Hooks installed"
 
 # --- Step 5: settings.json ---
@@ -102,6 +110,26 @@ echo "Installing skills..."
 npx skills add "git@github.com:therealtinhtute/skills.git" -a claude-code -g -y
 green "✓ Skills installed"
 
+# --- Step 8: Version stamp ---
+if git -C "$REPO_DIR" rev-parse HEAD >/dev/null 2>&1; then
+  REPO_REV="$(git -C "$REPO_DIR" rev-parse HEAD)"
+  printf '%s\n' "$REPO_REV" > "$CLAUDE_DIR/.bootstrap-version"
+  green "✓ Bootstrap version stamped ($REPO_REV)"
+fi
+
+# --- Step 9: Verify ---
+echo ""
+echo "Verification"
+echo "------------"
+RULES_COUNT="$(ls "$CLAUDE_DIR/rules/"*.md 2>/dev/null | wc -l | tr -d ' ')"
+HOOKS_COUNT="$(find "$CLAUDE_DIR/hooks" -maxdepth 1 -type f \( -name "*.sh" -o -name "*.cjs" \) 2>/dev/null | wc -l | tr -d ' ')"
+SKILLS_COUNT="$(ls -d "$CLAUDE_DIR/skills/"*/ 2>/dev/null | wc -l | tr -d ' ')"
+echo "  CLAUDE.md     : $([ -f "$CLAUDE_DIR/CLAUDE.md" ] && echo present || echo MISSING)"
+echo "  rules/        : $RULES_COUNT files"
+echo "  hooks/        : $HOOKS_COUNT scripts"
+echo "  skills/       : $SKILLS_COUNT installed"
+echo "  settings.json : $([ -f "$CLAUDE_DIR/settings.json" ] && echo present || echo MISSING)"
+echo "  version       : $([ -f "$CLAUDE_DIR/.bootstrap-version" ] && cat "$CLAUDE_DIR/.bootstrap-version" || echo unknown)"
 echo ""
 green "Bootstrap complete."
 echo ""
