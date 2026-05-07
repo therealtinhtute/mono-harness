@@ -8,10 +8,52 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 
 
 
-## Install
+## Machine Setup
+
+Full bootstrap for a new machine — installs CLAUDE.md, rules, hooks, statusline, and all skills:
+
+```bash
+git clone git@github.com:therealtinhtute/skills.git ~/skills
+bash ~/skills/setup/install.sh
+```
+
+After install: edit `~/.claude/settings.json` and set `ANTHROPIC_AUTH_TOKEN`.
+
+**Skills only** (no config changes):
 
 ```bash
 npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
+```
+
+### What `install.sh` installs
+
+| Component | Source | Target |
+| :--- | :--- | :--- |
+| Global CLAUDE.md | `setup/CLAUDE.md` | `~/.claude/CLAUDE.md` |
+| Rules | `rules/*.md` | `~/.claude/rules/` |
+| Hooks | `setup/hooks/` | `~/.claude/hooks/` |
+| Settings template | `setup/settings.json` | `~/.claude/settings.json` (new machines only) |
+| Statusline | `scripts/setup-statusline.sh` | `~/.claude/statusline.sh` |
+| All skills | GitHub | `~/.claude/skills/` via npx |
+
+### Individual installs
+
+Install just a rule:
+```bash
+cp rules/karpathy-guidelines.md ~/.claude/rules/
+cp rules/english.md ~/.claude/rules/
+cp rules/ask-user-question.md ~/.claude/rules/
+```
+
+Install just the settings template:
+```bash
+cp setup/settings.json ~/.claude/settings.json
+# Edit: set ANTHROPIC_AUTH_TOKEN
+```
+
+Install just the statusline:
+```bash
+bash scripts/setup-statusline.sh
 ```
 
 ## Skills
@@ -23,6 +65,7 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 | [`/git`](skills/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
 | [`/handoff`](skills/handoff/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
 | [`/interview`](skills/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
+| [`/librarian`](skills/librarian/SKILL.md) | Researching external GitHub repos | GitHub code research via gh CLI. Find symbols, grep code, gather evidence without cloning. |
 | [`/plan`](skills/plan/SKILL.md) | After spec, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
 | [`/review`](skills/review/SKILL.md) | Before commit, PR, or merge | Pre-commit gate (tests, lint, build) + code review (security, architecture, maintainability) in one skill. |
@@ -44,9 +87,14 @@ The icon is the visible mode switch. The real standard is the writing: concrete,
 
 ## Recommended workflow: `spec` + `plan` + friends
 
-Use the two new planning skills as the front door, then hand off to the existing execution / review / wrap-up skills.
+Use the two planning skills as the front door, then hand off to the existing execution / review / wrap-up skills.
 
 ![Recommended workflow for spec + plan with supporting skills](assets/spec-plan-workflow.svg)
+
+Canonical pipeline:
+```
+brainstorm → spec → plan → interview → implement → review/check → handoff/watzup
+```
 
 ### 1. Lock the problem with `spec`
 Use `spec` when you have a raw idea, notes, or a feature request and want a clean `.planning/SPEC.md` before implementation.
@@ -64,66 +112,17 @@ Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.pl
 - `review` = catch risk and prove readiness (gate + analysis)
 - `git` / `watzup` / `handoff` = wrap up with discipline
 
-## Extras
-
-These are **not** installable via `npx skills add`. Copy them from a local clone of this repo.
-
-### Karpathy Guidelines
-
-Global coding rule derived from Andrej Karpathy's observations on LLM coding pitfalls. Installs as a Claude Code rule applied every session — think before coding, simplicity first, surgical changes, goal-driven execution.
-
-```bash
-git clone git@github.com:therealtinhtute/skills.git /tmp/skills \
-  && mkdir -p ~/.claude/rules \
-  && cp /tmp/skills/rules/karpathy-guidelines.md ~/.claude/rules/karpathy-guidelines.md
-```
-
-### English Coaching
-
-Corrects your English in place, tags patterns so you learn the rule. Installs as a Claude Code rule.
-
-```bash
-git clone git@github.com:therealtinhtute/skills.git /tmp/skills \
-  && mkdir -p ~/.claude/rules \
-  && cp /tmp/skills/rules/english.md ~/.claude/rules/english.md
-```
-
-### Statusline
-
-Minimal statusline: `✦ model  ▰▱ N%  ϟ tpm  ⌥ branch`. Model-first layout with battery-style progress bar.
-
-```bash
-git clone git@github.com:therealtinhtute/skills.git /tmp/skills \
-  && bash /tmp/skills/scripts/setup-statusline.sh
-```
-
-Then add to `~/.claude/settings.json`:
-
-```json
-"statusLine": { "type": "command", "command": "bash ~/.claude/statusline.sh" }
-```
-
-### Settings Config
-
-Example `settings.json` with env vars, model defaults, hooks, and attribution:
-
-```bash
-git clone git@github.com:therealtinhtute/skills.git /tmp/skills \
-  && cp /tmp/skills/setup/settings.json ~/.claude/settings.json
-# Edit ANTHROPIC_AUTH_TOKEN and review hooks before using
-```
-
 ## Local Development
 
-This repo is the stable release. The incubator workspace lives at `/Users/tinhtute/Lab/orkit-tui/kit/skills/`.
+This repo is the stable release. The incubator workspace is a local clone at a path of your choice.
 
-To iterate quickly on a skill before publishing:
+To iterate quickly on a skill before publishing, point Claude Code at your local skill directory:
 
 ```bash
-claude-code add-dir /Users/tinhtute/Lab/orkit-tui/kit/skills/my-skill
+claude-code add-dir /path/to/your/local/skill
 ```
 
-To sync changes from the incubator to this repo:
+To sync changes from an incubator to this repo:
 
 ```bash
 bash scripts/sync-from-kit.sh

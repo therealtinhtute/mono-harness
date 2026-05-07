@@ -18,6 +18,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── git/
 │   ├── handoff/
 │   ├── interview/
+│   ├── librarian/
 │   ├── plan/
 │   ├── prompt-leverage/
 │   ├── review/
@@ -25,9 +26,10 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── spec/
 │   ├── turbo-mono-platform/
 │   └── watzup/
-├── rules/                  # Claude Code rules
-│   ├── ask-user-question.md   # Global force rule: all questions MUST use AskUserQuestion
-│   └── english.md
+├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
+│   ├── ask-user-question.md   # AskUserQuestion enforcement
+│   ├── english.md             # English coaching
+│   └── karpathy-guidelines.md # Karpathy coding principles
 ├── scripts/                # Repo utility scripts
 │   ├── sync-from-kit.sh    # Incubator → repo sync
 │   └── setup-statusline.sh # Statusline installer
@@ -54,9 +56,23 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 bash scripts/sync-from-kit.sh
 ```
 
+## Skill Pipeline
+
+Canonical order for complex work:
+```
+brainstorm → spec → plan → interview → implement → review/check → handoff/watzup
+```
+- `brainstorm` — explore options, evaluate trade-offs
+- `spec` — lock requirements into `.planning/SPEC.md`
+- `plan` — generate executable phase plans from spec
+- `interview` — validate plan before implementation
+- implement — actual coding
+- `review` / `check` — pre-commit gate
+- `handoff` / `watzup` — session close-out
+
 ## Architecture Notes
 
-- **Stable vs. incubator:** This repo is the stable release. The incubator workspace is `/Users/tinhtute/Lab/orkit-tui/kit/skills/`.
-- **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, and optional `references/` and `scripts/` directories.
-- **Current repo shape:** This is a curated skills collection, not a full app/monorepo. Prefer lightweight docs and validation over heavy tooling.
+- **Stable vs. incubator:** This repo is the stable release. The incubator is at `/home/tinhpt/Lab/orkit-tui/kit/skills/` (local) or the equivalent on macOS.
+- **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, optional `references/` and `scripts/` directories.
+- **rules/ directory:** Source-of-truth for rules installed to `~/.claude/rules/`. Keep in sync with installed versions.
 - **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/skills.git`) as long as local SSH keys are configured.
