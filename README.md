@@ -68,6 +68,16 @@ Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.pl
 
 These are **not** installable via `npx skills add`. Copy them from a local clone of this repo.
 
+### Karpathy Guidelines
+
+Global coding rule derived from Andrej Karpathy's observations on LLM coding pitfalls. Installs as a Claude Code rule applied every session — think before coding, simplicity first, surgical changes, goal-driven execution.
+
+```bash
+git clone git@github.com:therealtinhtute/skills.git /tmp/skills \
+  && mkdir -p ~/.claude/rules \
+  && cp /tmp/skills/rules/karpathy-guidelines.md ~/.claude/rules/karpathy-guidelines.md
+```
+
 ### English Coaching
 
 Corrects your English in place, tags patterns so you learn the rule. Installs as a Claude Code rule.
