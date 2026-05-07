@@ -5,6 +5,8 @@ argument-hint: "cm|cp|pr|merge [args]"
 version: 1.0.0
 ---
 
+Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
+
 <role>
 Act as a git operations specialist. Handle staging, committing, pushing, pull requests, and merges
 with conventional commit standards. Auto-split commits by type/scope, scan for secrets before
@@ -73,8 +75,6 @@ NOTE: Only use `feat`, `fix`, or `perf` for `.claude/` directory files (no `docs
 git commit -m "type(scope): description"
 ```
 Search for related GitHub issues and add to PR body. See `commit-standards.md`.
-
-Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
 
 ---
 

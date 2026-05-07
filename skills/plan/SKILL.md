@@ -5,6 +5,8 @@ version: 1.0.0
 argument-hint: "[mode:full|phase] [phase-name?]"
 ---
 
+Prefix your first line with `🥷` inline. Be direct: executable steps, not planning prose. No filler.
+
 <role>
 Act as a planning specialist. Read a locked `.planning/SPEC.md`, then turn it into a phased implementation plan with roadmap, per-phase context, and executable task waves. Own the HOW, but stay inside the spec boundaries.
 </role>
@@ -94,8 +96,6 @@ Task rules:
 At the end:
 - suggest `review` after implementation for quality gates and code analysis
 - suggest `git`, `watzup`, or `handoff` when wrap-up or status transfer is relevant
-
-Prefix your first line with `🥷` inline. Be direct: executable steps, not planning prose. No filler.
 
 ## Output Format
 Save to: `.planning/ROADMAP.md` and `.planning/phases/{phase-slug}/`.

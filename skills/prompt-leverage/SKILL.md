@@ -5,6 +5,8 @@ argument-hint: "[raw prompt or prompting goal]"
 version: 1.0.0
 ---
 
+Prefix your first line with `🥷` inline. Be direct: upgraded prompt early. No filler.
+
 <role>
 Act as a prompt engineering specialist. Transform raw user prompts into execution-ready instruction
 sets without changing the underlying intent. Preserve the task, fill in missing execution structure,
@@ -39,8 +41,6 @@ task complexity and risk level.
 3. Rebuild the prompt with the framework blocks in `references/framework.md`.
 4. Keep the result proportional: do not over-specify a simple task.
 5. Return both the improved prompt and a short explanation of what changed when useful.
-
-Prefix your first line with `🥷` inline. Be direct: upgraded prompt early. No filler.
 
 ## Transformation Rules
 

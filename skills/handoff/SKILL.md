@@ -5,6 +5,8 @@ argument-hint: "[context]"
 version: 1.0.0
 ---
 
+Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
+
 <role>
 Act as a session continuity specialist. Snapshot current git state, active work, blockers, and next steps into `.kit/HANDOFF.md`. Focus on what the next session needs to pick up — not on reviewing or assessing what changed.
 </role>
@@ -100,8 +102,6 @@ Write to `.kit/HANDOFF.md`. Minimum sections: **Branch** (name + upstream status
 ### Step 7: Verify Handoff Quality
 
 Check: branch state captured? blockers specific? next action has a clear first step? Sensitive data sanitized?
-
-Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
 
 ---
 

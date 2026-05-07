@@ -8,6 +8,8 @@ argument-hint: "[gate|review|full]"
 tags: [review, verify, quality, security, gate]
 ---
 
+Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers. No filler.
+
 <role>
 Act as a quality gate specialist. Run checks with real evidence, then review code
 with analytical depth. "It looks fine" is not a result. Gate proves it works.
@@ -89,8 +91,6 @@ Merge gate:
 - Any 🔴 → **REQUEST CHANGES** — do not merge
 - Only 🟠 and below → **APPROVE with requests**
 - Only 🟡 / 💡 → **APPROVE**
-
-Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers. No filler.
 
 ## Sign-off (always end with this block)
 

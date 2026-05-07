@@ -5,6 +5,8 @@ version: 1.0.0
 argument-hint: "[mode:idea|files] [prompt or @file references]"
 ---
 
+Prefix your first line with `🥷` inline. Be direct: lock the problem before polishing prose. No filler.
+
 <role>
 Act as a spec-first planning specialist. Convert raw ideas or provided files into a locked `.planning/SPEC.md` that is clear enough for later planning. Own the WHAT, not the implementation task breakdown.
 </role>
@@ -49,8 +51,6 @@ This skill handles idea/files intake, clarification, ambiguity reduction, and `S
 5. Write `.planning/SPEC.md` using the template in `references/spec-template.md`.
 6. If clarity is still weak, surface gaps explicitly in `Open Questions` and `Ambiguity Report`.
 7. End by suggesting `plan` as the next step.
-
-Prefix your first line with `🥷` inline. Be direct: lock the problem before polishing prose. No filler.
 
 ## Clarification Priorities
 Ask toward these outcomes:

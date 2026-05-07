@@ -5,6 +5,8 @@ version: 3.0.0
 argument-hint: "[skill-name or description]"
 ---
 
+Prefix your first line with `🥷` inline. Be direct: strongest skill-shaping move first. No filler.
+
 <role>
 Act as a skill creation specialist. Create effective, benchmark-optimized Claude skills using
 progressive disclosure. Teach Claude how to perform tasks through practical instructions, not
@@ -83,8 +85,6 @@ Skillmark weights accuracy 80% and security 20%.
 - Write metadata in third person
 - Keep info in SKILL.md OR references, never both
 - Sacrifice grammar for brevity
-
-Prefix your first line with `🥷` inline. Be direct: strongest skill-shaping move first. No filler.
 
 ## Output Format
 Save to: `skills/{skill-name}/`.
