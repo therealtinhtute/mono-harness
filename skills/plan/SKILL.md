@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Generate roadmap, phase context, and executable phase plans from a locked `.planning/SPEC.md`. Use after `spec` for artifact-first implementation planning.
+description: Generate roadmap, phase context, and executable phase plans from a locked `.planning/SPEC.md`. Use after `brainstorm` for artifact-first implementation planning.
 argument-hint: "[mode:full|phase] [phase-name?]"
 compatibility: Designed for Claude Code
 metadata:
@@ -20,13 +20,13 @@ Act as a planning specialist. Read a locked `.planning/SPEC.md`, then turn it in
 
 <context>
 ## When to Use
-- After `spec` has produced a locked `.planning/SPEC.md`
+- After `brainstorm` has produced a locked `.planning/SPEC.md`
 - Turning a spec into an implementation roadmap
 - Breaking scoped work into phase-based task waves
 - Capturing locked implementation context before coding
 
 ## Defer To Instead
-- `spec` — clarifying the WHAT before planning
+- `brainstorm` — clarifying the WHAT before planning
 - `review` — checking code quality and gates after execution
 
 ## Scope
@@ -44,7 +44,7 @@ This skill reads `.planning/SPEC.md` and writes planning artifacts inside `.plan
 
 ### Step 0: Enforce precondition
 - Require `.planning/SPEC.md`.
-- If missing, stop immediately and direct the user to run `spec` first.
+- If missing, stop immediately and direct the user to run `brainstorm` first.
 - Never invent plan artifacts from a vague prompt alone.
 
 ### Step 1: Read and normalize the spec
@@ -58,7 +58,7 @@ Extract at least:
 - dependencies / assumptions
 - open questions that may affect sequencing
 
-If the spec is too weak for planning, stop and point back to `spec` with the exact missing area.
+If the spec is too weak for planning, stop and point back to `brainstorm` with the exact missing area.
 
 ### Step 2: Build or refresh `.planning/ROADMAP.md`
 Use `references/roadmap-template.md`.
@@ -135,7 +135,7 @@ The skill is complete only when:
 ### Example 3: Fail-fast on missing spec
 **Input**: `plan full`
 
-**Output**: refuses to continue because `.planning/SPEC.md` is missing, and directs the user to run `spec` first.
+**Output**: refuses to continue because `.planning/SPEC.md` is missing, and directs the user to run `brainstorm` first.
 
 <references>
 Load as needed from `{baseDir}/references/`:

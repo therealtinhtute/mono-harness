@@ -23,7 +23,6 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── plan/
 │   ├── prompt-leverage/
 │   ├── skill-creator/
-│   ├── spec/
 │   ├── turbo-mono-platform/
 │   └── watzup/
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
@@ -60,11 +59,10 @@ bash scripts/sync-from-kit.sh
 
 Canonical order for complex work:
 ```
-brainstorm → spec → plan → interview → implement → check → handoff/watzup
+brainstorm → plan → interview → implement → check → handoff/watzup
 ```
-- `brainstorm` — explore options, evaluate trade-offs
-- `spec` — lock requirements into `.planning/SPEC.md`
-- `plan` — generate executable phase plans from spec
+- `brainstorm` — explore options and lock requirements into `.planning/SPEC.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
+- `plan` — generate executable phase plans from the locked spec
 - `interview` — validate plan before implementation
 - implement — actual coding
 - `check` — pre-commit gate and post-implementation review

@@ -61,16 +61,15 @@ bash scripts/setup-statusline.sh
 | Skill | When | What it does |
 | :--- | :--- | :--- |
 | [`/bash-tui`](skills/bash-tui/SKILL.md) | Building interactive terminal UIs | Build bash/shell TUI apps with menus, selectors, forms, progress bars, spinners, banners, and color output. |
-| [`/brainstorm`](skills/brainstorm/SKILL.md) | Ideation, architecture decisions, multi-option choices | Explore options, evaluate trade-offs, and recommend the simplest viable path. |
+| [`/brainstorm`](skills/brainstorm/SKILL.md) | Project bootstrap, feature scoping, ideation, architecture decisions | Turn an idea, notes, or markdown files into a locked `.planning/SPEC.md` — exploring options and trade-offs along the way. |
 | [`/git`](skills/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
 | [`/handoff`](skills/handoff/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
 | [`/interview`](skills/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
 | [`/librarian`](skills/librarian/SKILL.md) | Researching external GitHub repos | GitHub code research via gh CLI. Find symbols, grep code, gather evidence without cloning. |
-| [`/plan`](skills/plan/SKILL.md) | After spec, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
+| [`/plan`](skills/plan/SKILL.md) | After brainstorm, before implementation | Turn a locked `.planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
 | [`/prompt-leverage`](skills/prompt-leverage/SKILL.md) | Improving prompts, building frameworks | Strengthen raw user prompts into execution-ready instruction sets for AI agents. |
 | [`/check`](skills/check/SKILL.md) | Before commit, PR, or merge; after implementing a plan | Gate (tests, lint, build) + code review (security, architecture, quality). Also executes approved plans from `/think`. |
 | [`/skill-creator`](skills/skill-creator/SKILL.md) | Creating or updating Claude skills | Create or update Claude skills optimized for Skillmark benchmarks. |
-| [`/spec`](skills/spec/SKILL.md) | Before roadmap or implementation planning | Turn an idea or files into a locked `.planning/SPEC.md` with scope, constraints, and acceptance criteria. |
 | [`/turbo-mono-platform`](skills/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
 | [`/watzup`](skills/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
 
@@ -85,29 +84,29 @@ This repo follows a shared output convention inspired by Waza for active skills:
 
 The icon is the visible mode switch. The real standard is the writing: concrete, direct, and specific to the skill.
 
-## Recommended workflow: `spec` + `plan` + friends
+## Recommended workflow: `brainstorm` + `plan` + friends
 
 Use the two planning skills as the front door, then hand off to the existing execution / check / wrap-up skills.
 
-![Recommended workflow for spec + plan with supporting skills](assets/spec-plan-workflow.svg)
+![Recommended workflow for brainstorm + plan with supporting skills](assets/spec-plan-workflow.svg)
 
 Canonical pipeline:
 ```
-brainstorm → spec → plan → interview → implement → review/check → handoff/watzup
+brainstorm → plan → interview → implement → check → handoff/watzup
 ```
 
-### 1. Lock the problem with `spec`
-Use `spec` when you have a raw idea, notes, or a feature request and want a clean `.planning/SPEC.md` before implementation.
+### 1. Lock the problem with `brainstorm`
+Use `brainstorm` when you have a raw idea, notes, markdown files, or a trade-off question. It runs in 4 modes (`explore`, `lock-from-idea`, `lock-from-files`, `refine`) and produces either a recommendation report or a locked `.planning/SPEC.md`.
 
 ### 2. Derive execution with `plan`
-Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files.
+Use `plan` only after the spec is locked. It turns `.planning/SPEC.md` into `.planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files. If the spec is missing or too weak, `plan` fails fast and points back to `brainstorm`.
 
 ### 3. Pull in support skills only when needed
 - use [`/check`](skills/check/SKILL.md) after implementation for gate checks and code analysis
 - use [`/git`](skills/git/SKILL.md), [`/watzup`](skills/watzup/SKILL.md), and [`/handoff`](skills/handoff/SKILL.md) to close or transfer a work session cleanly
 
 ### Mental model
-- `spec` = lock **WHAT**
+- `brainstorm` = lock **WHAT**
 - `plan` = lock **HOW**
 - `check` = catch risk and prove readiness (gate + analysis)
 - `git` / `watzup` / `handoff` = wrap up with discipline
