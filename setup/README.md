@@ -1,30 +1,38 @@
 # Claude Code Setup
 
-Example configuration files for Claude Code.
+Bootstrap kit for a new machine. Installs global `~/.claude/` config from this repo.
 
-## Files
+## Quick start
 
-- **`settings.json`** — Global settings template. Copy to `~/.claude/settings.json` and edit:
-  - Replace `YOUR_AUTH_TOKEN_HERE` with your Anthropic API key.
-  - Remove or adjust the `hooks` block if you haven't installed the required `.cjs` hook files.
-  - Review `env` values (timeouts, model defaults) to match your preferences.
+```bash
+bash setup/install.sh
+```
+
+After install: edit `~/.claude/settings.json` → set `ANTHROPIC_AUTH_TOKEN`.
+
+## Contents
+
+| File | Installed to | Notes |
+| :--- | :--- | :--- |
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Global rules and workflow |
+| `hooks/` | `~/.claude/hooks/` | 5 hook scripts + 5 lib modules |
+| `settings.json` | `~/.claude/settings.json` | Template; only copied if file doesn't exist |
+| `../rules/*.md` | `~/.claude/rules/` | Karpathy, English coaching, AskUserQuestion |
 
 ## Prerequisites
 
-- **jq** — Required by the statusline script. Install via `brew install jq`.
-- **Node.js** — v18+ required if using the hooks.
+- **Node.js** v18+ (required by hooks)
+- **jq** (required by statusline) — `brew install jq` or `apt install jq`
+- SSH key configured for `git@github.com:therealtinhtute/skills.git`
 
-## Install
+## Hooks overview
 
-```bash
-# Backup current settings
-cp ~/.claude/settings.json ~/.claude/settings.json.backup
-
-# Copy template
-curl -fsSL https://raw.githubusercontent.com/therealtinhtute/skills/main/setup/settings.json \
-  -o ~/.claude/settings.json
-
-# Edit before restarting Claude Code
-```
+| Hook | Event | What it does |
+| :--- | :--- | :--- |
+| `mandatory-instructions.cjs` | UserPromptSubmit | Injects today's date + `.kit/` path convention |
+| `question-validator.cjs` | PostToolUse | Detects prose questions, logs violations |
+| `privacy-guard.cjs` | PreToolUse | Blocks reads of sensitive files (`.env`, keys, etc.) |
+| `scout-block.cjs` | PreToolUse | Blocks heavy directories via `~/.claude/.orkitignore` |
+| `post-compact-reminder.sh` | PostCompact | Re-injects Hard Rules after context compaction |
 
 from therealTINHTUTE with love

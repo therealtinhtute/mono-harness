@@ -1,50 +1,58 @@
 {
-  "_comment": "Example Claude Code settings. Copy to ~/.claude/settings.json and edit as needed. Requires hooks from kit/setup/hooks/ if using the hooks block below.",
+  "_comment": "Claude Code settings template. Sensitive values are placeholders — edit before use. Hooks require setup/hooks/ files installed to ~/.claude/hooks/.",
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "ANTHROPIC_AUTH_TOKEN": "YOUR_AUTH_TOKEN_HERE",
+    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
     "BASH_DEFAULT_TIMEOUT_MS": "3000000",
     "BASH_MAX_TIMEOUT_MS": "3000000",
-    "MAX_THINKING_TOKENS": "16000",
-    "ENABLE_STREAMING": "true",
-    "MAX_MCP_OUTPUT_TOKENS": "50000",
-    "ENABLE_TOOL_SEARCH": "true",
-    "USE_BUILTIN_RIPGREP": "0",
-    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
-    "ANTHROPIC_AUTH_TOKEN": "YOUR_AUTH_TOKEN_HERE",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-7",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "150000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "true"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "150000",
+    "ENABLE_STREAMING": "true",
+    "ENABLE_TOOL_SEARCH": "true",
+    "MAX_MCP_OUTPUT_TOKENS": "50000",
+    "MAX_THINKING_TOKENS": "32000",
+    "USE_BUILTIN_RIPGREP": "0"
   },
   "attribution": {
-    "commit": "from therealTINHTUTE with love",
-    "pr": "from therealTINHTUTE with love"
+    "commit": "🥷 - from therealTINHTUTE with love",
+    "pr": "from therealTINHTUTE with love ❤️"
   },
   "fileSuggestion": {
     "type": "command",
     "command": "~/.claude/file-suggestion.sh"
   },
   "includeCoAuthoredBy": false,
-  "model": "opus",
+  "model": "sonnet",
   "alwaysThinkingEnabled": true,
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-ansi",
   "teammateMode": "in-process",
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/statusline.sh"
   },
   "hooks": {
-    "_comment": "These hooks require the .cjs files from kit/setup/hooks/. Remove this block if you haven't installed them.",
-    "UserPromptSubmit": [
+    "PostCompact": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/mandatory-instructions.cjs",
-            "statusMessage": "Injecting mandatory instructions"
+            "command": "bash ~/.claude/hooks/post-compact-reminder.sh",
+            "statusMessage": "Re-injecting Hard Rules after compaction"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/question-validator.cjs",
+            "statusMessage": "Validating question usage"
           }
         ]
       }
@@ -62,17 +70,33 @@
             "type": "command",
             "command": "node ~/.claude/hooks/privacy-guard.cjs",
             "statusMessage": "Checking privacy guard"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'if echo \"$CLAUDE_TOOL_INPUT\" | grep -qE \"\\brm\\b\"; then echo \"ERROR: Use trash instead of rm\" >&2; exit 1; fi'",
+            "statusMessage": "Blocking rm commands"
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/question-validator.cjs",
-            "statusMessage": "Validating question usage"
+            "command": "bash -c 'if echo \"$CLAUDE_LAST_MESSAGE\" | grep -qE \"\\?$\"; then echo \"REMINDER: Use AskUserQuestion tool for questions\" >&2; fi'",
+            "statusMessage": "Checking for prose questions"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/mandatory-instructions.cjs",
+            "statusMessage": "Injecting session context"
           }
         ]
       }
@@ -80,6 +104,12 @@
   },
   "enabledPlugins": {},
   "extraKnownMarketplaces": {
+    "diagram-design": {
+      "source": {
+        "source": "github",
+        "repo": "cathrynlavery/diagram-design"
+      }
+    },
     "openai-codex": {
       "source": {
         "source": "github",
