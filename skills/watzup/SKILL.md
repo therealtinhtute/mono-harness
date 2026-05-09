@@ -1,5 +1,6 @@
 ---
 name: watzup
+model: haiku
 description: "Retrospective: analyze what changed this session, assess commit quality and impact, and flag readiness for PR or merge."
 argument-hint: "[branch] [mode:fast|deep]"
 compatibility: Designed for Claude Code

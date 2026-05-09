@@ -1,5 +1,6 @@
 ---
 name: skill-creator
+model: opus
 description: Create or update Claude skills with stronger structure, references, and benchmark-oriented instructions.
 argument-hint: "[skill-name or description]"
 compatibility: Designed for Claude Code

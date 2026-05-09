@@ -1,5 +1,6 @@
 ---
 name: handoff
+model: sonnet
 description: "Prospective: capture current session state into .kit/HANDOFF.md so the next session can resume without context loss."
 argument-hint: "[context]"
 compatibility: Designed for Claude Code

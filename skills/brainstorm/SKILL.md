@@ -1,5 +1,6 @@
 ---
 name: brainstorm
+model: opus
 description: "Brainstorm ideas, explore options, and evaluate trade-offs — then lock the result into `.planning/SPEC.md` when ready. Use for ideation, architecture decisions, project/feature/module bootstrap, turning RFC/PRD/markdown into spec, or refining an existing spec."
 license: MIT
 argument-hint: "[idea, @file refs, or trade-off question]"

@@ -1,5 +1,6 @@
 ---
 name: plan
+model: opus
 description: Generate roadmap, phase context, and executable phase plans from a locked `.planning/SPEC.md`. Use after `brainstorm` for artifact-first implementation planning.
 argument-hint: "[mode:full|phase] [phase-name?]"
 compatibility: Designed for Claude Code

@@ -1,5 +1,6 @@
 ---
 name: cook
+model: opus
 description: "Execution orchestrator after `brainstorm` and `plan`. Routes between locked spec, executable plan, and quality gate; runs phases wave-by-wave; demands verification; hands off to `check`, `git`, `handoff`, or `watzup`. Use for 'implement this plan', 'finish this feature', 'build it end-to-end'."
 license: MIT
 argument-hint: "[mode:auto|phase] [phase-name?]"

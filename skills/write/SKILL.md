@@ -1,5 +1,6 @@
 ---
 name: write
+model: sonnet
 description: Write/edit EN/VI prose so it sounds natural, concise, audience-aware. Triggers - write, rewrite, shorten, polish, đổi giọng, sửa câu, bớt AI/báo cáo, docs/UI/report copy. Not for code or commits.
 ---
 

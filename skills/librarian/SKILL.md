@@ -1,5 +1,6 @@
 ---
 name: librarian
+model: haiku
 description: GitHub code research via gh CLI. Use when investigating external repos, searching GitHub code without cloning, finding where symbols are defined in GitHub projects, or gathering evidence from GitHub repositories. Triggers on search GitHub, investigate repo, find in GitHub, where is symbol defined in owner/repo, show examples in GitHub, any GitHub code discovery task.
 allowed-tools: "Read Bash"
 argument-hint: "[owner/repo or search query]"

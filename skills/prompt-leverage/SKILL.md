@@ -1,5 +1,6 @@
 ---
 name: prompt-leverage
+model: haiku
 description: Strengthen a raw prompt into an execution-ready instruction set for Claude Code or another AI agent.
 argument-hint: "[raw prompt or prompting goal]"
 compatibility: Designed for Claude Code

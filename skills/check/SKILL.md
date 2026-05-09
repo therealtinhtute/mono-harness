@@ -1,7 +1,7 @@
 ---
 name: check
 description: "Pre-commit and pre-merge gate. Runs tests, lint, build then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/cook` and triages issues and PRs when the user mentions them."
-model: claude-opus-4-6
+model: opus
 allowed-tools: "Read Grep Glob Bash"
 argument-hint: "[gate|review|full]"
 tags: [check, review, quality, security, gate]
