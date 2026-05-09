@@ -3,10 +3,10 @@ name: cook
 model: opus
 description: "Execution orchestrator after `brainstorm` and `plan`. Routes between locked spec, executable plan, and quality gate; runs phases wave-by-wave; demands verification; hands off to `check`, `git`, `handoff`, or `watzup`. Use for 'implement this plan', 'finish this feature', 'build it end-to-end'."
 license: MIT
-argument-hint: "[mode:auto|phase] [phase-name?]"
+argument-hint: "[mode:auto|full|simple|phase] [phase-name?]"
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: state, next move, evidence. No filler.
@@ -21,37 +21,63 @@ Act as the kitchen conductor: read planning artifacts, execute the next incomple
 </security>
 
 <core-behaviors>
-- **Inspect** `.planning/` before doing anything; treat missing or stale artifacts as a fail-fast signal
-- **Route** to `brainstorm` (no spec) or `plan` (no roadmap/phase artifacts) instead of inventing them
+- **Resolve mode first** — detect `auto`/`full`/`simple`/`phase` before any execution; see State Routing
+- **Inspect** `.planning/` before doing anything in `full` mode; treat missing or stale artifacts as a fail-fast signal
+- **Route** to `brainstorm` (no spec) or `plan` (no roadmap/phase artifacts) instead of inventing them in `full` mode
 - **Execute** the active phase task-by-task; run wave dependencies in parallel only when the plan says so
-- **Verify** every task with the verification command from the plan; missing verification = task not done
-- **Gate** via `check` after the phase completes; never declare a phase clean without it
+- **Verify** every task with a verification command; missing verification = task not done
+- **Gate** via `check` after each phase in `full` mode; never declare a phase clean without it
 - **Suggest, never auto-perform** commits, handoff writes, or session wraps
 </core-behaviors>
 
 <hard-gate>
-Before any execution: confirm `.planning/SPEC.md` is locked AND the target phase has both `-CONTEXT.md` and `-PLAN.md`. If either is missing or visibly stale (placeholders, contradictions, undated decisions), stop and route to the correct upstream skill. Never silently expand scope mid-flight.
+**Full mode only**: Before any execution, confirm `.planning/SPEC.md` is locked AND the target phase has both `-CONTEXT.md` and `-PLAN.md`. If either is missing or visibly stale (placeholders, contradictions, undated decisions), stop and route to the correct upstream skill. Never silently expand scope mid-flight.
+
+**Simple mode**: No `.planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/plan` + `cook full`. See `references/simple-mode.md`.
 </hard-gate>
 
 <context>
 ## When to Use
-- After `brainstorm` + `plan` produced a locked spec and phase artifacts
+- After `brainstorm` + `plan` produced a locked spec and phase artifacts (use `full` mode)
 - User says "implement this plan", "build this", "finish the feature", "cook it", "do the plan and review it"
 - Resuming partial execution after a break or handoff
+- Quick fix or known-scope feature from a direct prompt or brainstorm explore file (use `simple` mode)
 
 ## Defer To Instead
-`brainstorm` — spec is missing or weak. `plan` — spec exists but no roadmap/phase files. `check` — gate-only or code-review-only request without execution. `git` — pure commit/push request.
+`brainstorm` — spec is missing or weak and task exceeds simple mode scope. `plan` — spec exists but no roadmap/phase files. `check` — gate-only or code-review-only request without execution. `git` — pure commit/push request. `hunt` — bug with unknown root cause.
 
 ## Scope
-Reads `.planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`/`watzup`.
+In `full` mode: reads `.planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`/`watzup`.
+
+In `simple` mode: executes from a prompt or brainstorm explore file, stays within scope guard (≤5 files, ≤100 lines, no unknown subsystem), suggests (never forces) `/check`.
 
 ## Arguments
-- `auto` (default) — start at the first incomplete phase in `.planning/ROADMAP.md` and run forward
-- `phase <slug>` — execute one named phase (after a fix or for a re-run)
+- `auto` (default) — resolve mode automatically from available artifacts; see State Routing
+- `full` — strict pipeline requiring `.planning/` artifacts; starts at first incomplete phase
+- `full phase <slug>` — strict pipeline for one named phase
+- `simple [@file?]` — lightweight execution from prompt or brainstorm explore file; no `.planning/` required
+- `phase <slug>` — alias for `full phase <slug>`; backward-compatible
 </context>
 
 <instructions>
 ## State Routing (run first, every invocation)
+
+### Mode Resolution
+
+| Argument | Mode |
+|----------|------|
+| `simple` or `simple @file` | `simple` — skip to simple-mode workflow |
+| `full`, `full phase <slug>`, `phase <slug>` | `full` — proceed to full routing table |
+| No argument (`auto`) | auto-detect from available artifacts |
+
+**Auto-detect decision (no argument)**:
+1. `.planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present → `full`
+2. `.kit/reports/brainstorm/*.md` present (or @ref'd) and no SPEC → `simple`
+3. Only a direct prompt, no artifacts → `simple` (after prompt-quality check)
+4. Nothing → Stop. Tell user to run `/brainstorm`.
+5. Ambiguous (e.g., stale SPEC + new prompt) → Ask via `AskUserQuestion`.
+
+### Full Mode Routing
 
 | State | Detection | Action |
 |-------|-----------|--------|
@@ -61,6 +87,10 @@ Reads `.planning/` artifacts, edits source code under spec boundaries, runs veri
 | Ready | SPEC + ROADMAP + selected phase artifacts present | Proceed to execution loop. |
 
 See `references/routing.md` for the full decision table and stop messages.
+
+### Simple Mode Workflow
+
+Skip `.planning/` gate entirely. Follow the 7-step workflow in `references/simple-mode.md`.
 
 ## Execution Loop (per phase)
 
@@ -95,7 +125,8 @@ See `references/execution-loop.md` for wave dispatch, subagent prompts, and stat
 
 <references>
 Load as needed from `{baseDir}/references/`:
-- `routing.md` — state detection table and stop-message templates
+- `routing.md` — mode resolution table, full-mode detection, simple-mode stop-message templates
+- `simple-mode.md` — 7-step simple mode workflow, prompt-quality rubric, scope guard
 - `execution-loop.md` — wave dispatch, subagent dispatch prompt, status enum routing
-- `examples.md` — three worked scenarios (missing spec, ready-to-execute, mid-flight blocker)
+- `examples.md` — five worked scenarios (missing spec, ready-to-execute, mid-flight blocker, simple from prompt, simple from brainstorm file)
 </references>

@@ -99,8 +99,103 @@ Stopping the wave. Phase `triage-rules` is not clean.
 
 ---
 
+---
+
+## Example 4 — Simple mode from a direct prompt
+
+**Input**: `/cook simple` with prompt "Add a `--dry-run` flag to the CLI's `deploy` command that prints the deployment plan without executing it. See `src/cli/deploy.ts`."
+
+**Mode resolution**: explicit `simple` argument.
+
+**Step 1 — Prompt quality check**: file provided (`src/cli/deploy.ts`), change described (add `--dry-run` flag), success criterion implied (prints plan without executing). Proceed.
+
+**Step 2 — Quick research**:
+- Read `src/cli/deploy.ts` (1 file)
+- Grep for `program.command('deploy')` to confirm entry point (1 grep)
+- Read `src/cli/index.ts` to see how other flags are registered (1 file)
+Total: 3 reads. Within limit.
+
+**Step 3 — State approach**:
+```
+🥷 Adding `--dry-run` to `deploy` in `src/cli/deploy.ts:42`. Flag gates the execution block behind an `if (!dryRun)` check and prints the resolved config via `console.log`. No new dependencies needed.
+```
+
+**Step 4 — Scope guard**: 2 files, ~15 lines. Within threshold. Proceed.
+
+**Step 5 — Execute**: Edited `src/cli/deploy.ts` inline. One targeted change to the command registration + one guard around the execution call.
+
+**Step 6 — Light verify**:
+```
+pnpm test src/cli/deploy.test.ts → 8 passed, 0 failed
+```
+
+**Cook's wrap**:
+```
+🥷 Done. `--dry-run` added to deploy command.
+
+Changed: src/cli/deploy.ts (+18 -2)
+Verified: pnpm test src/cli/deploy.test.ts → 8 passed
+
+Next:
+- `/git cm` to commit
+- `/check review` if you want a security pass before merging
+```
+
+---
+
+## Example 5 — Simple mode from a brainstorm explore file
+
+**Input**: `/cook simple @.kit/reports/brainstorm/20240901-api-error-format.md`
+
+**Mode resolution**: explicit `simple` argument with @file ref.
+
+**Step 1 — Prompt quality check**: brainstorm file is the source. Read it to extract: what changes, where, success criterion.
+
+Brainstorm file summary (from read):
+- Change: standardize API error responses to `{ error: { code, message, details } }` shape
+- Where: `packages/api/src/middleware/error-handler.ts`
+- Success: all error responses match the schema; existing tests pass
+
+Prompt quality sufficient. Proceed.
+
+**Step 2 — Quick research**:
+- Read `packages/api/src/middleware/error-handler.ts`
+- Read 1 existing test file `packages/api/src/middleware/error-handler.test.ts`
+- Grep for `res.status(` to confirm no other error-response sites in scope
+Total: 3 reads. Within limit.
+
+**Step 3 — State approach**:
+```
+🥷 Updating error-handler middleware at `error-handler.ts:28` to emit `{ error: { code, message, details } }`. All three catch branches get the new shape. Existing tests need shape update only — logic unchanged.
+```
+
+**Step 4 — Scope guard**: 2 files, ~40 lines. Within threshold. Proceed.
+
+**Step 5 — Execute**: Edited `error-handler.ts` (middleware shape) and `error-handler.test.ts` (assertion shape). No new files.
+
+**Step 6 — Light verify**:
+```
+pnpm test packages/api/src/middleware → 12 passed, 0 failed
+```
+
+**Cook's wrap**:
+```
+🥷 Done. Error response shape standardized per brainstorm output.
+
+Changed: packages/api/src/middleware/error-handler.ts (+22 -18), error-handler.test.ts (+9 -9)
+Verified: 12 passed
+
+Next:
+- `/git cm` to commit
+- `/check review` if integration tests are downstream of this middleware
+```
+
+---
+
 ## Notes
 
-- `auto` mode walks the roadmap forward; `phase <slug>` runs one named phase (useful for re-runs after a fix).
+- `auto` mode resolves to `full` or `simple` based on available artifacts. `full` walks the roadmap forward. `simple` executes from prompt or brainstorm explore file.
+- `phase <slug>` is an alias for `full phase <slug>` — backward-compatible.
 - Cook never modifies `.planning/SPEC.md` or `.planning/ROADMAP.md` — those are owned by `brainstorm` and `plan` respectively.
-- The three statuses that pause execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions cook respects on its own. Everything else continues.
+- Simple mode never writes to `.planning/` — it optionally logs to `.kit/reports/cook/`.
+- The three statuses that pause full-mode execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions cook respects on its own in full mode. In simple mode, the scope guard is the only hard stop.

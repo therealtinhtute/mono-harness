@@ -2,7 +2,31 @@
 
 Run this table on every invocation, before any execution.
 
-## Detection Table
+## Step 0: Mode Resolution
+
+Resolve mode before checking artifact state.
+
+| Argument | Resolved mode |
+|----------|---------------|
+| `simple` or `simple @file` | `simple` |
+| `full`, `full phase <slug>`, `phase <slug>` | `full` |
+| No argument | auto-detect (see table below) |
+
+**Auto-detect (no argument)**:
+
+| Observed state | Resolved mode |
+|----------------|---------------|
+| `.planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present | `full` |
+| `.kit/reports/brainstorm/*.md` present or @ref'd, no `.planning/SPEC.md` | `simple` |
+| Only a direct prompt, no planning or brainstorm artifacts | `simple` (after prompt-quality check) |
+| No argument, no artifacts, no meaningful prompt | Stop → `/brainstorm` |
+| Ambiguous: stale SPEC + new prompt, or SPEC exists but brainstorm file also ref'd | `AskUserQuestion` to clarify |
+
+Once mode is resolved, proceed to the matching section below.
+
+---
+
+## Full Mode Detection Table
 
 | State | Files checked | Signal | Action |
 |-------|---------------|--------|--------|
@@ -59,8 +83,39 @@ Use `AskUserQuestion` with the incomplete phase slugs as options. Mark the first
 3. The first incomplete phase is the candidate.
 4. If two phases are partially done (rare, indicates a previous handoff), trigger `multiple-incomplete` and ask.
 
+## Simple Mode Stop Messages
+
+### scope-guard
+```
+🥷 Scope guard triggered in `simple` mode.
+
+Research found: {files_count} files / {lines_count} lines / unknown subsystem: {subsystem}.
+
+This exceeds the simple mode limit (≤5 files, ≤100 lines, no unknown subsystem).
+Upgrade to full pipeline:
+1. `/brainstorm` — lock the spec
+2. `/plan full` — generate phase artifacts
+3. `/cook full` — execute with verification gates
+```
+
+### prompt-too-thin (before AskUserQuestion)
+```
+🥷 Prompt is too vague to execute safely.
+```
+(Follow with AskUserQuestion targeting: scope, files affected, success criterion.)
+
+### prompt-still-thin (after AskUserQuestion, still insufficient)
+```
+🥷 Still missing enough context to proceed.
+
+Run: `/prompt-leverage` to strengthen the prompt, then re-invoke `/cook simple`.
+```
+
+---
+
 ## What `cook` Never Does Here
 
 - Never invent missing artifacts to "unblock" itself
 - Never edit SPEC.md, ROADMAP.md, or CONTEXT.md to skip a stop condition
 - Never proceed past a `BLOCKED` status without user input
+- Never bypass the scope guard in simple mode — not even when the user says "just do it"
