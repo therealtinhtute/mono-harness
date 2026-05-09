@@ -1,118 +1,60 @@
 # Watzup Execution Modes
 
-## Fast Mode (Default)
+Two modes: `fast` (default, console-only) and `deep` (console + file). Both speak project language only — refer to `output-contract.md` for vocabulary, forbidden phrases, table formats, and section ordering rules.
+
+## Fast Mode
 
 **Purpose:** Quick session summary for routine wrap-ups.
 
-**Scope:**
-- Last 10 commits
-- Console output only
-- No file generation
+**When to use:**
+- Daily session wrap-ups
+- Quick at-a-glance status check at the start of a fresh session
+- Before short breaks
 
-**Commands:**
-```bash
-git log --oneline --graph --decorate -10
-git diff HEAD~10..HEAD --stat
-git diff HEAD~10..HEAD --shortstat
-```
+**Output destination:** Console only. No file is written.
 
-**Output:**
-```
-📊 Session Review — {branch-name}
+**Layout:** See `output-contract.md` Section 5. Section order: Title → Trạng thái → Thay đổi chính → Risks (omit if none) → Next. Total length target ≤ 25 visible lines.
 
-✓ {commit-count} commits analyzed
-✓ {file-count} files changed (+{additions}/-{deletions})
-✓ Quality: {score}/10
-
-Key changes:
-  • {change-1}
-  • {change-2}
-  • {change-3}
-
-⚠️  Risks: {risk-count}
-  • {risk-1}
-
-Next: {primary-action}
-```
-
----
+**Empty-state branch:** When the working tree is clean and there is no new activity since the last review, print only the two-line empty-state message defined in `output-contract.md` Section 5. Do not write any file.
 
 ## Deep Mode
 
-**Purpose:** Comprehensive review for PR preparation or milestone wrap-up.
+**Purpose:** Comprehensive review for PR preparation, milestone wrap-up, or shareable session report.
 
-**Scope:**
-- Last 30-50 commits (adjust based on branch age)
-- Console output + detailed report file
-- Save to `.kit/reports/watzup/{YYYYMMDD}-{branch}.md`
+**When to use:**
+- Before creating a pull request
+- After completing a major milestone or sprint
+- When a written report is needed for handoff or archival
 
-**Commands:**
-```bash
-git log --oneline --graph --decorate -50
-git diff HEAD~50..HEAD --stat
-git diff HEAD~50..HEAD --shortstat
-```
+**Output destination:**
+- Console — same fast-mode shape, printed for at-a-glance summary
+- File — written to `.kit/reports/watzup/{YYYYMMDD}-{slug}.{ext}`
+  - `{YYYYMMDD}` = run date, no separators
+  - `{slug}` = branch name slugified
+  - `{ext}` = `md` (default) or `html` per `--format=`
 
-**Output:**
-Console summary (same as fast mode) plus detailed report file.
+**Format options:**
+- `--format=md` (default) — markdown report with YAML frontmatter (schema in `output-contract.md` Section 7)
+- `--format=html` — single self-contained HTML file with embedded `<style>`, no external resources
 
-**Report Format:**
-```markdown
----
-title: Session Review — {branch-name}
-branch: {branch-name}
-commits: {count}
-files: {count}
-quality-score: {score}
-created: YYYY-MM-DD
-tags: [watzup, review, session]
----
+**Layout:** See `output-contract.md` Section 6. Section order: Frontmatter → Title → Trạng thái → Changes Overview → Key Changes → Quality Assessment → Risks & Blockers (omit if none) → Next Steps.
 
-## Session Summary — {branch-name}
-
-### Changes Overview
-- **Commits**: {count} ({types breakdown})
-- **Files**: {modified} modified, {added} added, {removed} removed
-- **Lines**: +{additions} -{deletions}
-
-### Key Changes
-1. {change-1} — {impact}
-2. {change-2} — {impact}
-3. {change-3} — {impact}
-
-### Quality Assessment
-- **Test Coverage**: {increased/decreased/unchanged}
-- **Documentation**: {updated/missing}
-- **Breaking Changes**: {yes/no}
-
-### Risks & Blockers
-- {risk-1}
-- {risk-2}
-
-### Next Steps
-1. {action-1}
-2. {action-2}
-```
-
----
+**Empty-state branch:** Identical to fast mode — clean tree + no new activity → two-line empty-state message, no file. The `--format=` flag is ignored when no file would be written.
 
 ## Mode Selection
 
-**Usage:**
-```bash
-/watzup                    # fast mode (default)
-/watzup feature/my-branch  # fast mode on specific branch
-/watzup deep               # deep mode on current branch
-/watzup feature/my-branch deep  # deep mode on specific branch
+Invocation patterns:
+
+```
+/watzup                                    # fast mode on current branch
+/watzup feature/my-branch                  # fast mode on a specific branch
+/watzup deep                               # deep mode on current branch, markdown
+/watzup feature/my-branch deep             # deep mode on a specific branch, markdown
+/watzup deep --format=html                 # deep mode, HTML output
+/watzup feature/my-branch deep --format=html
 ```
 
-**When to use fast:**
-- Daily session wrap-ups
-- Quick status checks
-- Before short breaks
-
-**When to use deep:**
-- Before creating PR
-- After completing major milestone
-- Weekly/sprint reviews
-- When detailed documentation needed
+Argument shape:
+- Positional 1 (optional): branch name (default = current branch)
+- Positional 2 (optional): `fast` or `deep` (default = `fast`)
+- Flag (optional, only meaningful with `deep`): `--format=md|html` (default = `md`)

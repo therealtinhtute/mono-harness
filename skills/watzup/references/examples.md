@@ -1,145 +1,201 @@
 # Watzup Skill Examples
 
-## Example 1: Standard Session Review
-**Scenario**: Review current branch after completing feature work
-
-**Input**:
-```bash
-/watzup
-```
-
-**Output**:
-```
-📊 Session Review — feature/add-auth
-
-✓ 5 commits analyzed
-✓ 12 files changed (+450/-120)
-✓ Quality: 8/10
-
-Key changes:
-  • Added authentication system (login, logout, session)
-  • Implemented JWT token handling
-  • Added auth middleware and guards
-
-⚠️  Risks: 1
-  • Missing integration tests for auth flow
-
-Next: Add integration tests, then create PR
-```
-
-**Explanation**: The skill analyzes recent commits, identifies key changes, assesses quality, and provides actionable next steps. Quality score is based on test coverage, documentation, and change scope.
+All examples conform to `output-contract.md`. None contain skill-internal mechanics.
 
 ---
 
-## Example 2: Pre-PR Review
-**Scenario**: Review before creating pull request to ensure readiness
+## Example 1: Standard fast review
 
-**Input**:
-```bash
+**Scenario:** Wrap up a session on `feature/add-auth` after committed feature work.
+
+**Input:**
+```
+/watzup
+```
+
+**Output:**
+```
+Session — feature/add-auth (2026-05-09)
+
+Trạng thái:
+- Nhánh: feature/add-auth
+- Vị trí: 5 commits ahead of main
+- Working tree: sạch
+
+Thay đổi chính:
+- Thêm hệ thống xác thực (login, logout, session)
+- Triển khai xử lý JWT token
+- Bổ sung middleware và guards cho route bảo vệ
+
+Next: Bổ sung integration test cho luồng auth, sau đó tạo PR.
+```
+
+---
+
+## Example 2: Pre-PR fast review
+
+**Scenario:** Branch is committed and tested; verify PR readiness.
+
+**Input:**
+```
 /watzup feature/add-auth
 ```
 
-**Output**:
+**Output:**
 ```
-📊 Session Review — feature/add-auth
+Session — feature/add-auth (2026-05-09)
 
-✓ 8 commits analyzed
-✓ 18 files changed (+680/-95)
-✓ Quality: 9/10
+Trạng thái:
+- Nhánh: feature/add-auth
+- Vị trí: 8 commits ahead of main
+- Working tree: sạch
 
-Key changes:
-  • Authentication system (login, logout, session, JWT)
-  • Auth middleware and route guards
-  • Integration tests for auth flows
-  • API documentation updates
+Thay đổi chính:
+- Hệ thống xác thực hoàn chỉnh (login, logout, session, JWT)
+- Middleware và route guards
+- Integration test cho luồng auth
+- Cập nhật tài liệu API
 
-✓ PR Ready
-  • All tests passing
-  • Documentation updated
-  • No uncommitted changes
-
-Next: Create PR to main
+Next: Tạo PR vào main.
 ```
-
-**Explanation**: The skill confirms PR readiness by checking tests, documentation, and uncommitted changes. High quality score indicates the branch is ready for review.
 
 ---
 
-## Example 3: Session with Risks
-**Scenario**: Review session with potential issues flagged
+## Example 3: Fast review with risks
 
-**Input**:
-```bash
+**Scenario:** Database refactor branch with multiple safety gaps.
+
+**Input:**
+```
 /watzup
 ```
 
-**Output**:
+**Output:**
 ```
-📊 Session Review — feature/refactor-db
+Session — feature/refactor-db (2026-05-09)
 
-✓ 3 commits analyzed
-✓ 25 files changed (+1200/-800)
-✓ Quality: 6/10
+Trạng thái:
+- Nhánh: feature/refactor-db
+- Vị trí: 3 commits ahead of main
+- Working tree: 2 file uncommitted (migrations/0042_*.sql)
 
-Key changes:
-  • Database schema migration (users, sessions, tokens)
-  • ORM model updates
-  • Migration scripts
+Thay đổi chính:
+- Schema migration (users, sessions, tokens)
+- Cập nhật ORM model
+- Migration scripts
 
-⚠️  Risks: 3
-  • Large schema changes (breaking)
-  • Missing rollback migration
-  • No integration tests for migration
+Risks:
+| Risk | Mức độ | Action |
+|------|--------|--------|
+| Schema migration không có rollback | cao | Thêm rollback migration trước khi merge |
+| Thay đổi schema lớn, có thể breaking | cao | Test trên staging trước khi tạo PR |
+| Thiếu integration test cho migration | vừa | Thêm test trên dataset mẫu |
 
-Next: Add rollback migration, test on staging before PR
+Next: Bổ sung rollback migration và staging test trước khi tạo PR.
 ```
-
-**Explanation**: The skill identifies high-risk changes (large schema migration) and flags missing safety measures (rollback, tests). Lower quality score reflects these risks.
 
 ---
 
-## Example 4: Clean State Review
-**Scenario**: Review when no recent changes exist
+## Example 4: Fast clean state
 
-**Input**:
-```bash
+**Scenario:** Working tree clean, no new activity since last review.
+
+**Input:**
+```
 /watzup
 ```
 
-**Output**:
+**Output:**
 ```
-📊 Session Review — main
-
-✓ No new commits since last review
-✓ Working tree clean
-✓ Up to date with origin/main
-
-Next: Start new feature branch or pull latest changes
+Đã sạch — không có thay đổi.
+Next: Bắt đầu nhánh mới hoặc kéo thay đổi mới nhất từ remote.
 ```
 
-**Explanation**: The skill reports clean state when no changes are detected, suggesting next actions for starting new work.
+No file is written even if invoked as `/watzup deep` in this state.
 
 ---
 
-## Example 5: Uncommitted Changes Warning
-**Scenario**: Review with uncommitted changes blocking PR
+## Example 5: Deep mode
 
-**Input**:
-```bash
-/watzup
+**Scenario:** Pre-PR comprehensive review on `feature/add-auth`. Markdown by default; HTML excerpt below shows the self-contained format.
+
+**Input:**
+```
+/watzup feature/add-auth deep
 ```
 
-**Output**:
+**File written:** `.kit/reports/watzup/20260509-feature-add-auth.md`
+
+**File content:**
+```markdown
+---
+title: Session — feature/add-auth (2026-05-09)
+branch: feature/add-auth
+commits: 8
+files: 18
+created: 2026-05-09
+tags: [watzup, review, session]
+---
+
+# Session — feature/add-auth (2026-05-09)
+
+## Trạng thái
+- Nhánh: feature/add-auth
+- Vị trí: 8 commits ahead of main
+- Working tree: sạch
+
+## Changes Overview
+- Commits: 8 (feat: 5, test: 2, docs: 1)
+- Files: 14 modified, 4 added, 0 removed
+- Lines: +680 / -95
+
+## Key Changes
+1. Hệ thống xác thực end-to-end — bao phủ login, logout, session, JWT
+2. Middleware và route guards — bảo vệ API endpoints
+3. Integration test cho luồng auth — coverage tăng đáng kể
+4. Cập nhật tài liệu API — endpoints mới được mô tả đầy đủ
+
+## Quality Assessment
+- Test Coverage: increased
+- Documentation: updated
+- Breaking Changes: no
+
+## Risks & Blockers
+| Risk | Mức độ | Action |
+|------|--------|--------|
+| Token refresh chưa có rate limit | vừa | Thêm middleware giới hạn tần suất refresh trước khi merge |
+| Logout không revoke refresh token phía server | thấp | Thêm endpoint revoke và gọi từ client khi logout |
+
+## Next Steps
+1. Áp dụng rate limit cho token refresh
+2. Bổ sung revoke flow phía server
+3. Tạo PR vào main và mời reviewer cho phần JWT handling
 ```
-📊 Session Review — feature/add-auth
 
-✓ 5 commits analyzed
-✓ 12 files changed (+450/-120)
+**Console summary** (printed alongside the file): same shape as Example 2.
 
-⚠️  Blockers: 1
-  • 3 uncommitted files (src/auth/*, tests/auth.test.ts)
+---
 
-Next: Commit or stash changes before creating PR
+### HTML output excerpt (`/watzup feature/add-auth deep --format=html`)
+
+```html
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Session — feature/add-auth (2026-05-09)</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 2rem auto; line-height: 1.5; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; }
+    th { background: #f6f8fa; }
+  </style>
+</head>
+<body>
+  <h1>Session — feature/add-auth (2026-05-09)</h1>
+  <!-- Trạng thái, Changes Overview, Key Changes, Quality Assessment, Risks & Blockers, Next Steps follow -->
+</body>
+</html>
 ```
 
-**Explanation**: The skill flags uncommitted changes as blockers for PR creation, suggesting commit or stash operations.
+The HTML file is fully self-contained: no `<link rel="stylesheet">`, no `<script src="...">`, no external fonts or CDN URLs.
