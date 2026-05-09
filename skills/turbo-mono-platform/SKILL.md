@@ -1,6 +1,5 @@
 ---
 name: turbo-mono-platform
-model: opus
 argument-hint: "[layer or feature]"
 description: >
   Full-stack TypeScript monorepo specialist: Turborepo, Next.js, Hono, tRPC, Drizzle,

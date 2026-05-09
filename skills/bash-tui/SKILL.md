@@ -1,6 +1,5 @@
 ---
 name: bash-tui
-model: haiku
 description: >
   Builds interactive bash/shell TUI apps (menus, selectors, forms, progress bars, spinners,
   banners, color output). Use when a user needs arrow-key navigation, wizards, or terminal UI.
