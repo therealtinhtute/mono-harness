@@ -28,6 +28,10 @@ Mục tiêu mặc định cho prose tiếng Việt:
 - Sau dấu câu là một khoảng trắng.
 - Mặc định không đặt dấu phẩy trước `và` hoặc `hoặc` khi nối các thành phần đồng chức.
 - Viết hoa theo logic tiếng Việt, không bê nguyên English capitalization nếu không cần.
+- **Em-dash (—) không dùng trong tiếng Việt** → thay bằng dấu phẩy hoặc tách câu.
+- Dùng dấu ngoặc kép `"…"`, không dùng `'…'`. Không có khoảng trắng giữa ngoặc và chữ bên trong.
+- Số thập phân: dấu phẩy, không dấu chấm. Ví dụ: `0,5` chứ không `0.5`. Phân cách hàng nghìn dùng dấu chấm: `12.000`.
+- Acronym ít dùng trong tiếng Việt; nếu dùng, lần đầu nên ghi đầy đủ kèm acronym trong ngoặc.
 
 ### 5) Nhất quán xưng hô
 - Một văn bản nên có một register chính.
@@ -65,3 +69,13 @@ Khi phân vân, chọn:
 - rõ hơn thay vì kêu hơn
 - ngắn hơn thay vì bóng bẩy hơn
 - tự nhiên hơn thay vì “văn mẫu” hơn
+
+## Before / after
+
+### Báo cáo tone → builder tone
+Trước: `Trong bối cảnh hiện nay, việc tối ưu hoá quy trình triển khai đóng vai trò quan trọng nhằm đảm bảo hiệu quả vận hành một cách toàn diện.`
+Sau: `Quy trình triển khai gọn lại giúp vận hành nhanh hơn.`
+
+### AI tone → người
+Trước: `Có thể thấy rằng, điều này cho thấy tầm quan trọng của việc đầu tư vào hạ tầng.`
+Sau: `Phải đầu tư vào hạ tầng.`

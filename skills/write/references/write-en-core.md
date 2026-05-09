@@ -65,3 +65,13 @@ When in doubt, choose:
 - shorter over puffed-up
 - specific over abstract
 - direct over theatrical
+
+## Before / after
+
+### Filler + AI tone
+Before: `It is worth noting that, in today's fast-paced landscape, leveraging this approach can help facilitate a more streamlined workflow.`
+After: `This approach streamlines the workflow.`
+
+### Formulaic "not X, but Y"
+Before: `This isn't just a tool — it's a paradigm shift in how teams collaborate.`
+After: `This tool changes how teams collaborate.`
