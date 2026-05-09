@@ -1,6 +1,6 @@
 ---
 name: write
-description: Edit or write prose in English or Vietnamese so it reads natural, concise, and context-aware. Use when the user explicitly asks to write, rewrite, shorten, polish, đổi giọng, sửa câu, bớt AI, bớt báo cáo, chỉnh copy/report/docs/UI text, or check bilingual consistency. Not for code comments, commit messages, or inline docs unless explicitly requested.
+description: Write/edit EN/VI prose so it sounds natural, concise, audience-aware. Triggers - write, rewrite, shorten, polish, đổi giọng, sửa câu, bớt AI/báo cáo, docs/UI/report copy. Not for code or commits.
 ---
 
 # write
@@ -48,39 +48,27 @@ Default:
 
 ## Routing
 
-### English modes
-- `clean`
-- `builder`
-- `playful-lite`
-- `docs`
+Pick exactly one mode. Decision order:
 
-### Vietnamese modes
-- `clean`
-- `builder`
-- `playful`
-- `docs`
-- `ui`
-- `marketing`
-- `formal`
-- `notion-report`
+1. button/label/toast/error/empty-state → `ui`
+2. help/instruction/how-to → `docs`
+3. policy/HR/announcement/formal email → `formal`
+4. landing/promo/social/hero copy → `marketing`
+5. Notion report / research note / decision memo → `notion-report`
+6. technical article / builder write-up → `builder`
+7. user wants warmer, less dry prose → `playful` (VI) / `playful-lite` (EN)
+8. EN+VI pair or bilingual consistency check → `bilingual`
+9. otherwise → `clean`
 
-### Shared mode
-- `bilingual`
+Modes available: EN — `clean`, `builder`, `playful-lite`, `docs`. VI — `clean`, `builder`, `playful`, `docs`, `ui`, `marketing`, `formal`, `notion-report`. Shared — `bilingual`.
 
-If the user does not specify a mode, prefer:
-1. UI/app/help text → `ui` or `docs`
-2. technical article / report / builder note → `builder`
-3. wants lighter, warmer, less dry prose → `playful` / `playful-lite`
-4. announcement / policy / HR / official tone → `formal`
-5. landing / promo / social → `marketing`
-6. otherwise → `clean`
+For `notion-report` with diagrams, also load `references/write-vi-notion-illustrations.md`. The writing skill owns whether a visual is needed, its job, and its caption — not visual-detail rules.
 
-For `notion-report` tasks that also involve diagrams/illustrations, keep the writing skill responsible for:
-- deciding whether a visual is actually needed
-- defining the visual's job and caption
-- enforcing minimal, scan-friendly presentation
+## Defer to other skills
 
-Use the illustration reference for those rules; do not overload `SKILL.md` with visual-detail guidance.
+- Commit messages, PR titles, branch names → `git`
+- Improving raw prompts for AI agents → `prompt-leverage`
+- Post-delivery code review or release gate → `check`
 
 ## Output
 
