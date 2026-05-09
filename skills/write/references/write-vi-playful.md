@@ -1,5 +1,7 @@
 # write-vi-playful
 
+> **Trong file này:** Khi nên dùng · Khi không nên dùng · Công thức gốc · Thành phần của tone · Emoji heuristics · Tỷ lệ an toàn · Không được vượt rào · Rewrite preference
+
 Mode này dành cho prose tiếng Việt:
 - gọn
 - lanh

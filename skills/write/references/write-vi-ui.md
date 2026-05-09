@@ -37,3 +37,13 @@ Mode này dành cho:
 ## Rule nhỏ
 - Nếu người dùng cần hành động, ưu tiên đưa hành động lên sớm.
 - Nếu có thể cắt một chữ mà nghĩa không đổi, cắt.
+
+## Before / after
+
+### Error message
+Trước: `Đã xảy ra một lỗi không mong muốn trong quá trình xử lý yêu cầu của bạn. Vui lòng vui lòng thử lại sau ít phút.`
+Sau: `Không tải được. Thử lại sau.`
+
+### Empty state
+Trước: `Hiện tại chưa có dữ liệu nào để hiển thị tại đây.`
+Sau: `Chưa có mục nào. Tạo mục đầu tiên.`

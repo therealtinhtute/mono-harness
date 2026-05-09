@@ -1,5 +1,7 @@
 # write-vi-notion-illustrations
 
+> **Trong file này:** Mục tiêu · Khi nào nên thêm ảnh · Số lượng · Loại ảnh · Style rule · Layout cho Notion · Quy tắc mật độ · Pairing với prose · Caption pattern · Workflow · Mặc định gu
+
 File này dùng khi bài **Notion report / research note / decision memo** cần thêm **ảnh minh hoạ, sơ đồ, hoặc visual so sánh**.
 
 ## Mục tiêu
