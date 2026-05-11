@@ -33,7 +33,12 @@ Run: `/brainstorm` with your idea, notes, or @file: refs.
 
 **Cook's response (condensed)**:
 ```
-🥷 Phase `inbox-ui` ready. 2 waves, 6 tasks.
+🥷 Phase `inbox-ui` ready. Run artifact: `.kit/runs/cook/20240901-1010-inbox-ui.md`.
+
+Preflight:
+- required artifacts present
+- working tree clean
+- scope drift: no
 
 Wave 1 (parallel-safe, 3 tasks):
 - T1: scaffold `apps/web/inbox/page.tsx`
@@ -80,12 +85,14 @@ Next:
 
 **Cook's response**:
 ```
-🥷 BLOCKED on `triage-rules` Wave 1 Task 2.
+🥷 BLOCKED_CONTRACT_DRIFT on `triage-rules` Wave 1 Task 2.
 
 Conflict between SPEC and PLAN:
 - SPEC §4.2 expects score by sender + keyword + recency
 - PLAN task 2 only covers sender + keyword
 - No recency field on `Message` type to derive from
+
+Run artifact updated: `.kit/runs/cook/20240901-1445-triage-rules.md`
 
 This is a scope/spec gap, not an implementation issue. Two options:
 
@@ -197,5 +204,6 @@ Next:
 - `auto` mode resolves to `full` or `simple` based on available artifacts. `full` walks the roadmap forward. `simple` executes from prompt or brainstorm explore file.
 - `phase <slug>` is an alias for `full phase <slug>` — backward-compatible.
 - Cook never modifies `.planning/SPEC.md` or `.planning/ROADMAP.md` — those are owned by `brainstorm` and `plan` respectively.
-- Simple mode never writes to `.planning/` — it optionally logs to `.kit/reports/cook/`.
+- Simple mode never writes to `.planning/`; it still writes a run artifact under `.kit/runs/cook/` when execution starts.
 - The three statuses that pause full-mode execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions cook respects on its own in full mode. In simple mode, the scope guard is the only hard stop.
+- Preferred blocker taxonomy: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`.
