@@ -13,6 +13,7 @@
 - What is in progress
 - What is blocked
 - What is next
+- Which phase / run / gate verdict the next session should resume from
 
 ### Environment Context
 - Dependencies installed/updated
@@ -34,6 +35,7 @@
 - Describe the issue
 - State what's needed to unblock
 - Suggest next steps
+- Preserve blocker taxonomy when known (`BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`)
 
 ## Step 5: Document Next Steps
 
@@ -55,4 +57,5 @@
 - [ ] Blockers identified with unblock criteria
 - [ ] Next steps are actionable
 - [ ] Technical context sufficient for continuation
+- [ ] Continuity anchors captured (phase, latest cook run, latest check verdict) when available
 - [ ] No sensitive data exposed
