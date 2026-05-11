@@ -27,6 +27,7 @@ Sample sentences:
 - "This branch is 5 commits ahead of main with a clean working tree."
 - "12 files changed across the auth module: +450 / -120 lines."
 - "Tests are missing for the new login flow."
+- "Readiness is needs-proof because one verification trail is still missing."
 
 ## 3. Session Title Format
 
@@ -66,7 +67,7 @@ Console-only. Total length target: ≤ 25 visible lines.
 Section order (omit a section entirely if it has no content, except the title which is mandatory):
 
 1. **Title line** — exact format from Section 3
-2. **Trạng thái** — short bullet list. Items: branch position vs. main, uncommitted file count (if any), current branch
+2. **Trạng thái** — short bullet list. Items: branch position vs. main, uncommitted file count (if any), current branch. In harness repos, may also include `Readiness: ready-for-pr | needs-proof | needs-plan-refresh | blocked` and `Artifact chain: complete | partial | skipped`.
 3. **Thay đổi chính** — bullet list, max 5 items, grouped by intent (one bullet = one coherent change theme)
 4. **Risks** — table per Section 4 (omitted if zero risks)
 5. **Next** — single line, one concrete next action
@@ -96,7 +97,7 @@ File section order:
 2. **Title heading** — `# Session — {branch} ({YYYY-MM-DD})`
 3. **Trạng thái** — same as fast
 4. **Changes Overview** — counts: commits by type (feat/fix/chore/refactor/test/docs), files modified/added/removed, lines added/removed
-5. **Key Changes** — numbered list, each item is `{change} — {impact}`
+5. **Key Changes** — numbered list, each item is `{change} — {impact}`. In harness repos, at least one item should mention the phase/run/check/handoff chain when relevant.
 6. **Quality Assessment** — three lines:
    - `Test Coverage: {increased|decreased|unchanged}`
    - `Documentation: {updated|missing}`
