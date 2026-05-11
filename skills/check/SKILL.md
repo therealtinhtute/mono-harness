@@ -39,7 +39,6 @@ Plan Execution activates automatically from trigger phrases — no argument need
 - Before committing, creating a PR, or merging
 - After implementing a feature or fix
 - As the per-phase quality gate after `cook`
-- When the user sends an approved plan from `/think`
 - When the user mentions an issue or PR to review
 
 ## Defer To Instead
@@ -51,20 +50,7 @@ Plan Execution activates automatically from trigger phrases — no argument need
 
 <instructions>
 
-## Plan Execution Mode
-
-Activate when input starts with: "Implement", "làm theo kế hoạch", "làm luôn", "làm đi",
-"sửa đi", "ok làm", or links to a `/think` approved plan.
-
-Do NOT run code review. Instead:
-1. State which plan is being executed (first heading or summary line).
-2. Check for drift: `git status` — if changed files contradict the plan, name the specific
-   conflict and stop.
-3. Execute each item in the plan. Mark done as you go.
-4. Run verification at the end.
-5. Output sign-off block when complete.
-
-## Project Context (all modes except Plan Execution)
+## Project Context
 
 Before reviewing, extract repo constraints in one pass:
 1. Read the diff — identify languages, frameworks, and changed files.
@@ -74,6 +60,8 @@ Before reviewing, extract repo constraints in one pass:
 5. Apply the stricter rule when project context and this skill overlap.
 
 See `references/project-context.md` for extraction guide.
+
+When harness artifacts exist, persist a gate report at `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` using `references/report-template.md` so downstream `handoff` and `watzup` can read a canonical verdict.
 
 ## Step 0: Scope Classification
 
@@ -174,9 +162,11 @@ Flag before merging. Use judgment — list is not exhaustive.
 - **Missing proof trail**: planned verification commands absent from the cook run artifact or gate evidence
 
 ## Output Format
-Save to: chat response only. Do not write review artifacts unless the user explicitly asks.
+Save to: chat response always. Also save `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` when harness artifacts are present or the user asks for a persisted report.
 
 Frontmatter: not required.
+
+Persisted report shape: use `references/report-template.md`.
 
 End with this sign-off block:
 
@@ -199,5 +189,6 @@ Load as needed from `{baseDir}/references/`:
 - `review-dimensions.md` — detailed checklists: security, perf, arch, code quality
 - `project-context.md` — how to extract repo constraints before reviewing
 - `artifact-alignment.md` — how to gate spec/plan/run-log alignment in harness flows
+- `report-template.md` — persisted gate verdict for harness-aware continuity
 - `examples.md` — worked examples for harness and non-harness review states
 </references>

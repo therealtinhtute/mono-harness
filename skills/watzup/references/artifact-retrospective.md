@@ -8,7 +8,7 @@ Use this when the repo follows the harness flow.
 2. active phase `-CONTEXT.md` and `-PLAN.md`
 3. latest `.kit/runs/cook/*.md`
 4. latest `.kit/HANDOFF.md` when present
-5. latest `check` verdict if captured in notes, reports, or branch context
+5. latest `.kit/reports/check/*.md`
 
 ## What to Summarize
 

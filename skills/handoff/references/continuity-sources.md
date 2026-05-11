@@ -18,8 +18,8 @@ Use these in priority order when the repo follows the harness flow.
    - capture the real execution trail
    - pull task statuses, blockers, concerns, and proof commands
 
-5. Latest `check` verdict
-   - if present in notes, PR text, or handoff context, capture whether the phase gate passed, drifted, or failed
+5. Latest `.kit/reports/check/*.md`
+   - capture whether the phase gate passed, drifted, or failed from a canonical check report
 
 ## What to Synthesize
 

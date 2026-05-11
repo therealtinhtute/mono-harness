@@ -32,7 +32,7 @@ Act as a session continuity specialist. Snapshot current git state, active work,
 ## Defer To Instead
 - `watzup` — reviewing and assessing what changed this session (retrospective)
 - `git` — commit operations and PR creation
-- `review` — code quality audit and gate checks
+- `check` — code quality audit and gate checks
 
 
 ## Scope

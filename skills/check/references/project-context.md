@@ -39,7 +39,6 @@ If `.planning/` + `.kit/runs/cook/` are present → treat artifact alignment as 
 
 - Diff is under 30 lines and does not touch config, auth, or CI
 - Running `gate` mode only (checks don't need project context)
-- Running Plan Execution Mode
 
 ## Harness Detection
 

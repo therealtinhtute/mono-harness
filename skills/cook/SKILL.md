@@ -7,7 +7,7 @@ license: MIT
 argument-hint: "[mode:auto|full|simple|phase] [phase-name?]"
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: state, next move, evidence. No filler.
