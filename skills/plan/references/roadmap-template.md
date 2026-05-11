@@ -1,6 +1,8 @@
 # ROADMAP Template
 
-Use this structure for `.planning/ROADMAP.md`:
+Use this structure for `.planning/ROADMAP.md`.
+
+When writing or refreshing the roadmap, also initialize `.kit/workflow-state.yml` using `workflow-state-template.yml`.
 
 ```markdown
 # ROADMAP: {title}
@@ -32,3 +34,4 @@ Rules:
 - order by dependency and risk reduction
 - each deliverable should map back to the spec
 - use as many phases as needed, but keep it lean
+- set `entry_phase` and `current_phase` in `.kit/workflow-state.yml` to the recommended starting phase

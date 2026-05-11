@@ -10,6 +10,7 @@ Mode: full | simple
 Status: running | blocked | passed | aborted
 Spec: .planning/SPEC.md | none
 Roadmap: .planning/ROADMAP.md | none
+Workflow State: .kit/workflow-state.yml | none
 Phase: {phase-slug} | none
 Plan: .planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
 Started At: YYYY-MM-DD HH:mm
@@ -48,3 +49,4 @@ Rules:
 - never overwrite an older run artifact
 - every task attempted should appear in the log
 - blocker reasons should map to the stop taxonomy
+- after creating the run, update `.kit/workflow-state.yml` with `current_phase`, `active_context`, `active_plan`, `latest_cook_run`, and `last_updated`

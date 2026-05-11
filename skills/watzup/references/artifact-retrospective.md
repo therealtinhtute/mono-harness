@@ -4,11 +4,12 @@ Use this when the repo follows the harness flow.
 
 ## Sources to Read
 
-1. `.planning/ROADMAP.md`
-2. active phase `-CONTEXT.md` and `-PLAN.md`
-3. latest `.kit/runs/cook/*.md`
-4. latest `.kit/HANDOFF.md` when present
-5. latest `.kit/reports/check/*.md`
+1. `.kit/workflow-state.yml` when present
+2. `.planning/ROADMAP.md`
+3. active phase `-CONTEXT.md` and `-PLAN.md`
+4. latest `.kit/runs/cook/*.md`
+5. latest `.kit/HANDOFF.md` when present
+6. latest `.kit/reports/check/*.md`
 
 ## What to Summarize
 
@@ -16,6 +17,7 @@ Use this when the repo follows the harness flow.
 - which phase moved forward
 - whether execution reached `cook`, `check`, `handoff`
 - whether the branch is ready for PR, needs proof cleanup, or needs plan refresh
+- whether the workflow-state manifest stayed in sync with the artifact chain
 
 ### Recurring Patterns
 Track repeated issues across the chain:
