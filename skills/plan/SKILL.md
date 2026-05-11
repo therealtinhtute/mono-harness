@@ -56,7 +56,7 @@ If the spec is too weak for planning, stop and point back to `brainstorm` with t
 ### Step 2: Build or refresh `.planning/ROADMAP.md`
 Use `references/roadmap-template.md`.
 
-Rules: split work into coherent phases; each phase must have a clear goal and deliverables; order must respect dependencies and risk; do not create fake phases; roadmap header should name the current recommended entry phase and execution mode. Initialize `.kit/workflow-state.yml` from `references/workflow-state-template.yml` with the entry/current phase pointers.
+Rules: split work into coherent phases; each phase must have a clear goal and deliverables; order must respect dependencies and risk; do not create fake phases; roadmap header should name the current recommended entry phase and execution mode. Initialize or refresh `.kit/workflow-state.yml` from `references/workflow-state-template.yml` with `entry_phase`, `current_phase`, `spec`, `roadmap`, `active_context`, `active_plan`, `latest_cook_run`, `latest_check_report`, `handoff`, and `last_updated`.
 
 ### Step 3: Create phase context files
 For each roadmap phase, write `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md` using `references/phase-context-template.md`.
@@ -69,7 +69,8 @@ For each roadmap phase, write `.planning/phases/{phase-slug}/{phase-slug}-PLAN.m
 
 Task rules: group tasks into waves; parallelize only when dependencies truly allow it; keep each task specific and actionable; include expected outputs, verification, touched/avoid surfaces, stop conditions, and escalation path; keep tasks inside spec boundaries; do not drift into post-hoc product design.
 
-### Step 5: Handoff guidance
+### Step 5: Workflow-state integrity + handoff guidance
+Before finishing, verify `.kit/workflow-state.yml` points at the exact phase files just written. In `full` mode, `current_phase` should default to the recommended entry phase; in `phase` mode, preserve prior pointers unless the refreshed phase becomes the active one.
 At the end, suggest `check` after implementation, plus `git`, `watzup`, or `handoff` when wrap-up or transfer is relevant.
 
 ## Output Format

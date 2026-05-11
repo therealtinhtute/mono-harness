@@ -66,6 +66,7 @@ Extract: current branch, upstream status, uncommitted changes, untracked files, 
 **From recent commits:** feature/fix being worked on, scope of changes, and progress indicators.
 
 **From harness artifacts (preferred when present):**
+- `.kit/workflow-state.yml` as the first continuity index
 - `.planning/ROADMAP.md` for active phase order
 - phase `-CONTEXT.md` + `-PLAN.md` for locked decisions and remaining tasks
 - latest `.kit/runs/cook/*.md` for task statuses, blockers, and proof trail
@@ -91,7 +92,7 @@ In harness flows, the first action should point to the exact phase, run artifact
 
 ### Step 6: Write HANDOFF.md
 Write to `.kit/HANDOFF.md`. Minimum sections: **Branch**, **Completed**, **In Progress**, **Blockers**, **Next Steps**.
-When harness artifacts exist, also include `continuity_mode`, `active_phase`, `latest_cook_run`, `latest_check_verdict`, and unresolved concerns or proof gaps.
+When harness artifacts exist, also include `continuity_mode`, `active_phase`, `latest_cook_run`, `latest_check_verdict`, and unresolved concerns or proof gaps. Then refresh `.kit/workflow-state.yml` so `handoff`, `current_phase`, and `last_updated` point at the handoff you just wrote and the exact phase being resumed.
 See `references/handoff-template.md` for the full template.
 
 ### Step 7: Verify Handoff Quality
