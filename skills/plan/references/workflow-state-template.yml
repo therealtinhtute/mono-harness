@@ -5,10 +5,10 @@ Use this for `.kit/workflow-state.yml`. Keep it tiny and pointer-only.
 ```yaml
 current_phase: {phase-slug | none}
 entry_phase: {phase-slug | none}
-spec: .planning/SPEC.md
-roadmap: .planning/ROADMAP.md
-active_context: .planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md | none
-active_plan: .planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
+spec: .kit/planning/SPEC.md
+roadmap: .kit/planning/ROADMAP.md
+active_context: .kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md | none
+active_plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
 latest_cook_run: none
 latest_check_report: none
 handoff: .kit/HANDOFF.md | none

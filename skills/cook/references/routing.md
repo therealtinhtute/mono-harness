@@ -16,8 +16,8 @@ Resolve mode before checking artifact state.
 
 | Observed state | Resolved mode |
 |----------------|---------------|
-| `.planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present | `full` |
-| `.kit/reports/brainstorm/*.md` present or @ref'd, no `.planning/SPEC.md` | `simple` |
+| `.kit/planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present | `full` |
+| `.kit/reports/brainstorm/*.md` present or @ref'd, no `.kit/planning/SPEC.md` | `simple` |
 | Only a direct prompt, no planning or brainstorm artifacts | `simple` (after prompt-quality check) |
 | No argument, no artifacts, no meaningful prompt | Stop → `/brainstorm` |
 | Ambiguous: stale SPEC + new prompt, or SPEC exists but brainstorm file also ref'd | `AskUserQuestion` to clarify |
@@ -30,10 +30,10 @@ Once mode is resolved, proceed to the matching section below.
 
 | State | Files checked | Signal | Action |
 |-------|---------------|--------|--------|
-| `no-spec` | `.planning/SPEC.md` | missing or empty | Stop, route to `brainstorm` |
-| `no-plan` | `.planning/ROADMAP.md` | missing | Stop, route to `plan` |
-| `no-phase` | `.planning/phases/{slug}/{slug}-PLAN.md` | missing for selected phase | Stop, route to `plan phase {slug}` |
-| `no-context` | `.planning/phases/{slug}/{slug}-CONTEXT.md` | missing | Stop, route to `plan phase {slug}` |
+| `no-spec` | `.kit/planning/SPEC.md` | missing or empty | Stop, route to `brainstorm` |
+| `no-plan` | `.kit/planning/ROADMAP.md` | missing | Stop, route to `plan` |
+| `no-phase` | `.kit/planning/phases/{slug}/{slug}-PLAN.md` | missing for selected phase | Stop, route to `plan phase {slug}` |
+| `no-context` | `.kit/planning/phases/{slug}/{slug}-CONTEXT.md` | missing | Stop, route to `plan phase {slug}` |
 | `stale-plan` | Phase plan references files/symbols that no longer exist | Detected via grep during context load | Stop, route to `plan phase {slug}` to refresh |
 | `placeholder-plan` | Phase plan contains `TBD`, `TODO`, `similar to`, "implement later" | Detected during context load | Stop, route to `plan phase {slug}` |
 | `contract-drift` | Working tree or requested scope already touches files outside `Allowed Surfaces` / task `touches`, or conflicts with `Forbidden Surfaces` / task `avoid` | Detected during preflight | Stop, route to `plan phase {slug}` or `brainstorm refine` |
@@ -46,7 +46,7 @@ Use these verbatim so the user always sees the same shape:
 
 ### no-spec
 ```
-🥷 No `.planning/SPEC.md` found. Lock the problem first.
+🥷 No `.kit/planning/SPEC.md` found. Lock the problem first.
 
 Run: `/brainstorm` with your idea, notes, or @file: refs.
 ```
@@ -92,7 +92,7 @@ Use `AskUserQuestion` with the incomplete phase slugs as options. Mark the first
 
 ## Selecting the Active Phase (auto mode)
 
-1. Parse `.planning/ROADMAP.md` for the ordered phase list.
+1. Parse `.kit/planning/ROADMAP.md` for the ordered phase list.
 2. For each phase, check whether its `-PLAN.md` shows all waves complete (look for a status section, completion markers, or — if absent — assume incomplete).
 3. The first incomplete phase is the candidate.
 4. If two phases are partially done (rare, indicates a previous handoff), trigger `multiple-incomplete` and ask.

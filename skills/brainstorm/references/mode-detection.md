@@ -9,7 +9,7 @@ The merged `brainstorm` skill operates in 4 modes. Mode is detected from input s
 | Vague trade-off question without lock intent (e.g. "REST or GraphQL?", "monolith or microservices?") | `explore` | Generating options |
 | Raw idea, notes, or partial draft (e.g. "I want an AI inbox for small teams") | `lock-from-idea` | Writing IDEA.md or SPEC.md |
 | `@file:` references to RFC / PRD / README / markdown | `lock-from-files` | Extracting and clarifying |
-| Existing `.planning/SPEC.md` is present and user mentions revising, updating, or refining | `refine` | Editing SPEC.md |
+| Existing `.kit/planning/SPEC.md` is present and user mentions revising, updating, or refining | `refine` | Editing SPEC.md |
 
 When multiple shapes co-occur (e.g. raw idea plus a file reference), default to `lock-from-files` and confirm.
 
@@ -18,7 +18,7 @@ When multiple shapes co-occur (e.g. raw idea plus a file reference), default to 
 Resolve via `AskUserQuestion` before producing output:
 
 - User pastes a file but says "what do you think?" → could be `explore` (alternatives) or `lock-from-files` (extract). Ask which.
-- User provides an idea but the working tree already contains `.planning/SPEC.md` → could be `refine` or new `lock-from-idea`. Ask whether to revise or replace.
+- User provides an idea but the working tree already contains `.kit/planning/SPEC.md` → could be `refine` or new `lock-from-idea`. Ask whether to revise or replace.
 - Trade-off question that touches an existing locked spec → `explore` first, then offer `refine` if exploration changes scope.
 
 ## Mode upgrade rules
@@ -31,7 +31,7 @@ Never silently change modes mid-session. Every transition surfaces via `AskUserQ
 
 ## Anti-patterns
 
-- Producing `.planning/SPEC.md` when the user only asked an exploratory question
+- Producing `.kit/planning/SPEC.md` when the user only asked an exploratory question
 - Generating a recommendation report when the user pasted a PRD and said "lock this"
 - Refining an existing SPEC.md without showing the user what changed
-- Writing both `.planning/SPEC.md` and a `.kit/reports/brainstorm/` artifact in the same session unless the user explicitly asked for both
+- Writing both `.kit/planning/SPEC.md` and a `.kit/reports/brainstorm/` artifact in the same session unless the user explicitly asked for both

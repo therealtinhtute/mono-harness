@@ -1,6 +1,6 @@
 # Phase Plan Template
 
-Use this structure for `.planning/phases/{phase-slug}/{phase-slug}-PLAN.md`:
+Use this structure for `.kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md`:
 
 ```markdown
 # Plan: {phase name}

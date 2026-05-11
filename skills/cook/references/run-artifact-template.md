@@ -8,11 +8,11 @@ Use this structure for `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md`:
 Run ID: cook-YYYYMMDD-HHmm-{slug}
 Mode: full | simple
 Status: running | blocked | passed | aborted
-Spec: .planning/SPEC.md | none
-Roadmap: .planning/ROADMAP.md | none
+Spec: .kit/planning/SPEC.md | none
+Roadmap: .kit/planning/ROADMAP.md | none
 Workflow State: .kit/workflow-state.yml | none
 Phase: {phase-slug} | none
-Plan: .planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
+Plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
 Started At: YYYY-MM-DD HH:mm
 
 ## Preflight

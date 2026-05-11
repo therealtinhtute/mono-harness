@@ -24,7 +24,7 @@ Act as the kitchen conductor: read planning artifacts, execute the next incomple
 
 <core-behaviors>
 - **Resolve mode first** — detect `auto`/`full`/`simple`/`phase` before any execution; see State Routing
-- **Inspect** `.planning/` before doing anything in `full` mode; treat missing or stale artifacts as a fail-fast signal
+- **Inspect** `.kit/planning/` before doing anything in `full` mode; treat missing or stale artifacts as a fail-fast signal
 - **Route** to `brainstorm` (no spec) or `plan` (no roadmap/phase artifacts) instead of inventing them in `full` mode
 - **Create a run artifact** for every invocation so execution is inspectable and resumable
 - **Execute** the active phase task-by-task; run wave dependencies in parallel only when the plan says so
@@ -34,9 +34,9 @@ Act as the kitchen conductor: read planning artifacts, execute the next incomple
 </core-behaviors>
 
 <hard-gate>
-**Full mode only**: Before any execution, confirm `.planning/SPEC.md` is locked AND the target phase has both `-CONTEXT.md` and `-PLAN.md`. If either is missing or visibly stale (placeholders, contradictions, undated decisions), stop and route to the correct upstream skill. Never silently expand scope mid-flight.
+**Full mode only**: Before any execution, confirm `.kit/planning/SPEC.md` is locked AND the target phase has both `-CONTEXT.md` and `-PLAN.md`. If either is missing or visibly stale (placeholders, contradictions, undated decisions), stop and route to the correct upstream skill. Never silently expand scope mid-flight.
 
-**Simple mode**: No `.planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/plan` + `cook full`. See `references/simple-mode.md`.
+**Simple mode**: No `.kit/planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/plan` + `cook full`. See `references/simple-mode.md`.
 </hard-gate>
 
 <context>
@@ -50,15 +50,15 @@ Act as the kitchen conductor: read planning artifacts, execute the next incomple
 `brainstorm` — spec is missing or weak and task exceeds simple mode scope. `plan` — spec exists but no roadmap/phase files. `check` — gate-only or code-review-only request without execution. `git` — pure commit/push request. `hunt` — bug with unknown root cause.
 
 ## Scope
-In `full` mode: reads `.planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`/`watzup`.
+In `full` mode: reads `.kit/planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`/`watzup`.
 
 In `simple` mode: executes from a prompt or brainstorm explore file, stays within scope guard (≤5 files, ≤100 lines, no unknown subsystem), suggests (never forces) `/check`.
 
 ## Arguments
 - `auto` (default) — resolve mode automatically from available artifacts
-- `full` — strict pipeline requiring `.planning/` artifacts; starts at first incomplete phase
+- `full` — strict pipeline requiring `.kit/planning/` artifacts; starts at first incomplete phase
 - `full phase <slug>` / `phase <slug>` — strict pipeline for one named phase
-- `simple [@file?]` — lightweight execution from prompt or brainstorm explore file; no `.planning/` required
+- `simple [@file?]` — lightweight execution from prompt or brainstorm explore file; no `.kit/planning/` required
 </context>
 
 <instructions>
@@ -73,7 +73,7 @@ In `simple` mode: executes from a prompt or brainstorm explore file, stays withi
 | No argument (`auto`) | auto-detect from available artifacts |
 
 **Auto-detect decision (no argument)**:
-1. `.planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present → `full`
+1. `.kit/planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present → `full`
 2. `.kit/reports/brainstorm/*.md` present (or @ref'd) and no SPEC → `simple`
 3. Only a direct prompt, no artifacts → `simple` (after prompt-quality check)
 4. Nothing → Stop. Tell user to run `/brainstorm`.
@@ -83,7 +83,7 @@ In `simple` mode: executes from a prompt or brainstorm explore file, stays withi
 
 | State | Detection | Action |
 |-------|-----------|--------|
-| No spec | `.planning/SPEC.md` missing | Stop. Tell user to run `/brainstorm`. |
+| No spec | `.kit/planning/SPEC.md` missing | Stop. Tell user to run `/brainstorm`. |
 | No plan | SPEC exists, no `ROADMAP.md` or no `phases/{slug}/*-PLAN.md` | Stop. Tell user to run `/plan`. |
 | Stale plan | Plan references files/symbols that no longer exist | Stop. Tell user to run `/plan phase {slug}` to refresh. |
 | Contract drift | Working tree or phase scope conflicts with phase boundaries / touched surfaces | Stop. Name the drift and route to `plan phase {slug}` or `brainstorm refine`. |
@@ -93,11 +93,11 @@ See `references/routing.md` for the full decision table and stop messages.
 
 ### Simple Mode Workflow
 
-Skip `.planning/` gate entirely. Follow the 7-step workflow in `references/simple-mode.md`.
+Skip `.kit/planning/` gate entirely. Follow the 7-step workflow in `references/simple-mode.md`.
 
 ## Execution Loop (per phase)
 
-1. **Load context** — in `full` mode, read `.kit/workflow-state.yml` first when present, then verify its pointers against `.planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions and treat stale pointers as a plan-refresh signal, not as truth.
+1. **Load context** — in `full` mode, read `.kit/workflow-state.yml` first when present, then verify its pointers against `.kit/planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions and treat stale pointers as a plan-refresh signal, not as truth.
 2. **Create the run artifact** — write `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md` using `references/run-artifact-template.md`. In `simple` mode, the slug comes from the prompt or brainstorm file.
 3. **Preflight drift check** — compare the phase boundary (`Allowed Surfaces`, `Forbidden Surfaces`, task `touches`, task `avoid`) against the current working tree and requested scope. If files already changed outside boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask via `AskUserQuestion` only if the plan is ambiguous about which wave is next.
@@ -116,7 +116,7 @@ See `references/execution-loop.md` for wave dispatch, subagent prompts, and stat
 - In `full` mode, treat `.kit/workflow-state.yml` as the first lookup index, then verify the pointed files before acting
 - Create one run artifact per invocation under `.kit/runs/cook/`; never overwrite an older run log
 - Stop taxonomy for execution blockers: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT` (optional finer cause may be named after the primary code)
-- Never edit `.planning/SPEC.md` or `ROADMAP.md` from inside `cook` — route back to `brainstorm` or `plan` instead
+- Never edit `.kit/planning/SPEC.md` or `ROADMAP.md` from inside `cook` — route back to `brainstorm` or `plan` instead
 - Surface every `BLOCKED` or `DONE_WITH_CONCERNS` status to the user before continuing
 
 ## Output Format

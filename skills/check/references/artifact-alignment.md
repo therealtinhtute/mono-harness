@@ -5,10 +5,10 @@ Use this after `cook` or whenever the diff claims to follow a locked plan.
 ## Required Artifacts (full harness flow)
 
 For a phase gate, inspect these before approving:
-- `.planning/SPEC.md`
-- `.planning/ROADMAP.md`
-- `.planning/phases/{slug}/{slug}-CONTEXT.md`
-- `.planning/phases/{slug}/{slug}-PLAN.md`
+- `.kit/planning/SPEC.md`
+- `.kit/planning/ROADMAP.md`
+- `.kit/planning/phases/{slug}/{slug}-CONTEXT.md`
+- `.kit/planning/phases/{slug}/{slug}-PLAN.md`
 - latest `.kit/runs/cook/*.md` for the same phase when execution happened through `cook`
 
 If the repo is not using the full harness flow, say so explicitly and skip artifact alignment instead of pretending it passed.

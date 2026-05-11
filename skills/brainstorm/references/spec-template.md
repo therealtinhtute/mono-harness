@@ -1,6 +1,6 @@
 # SPEC Template
 
-Use this structure for `.planning/SPEC.md`:
+Use this structure for `.kit/planning/SPEC.md`:
 
 ```markdown
 # SPEC: {title}

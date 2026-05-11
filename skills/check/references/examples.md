@@ -6,8 +6,8 @@
 
 **Observed context**:
 - phase diff touches `src/inbox/*`
-- `.planning/SPEC.md` exists
-- `.planning/phases/inbox-ui/inbox-ui-PLAN.md` exists
+- `.kit/planning/SPEC.md` exists
+- `.kit/planning/phases/inbox-ui/inbox-ui-PLAN.md` exists
 - latest `.kit/runs/cook/20240901-1010-inbox-ui.md` shows `pnpm test inbox.spec.ts`
 
 **Response shape**:
@@ -51,7 +51,7 @@ next:
 **Input**: `check review`
 
 **Observed context**:
-- no `.planning/` or `.kit/runs/cook/` artifacts exist
+- no `.kit/planning/` or `.kit/runs/cook/` artifacts exist
 
 **Response shape**:
 ```text

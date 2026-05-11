@@ -2,7 +2,7 @@
 name: brainstorm
 version: "4.1.0"
 model: opus
-description: "Explore options, evaluate trade-offs, and lock the result into `.planning/SPEC.md` when ready. Use for ideation, architecture decisions, RFC/PRD-to-spec work, and refining an existing spec."
+description: "Explore options, evaluate trade-offs, and lock the result into `.kit/planning/SPEC.md` when ready. Use for ideation, architecture decisions, RFC/PRD-to-spec work, and refining an existing spec."
 license: MIT
 argument-hint: "[idea, @file refs, or trade-off question]"
 compatibility: Designed for Claude Code
@@ -13,7 +13,7 @@ metadata:
 Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.
 
 <role>
-Act as a brainstorming partner who challenges assumptions, surfaces trade-offs, and recommends the simplest viable path. When the user is ready, lock the conversation into a complete `.planning/SPEC.md`. Operate by YAGNI, KISS, DRY. Question vague claims; explore alternatives; recommend with rationale.
+Act as a brainstorming partner who challenges assumptions, surfaces trade-offs, and recommends the simplest viable path. When the user is ready, lock the conversation into a complete `.kit/planning/SPEC.md`. Operate by YAGNI, KISS, DRY. Question vague claims; explore alternatives; recommend with rationale.
 </role>
 
 <security>
@@ -27,7 +27,7 @@ Act as a brainstorming partner who challenges assumptions, surfaces trade-offs, 
 - **Explore** 2-3 viable options before settling — never accept the first idea uncritically
 - **Evaluate** trade-offs on complexity, reversibility, risk, time cost
 - **Recommend** one path with rationale; reject alternatives explicitly
-- **Lock** the result into `.planning/SPEC.md` when the user is ready
+- **Lock** the result into `.kit/planning/SPEC.md` when the user is ready
 </core-behaviors>
 
 <hard-gate>
@@ -39,7 +39,7 @@ Every session MUST include option exploration before any output. In `lock-from-f
 - Project, feature, or module bootstrap from raw idea or notes
 - Architecture decisions, technical debates, ideation
 - Turning RFC/PRD/README/markdown into a locked planning spec
-- Refining an existing `.planning/SPEC.md` with new information
+- Refining an existing `.kit/planning/SPEC.md` with new information
 - Any choice between multiple valid approaches before committing
 
 ## Defer To Instead
@@ -55,9 +55,9 @@ Every session MUST include option exploration before any output. In `lock-from-f
 | Mode | Trigger input | Output |
 |------|---------------|--------|
 | `explore` | Vague trade-off question, no lock intent | `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md` |
-| `lock-from-idea` | Raw idea, notes, partial draft | `.planning/IDEA.md` + `.planning/SPEC.md` |
-| `lock-from-files` | `@file:` refs to RFC/PRD/markdown | `.planning/SPEC.md` (+ optional IDEA.md) |
-| `refine` | Existing `.planning/SPEC.md` to revise | Updated `.planning/SPEC.md` |
+| `lock-from-idea` | Raw idea, notes, partial draft | `.kit/planning/IDEA.md` + `.kit/planning/SPEC.md` |
+| `lock-from-files` | `@file:` refs to RFC/PRD/markdown | `.kit/planning/SPEC.md` (+ optional IDEA.md) |
+| `refine` | Existing `.kit/planning/SPEC.md` to revise | Updated `.kit/planning/SPEC.md` |
 
 Mode is a hint from input shape, not a commitment. Confirm via `AskUserQuestion`. See `references/mode-detection.md`.
 
@@ -87,7 +87,7 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `plan`.
 
 ## Output Rules
-- Lock modes write inside `.planning/`; explore mode writes inside `.kit/reports/brainstorm/`
+- Lock modes write inside `.kit/planning/`; explore mode writes inside `.kit/reports/brainstorm/`
 - Requirements numbered and falsifiable; In Scope / Out of Scope explicit
 - `SPEC.md` must include header metadata for Status, Input Type, Lane, Risk Flags, Affected Surfaces, Downstream, and Updated At
 - Lock modes should include `Validation Expectations`, `Key Decisions`, and `Deferred Ideas`; do not hide them in prose
@@ -101,7 +101,7 @@ You DO NOT generate implementation phases, task breakdowns, or wave plans — th
 </instructions>
 
 ## Output Format
-Save to: `.planning/SPEC.md` for lock modes; `lock-from-idea` also writes `.planning/IDEA.md`; explore mode writes `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
+Save to: `.kit/planning/SPEC.md` for lock modes; `lock-from-idea` also writes `.kit/planning/IDEA.md`; explore mode writes `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
 
 Frontmatter: explore reports use the layout in `references/examples.md`; planning files do not require frontmatter.
 
@@ -109,7 +109,7 @@ Frontmatter: explore reports use the layout in `references/examples.md`; plannin
 Load as needed from `{baseDir}/references/`:
 - `mode-detection.md` — input shape → mode mapping
 - `clarification-rubric.md` — Goal/Actor/Boundary/Constraint/Acceptance dimensions
-- `spec-template.md` — `.planning/SPEC.md` structure
+- `spec-template.md` — `.kit/planning/SPEC.md` structure
 - `decision-frameworks.md` — pros/cons, effort sizing, YAGNI/KISS/DRY checklists
 - `lock-checklist.md` — self-review checklist before user review gate
 - `examples.md` — worked examples per mode (incl. HARD-GATE pattern in `lock-from-files`)

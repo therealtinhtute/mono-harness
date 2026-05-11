@@ -1,6 +1,6 @@
 # Phase Context Template
 
-Use this structure for `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`:
+Use this structure for `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`:
 
 ```markdown
 # Context: {phase name}
@@ -35,8 +35,8 @@ Short restatement of the phase goal.
 - assumption 2
 
 ## Canonical Refs
-- `.planning/SPEC.md`
-- `.planning/ROADMAP.md`
+- `.kit/planning/SPEC.md`
+- `.kit/planning/ROADMAP.md`
 - other docs / files / APIs if relevant
 
 ## Rejected Options

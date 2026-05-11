@@ -8,11 +8,11 @@ Three worked scenarios covering the most common entry states.
 
 **Input**: "cook this feature, build the inbox triage logic"
 
-**State detection**: `.planning/SPEC.md` not found.
+**State detection**: `.kit/planning/SPEC.md` not found.
 
 **Cook's response**:
 ```
-🥷 No `.planning/SPEC.md` found. Lock the problem first.
+🥷 No `.kit/planning/SPEC.md` found. Lock the problem first.
 
 Run: `/brainstorm` with your idea, notes, or @file: refs.
 ```
@@ -26,8 +26,8 @@ Run: `/brainstorm` with your idea, notes, or @file: refs.
 **Input**: `/cook` (no args, default `auto`)
 
 **State detection**:
-- `.planning/SPEC.md` ✅
-- `.planning/ROADMAP.md` ✅ (lists 3 phases: `auth-foundation`, `inbox-ui`, `triage-rules`)
+- `.kit/planning/SPEC.md` ✅
+- `.kit/planning/ROADMAP.md` ✅ (lists 3 phases: `auth-foundation`, `inbox-ui`, `triage-rules`)
 - Phase 1 `auth-foundation` artifacts ✅, all waves complete (verified by checking `-PLAN.md` status section)
 - Phase 2 `inbox-ui` artifacts ✅, no waves complete → **selected**
 
@@ -203,7 +203,7 @@ Next:
 
 - `auto` mode resolves to `full` or `simple` based on available artifacts. `full` walks the roadmap forward. `simple` executes from prompt or brainstorm explore file.
 - `phase <slug>` is an alias for `full phase <slug>` — backward-compatible.
-- Cook never modifies `.planning/SPEC.md` or `.planning/ROADMAP.md` — those are owned by `brainstorm` and `plan` respectively.
-- Simple mode never writes to `.planning/`; it still writes a run artifact under `.kit/runs/cook/` when execution starts.
+- Cook never modifies `.kit/planning/SPEC.md` or `.kit/planning/ROADMAP.md` — those are owned by `brainstorm` and `plan` respectively.
+- Simple mode never writes to `.kit/planning/`; it still writes a run artifact under `.kit/runs/cook/` when execution starts.
 - The three statuses that pause full-mode execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions cook respects on its own in full mode. In simple mode, the scope guard is the only hard stop.
 - Preferred blocker taxonomy: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`.

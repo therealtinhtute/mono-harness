@@ -5,7 +5,7 @@ Use this when the repo follows the harness flow.
 ## Sources to Read
 
 1. `.kit/workflow-state.yml` when present
-2. `.planning/ROADMAP.md`
+2. `.kit/planning/ROADMAP.md`
 3. active phase `-CONTEXT.md` and `-PLAN.md`
 4. latest `.kit/runs/cook/*.md`
 5. latest `.kit/HANDOFF.md` when present

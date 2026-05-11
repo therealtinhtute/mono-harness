@@ -1,6 +1,6 @@
 # ROADMAP Template
 
-Use this structure for `.planning/ROADMAP.md`.
+Use this structure for `.kit/planning/ROADMAP.md`.
 
 When writing or refreshing the roadmap, also initialize `.kit/workflow-state.yml` using `workflow-state-template.yml`.
 
@@ -8,7 +8,7 @@ When writing or refreshing the roadmap, also initialize `.kit/workflow-state.yml
 # ROADMAP: {title}
 
 ## Planning Basis
-- source spec: `.planning/SPEC.md`
+- source spec: `.kit/planning/SPEC.md`
 - planning mode: `full` | `phase`
 
 ## Phase 1: {phase name}

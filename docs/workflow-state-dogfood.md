@@ -19,10 +19,10 @@ Goal: tighten deeper operational support for the workflow-state manifest without
 ```yaml
 current_phase: workflow-state-deeper-support
 entry_phase: workflow-state-deeper-support
-spec: .planning/SPEC.md
-roadmap: .planning/ROADMAP.md
-active_context: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
-active_plan: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
+spec: .kit/planning/SPEC.md
+roadmap: .kit/planning/ROADMAP.md
+active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
+active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
 latest_cook_run: none
 latest_check_report: none
 handoff: none
@@ -51,10 +51,10 @@ Path:
 ```yaml
 current_phase: workflow-state-deeper-support
 entry_phase: workflow-state-deeper-support
-spec: .planning/SPEC.md
-roadmap: .planning/ROADMAP.md
-active_context: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
-active_plan: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
+spec: .kit/planning/SPEC.md
+roadmap: .kit/planning/ROADMAP.md
+active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
+active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
 latest_cook_run: .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
 latest_check_report: none
 handoff: none
@@ -82,10 +82,10 @@ Path:
 ```yaml
 current_phase: workflow-state-deeper-support
 entry_phase: workflow-state-deeper-support
-spec: .planning/SPEC.md
-roadmap: .planning/ROADMAP.md
-active_context: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
-active_plan: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
+spec: .kit/planning/SPEC.md
+roadmap: .kit/planning/ROADMAP.md
+active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
+active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
 latest_cook_run: .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
 latest_check_report: .kit/reports/check/20260511-2211-workflow-state-deeper-support.md
 handoff: none
@@ -105,10 +105,10 @@ What changed:
 ```yaml
 current_phase: workflow-state-deeper-support
 entry_phase: workflow-state-deeper-support
-spec: .planning/SPEC.md
-roadmap: .planning/ROADMAP.md
-active_context: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
-active_plan: .planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
+spec: .kit/planning/SPEC.md
+roadmap: .kit/planning/ROADMAP.md
+active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
+active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
 latest_cook_run: .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
 latest_check_report: .kit/reports/check/20260511-2211-workflow-state-deeper-support.md
 handoff: .kit/HANDOFF.md
@@ -127,8 +127,8 @@ What changed:
 
 ```text
 .kit/workflow-state.yml
-→ .planning/ROADMAP.md
-→ .planning/phases/workflow-state-deeper-support/*
+→ .kit/planning/ROADMAP.md
+→ .kit/planning/phases/workflow-state-deeper-support/*
 → .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
 → .kit/reports/check/20260511-2211-workflow-state-deeper-support.md
 → .kit/HANDOFF.md
