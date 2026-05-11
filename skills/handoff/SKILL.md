@@ -92,7 +92,7 @@ In harness flows, the first action should point to the exact phase, run artifact
 
 ### Step 6: Write HANDOFF.md
 Write to `.kit/HANDOFF.md`. Minimum sections: **Branch**, **Completed**, **In Progress**, **Blockers**, **Next Steps**.
-When harness artifacts exist, also include `continuity_mode`, `active_phase`, `latest_cook_run`, `latest_check_verdict`, and unresolved concerns or proof gaps. Then refresh `.kit/workflow-state.yml` so `handoff`, `current_phase`, and `last_updated` point at the handoff you just wrote and the exact phase being resumed.
+When harness artifacts exist, also include `continuity_mode`, `active_phase`, `latest_cook_run`, `latest_check_verdict`, and unresolved concerns or proof gaps. Then refresh `.kit/workflow-state.yml` so `handoff`, `current_phase`, and `last_updated` point at the handoff you just wrote and the exact phase being resumed. Preserve `entry_phase`, `latest_cook_run`, and `latest_check_report`; `handoff` is a continuity anchor, not a state reset.
 See `references/handoff-template.md` for the full template.
 
 ### Step 7: Verify Handoff Quality

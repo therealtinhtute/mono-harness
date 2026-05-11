@@ -67,7 +67,7 @@ Drift = any changed file with no connection to the stated goal.
 Flag drift before running checks — do not silently continue.
 
 ## Step 1.5: Artifact Alignment
-When `.planning/` artifacts are present, inspect `.kit/workflow-state.yml` first when available, then inspect `.planning/SPEC.md`, `.planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/cook/*.md` if `cook` was used. Label alignment as **aligned** / **drift** / **skipped**.
+When `.planning/` artifacts are present, inspect `.kit/workflow-state.yml` first when available, then inspect `.planning/SPEC.md`, `.planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/cook/*.md` if `cook` was used. Treat manifest pointers as a fast index only: verify every pointed file exists before trusting it, and if a report is persisted write its exact path back into `latest_check_report`. Label alignment as **aligned** / **drift** / **skipped**.
 Drift includes changed files outside allowed surfaces, behavior not justified by the spec, missing planned verification proof, or code that contradicts locked context decisions. See `references/artifact-alignment.md`.
 
 ## Phase 1 — Gate (`gate`, `review`, `full`)

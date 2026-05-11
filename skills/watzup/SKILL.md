@@ -62,6 +62,7 @@ When artifact files exist, explicitly capture:
 - latest gate verdict or `none`
 - recurring blocker / drift pattern if one exists
 
+Treat `.kit/workflow-state.yml` as read-first and read-only here: if any pointer is broken, call it stale and name the missing file instead of inferring around it.
 Do not pretend the chain is complete if proof or phase artifacts are missing.
 
 ## Output Format
