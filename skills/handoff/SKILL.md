@@ -36,7 +36,7 @@ Act as a session continuity specialist. Snapshot current git state, active work,
 
 
 ## Scope
-This skill handles session state capture and handoff documentation. In harness flows, it summarizes continuity across `.planning/`, `.kit/runs/cook/`, and the latest `check` outcome. It does NOT handle code implementation, testing, or deployment.
+This skill handles session state capture and handoff documentation. In harness flows, it summarizes continuity across `.kit/planning/`, `.kit/runs/cook/`, and the latest `check` outcome. It does NOT handle code implementation, testing, or deployment.
 
 **IMPORTANT:** sacrifice grammar for concision, keep token use lean, and focus on actionable context.
 
@@ -67,7 +67,7 @@ Extract: current branch, upstream status, uncommitted changes, untracked files, 
 
 **From harness artifacts (preferred when present):**
 - `.kit/workflow-state.yml` as the first continuity index
-- `.planning/ROADMAP.md` for active phase order
+- `.kit/planning/ROADMAP.md` for active phase order
 - phase `-CONTEXT.md` + `-PLAN.md` for locked decisions and remaining tasks
 - latest `.kit/runs/cook/*.md` for task statuses, blockers, and proof trail
 - latest `check` verdict for gate state

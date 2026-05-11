@@ -34,7 +34,7 @@
   <rect x="336" y="194" width="68" height="14" rx="3" fill="transparent" stroke="rgba(181,82,58,0.40)" stroke-width="0.8"/>
   <text x="370" y="204" class="legend" text-anchor="middle">BRAINSTORM</text>
   <text x="480" y="224" class="label" text-anchor="middle">`brainstorm`</text>
-  <text x="480" y="244" class="mono" text-anchor="middle">explore options • lock WHAT into `.planning/SPEC.md`</text>
+  <text x="480" y="244" class="mono" text-anchor="middle">explore options • lock WHAT into `.kit/planning/SPEC.md`</text>
 
   <path d="M480 264 L480 304" stroke="#b5523a" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
   <rect x="494" y="276" width="46" height="14" rx="3" fill="#faf7f2"/>

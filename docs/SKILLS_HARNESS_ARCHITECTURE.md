@@ -136,14 +136,14 @@ We should use exactly five artifact classes for the core harness.
 These are the source of truth for scoped work.
 
 Location:
-- `.planning/`
+- `.kit/planning/`
 
 Files:
-- `.planning/IDEA.md`
-- `.planning/SPEC.md`
-- `.planning/ROADMAP.md`
-- `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`
-- `.planning/phases/{phase-slug}/{phase-slug}-PLAN.md`
+- `.kit/planning/IDEA.md`
+- `.kit/planning/SPEC.md`
+- `.kit/planning/ROADMAP.md`
+- `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`
+- `.kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md`
 
 Rules:
 - owned by `brainstorm` and `plan`
@@ -231,9 +231,9 @@ This distinction must stay sharp.
 Canonical artifacts define the current work contract.
 
 Examples:
-- `.planning/SPEC.md`
-- `.planning/ROADMAP.md`
-- `.planning/phases/...`
+- `.kit/planning/SPEC.md`
+- `.kit/planning/ROADMAP.md`
+- `.kit/planning/phases/...`
 
 Properties:
 - future skills depend on them
@@ -258,8 +258,8 @@ Properties:
 
 | Skill | Primary role | Reads | Writes | Artifact class |
 | --- | --- | --- | --- | --- |
-| `brainstorm` | intake + contract lock | user prompt, notes, markdown refs | `.planning/IDEA.md`, `.planning/SPEC.md`, explore reports | canonical planning |
-| `plan` | execution design | `.planning/SPEC.md` | `.planning/ROADMAP.md`, phase context, phase plan, `.kit/workflow-state.yml` init | canonical planning + state |
+| `brainstorm` | intake + contract lock | user prompt, notes, markdown refs | `.kit/planning/IDEA.md`, `.kit/planning/SPEC.md`, explore reports | canonical planning |
+| `plan` | execution design | `.kit/planning/SPEC.md` | `.kit/planning/ROADMAP.md`, phase context, phase plan, `.kit/workflow-state.yml` init | canonical planning + state |
 | `cook` | execution runtime | planning artifacts, workflow state | `.kit/runs/cook/...`, `.kit/workflow-state.yml`, code changes | execution + state |
 | `check` | proof + alignment gate | code diff, planning artifacts, latest cook run, workflow state | console verdict, `.kit/reports/check/...`, `.kit/workflow-state.yml` | gate + state |
 | `handoff` | continuity | branch state, planning artifacts, latest run/gate, workflow state | `.kit/HANDOFF.md`, `.kit/workflow-state.yml` | continuity + state |
@@ -287,7 +287,7 @@ Updated At: YYYY-MM-DD
 Recommended fields:
 
 ```text
-Spec: .planning/SPEC.md
+Spec: .kit/planning/SPEC.md
 Status: active | stale | superseded
 Execution Mode: phased
 Current Recommended Entry: {phase-slug}
@@ -324,10 +324,10 @@ Recommended fields:
 
 ```text
 Run ID: cook-YYYYMMDD-HHmm-{slug}
-Spec: .planning/SPEC.md
-Roadmap: .planning/ROADMAP.md
+Spec: .kit/planning/SPEC.md
+Roadmap: .kit/planning/ROADMAP.md
 Phase: {phase-slug}
-Plan: .planning/phases/{phase-slug}/{phase-slug}-PLAN.md
+Plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md
 Mode: full | simple
 Status: running | blocked | passed | aborted
 Started At: YYYY-MM-DD HH:mm
@@ -345,9 +345,9 @@ Sections should include:
 
 ### Overwrite in place
 Use overwrite semantics for canonical planning artifacts:
-- `.planning/IDEA.md`
-- `.planning/SPEC.md`
-- `.planning/ROADMAP.md`
+- `.kit/planning/IDEA.md`
+- `.kit/planning/SPEC.md`
+- `.kit/planning/ROADMAP.md`
 - phase context/plan files
 - `.kit/HANDOFF.md`
 

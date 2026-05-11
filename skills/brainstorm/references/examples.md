@@ -75,10 +75,10 @@ only when real evidence (100K+ users, specific bottlenecks) appears.
 **Detected mode**: `lock-from-idea` (raw idea, no files)
 
 **Workflow**:
-1. Write `.planning/IDEA.md` capturing the idea verbatim
+1. Write `.kit/planning/IDEA.md` capturing the idea verbatim
 2. Clarify via `AskUserQuestion`: target team size, primary actor, in-scope channels (email/Slack/etc.), platform
 3. Apply YAGNI to scope — recommend the smallest useful slice
-4. Write `.planning/SPEC.md` using `spec-template.md`
+4. Write `.kit/planning/SPEC.md` using `spec-template.md`
 
 **Output**: two files. `IDEA.md` preserves the original phrasing for future reference; `SPEC.md` contains numbered requirements, in/out-of-scope, constraints, acceptance criteria.
 
@@ -96,11 +96,11 @@ only when real evidence (100K+ users, specific bottlenecks) appears.
 3. **Name 1-2 alternatives the source rejected** (HARD-GATE) — even when the source has decided, articulate the road not taken. Example: "RFC chose JWT; rejected sessions because of mobile sync requirement and rejected OAuth-only because of B2B partner integration cost."
 4. Identify gaps via `clarification-rubric.md`: missing acceptance criteria, unclear actor boundaries, undefined constraints
 5. Clarify gaps via `AskUserQuestion` (1-2 questions per turn during exploration)
-6. Write `.planning/SPEC.md` referencing the source files in `Dependencies / Assumptions`; capture rejected alternatives in `Key Decisions`
+6. Write `.kit/planning/SPEC.md` referencing the source files in `Dependencies / Assumptions`; capture rejected alternatives in `Key Decisions`
 7. Run `lock-checklist.md` self-review; fix inline
 8. User review gate before suggesting `plan`
 
-**Output**: `.planning/SPEC.md` with traceability back to the source markdown and an explicit `Key Decisions` section showing what was *not* chosen and why. `IDEA.md` optional — only if the source files are loose notes rather than a structured RFC.
+**Output**: `.kit/planning/SPEC.md` with traceability back to the source markdown and an explicit `Key Decisions` section showing what was *not* chosen and why. `IDEA.md` optional — only if the source files are loose notes rather than a structured RFC.
 
 ### Why HARD-GATE matters here
 
@@ -115,4 +115,4 @@ A PRD with a decision still has implicit alternatives. Naming them produces:
 
 - If during `explore` the user says "lock the recommended option," upgrade to `lock-from-idea` using the recommendation as the seed idea. Confirm scope before writing.
 - If during `lock-*` the user wants to revisit alternatives, drop into `explore` mode briefly, then resume locking with the chosen path.
-- Refining an existing `.planning/SPEC.md` (mode `refine`) follows the lock workflow but only edits the affected sections; show the user a diff summary before writing.
+- Refining an existing `.kit/planning/SPEC.md` (mode `refine`) follows the lock workflow but only edits the affected sections; show the user a diff summary before writing.

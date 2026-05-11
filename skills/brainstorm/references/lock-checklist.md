@@ -1,6 +1,6 @@
 # Lock Checklist
 
-Run this self-review on `.planning/SPEC.md` (and `.planning/IDEA.md` if present) before showing the user. Fix issues inline; no need to re-review after fixing.
+Run this self-review on `.kit/planning/SPEC.md` (and `.kit/planning/IDEA.md` if present) before showing the user. Fix issues inline; no need to re-review after fixing.
 
 ## 1. Placeholder scan
 - No `TBD`, `TODO`, `details to be determined`, `similar to above`, or empty sections
@@ -32,7 +32,7 @@ Run this self-review on `.planning/SPEC.md` (and `.planning/IDEA.md` if present)
 
 After self-review passes, show the user:
 
-> "SPEC written to `.planning/SPEC.md`. Please review and let me know if you want changes before I suggest `plan`."
+> "SPEC written to `.kit/planning/SPEC.md`. Please review and let me know if you want changes before I suggest `plan`."
 
 Wait for explicit response. If changes requested, edit and re-run this checklist. Only suggest `plan` after the user approves.
 

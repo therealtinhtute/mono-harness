@@ -10,8 +10,8 @@ Scope: gate | review | full
 Artifact Alignment: aligned | drift | skipped
 Review Verdict: APPROVED | APPROVE with requests | REQUEST CHANGES
 Phase: {phase-slug} | none
-Spec: .planning/SPEC.md | none
-Plan: .planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
+Spec: .kit/planning/SPEC.md | none
+Plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
 Workflow State: .kit/workflow-state.yml | none
 Cook Run: .kit/runs/cook/{file}.md | none
 Created At: YYYY-MM-DD HH:mm

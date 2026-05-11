@@ -1,6 +1,6 @@
 # Simple Mode — Lightweight Execution Workflow
 
-Activate when mode resolves to `simple` (explicit arg or auto-detected). Do NOT touch `.planning/`.
+Activate when mode resolves to `simple` (explicit arg or auto-detected). Do NOT touch `.kit/planning/`.
 
 ## When Simple Mode Is Appropriate
 
@@ -79,7 +79,7 @@ The scope guard does not negotiate. Even if the user says "just do it", the stop
 - Prefer inline edits for 1-3 line changes in a single file
 - Use a subagent only for one heavy isolated task (e.g., generate a new file from a clear template); never for exploration
 - Do not add waves, phases, or task lists — this is single-shot execution
-- Do not write to `.planning/` — write nothing outside the files identified in Step 2-3
+- Do not write to `.kit/planning/` — write nothing outside the files identified in Step 2-3
 - If a new assumption surfaces mid-execution that would expand scope past the guard, stop and surface it
 
 ### Step 6 — Light Verify
@@ -130,7 +130,7 @@ This log is optional but helps `/watzup` capture simple-mode work alongside full
 ## Anti-Patterns
 
 - Accepting a thin prompt and guessing scope — always ask via `AskUserQuestion` first
-- Writing to `.planning/` — simple mode does not own planning artifacts
+- Writing to `.kit/planning/` — simple mode does not own planning artifacts
 - Dispatching a subagent for exploration — research happens inline in Step 2
 - Treating scope guard as advisory — it is unconditional
 - Saying "tests pass" without running them — always capture actual output

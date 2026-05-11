@@ -8,14 +8,14 @@ Use these in priority order when the repo follows the harness flow.
    - determine the current phase pointer and latest canonical artifact paths quickly
    - treat it as the index, then verify the pointed files before trusting details
 
-2. `.planning/ROADMAP.md`
+2. `.kit/planning/ROADMAP.md`
    - determine active phase order
    - identify whether work is mid-phase, blocked, or ready for next phase
 
-3. `.planning/phases/{slug}/{slug}-CONTEXT.md`
+3. `.kit/planning/phases/{slug}/{slug}-CONTEXT.md`
    - capture locked decisions, assumptions, and rejected options that the next session must not rediscover
 
-4. `.planning/phases/{slug}/{slug}-PLAN.md`
+4. `.kit/planning/phases/{slug}/{slug}-PLAN.md`
    - extract current wave/task state, expected verification, and remaining work
 
 5. Latest `.kit/runs/cook/*.md`

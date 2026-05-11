@@ -55,7 +55,7 @@ Report back with:
 
 Hard limits:
 - Do not edit files outside the scope list
-- Do not edit `.planning/SPEC.md` or `.planning/ROADMAP.md`
+- Do not edit `.kit/planning/SPEC.md` or `.kit/planning/ROADMAP.md`
 - Do not skip the verification command
 ```
 
