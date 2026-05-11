@@ -74,11 +74,11 @@ Before finishing, verify `.kit/workflow-state.yml` points at the exact phase fil
 At the end, suggest `check` after implementation, plus `git`, `watzup`, or `handoff` when wrap-up or transfer is relevant.
 
 ## Output Format
-Save to: `.planning/ROADMAP.md` and `.planning/phases/{phase-slug}/`.
+Save to: `.planning/ROADMAP.md`, `.planning/phases/{phase-slug}/`, and `.kit/workflow-state.yml`.
 
 Frontmatter: not required.
 
-Write only inside `.planning/`: `.planning/ROADMAP.md`, `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`, and `.planning/phases/{phase-slug}/{phase-slug}-PLAN.md`.
+Write planning artifacts inside `.planning/`: `.planning/ROADMAP.md`, `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`, and `.planning/phases/{phase-slug}/{phase-slug}-PLAN.md`. Also write or refresh `.kit/workflow-state.yml` as the lightweight workflow index.
 Artifact expectations: `ROADMAP.md` identifies the recommended entry phase; each `-CONTEXT.md` declares boundaries, blast radius, and expected proof; each `-PLAN.md` declares inputs, touched/avoid surfaces, verification, stop conditions, and escalation path.
 
 If blocked, return a short fail-fast explanation naming the missing spec gap.

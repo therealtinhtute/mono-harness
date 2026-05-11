@@ -105,9 +105,9 @@ Skip `.planning/` gate entirely. Follow the 7-step workflow in `references/simpl
 6. **Per-task discipline** — for heavy or isolated tasks (file generation, refactor across many files, research), dispatch a fresh subagent with the task text + verification command. For trivial edits (1-3 lines, single file), run inline.
 7. **Verify per task** — run the task's verification command; capture output. Failed verification = task not done; do not advance the wave.
 8. **Status enums** — after each task, mark `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`. Continue on `DONE`; surface the rest before moving on. Always append task results to the run artifact.
-9. **Workflow-state update** — after run creation and after any terminal status (`BLOCKED`, `NEEDS_CONTEXT`, clean phase completion), refresh `.kit/workflow-state.yml` with the active phase pointer, `latest_cook_run`, and `last_updated`. Do not guess the next phase here.
+9. **Workflow-state update** — after run creation and after any terminal status (`BLOCKED`, `NEEDS_CONTEXT`, clean phase completion), refresh `.kit/workflow-state.yml` with `current_phase`, `active_context`, `active_plan`, `latest_cook_run`, and `last_updated`. Do not guess the next phase here.
 10. **Phase gate** — when all waves complete, invoke `check` (full mode) on the phase diff. Do not advance to the next phase on a non-clean gate.
-10. **Handoff suggestion** — on clean gate, offer `/git cm`, `/handoff`, or `/watzup` based on what's natural; never run them automatically.
+11. **Handoff suggestion** — on clean gate, offer `/git cm`, `/handoff`, or `/watzup` based on what's natural; never run them automatically.
 
 See `references/execution-loop.md` for wave dispatch, subagent prompts, and status routing.
 

@@ -56,7 +56,7 @@ This skill summarizes work and readiness. It does NOT implement code, replace `c
 ## Harness Add-on
 When artifact files exist, explicitly capture:
 - `artifact_chain`: `complete` / `partial` / `skipped`
-- workflow-state status: `current` / `stale` / `missing`
+- `workflow_state`: `current` / `stale` / `missing`
 - active phase or `none`
 - latest cook run path or `none`
 - latest gate verdict or `none`
