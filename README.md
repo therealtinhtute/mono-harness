@@ -6,7 +6,42 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 
 ![Layer stack — 3 abstraction layers of the repository](assets/diagram-layer-stack.png)
 
+### Harness artifact layout: `.kit/`
 
+```text
+.kit/
+├── planning/
+│   ├── IDEA.md
+│   ├── SPEC.md
+│   ├── ROADMAP.md
+│   └── phases/
+│       └── {phase-slug}/
+│           ├── {phase-slug}-CONTEXT.md
+│           └── {phase-slug}-PLAN.md
+├── workflow-state.yml
+├── HANDOFF.md
+├── runs/
+│   └── cook/
+└── reports/
+    ├── brainstorm/
+    ├── check/
+    └── watzup/
+```
+
+#### What lives where
+- `planning/` — canonical planning artifacts owned by `brainstorm` and `plan`
+- `workflow-state.yml` — lightweight pointer index for the current phase and latest downstream artifacts
+- `HANDOFF.md` — latest continuity snapshot for the next session
+- `runs/cook/` — execution logs created by `cook`
+- `reports/check/` — persisted gate verdicts from `check`
+- `reports/watzup/` — retrospective summaries from `watzup`
+- `reports/brainstorm/` — optional explore-mode output when `brainstorm` is used without locking a spec
+
+#### Mental model
+- `.kit/planning/` answers **what is currently locked**
+- `.kit/runs/` answers **what happened during execution**
+- `.kit/reports/` answers **what the gate or retrospective concluded**
+- `.kit/workflow-state.yml` answers **where the harness should look first**
 
 ## Machine Setup
 
