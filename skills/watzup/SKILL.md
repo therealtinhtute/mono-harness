@@ -46,7 +46,7 @@ This skill summarizes work and readiness. It does NOT implement code, replace `c
 1. **Inspect branch state** — current branch, working-tree cleanliness, position vs. main.
 2. **Gather this session's recent work** — set of commits and files changed appropriate to the mode.
 3. **Compute change summary** — counts of commits by type, files modified/added/removed, lines added/removed, key change themes.
-4. **Read artifact chain when present** — inspect roadmap/phase, latest cook run, latest handoff, and latest check outcome. Detect readiness: `ready-for-pr` / `needs-proof` / `needs-plan-refresh` / `blocked`.
+4. **Read artifact chain when present** — inspect `.kit/workflow-state.yml` first when present, then roadmap/phase, latest cook run, latest handoff, and latest check outcome. Detect readiness: `ready-for-pr` / `needs-proof` / `needs-plan-refresh` / `blocked`.
 5. **Assess risks** — flag uncommitted blockers, large diffs, missing tests, breaking changes, merge conflicts, proof gaps, and recurring drift. Each risk gets a severity (`cao` / `vừa` / `thấp`) and a concrete action.
 6. **Render output** per the references:
    - Fast → console only, ≤ 25 visible lines
@@ -56,11 +56,13 @@ This skill summarizes work and readiness. It does NOT implement code, replace `c
 ## Harness Add-on
 When artifact files exist, explicitly capture:
 - `artifact_chain`: `complete` / `partial` / `skipped`
+- `workflow_state`: `current` / `stale` / `missing`
 - active phase or `none`
 - latest cook run path or `none`
 - latest gate verdict or `none`
 - recurring blocker / drift pattern if one exists
 
+Treat `.kit/workflow-state.yml` as read-first and read-only here: if any pointer is broken, call it stale and name the missing file instead of inferring around it.
 Do not pretend the chain is complete if proof or phase artifacts are missing.
 
 ## Output Format

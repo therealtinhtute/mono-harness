@@ -97,7 +97,7 @@ Skip `.planning/` gate entirely. Follow the 7-step workflow in `references/simpl
 
 ## Execution Loop (per phase)
 
-1. **Load context** — read `.planning/SPEC.md`, the phase `-CONTEXT.md`, the phase `-PLAN.md`. Note open assumptions.
+1. **Load context** — in `full` mode, read `.kit/workflow-state.yml` first when present, then verify its pointers against `.planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions and treat stale pointers as a plan-refresh signal, not as truth.
 2. **Create the run artifact** — write `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md` using `references/run-artifact-template.md`. In `simple` mode, the slug comes from the prompt or brainstorm file.
 3. **Preflight drift check** — compare the phase boundary (`Allowed Surfaces`, `Forbidden Surfaces`, task `touches`, task `avoid`) against the current working tree and requested scope. If files already changed outside boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask via `AskUserQuestion` only if the plan is ambiguous about which wave is next.
@@ -105,13 +105,15 @@ Skip `.planning/` gate entirely. Follow the 7-step workflow in `references/simpl
 6. **Per-task discipline** — for heavy or isolated tasks (file generation, refactor across many files, research), dispatch a fresh subagent with the task text + verification command. For trivial edits (1-3 lines, single file), run inline.
 7. **Verify per task** — run the task's verification command; capture output. Failed verification = task not done; do not advance the wave.
 8. **Status enums** — after each task, mark `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`. Continue on `DONE`; surface the rest before moving on. Always append task results to the run artifact.
-9. **Phase gate** — when all waves complete, invoke `check` (full mode) on the phase diff. Do not advance to the next phase on a non-clean gate.
-10. **Handoff suggestion** — on clean gate, offer `/git cm`, `/handoff`, or `/watzup` based on what's natural; never run them automatically.
+9. **Workflow-state update** — after run creation and after any terminal status (`BLOCKED`, `NEEDS_CONTEXT`, clean phase completion), refresh `.kit/workflow-state.yml` with `current_phase`, `active_context`, `active_plan`, `latest_cook_run`, and `last_updated`. Do not guess the next phase here.
+10. **Phase gate** — when all waves complete, invoke `check` (full mode) on the phase diff. Do not advance to the next phase on a non-clean gate.
+11. **Handoff suggestion** — on clean gate, offer `/git cm`, `/handoff`, or `/watzup` based on what's natural; never run them automatically.
 
 See `references/execution-loop.md` for wave dispatch, subagent prompts, and status routing.
 
 ## Output Rules
 - Write code under the spec boundaries; capture deviations or new assumptions inline in the phase `-CONTEXT.md` (append, never silently rewrite)
+- In `full` mode, treat `.kit/workflow-state.yml` as the first lookup index, then verify the pointed files before acting
 - Create one run artifact per invocation under `.kit/runs/cook/`; never overwrite an older run log
 - Stop taxonomy for execution blockers: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT` (optional finer cause may be named after the primary code)
 - Never edit `.planning/SPEC.md` or `ROADMAP.md` from inside `cook` — route back to `brainstorm` or `plan` instead

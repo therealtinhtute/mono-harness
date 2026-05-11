@@ -49,7 +49,7 @@ Act as a quality gate specialist. Run checks with real evidence, then review cod
 
 ## Project Context
 Before reviewing: read the diff, skim only the needed repo docs/config, compress findings into verification command + protected/generated files + domain risks, detect whether harness artifacts exist, then apply the stricter rule. See `references/project-context.md`.
-When harness artifacts exist, persist a gate report at `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` using `references/report-template.md`.
+When harness artifacts exist, read `.kit/workflow-state.yml` first as the fast index, verify the pointed phase/run files, then persist a gate report at `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` using `references/report-template.md`.
 
 ## Step 0: Scope Classification
 Measure diff: `git diff --stat HEAD` or `git diff main...HEAD --stat`.
@@ -67,7 +67,7 @@ Drift = any changed file with no connection to the stated goal.
 Flag drift before running checks — do not silently continue.
 
 ## Step 1.5: Artifact Alignment
-When `.planning/` artifacts are present, inspect `.planning/SPEC.md`, `.planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/cook/*.md` if `cook` was used. Label alignment as **aligned** / **drift** / **skipped**.
+When `.planning/` artifacts are present, inspect `.kit/workflow-state.yml` first when available, then inspect `.planning/SPEC.md`, `.planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/cook/*.md` if `cook` was used. Treat manifest pointers as a fast index only: verify every pointed file exists before trusting it, and if a report is persisted write its exact path back into `latest_check_report`. Label alignment as **aligned** / **drift** / **skipped**.
 Drift includes changed files outside allowed surfaces, behavior not justified by the spec, missing planned verification proof, or code that contradicts locked context decisions. See `references/artifact-alignment.md`.
 
 ## Phase 1 — Gate (`gate`, `review`, `full`)
@@ -116,7 +116,7 @@ Flag before merging. Use judgment — list is not exhaustive.
 - **Missing proof trail**: planned verification commands absent from the cook run artifact or gate evidence
 
 ## Output Format
-Save to: chat response always. Also save `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` when harness artifacts are present or the user asks for a persisted report.
+Save to: chat response always. Also save `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` when harness artifacts are present or the user asks for a persisted report. When a persisted report is written, refresh `.kit/workflow-state.yml` so `latest_check_report` and `last_updated` match the saved verdict.
 Frontmatter: not required. Persisted report shape: use `references/report-template.md`.
 End with this sign-off block:
 
