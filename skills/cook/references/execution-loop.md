@@ -15,9 +15,10 @@ wave  = { tasks: [...], parallel: bool, dependencies: [prior_wave_id?] }
 
 1. Load wave tasks from `-PLAN.md`
 2. Confirm dependencies on prior waves are satisfied (status `DONE` or `DONE_WITH_CONCERNS` user-acked)
-3. If `parallel: true` and 2+ tasks present → dispatch in the same response (multiple tool calls in one turn for inline, or multiple subagent calls for heavy)
-4. If `parallel: false` → run tasks sequentially in declared order
-5. After every task, capture status; do not advance to the next wave until the current wave is fully `DONE`/`DONE_WITH_CONCERNS`
+3. Confirm the current working tree still fits the phase boundary and the wave's expected `touches` / `avoid` surfaces
+4. If `parallel: true` and 2+ tasks present → dispatch in the same response (multiple tool calls in one turn for inline, or multiple subagent calls for heavy)
+5. If `parallel: false` → run tasks sequentially in declared order
+6. After every task, capture status and append it to the run artifact; do not advance to the next wave until the current wave is fully `DONE`/`DONE_WITH_CONCERNS`
 
 ## Inline vs Subagent — Choose per Task
 
@@ -67,14 +68,14 @@ Every task returns one of four statuses. Cook routes them like this:
 | `DONE` | Implemented, verified, no surprises | Continue to next task in wave |
 | `DONE_WITH_CONCERNS` | Implemented and verified, but flagged a side observation | Surface the concern in the wave summary; user decides whether to halt |
 | `NEEDS_CONTEXT` | Subagent lacked information not in the dispatch prompt | Provide the missing context, redispatch — do not invent the answer |
-| `BLOCKED` | Task cannot complete inside the spec/plan boundary | Stop the wave, surface the blocker, suggest `plan phase {slug}` or `brainstorm refine` |
+| `BLOCKED` | Task cannot complete inside the spec/plan boundary | Stop the wave, surface the blocker with primary code: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, or `BLOCKED_CONTRACT_DRIFT` |
 
 ## Verification Discipline
 
-- Every task MUST have a verification command in `-PLAN.md`. Missing verification → escalate to `BLOCKED`, do not invent one.
+- Every task MUST have a verification command in `-PLAN.md`. Missing verification → escalate to `BLOCKED_VERIFICATION`, do not invent one.
 - Run the verification command after the task, not before claiming DONE.
-- If the command fails: try at most one targeted fix in the same wave. A second failure on the same task → `BLOCKED`.
-- Capture the verification output verbatim in the wave summary; never summarize "tests passed" without proof.
+- If the command fails: try at most one targeted fix in the same wave. A second failure on the same task → `BLOCKED_VERIFICATION`.
+- Capture the verification output verbatim in the wave summary and run artifact; never summarize "tests passed" without proof.
 
 ## Phase Gate
 
@@ -91,4 +92,5 @@ After all waves return `DONE` or user-acked `DONE_WITH_CONCERNS`:
 - Never reorder waves the plan declared dependent
 - Never add a task that wasn't in `-PLAN.md` — capture in `-CONTEXT.md` as a deferred idea instead
 - Never accept "done" without a verification command output
+- Never let a run artifact override the planning contract
 - Never auto-commit or auto-push between phases
