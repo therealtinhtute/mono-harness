@@ -1,0 +1,45 @@
+# Continuity Sources for Handoff
+
+Use these in priority order when the repo follows the harness flow.
+
+## Primary Sources
+
+1. `.planning/ROADMAP.md`
+   - determine active phase order
+   - identify whether work is mid-phase, blocked, or ready for next phase
+
+2. `.planning/phases/{slug}/{slug}-CONTEXT.md`
+   - capture locked decisions, assumptions, and rejected options that the next session must not rediscover
+
+3. `.planning/phases/{slug}/{slug}-PLAN.md`
+   - extract current wave/task state, expected verification, and remaining work
+
+4. Latest `.kit/runs/cook/*.md`
+   - capture the real execution trail
+   - pull task statuses, blockers, concerns, and proof commands
+
+5. Latest `check` verdict
+   - if present in notes, PR text, or handoff context, capture whether the phase gate passed, drifted, or failed
+
+## What to Synthesize
+
+### Continuity Summary
+- active phase
+- last meaningful action completed
+- highest-priority unresolved blocker or concern
+- exact next action to resume
+
+### Do Not Lose
+- blocker taxonomy from `cook` (`BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`)
+- artifact drift or proof-gap findings from `check`
+- any plan boundary the next session must stay inside
+
+## Fallback Behavior
+
+If harness artifacts are missing:
+- say `continuity_mode: standard`
+- fall back to git state + recent commits + working tree only
+
+If artifacts partially exist:
+- say `continuity_mode: partial-harness`
+- name which source is missing instead of implying continuity is complete

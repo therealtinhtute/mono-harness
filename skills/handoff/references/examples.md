@@ -13,6 +13,7 @@
 📝 Handoff captured
 
 ✓ Git state: feature/add-auth (3 commits)
+✓ Continuity mode: standard
 ✓ Progress: 2 completed, 1 in progress
 ✓ Blockers: 0
 ✓ Next steps: 3 actions
@@ -101,21 +102,23 @@ Handoff written to: .kit/HANDOFF.md
 
 ---
 
-## Example 4: Ready for Review Handoff
-**Scenario**: Feature complete, ready for PR
+## Example 4: Harness Phase Handoff
+**Scenario**: Phase finished in `cook`, but `check` requested proof follow-up
 
 **Input**:
 ```bash
-/handoff feature complete, ready for review
+/handoff phase complete, waiting on proof-gap cleanup
 ```
 
 **Output**:
 ```
 📝 Handoff captured
 
-✓ Git state: feature/add-auth (5 commits)
-✓ Progress: 5 completed, 0 in progress
-✓ Blockers: 0
+✓ Git state: feature/inbox-ui (5 commits)
+✓ Continuity mode: full-harness
+✓ Active phase: inbox-ui
+✓ Latest cook run: .kit/runs/cook/20240901-1010-inbox-ui.md
+✓ Latest check verdict: APPROVE with requests
 ✓ Next steps: 2 actions
 
 Handoff written to: .kit/HANDOFF.md
@@ -125,24 +128,24 @@ Handoff written to: .kit/HANDOFF.md
 ```markdown
 ---
 status: ready-for-review
+continuity-mode: full-harness
+active-phase: inbox-ui
 ---
 
-## Progress This Session
+## Continuity Anchors
 
-### Completed ✓
-- Authentication system (login, logout, session)
-- JWT token handling and refresh
-- Auth middleware and route guards
-- Integration tests for auth flows
-- API documentation updates
+**Latest Cook Run**: `.kit/runs/cook/20240901-1010-inbox-ui.md`
+**Latest Check Verdict**: approve-with-requests
+**Proof / Drift Notes**:
+- missing verification output for task T5 in cook run log
 
 ## Next Steps
 
-1. **Run final checks** — Verify all tests pass, lint clean, no console errors
-2. **Create PR** — Use /git pr to create pull request to main
+1. **→ START HERE: append proof for T5** — update the cook run artifact or rerun `/cook phase inbox-ui` so `check` can pass cleanly
+2. **Re-run /check full** — confirm artifact alignment is now clean
 ```
 
-**Explanation**: The skill marks status as ready-for-review and documents final steps before PR creation.
+**Explanation**: The skill preserves the exact phase, run artifact, and gate verdict so the next session resumes from the real blocker instead of re-reading everything.
 
 ---
 
