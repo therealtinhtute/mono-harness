@@ -69,26 +69,33 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 
 1. **Detect mode** from input shape (hint only).
 2. **Confirm intent** — `AskUserQuestion` to verify mode and scope. Prefer 1-2 questions per turn; batch up to 4 only when finalizing scope.
-3. **Gather evidence** — read referenced files; minimum needed.
-4. **Generate options & evaluate trade-offs** (MANDATORY per `<hard-gate>`) — 2-3 viable paths in `explore`/`lock-from-idea`/`refine`; in `lock-from-files`, name 1-2 alternatives the source rejected. See `references/decision-frameworks.md`.
-5. **Clarify gaps** (lock modes) — apply `references/clarification-rubric.md` until goal, scope, constraints, acceptance are lockable.
-6. **Recommend or lock** — explore: pick one option with rationale and rejected alternatives. Lock: write SPEC via `references/spec-template.md`; capture rejected alternatives in `Key Decisions`.
-7. **Self-review** (lock modes) — apply `references/lock-checklist.md`: placeholders, contradictions, scope creep, ambiguity. Fix inline.
-8. **User review gate** (lock modes) — show SPEC.md path, ask user approval before suggesting `plan`. If changes requested, edit and re-run step 7.
-9. **Hand off** — suggest `plan` after approved lock; `refine` if exploration changed scope.
+3. **Classify the work item** (lock modes mandatory, explore modes best-effort) — declare:
+   - input type: `new-spec` | `spec-slice` | `change-request` | `new-initiative` | `maintenance` | `harness-improvement`
+   - lane: `tiny` | `normal` | `high-risk`
+   - risk flags: choose only what actually applies (auth, authorization, data-model, audit-security, external-systems, public-contract, cross-platform, existing-behavior, weak-proof, multi-domain)
+   - affected surfaces: api, browser, mobile, desktop, worker, db, provider, docs
+4. **Gather evidence** — read referenced files; minimum needed.
+5. **Generate options & evaluate trade-offs** (MANDATORY per `<hard-gate>`) — 2-3 viable paths in `explore`/`lock-from-idea`/`refine`; in `lock-from-files`, name 1-2 alternatives the source rejected. See `references/decision-frameworks.md`.
+6. **Clarify gaps** (lock modes) — apply `references/clarification-rubric.md` until goal, scope, constraints, acceptance are lockable.
+7. **Recommend or lock** — explore: pick one option with rationale and rejected alternatives. Lock: write SPEC via `references/spec-template.md`; capture rejected alternatives in `Key Decisions` and include classification metadata in the header.
+8. **Self-review** (lock modes) — apply `references/lock-checklist.md`: placeholders, contradictions, scope creep, ambiguity. Fix inline.
+9. **User review gate** (lock modes) — show SPEC.md path, ask user approval before suggesting `plan`. If changes requested, edit and re-run step 8.
+10. **Hand off** — suggest `plan` after approved lock; `refine` if exploration changed scope; `cook simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
 
 You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `plan`.
 
 ## Output Rules
 - Lock modes write inside `.planning/`; explore mode writes inside `.kit/reports/brainstorm/`
 - Requirements numbered and falsifiable; In Scope / Out of Scope explicit
+- `SPEC.md` must include header metadata for Status, Input Type, Lane, Risk Flags, Affected Surfaces, Downstream, and Updated At
+- Lock modes should include `Validation Expectations`, `Key Decisions`, and `Deferred Ideas`; do not hide them in prose
 - Mode upgrade mid-session requires re-confirmation; never produce both artifacts unless asked
 
 ## Done Criteria
 - Mode confirmed; option-exploration articulated (per `<hard-gate>`)
-- Lock modes: SPEC.md exists with boundaries, acceptance criteria, user approval
-- Explore mode: one recommendation with rationale and rejected alternatives
-- Next handoff obvious (`plan` after lock, `refine` if scope shifted)
+- Lock modes: SPEC.md exists with boundaries, acceptance criteria, classification metadata, and user approval
+- Explore mode: one recommendation with rationale and rejected alternatives, plus a best-effort input-type/lane recommendation when possible
+- Next handoff obvious (`plan` after lock, `refine` if scope shifted, `cook simple` only when intentionally warranted)
 </instructions>
 
 ## Output Format

@@ -56,8 +56,10 @@ Extract at least:
 - in-scope / out-of-scope boundaries
 - constraints
 - acceptance criteria
+- validation expectations
 - dependencies / assumptions
 - open questions that may affect sequencing
+- intake metadata when present: input type, lane, risk flags, affected surfaces, downstream
 
 If the spec is too weak for planning, stop and point back to `brainstorm` with the exact missing area.
 
@@ -70,6 +72,7 @@ Rules:
 - phase order must respect dependencies and risk
 - do not create fake phases just to look thorough
 - phases should be understandable without re-reading the whole spec
+- roadmap header should name the current recommended entry phase and execution mode
 
 ### Step 3: Create phase context files
 For each roadmap phase, write `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md` using `references/phase-context-template.md`.
@@ -80,6 +83,9 @@ Each context file should lock:
 - canonical refs (docs, files, prior artifacts)
 - rejected options
 - deferred ideas
+- scope boundary: allowed surfaces and forbidden surfaces
+- blast radius and expected proof class
+- escalation conditions that should route back to `brainstorm` or `plan`
 
 If the repo context is too unclear, note it explicitly in the context file as an open assumption.
 
@@ -92,6 +98,8 @@ Task rules:
 - keep each task specific and actionable
 - include expected outputs
 - include a verification method for each task or subtask
+- include touched surfaces and avoid surfaces
+- include stop conditions and escalation path
 - keep tasks inside spec boundaries
 - do not drift into post-hoc product design
 
@@ -110,6 +118,11 @@ Write only inside `.planning/`:
 - `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`
 - `.planning/phases/{phase-slug}/{phase-slug}-PLAN.md`
 
+Artifact expectations:
+- `ROADMAP.md` should identify the current recommended entry phase
+- every `-CONTEXT.md` should declare allowed/forbidden surfaces, blast radius, and expected proof
+- every `-PLAN.md` should declare task-level inputs, touched surfaces, avoid surfaces, verification, stop conditions, and escalation path
+
 If blocked, return a short fail-fast explanation naming the missing spec gap.
 
 ## Done Criteria
@@ -118,6 +131,8 @@ The skill is complete only when:
 - `.planning/ROADMAP.md` exists and phases are coherent
 - every roadmap phase has both `-CONTEXT.md` and `-PLAN.md`
 - plans are wave-based and executable
+- phase context files declare boundaries and proof expectations
+- plan tasks are specific enough for `cook` to execute without inventing missing structure
 - next-step suggestions are clear without forcing execution
 </instructions>
 
