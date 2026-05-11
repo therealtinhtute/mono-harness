@@ -10,6 +10,21 @@ Phase slug: `workflow-state-deeper-support`
 
 Goal: tighten deeper operational support for the workflow-state manifest without adding new commands.
 
+## 0) Before `/plan`
+
+`/brainstorm` may lock `.planning/SPEC.md`, but it does not initialize `.kit/workflow-state.yml`. The manifest starts at `plan`, not earlier.
+
+### Workflow-state status
+
+```text
+.kit/workflow-state.yml does not exist yet
+```
+
+What matters here:
+- scope can be locked before any execution-state index exists
+- `brainstorm` stays focused on planning artifacts only
+- `plan` is the first skill that creates the manifest
+
 ## 1) After `/plan`
 
 `/plan` writes or refreshes the canonical phase artifacts, then initializes the manifest as the first lookup index.

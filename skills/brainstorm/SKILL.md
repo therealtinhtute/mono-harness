@@ -87,7 +87,8 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `plan`.
 
 ## Output Rules
-- Lock modes write inside `.planning/`; explore mode writes inside `.kit/reports/brainstorm/`
+- Lock modes write planning artifacts inside `.planning/`; they do NOT initialize or refresh `.kit/workflow-state.yml`
+- Explore mode writes inside `.kit/reports/brainstorm/`
 - Requirements numbered and falsifiable; In Scope / Out of Scope explicit
 - `SPEC.md` must include header metadata for Status, Input Type, Lane, Risk Flags, Affected Surfaces, Downstream, and Updated At
 - Lock modes should include `Validation Expectations`, `Key Decisions`, and `Deferred Ideas`; do not hide them in prose
