@@ -11,9 +11,9 @@ Apply before running checks:
 
 | Result | Decision |
 |--------|----------|
-| All pass + on target | ✅ APPROVED — ready to commit |
+| All pass + on target + artifact aligned (when harness applies) | ✅ APPROVED — ready to commit |
 | Minor issues remain | ⚠️ FIX — return to implementation |
-| Major gaps | ❌ NEEDS_WORK — re-scope with `plan` |
+| Major gaps | ❌ NEEDS_WORK — re-scope with `plan` or re-run `cook` |
 
 ## Node.js / TypeScript
 ```bash
@@ -56,6 +56,12 @@ git diff HEAD | grep -iE "(password|secret|token|api_key|private_key)" | grep "^
 3. Check `README.md` → look for "Running tests" section
 4. If nothing found: document as `verification: none — no command detected`
    Never claim pass without running a real command.
+
+## Harness Add-on (when `.planning/` is present)
+- Read the active phase plan and collect the expected verification commands
+- Compare them against the latest matching `.kit/runs/cook/*.md`
+- If code changed but the proof trail is missing, label `artifact_alignment: ❌ drift` even if local tests pass
+- If the diff exceeds allowed surfaces, stop before normal review and route back to `plan phase {slug}` or `cook`
 
 ## Backward-Compat Check (API changes)
 ```bash
