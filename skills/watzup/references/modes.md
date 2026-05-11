@@ -13,7 +13,7 @@ Two modes: `fast` (default, console-only) and `deep` (console + file). Both spea
 
 **Output destination:** Console only. No file is written.
 
-**Layout:** See `output-contract.md` Section 5. Section order: Title → Trạng thái → Thay đổi chính → Risks (omit if none) → Next. Total length target ≤ 25 visible lines.
+**Layout:** See `output-contract.md` Section 5. Section order: Title → Trạng thái → Thay đổi chính → Risks (omit if none) → Next. In harness repos, include readiness / artifact-chain state inside `Trạng thái` without adding a new section. Total length target ≤ 25 visible lines.
 
 **Empty-state branch:** When the working tree is clean and there is no new activity since the last review, print only the two-line empty-state message defined in `output-contract.md` Section 5. Do not write any file.
 
@@ -38,6 +38,8 @@ Two modes: `fast` (default, console-only) and `deep` (console + file). Both spea
 - `--format=html` — single self-contained HTML file with embedded `<style>`, no external resources
 
 **Layout:** See `output-contract.md` Section 6. Section order: Frontmatter → Title → Trạng thái → Changes Overview → Key Changes → Quality Assessment → Risks & Blockers (omit if none) → Next Steps.
+
+In harness repos, the deep file should also surface artifact-chain readiness and recurring drift inside `Trạng thái`, `Key Changes`, or `Risks & Blockers` without breaking the required section order.
 
 **Empty-state branch:** Identical to fast mode — clean tree + no new activity → two-line empty-state message, no file. The `--format=` flag is ignored when no file would be written.
 
