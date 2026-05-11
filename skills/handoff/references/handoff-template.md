@@ -7,6 +7,8 @@ Use this template when writing session handoff documentation.
 session-date: YYYY-MM-DD
 branch: {branch-name}
 status: {in-progress|blocked|ready-for-review}
+continuity-mode: {full-harness|partial-harness|standard}
+active-phase: {phase-slug|none}
 last-updated: YYYY-MM-DD HH:MM
 ---
 
@@ -16,6 +18,8 @@ last-updated: YYYY-MM-DD HH:MM
 
 **Branch**: `{branch-name}`  
 **Status**: {status}  
+**Continuity Mode**: {full-harness|partial-harness|standard}  
+**Active Phase**: {phase-slug|none}  
 **Last Commit**: {commit-hash} — {commit-message}
 
 **Working Tree**:
@@ -26,6 +30,13 @@ last-updated: YYYY-MM-DD HH:MM
 ## What We're Building
 
 {1-2 paragraph description of the feature/fix being worked on}
+
+## Continuity Anchors
+
+**Latest Cook Run**: `{path|none}`
+**Latest Check Verdict**: {approved|approve-with-requests|request-changes|none}
+**Proof / Drift Notes**:
+- {proof trail intact / missing command / scope drift / none}
 
 ## Progress This Session
 
@@ -73,7 +84,7 @@ last-updated: YYYY-MM-DD HH:MM
 
 ## Next Steps
 
-1. **{Action-1}** — {context and expected outcome}
+1. **→ START HERE: {Action-1}** — {context and expected outcome}
 2. **{Action-2}** — {context and expected outcome}
 3. **{Action-3}** — {context and expected outcome}
 

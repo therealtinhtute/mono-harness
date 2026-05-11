@@ -36,6 +36,7 @@ Once mode is resolved, proceed to the matching section below.
 | `no-context` | `.planning/phases/{slug}/{slug}-CONTEXT.md` | missing | Stop, route to `plan phase {slug}` |
 | `stale-plan` | Phase plan references files/symbols that no longer exist | Detected via grep during context load | Stop, route to `plan phase {slug}` to refresh |
 | `placeholder-plan` | Phase plan contains `TBD`, `TODO`, `similar to`, "implement later" | Detected during context load | Stop, route to `plan phase {slug}` |
+| `contract-drift` | Working tree or requested scope already touches files outside `Allowed Surfaces` / task `touches`, or conflicts with `Forbidden Surfaces` / task `avoid` | Detected during preflight | Stop, route to `plan phase {slug}` or `brainstorm refine` |
 | `multiple-incomplete` | More than one phase has incomplete waves | Default `auto` mode is ambiguous | Ask user via `AskUserQuestion` which phase to run |
 | `ready` | All required files present and concrete | — | Proceed to execution loop |
 
@@ -71,6 +72,19 @@ Run: `/plan phase {slug}`.
 - {placeholder text and line}
 
 Run: `/plan phase {slug}` to refresh, then re-invoke `/cook`.
+```
+
+### contract-drift
+```
+🥷 Contract drift detected before execution for `{slug}`.
+
+Conflict:
+- {working-tree file or requested scope item}
+- outside allowed surfaces or inside forbidden scope
+
+Run one:
+- `/plan phase {slug}` if the phase contract should be refreshed
+- `/brainstorm refine` if the spec boundary itself changed
 ```
 
 ### multiple-incomplete (interactive)
@@ -116,6 +130,7 @@ Run: `/prompt-leverage` to strengthen the prompt, then re-invoke `/cook simple`.
 ## What `cook` Never Does Here
 
 - Never invent missing artifacts to "unblock" itself
-- Never edit SPEC.md, ROADMAP.md, or CONTEXT.md to skip a stop condition
+- Never edit SPEC.md or ROADMAP.md to skip a stop condition
+- Never use a run artifact as a substitute for the planning contract
 - Never proceed past a `BLOCKED` status without user input
 - Never bypass the scope guard in simple mode — not even when the user says "just do it"

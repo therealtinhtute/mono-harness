@@ -23,6 +23,7 @@ After reading, produce a one-paragraph context block:
 verify_cmd:       [e.g. npm test && tsc --noEmit]
 protected_files:  [e.g. dist/, generated/, CHANGELOG.md]
 domain_risk:      [e.g. auth middleware, payment flow]
+harness_mode:     full / partial / none
 release_format:   [e.g. semver tag + CHANGELOG section]
 ```
 
@@ -32,9 +33,18 @@ When project context and this skill overlap, apply the stricter rule.
 
 If `AGENTS.md` or `CLAUDE.md` defines a verification command → use that, not auto-detection.
 If project docs say never auto-commit → skip any autofix that would commit.
+If `.planning/` + `.kit/runs/cook/` are present → treat artifact alignment as part of the gate, not an optional note.
 
 ## Skip Context Extraction When
 
 - Diff is under 30 lines and does not touch config, auth, or CI
 - Running `gate` mode only (checks don't need project context)
-- Running Plan Execution Mode
+
+## Harness Detection
+
+Classify the repo before review:
+- `full` — `.planning/SPEC.md` plus roadmap/phase artifacts exist, and `cook` run logs are used
+- `partial` — some planning artifacts exist, but run logs or phase artifacts are incomplete
+- `none` — no harness artifacts present
+
+If harness mode is `full` or `partial`, check `references/artifact-alignment.md` before final sign-off.

@@ -41,6 +41,7 @@
 - API contract correctness — does the interface match callers?
 - Backward-compat — does this break existing consumers?
 - Separation of concerns — is business logic mixed with I/O?
+- Harness alignment — does the implementation still match the locked spec, phase context, and phase boundaries?
 
 ---
 
@@ -51,3 +52,4 @@
 - Type safety — are nulls and undefined cases handled?
 - Test coverage — does new behavior have a test?
 - Dead code — unreachable branches, unused imports, stale comments
+- Proof trail quality — can the claimed verification be traced to actual commands or run artifacts?
