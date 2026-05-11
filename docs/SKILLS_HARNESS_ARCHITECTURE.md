@@ -130,7 +130,7 @@ Output class:
 
 ## Artifact classes
 
-We should use exactly four artifact classes for the core harness.
+We should use exactly five artifact classes for the core harness.
 
 ### A. Canonical planning artifacts
 These are the source of truth for scoped work.
@@ -181,7 +181,34 @@ Rules:
 - latest state wins; overwrite the file on each handoff
 - should link to canonical planning artifacts and latest execution run
 
-### D. Retrospective artifacts
+### D. Workflow state manifest
+This is the lightweight index every downstream skill can consult first.
+
+Location:
+- `.kit/`
+
+Files:
+- `.kit/workflow-state.yml`
+
+Rules:
+- initialized by `plan` when roadmap + phase artifacts are created
+- updated by downstream skills when canonical phase state changes
+- should stay tiny: pointers and status only, never duplicate full artifact content
+- latest state wins; overwrite in place
+
+Recommended fields:
+- `current_phase`
+- `entry_phase`
+- `spec`
+- `roadmap`
+- `active_context`
+- `active_plan`
+- `latest_cook_run`
+- `latest_check_report`
+- `handoff`
+- `last_updated`
+
+### E. Retrospective artifacts
 These capture wrap-up, friction, and entropy observations.
 
 Location:
@@ -217,6 +244,7 @@ Properties:
 Ephemeral artifacts record support information, runtime traces, or reflections.
 
 Examples:
+- `.kit/workflow-state.yml`
 - `.kit/runs/cook/...`
 - `.kit/HANDOFF.md`
 - `.kit/reports/watzup/...`
@@ -231,11 +259,11 @@ Properties:
 | Skill | Primary role | Reads | Writes | Artifact class |
 | --- | --- | --- | --- | --- |
 | `brainstorm` | intake + contract lock | user prompt, notes, markdown refs | `.planning/IDEA.md`, `.planning/SPEC.md`, explore reports | canonical planning |
-| `plan` | execution design | `.planning/SPEC.md` | `.planning/ROADMAP.md`, phase context, phase plan | canonical planning |
-| `cook` | execution runtime | planning artifacts | `.kit/runs/cook/...` plus code changes | execution |
-| `check` | proof + alignment gate | code diff, planning artifacts, latest cook run | console verdict, optional future run file | gate / optional execution |
-| `handoff` | continuity | branch state, planning artifacts, latest run/gate | `.kit/HANDOFF.md` | continuity |
-| `watzup` | retrospective + entropy scan | repo state, planning artifacts, run artifacts, handoff | `.kit/reports/watzup/...` | retrospective |
+| `plan` | execution design | `.planning/SPEC.md` | `.planning/ROADMAP.md`, phase context, phase plan, `.kit/workflow-state.yml` init | canonical planning + state |
+| `cook` | execution runtime | planning artifacts, workflow state | `.kit/runs/cook/...`, `.kit/workflow-state.yml`, code changes | execution + state |
+| `check` | proof + alignment gate | code diff, planning artifacts, latest cook run, workflow state | console verdict, `.kit/reports/check/...`, `.kit/workflow-state.yml` | gate + state |
+| `handoff` | continuity | branch state, planning artifacts, latest run/gate, workflow state | `.kit/HANDOFF.md`, `.kit/workflow-state.yml` | continuity + state |
+| `watzup` | retrospective + entropy scan | repo state, planning artifacts, run artifacts, handoff, workflow state | `.kit/reports/watzup/...` | retrospective |
 
 ## Required metadata for canonical artifacts
 

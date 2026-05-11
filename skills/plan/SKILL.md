@@ -56,7 +56,7 @@ If the spec is too weak for planning, stop and point back to `brainstorm` with t
 ### Step 2: Build or refresh `.planning/ROADMAP.md`
 Use `references/roadmap-template.md`.
 
-Rules: split work into coherent phases; each phase must have a clear goal and deliverables; order must respect dependencies and risk; do not create fake phases; roadmap header should name the current recommended entry phase and execution mode.
+Rules: split work into coherent phases; each phase must have a clear goal and deliverables; order must respect dependencies and risk; do not create fake phases; roadmap header should name the current recommended entry phase and execution mode. Initialize `.kit/workflow-state.yml` from `references/workflow-state-template.yml` with the entry/current phase pointers.
 
 ### Step 3: Create phase context files
 For each roadmap phase, write `.planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md` using `references/phase-context-template.md`.
@@ -100,4 +100,5 @@ Load as needed from `{baseDir}/references/`:
 - `phase-context-template.md` — structure for per-phase context files
 - `phase-plan-template.md` — structure for per-phase executable plans
 - `planning-rules.md` — sequencing, wave, and boundary rules
+- `workflow-state-template.yml` — initialize `.kit/workflow-state.yml` as the lightweight workflow index
 </references>

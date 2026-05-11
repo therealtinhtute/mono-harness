@@ -4,21 +4,25 @@ Use these in priority order when the repo follows the harness flow.
 
 ## Primary Sources
 
-1. `.planning/ROADMAP.md`
+1. `.kit/workflow-state.yml`
+   - determine the current phase pointer and latest canonical artifact paths quickly
+   - treat it as the index, then verify the pointed files before trusting details
+
+2. `.planning/ROADMAP.md`
    - determine active phase order
    - identify whether work is mid-phase, blocked, or ready for next phase
 
-2. `.planning/phases/{slug}/{slug}-CONTEXT.md`
+3. `.planning/phases/{slug}/{slug}-CONTEXT.md`
    - capture locked decisions, assumptions, and rejected options that the next session must not rediscover
 
-3. `.planning/phases/{slug}/{slug}-PLAN.md`
+4. `.planning/phases/{slug}/{slug}-PLAN.md`
    - extract current wave/task state, expected verification, and remaining work
 
-4. Latest `.kit/runs/cook/*.md`
+5. Latest `.kit/runs/cook/*.md`
    - capture the real execution trail
    - pull task statuses, blockers, concerns, and proof commands
 
-5. Latest `.kit/reports/check/*.md`
+6. Latest `.kit/reports/check/*.md`
    - capture whether the phase gate passed, drifted, or failed from a canonical check report
 
 ## What to Synthesize
@@ -28,6 +32,7 @@ Use these in priority order when the repo follows the harness flow.
 - last meaningful action completed
 - highest-priority unresolved blocker or concern
 - exact next action to resume
+- whether `.kit/workflow-state.yml` was current, stale, or missing
 
 ### Do Not Lose
 - blocker taxonomy from `cook` (`BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`)
