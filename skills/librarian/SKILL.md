@@ -139,6 +139,11 @@ Load full rules from `references/citation-rules.md`. Key points:
 
 ## Common Patterns
 See `references/gh-patterns.md` for command templates: find symbol, explore structure, find examples, compare implementations.
+
+## Anti-Patterns
+- Fabricating search results when `gh` returns nothing — hallucinated evidence is worse than no evidence; say "not found"
+- Not verifying the repo exists before deep-diving — wrong codebase, right confidence; run `gh repo view` first
+- Citing file paths without confirming they exist at HEAD — stale references from cached or outdated results
 </instructions>
 
 <references>

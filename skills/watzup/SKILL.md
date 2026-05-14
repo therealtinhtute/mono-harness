@@ -72,6 +72,12 @@ Frontmatter: deep markdown must use the schema in `references/output-contract.md
 
 ## Self-Check
 Before printing fast output to the console or writing a deep file, run the 8-point self-check in `references/output-contract.md` Section 8. If any check fails, fix the draft and re-run before printing.
+
+## Anti-Patterns
+- Saying "ready for PR" without running actual checks — optimistic self-certification; gate evidence required
+- Copying commit messages as the summary — that's `git log`, not a retrospective; summarize themes and risk
+- Skipping risk assessment because "changes are small" — small changes break big things; assess blast radius, not line count
+- Not verifying working tree cleanliness before reporting status — uncommitted or stale files mislead
 </instructions>
 
 <references>

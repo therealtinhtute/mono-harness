@@ -98,6 +98,11 @@ Frontmatter: name, description, version, argument-hint.
 - `scripts/init_skill.py` — initialize new skill from template
 - `scripts/package_skill.py` — validate + package skill as zip
 - `scripts/quick_validate.py` — quick frontmatter validation
+
+## Anti-Patterns
+- Not applying its own quality criteria to the skill being created — validate against Skillmark checklist before delivering
+- Omitting the security block from generated skills — fails the benchmark this skill teaches
+- Writing description too vague for auto-invocation — if the description doesn't match real task contexts, the skill never triggers
 </instructions>
 
 <references>

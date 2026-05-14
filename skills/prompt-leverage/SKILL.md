@@ -126,6 +126,11 @@ Include:
 - Changes made (diff or list)
 - Framework blocks applied
 - Usage instructions
+
+## Anti-Patterns
+- Over-specifying a simple prompt with unnecessary framework blocks — ceremony without value; match structure to task complexity
+- Changing the user's intent while "improving" structure — the upgraded prompt must still do the same job
+- Adding verification blocks to trivial tasks — busywork that trains the user to ignore gates
 </instructions>
 
 <references>

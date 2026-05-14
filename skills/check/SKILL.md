@@ -131,6 +131,11 @@ autofix:            N safe applied, N awaiting confirmation
 verification:       [command] → pass / fail / none
 ```
 
+## Anti-Patterns
+- Self-certifying "tests pass" without running them — the core gate anti-pattern; cite actual command output
+- Approving because code "looks correct" without grepping unknown identifiers — hallucinated familiarity
+- Skipping scope drift check on small diffs — small diffs drift too; every changed line must trace to the request
+- Rating severity based on code volume instead of blast radius — 1 line touching auth can be 🔴 Critical
 </instructions>
 
 <references>

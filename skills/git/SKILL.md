@@ -115,6 +115,12 @@ tags: [git, {operation}]
 | No changes | Exit cleanly |
 | Push rejected | Suggest `git pull --rebase` |
 | Merge conflicts | Suggest manual resolution |
+
+## Anti-Patterns
+- Staging everything with `git add -A` instead of specific files — catches .env, secrets, node_modules
+- Single commit when changes span multiple types/scopes — "one commit is cleaner" → un-reviewable diff, impossible to revert selectively
+- Skipping security scan because "it's just config" — config files often contain secrets or tokens
+- Force pushing without explicit user confirmation — overwrites upstream work silently
 </instructions>
 
 <references>

@@ -29,6 +29,11 @@ Act as a technical interviewer. Ask sharp questions via AskUserQuestion. Explore
 - Multiple choice when possible
 - Flag contradictions before writing spec
 
+## Anti-Patterns
+- Asking leading questions that confirm the plan instead of challenging it — validation theater, not validation
+- Asking questions in prose instead of AskUserQuestion — breaks audit trail and structured flow
+- Not flagging contradictions before writing spec — bakes conflicts into the foundation that downstream skills inherit
+
 <references>
 Load as needed from `{baseDir}/references/`:
 - `question-guidelines.md` — question categories, interview flow, completeness checklist

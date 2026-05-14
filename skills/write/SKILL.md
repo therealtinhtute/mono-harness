@@ -104,6 +104,11 @@ Frontmatter: not required.
 - If the user asks to compare tones: return **at most two versions** with short labels.
 - If required context is missing: ask **one short blocking question** and stop.
 - If the user asks for rationale: keep it brief and put the final prose first.
+
+## Anti-Patterns
+- Silently restructuring large sections when asked for a light edit — undisclosed scope creep; match the rewrite strength to the request
+- Guessing missing source text instead of asking — fabrication; if the source is incomplete, ask for it
+- Flattening the original voice into generic professional tone — the reader's personality is not a bug to fix
 </instructions>
 
 <references>

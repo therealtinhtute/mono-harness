@@ -111,6 +111,12 @@ See `references/examples.md` for console and file output formats.
 - No git repo: document working directory only
 - No commits: focus on working tree
 - Sensitive data: sanitize before writing, warn user
+
+## Anti-Patterns
+- Writing "continue the work" as next step — too vague to resume cold; name the file, the function, the exact action
+- Omitting blockers because they seem minor — next session wastes hours rediscovering what this session already knew
+- Capturing what was done but not what was decided — decisions are the expensive part to reconstruct
+- Overwriting HANDOFF.md without reading the previous one — loses prior session context that may still be relevant
 </instructions>
 
 ## Examples
