@@ -2,7 +2,7 @@
 name: cook
 model: opus
 version: "1.2.0"
-description: "Execution orchestrator after `brainstorm` and `plan`. Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, `handoff`, or `watzup`."
+description: "Execution orchestrator after `brainstorm` and `plan`. Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, or `handoff`."
 license: MIT
 argument-hint: "[mode:auto|full|simple|phase] [phase-name?]"
 compatibility: Designed for Claude Code
@@ -50,7 +50,7 @@ Act as the kitchen conductor: read planning artifacts, execute the next incomple
 `brainstorm` — spec is missing or weak and task exceeds simple mode scope. `plan` — spec exists but no roadmap/phase files. `check` — gate-only or code-review-only request without execution. `git` — pure commit/push request. `hunt` — bug with unknown root cause.
 
 ## Scope
-In `full` mode: reads `.kit/planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`/`watzup`.
+In `full` mode: reads `.kit/planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`.
 
 In `simple` mode: executes from a prompt or brainstorm explore file, stays within scope guard (≤5 files, ≤100 lines, no unknown subsystem), suggests (never forces) `/check`.
 
@@ -107,7 +107,7 @@ Skip `.kit/planning/` gate entirely. Follow the 7-step workflow in `references/s
 8. **Status enums** — after each task, mark `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`. Continue on `DONE`; surface the rest before moving on. Always append task results to the run artifact.
 9. **Workflow-state update** — after run creation and after any terminal status (`BLOCKED`, `NEEDS_CONTEXT`, clean phase completion), refresh `.kit/workflow-state.yml` with `current_phase`, `active_context`, `active_plan`, `latest_cook_run`, and `last_updated`. Do not guess the next phase here.
 10. **Phase gate** — when all waves complete, invoke `check` (full mode) on the phase diff. Do not advance to the next phase on a non-clean gate.
-11. **Handoff suggestion** — on clean gate, offer `/git cm`, `/handoff`, or `/watzup` based on what's natural; never run them automatically.
+11. **Handoff suggestion** — on clean gate, offer `/git cm` or `/handoff` based on what's natural; never run them automatically.
 
 See `references/execution-loop.md` for wave dispatch, subagent prompts, and status routing.
 

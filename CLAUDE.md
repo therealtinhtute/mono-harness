@@ -63,15 +63,17 @@ bash scripts/sync-from-kit.sh
 
 ## Skill Pipeline
 
-Canonical order for complex work:
+Two entry points:
 ```
-brainstorm → plan → cook → check → git / handoff / watzup
+watzup → cook → check → git → handoff          (resume existing work)
+brainstorm → plan → cook → check → git → handoff  (new work)
 ```
+- `watzup` — recap branch state, committed + uncommitted changes, handoff context, recommend next action (session start)
 - `brainstorm` — explore options and lock requirements into `.kit/planning/SPEC.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
 - `plan` — generate executable phase plans from the locked spec
 - `cook` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
 - `check` — pre-commit gate and post-implementation review (also invoked per phase by `cook`)
-- `git` / `handoff` / `watzup` — session close-out
+- `git` / `handoff` — session close-out
 
 `interview` is optional and only used when a plan needs human-in-the-loop validation before `cook`.
 

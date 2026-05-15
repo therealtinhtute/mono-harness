@@ -34,13 +34,13 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 - `HANDOFF.md` — latest continuity snapshot for the next session
 - `runs/cook/` — execution logs created by `cook`
 - `reports/check/` — persisted gate verdicts from `check`
-- `reports/watzup/` — retrospective summaries from `watzup`
+- `reports/watzup/` — recap reports from `watzup` (legacy; current version is console-only)
 - `reports/brainstorm/` — optional explore-mode output when `brainstorm` is used without locking a spec
 
 #### Mental model
 - `.kit/planning/` answers **what is currently locked**
 - `.kit/runs/` answers **what happened during execution**
-- `.kit/reports/` answers **what the gate or retrospective concluded**
+- `.kit/reports/` answers **what the gate concluded**
 - `.kit/workflow-state.yml` answers **where the harness should look first**
 
 ## Machine Setup
@@ -105,7 +105,7 @@ bash scripts/setup-statusline.sh
 | [`/check`](skills/workflow/check/SKILL.md) | Before commit, PR, or merge; phase gate after `/cook` | Gate (tests, lint, build) + code review (security, architecture, quality). |
 | [`/git`](skills/workflow/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
 | [`/handoff`](skills/workflow/handoff/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
-| [`/watzup`](skills/workflow/watzup/SKILL.md) | End of work session, before PR | Review recent changes and wrap up current work session. Analyze commits, assess quality, identify risks. |
+| [`/watzup`](skills/workflow/watzup/SKILL.md) | Start of session, resuming work, quick status check | Recap branch state, committed + uncommitted changes, handoff context, and artifact chain — then recommend the next action. |
 
 ### Shipping — Build & ship code
 
@@ -136,13 +136,14 @@ The icon is the visible mode switch. The real standard is the writing: concrete,
 
 ## Recommended workflow: `brainstorm` + `plan` + `cook` + friends
 
-Three planning/execution skills as the front door, then hand off to the existing check + wrap-up skills.
+Two entry points (`watzup` for resume, `brainstorm` for new work), then execute and close out.
 
 ![Recommended workflow for brainstorm + plan + cook with supporting skills](assets/spec-plan-workflow.svg)
 
 Canonical pipeline:
 ```
-brainstorm → plan → cook → check → git / watzup / handoff
+watzup → cook → check → git → handoff          (resume)
+brainstorm → plan → cook → check → git → handoff  (new work)
 ```
 
 ### 1. Lock the problem with `brainstorm`
@@ -154,16 +155,20 @@ Use `plan` only after the spec is locked. It turns `.kit/planning/SPEC.md` into 
 ### 3. Run the kitchen with `cook`
 Use `cook` to execute the plan. It checks for missing artifacts and routes back to `brainstorm` or `plan` if needed; otherwise it runs the active phase wave-by-wave, dispatches subagents for heavy tasks, verifies every task, and calls `/check` as the phase gate. It never auto-commits — handoffs are suggested, not executed.
 
-### 4. Pull in support skills only when needed
+### 0. Orient with `watzup` (resume path)
+Use `watzup` at the start of a session to recap branch state, review committed + uncommitted changes, read handoff context, and get a concrete next action. If the branch has no work yet, `watzup` points you to `brainstorm`.
+
+### 4. Close the loop
 - [`/check`](skills/workflow/check/SKILL.md) is invoked by `cook` per phase, or directly for ad-hoc gate/review
-- [`/git`](skills/workflow/git/SKILL.md), [`/watzup`](skills/workflow/watzup/SKILL.md), and [`/handoff`](skills/workflow/handoff/SKILL.md) close or transfer a work session cleanly
+- [`/git`](skills/workflow/git/SKILL.md) and [`/handoff`](skills/workflow/handoff/SKILL.md) close or transfer a work session cleanly
 
 ### Mental model
+- `watzup` = recap **WHERE AM I** (session start)
 - `brainstorm` = lock **WHAT**
 - `plan` = lock **HOW**
 - `cook` = run **the kitchen** (execute, verify, gate)
 - `check` = catch risk and prove readiness (gate + analysis)
-- `git` / `watzup` / `handoff` = wrap up with discipline
+- `git` / `handoff` = wrap up with discipline
 
 ## Local Development
 

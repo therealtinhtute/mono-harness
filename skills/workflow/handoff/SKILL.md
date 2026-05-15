@@ -30,7 +30,7 @@ Act as a session continuity specialist. Snapshot current git state, active work,
 - When session context is at risk of being lost
 
 ## Defer To Instead
-- `watzup` — reviewing and assessing what changed this session (retrospective)
+- `watzup` — recap branch state and orient at the start of a new session (reads what handoff writes)
 - `git` — commit operations and PR creation
 - `check` — code quality audit and gate checks
 

@@ -1,69 +1,12 @@
-# Watzup Skill Examples
+# Watzup Recap Examples
 
 All examples conform to `output-contract.md`. None contain skill-internal mechanics.
 
 ---
 
-## Example 1: Standard fast review
+## Example 1: Resume with WIP and committed work
 
-**Scenario:** Wrap up a session on `feature/add-auth` after committed feature work.
-
-**Input:**
-```
-/watzup
-```
-
-**Output:**
-```
-Session — feature/add-auth (2026-05-09)
-
-Trạng thái:
-- Nhánh: feature/add-auth
-- Vị trí: 5 commits ahead of main
-- Working tree: sạch
-
-Thay đổi chính:
-- Thêm hệ thống xác thực (login, logout, session)
-- Triển khai xử lý JWT token
-- Bổ sung middleware và guards cho route bảo vệ
-
-Next: Bổ sung integration test cho luồng auth, sau đó tạo PR.
-```
-
----
-
-## Example 2: Pre-PR fast review
-
-**Scenario:** Branch is committed and tested; verify PR readiness.
-
-**Input:**
-```
-/watzup feature/add-auth
-```
-
-**Output:**
-```
-Session — feature/add-auth (2026-05-09)
-
-Trạng thái:
-- Nhánh: feature/add-auth
-- Vị trí: 8 commits ahead of main
-- Working tree: sạch
-
-Thay đổi chính:
-- Hệ thống xác thực hoàn chỉnh (login, logout, session, JWT)
-- Middleware và route guards
-- Integration test cho luồng auth
-- Cập nhật tài liệu API
-
-Next: Tạo PR vào main.
-```
-
----
-
-## Example 3: Fast review with risks
-
-**Scenario:** Database refactor branch with multiple safety gaps.
+**Scenario:** Start of session on `feature/add-auth`. Branch has committed work and uncommitted WIP. HANDOFF.md exists.
 
 **Input:**
 ```
@@ -72,33 +15,98 @@ Next: Tạo PR vào main.
 
 **Output:**
 ```
-Session — feature/refactor-db (2026-05-09)
+Recap — feature/add-auth (2026-05-15)
 
-Trạng thái:
-- Nhánh: feature/refactor-db
-- Vị trí: 3 commits ahead of main
-- Working tree: 2 file uncommitted (migrations/0042_*.sql)
+Trạng thái
+- Nhánh: feature/add-auth, 5 commits ahead of main
+- Uncommitted: 3 files, +45/-12 lines
+- Readiness: needs-work
 
-Thay đổi chính:
+Context
+- Handoff: JWT refresh flow partially implemented, stopped at token revocation
+- Artifact chain: skipped
+
+Thay đổi
+- Hệ thống xác thực login/logout/session
+- JWT token handling và middleware guards
+- [WIP] Token revocation endpoint — chưa hoàn thành
+
+Next: Hoàn thành token revocation trong src/auth/revoke.ts rồi bổ sung tests.
+```
+
+---
+
+## Example 2: Clean branch ready for PR
+
+**Scenario:** All work committed, clean tree, no blockers.
+
+**Input:**
+```
+/watzup
+```
+
+**Output:**
+```
+Recap — feature/add-auth (2026-05-15)
+
+Trạng thái
+- Nhánh: feature/add-auth, 8 commits ahead of main
+- Working tree: sạch
+- Readiness: ready-for-pr
+
+Context
+- Không có handoff
+
+Thay đổi
+- Hệ thống xác thực end-to-end (login, logout, JWT, session)
+- Middleware và route guards cho API endpoints
+- Integration tests cho luồng auth
+
+Next: Chạy /check review rồi tạo PR vào main.
+```
+
+---
+
+## Example 3: WIP with risks
+
+**Scenario:** Database refactor with uncommitted migrations and quality issues.
+
+**Input:**
+```
+/watzup
+```
+
+**Output:**
+```
+Recap — feature/refactor-db (2026-05-15)
+
+Trạng thái
+- Nhánh: feature/refactor-db, 3 commits ahead of main
+- Uncommitted: 2 files, +180/-0 lines
+- Readiness: needs-work
+
+Context
+- Không có handoff
+
+Thay đổi
 - Schema migration (users, sessions, tokens)
-- Cập nhật ORM model
-- Migration scripts
+- Cập nhật ORM models
+- [WIP] Migration scripts — chưa có rollback
 
-Risks:
+Risks
 | Risk | Mức độ | Action |
 |------|--------|--------|
-| Schema migration không có rollback | cao | Thêm rollback migration trước khi merge |
-| Thay đổi schema lớn, có thể breaking | cao | Test trên staging trước khi tạo PR |
+| Schema migration không có rollback | cao | Thêm rollback migration trước khi commit |
 | Thiếu integration test cho migration | vừa | Thêm test trên dataset mẫu |
 
-Next: Bổ sung rollback migration và staging test trước khi tạo PR.
+Next: Bổ sung rollback migration cho 0042_*.sql.
 ```
 
 ---
 
-## Example 4: Fast clean state
+## Example 4: Empty state
 
-**Scenario:** Working tree clean, no new activity since last review.
+**Scenario:** Clean tree, no commits ahead of main, no handoff.
 
 **Input:**
 ```
@@ -107,95 +115,79 @@ Next: Bổ sung rollback migration và staging test trước khi tạo PR.
 
 **Output:**
 ```
-Đã sạch — không có thay đổi.
-Next: Bắt đầu nhánh mới hoặc kéo thay đổi mới nhất từ remote.
+Nhánh sạch — không có thay đổi nào so với main.
+Next: Bắt đầu task mới hoặc kéo thay đổi mới nhất.
 ```
-
-No file is written even if invoked as `/watzup deep` in this state.
 
 ---
 
-## Example 5: Deep mode
+## Example 5: Resume with harness artifacts
 
-**Scenario:** Pre-PR comprehensive review on `feature/add-auth`. Markdown by default; HTML excerpt below shows the self-contained format.
+**Scenario:** Midway through a cook pipeline. HANDOFF.md and artifacts exist.
 
 **Input:**
 ```
-/watzup feature/add-auth deep
+/watzup
 ```
 
-**File written:** `.kit/reports/watzup/20260509-feature-add-auth.md`
+**Output:**
+```
+Recap — feature/inbox-ui (2026-05-15)
 
-**File content:**
-```markdown
----
-title: Session — feature/add-auth (2026-05-09)
-branch: feature/add-auth
-commits: 8
-files: 18
-created: 2026-05-09
-tags: [watzup, review, session]
----
-
-# Session — feature/add-auth (2026-05-09)
-
-## Trạng thái
-- Nhánh: feature/add-auth
-- Vị trí: 8 commits ahead of main
+Trạng thái
+- Nhánh: feature/inbox-ui, 4 commits ahead of main
 - Working tree: sạch
+- Readiness: needs-work
 
-## Changes Overview
-- Commits: 8 (feat: 5, test: 2, docs: 1)
-- Files: 14 modified, 4 added, 0 removed
-- Lines: +680 / -95
+Context
+- Handoff: Phase inbox-ui hoàn tất cook, gate còn thiếu proof cho 1 task
+- Phase: inbox-ui | Cook run: passed | Check: needs-proof
 
-## Key Changes
-1. Hệ thống xác thực end-to-end — bao phủ login, logout, session, JWT
-2. Middleware và route guards — bảo vệ API endpoints
-3. Integration test cho luồng auth — coverage tăng đáng kể
-4. Cập nhật tài liệu API — endpoints mới được mô tả đầy đủ
+Thay đổi
+- Inbox UI component với list/detail views
+- API integration cho inbox endpoints
+- Unit tests cho inbox components
 
-## Quality Assessment
-- Test Coverage: increased
-- Documentation: updated
-- Breaking Changes: no
-
-## Risks & Blockers
+Risks
 | Risk | Mức độ | Action |
 |------|--------|--------|
-| Token refresh chưa có rate limit | vừa | Thêm middleware giới hạn tần suất refresh trước khi merge |
-| Logout không revoke refresh token phía server | thấp | Thêm endpoint revoke và gọi từ client khi logout |
+| Proof trail thiếu cho inbox-ui task | vừa | Bổ sung verification output rồi chạy lại /check |
 
-## Next Steps
-1. Áp dụng rate limit cho token refresh
-2. Bổ sung revoke flow phía server
-3. Tạo PR vào main và mời reviewer cho phần JWT handling
+Next: Cập nhật run artifact rồi chạy /check gate.
 ```
-
-**Console summary** (printed alongside the file): same shape as Example 2.
 
 ---
 
-### HTML output excerpt (`/watzup feature/add-auth deep --format=html`)
+## Example 6: Blocked state from handoff
 
-```html
-<!doctype html>
-<html lang="vi">
-<head>
-  <meta charset="utf-8">
-  <title>Session — feature/add-auth (2026-05-09)</title>
-  <style>
-    body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 2rem auto; line-height: 1.5; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; }
-    th { background: #f6f8fa; }
-  </style>
-</head>
-<body>
-  <h1>Session — feature/add-auth (2026-05-09)</h1>
-  <!-- Trạng thái, Changes Overview, Key Changes, Quality Assessment, Risks & Blockers, Next Steps follow -->
-</body>
-</html>
+**Scenario:** Previous session ended with explicit blocker.
+
+**Input:**
+```
+/watzup
 ```
 
-The HTML file is fully self-contained: no `<link rel="stylesheet">`, no `<script src="...">`, no external fonts or CDN URLs.
+**Output:**
+```
+Recap — feature/triage-rules (2026-05-15)
+
+Trạng thái
+- Nhánh: feature/triage-rules, 2 commits ahead of main
+- Uncommitted: 1 file
+- Readiness: blocked
+
+Context
+- Handoff: Dừng ở phase triage-rules — spec và plan lệch nhau (contract drift)
+- Phase: triage-rules | Cook run: blocked
+
+Thay đổi
+- Triage rule engine cơ bản
+- [WIP] Rule configuration — dừng do scope conflict
+
+Risks
+| Risk | Mức độ | Action |
+|------|--------|--------|
+| Spec và phase plan lệch nhau | cao | Chạy /plan phase triage-rules để khóa scope đúng |
+
+Next: Chạy /plan phase triage-rules để refresh scope trước khi code tiếp.
+```

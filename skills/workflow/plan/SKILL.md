@@ -71,7 +71,7 @@ Task rules: group tasks into waves; parallelize only when dependencies truly all
 
 ### Step 5: Workflow-state integrity + handoff guidance
 Before finishing, verify `.kit/workflow-state.yml` points at the exact phase files just written. In `full` mode, `current_phase` should default to the recommended entry phase; in `phase` mode, preserve prior pointers unless the refreshed phase becomes the active one.
-At the end, suggest `check` after implementation, plus `git`, `watzup`, or `handoff` when wrap-up or transfer is relevant.
+At the end, suggest `check` after implementation, plus `git` or `handoff` when wrap-up or transfer is relevant.
 
 ## Output Format
 Save to: `.kit/planning/ROADMAP.md`, `.kit/planning/phases/{phase-slug}/`, and `.kit/workflow-state.yml`.
