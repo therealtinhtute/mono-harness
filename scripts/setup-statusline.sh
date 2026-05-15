@@ -17,7 +17,7 @@ fi
 # Write the statusline script
 cat > "$DEST" << 'STATUSLINE_EOF'
 #!/bin/sh
-# slim.sh — model-first layout: ✦ model  ▰▱ N%  ϟ tpm  ⌥ branch  +N -N
+# slim.sh — model-first layout: ✦ model  ▰▱ N%  ϟ tpm  ⌥ branch
 
 TPM_STATE_PREFIX="claude-code-statusline-tpm"
 TPM_WINDOW_MS=300000
@@ -68,27 +68,26 @@ if [ -n "$safe_id" ]; then
 fi
 
 # Progress bar
-filled=$((used / 20))
-[ "$used" -ge 95 ] && filled=5
-[ "$filled" -gt 5 ] && filled=5
+filled=$((used * 8 / 100))
+[ "$filled" -gt 8 ] && filled=8
 case $filled in
-  0) bar="▱▱▱▱▱" ;; 1) bar="▰▱▱▱▱" ;; 2) bar="▰▰▱▱▱" ;; 3) bar="▰▰▰▱▱" ;; 4) bar="▰▰▰▰▱" ;; 5) bar="▰▰▰▰▰" ;;
+  0) bar="────────" ;; 1) bar="━───────" ;; 2) bar="━━──────" ;;
+  3) bar="━━━─────" ;; 4) bar="━━━━────" ;; 5) bar="━━━━━───" ;;
+  6) bar="━━━━━━──" ;; 7) bar="━━━━━━━─" ;; 8) bar="━━━━━━━━" ;;
 esac
 
 # Context color
 if [ "$used" -ge 75 ]; then
-  ctx_color="\033[38;5;208m"
+  ctx_color="\033[91m"
 elif [ "$used" -ge 50 ]; then
   ctx_color="\033[93m"
-elif [ "$used" -ge 35 ]; then
-  ctx_color="\033[38;5;148m"
 else
   ctx_color="\033[38;5;247m"
 fi
 
 dim="\033[38;5;247m"
 reset="\033[0m"
-sep="  "
+sep=" · "
 
 # Git branch
 branch=""
@@ -99,7 +98,7 @@ if [ -n "$cwd" ]; then
 fi
 
 # Output
-printf "\033[38;5;252m✦ %s${reset}" "$model"
+printf "\033[38;5;208m✦ %s${reset}" "$model"
 printf "${sep}${ctx_color}%s %s%%${reset}" "$bar" "$used"
 if [ "$tpm" -gt 0 ]; then
   if [ "$tpm" -ge 10000 ]; then
@@ -109,7 +108,7 @@ if [ "$tpm" -gt 0 ]; then
   else
     tpm_display="$tpm"
   fi
-  printf "${sep}${dim}ϟ %s tpm${reset}" "$tpm_display"
+  printf "${sep}\033[93mϟ${reset} ${dim}%s tpm${reset}" "$tpm_display"
 fi
 [ -n "$branch" ] && printf "${sep}\033[36m⌥ %s${reset}" "$branch"
 printf "\n"
