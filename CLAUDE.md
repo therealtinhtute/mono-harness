@@ -13,19 +13,24 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 ├── README.md               # Skill directory and install instructions
 ├── CLAUDE.md               # This file
 ├── skills/                 # Installable agent skills (npx skills add)
-│   ├── bash-tui/
-│   ├── brainstorm/
-│   ├── check/
-│   ├── cook/
-│   ├── git/
-│   ├── handoff/
-│   ├── interview/
-│   ├── librarian/
-│   ├── plan/
-│   ├── prompt-leverage/
-│   ├── skill-creator/
-│   ├── turbo-mono-platform/
-│   └── watzup/
+│   ├── workflow/           # Agentic orchestration chain
+│   │   ├── brainstorm/
+│   │   ├── plan/
+│   │   ├── autoplan/
+│   │   ├── cook/
+│   │   ├── interview/
+│   │   ├── check/
+│   │   ├── git/
+│   │   ├── handoff/
+│   │   └── watzup/
+│   ├── shipping/           # Build & ship code
+│   │   ├── bash-tui/
+│   │   └── turbo-mono-platform/
+│   └── craft/              # Research, writing, meta-skills
+│       ├── write/
+│       ├── librarian/
+│       ├── skill-creator/
+│       └── prompt-leverage/
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
 │   ├── ask-user-question.md   # AskUserQuestion enforcement
 │   ├── english.md             # English coaching
