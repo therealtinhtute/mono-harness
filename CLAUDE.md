@@ -29,6 +29,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   └── craft/              # Research, writing, meta-skills
 │       ├── write/
 │       ├── librarian/
+│       ├── create-cli/
 │       ├── skill-creator/
 │       └── prompt-leverage/
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
@@ -36,8 +37,11 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── english.md             # English coaching
 │   └── karpathy-guidelines.md # Karpathy coding principles
 ├── scripts/                # Repo utility scripts
-│   ├── sync-from-kit.sh    # Incubator → repo sync
-│   └── setup-statusline.sh # Statusline installer
+│   ├── sync-from-kit.sh       # Incubator → repo sync
+│   ├── setup-statusline.sh    # Statusline installer
+│   ├── generate-dashboard.sh  # Dashboard generation
+│   ├── validate-skill.sh      # Skill validation
+│   └── install-git-hooks.sh   # Git hooks installer
 ├── setup/                  # Example configs
 │   └── settings.json       # Claude Code settings template
 └── assets/                 # README visuals
