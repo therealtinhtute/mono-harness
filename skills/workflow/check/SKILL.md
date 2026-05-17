@@ -1,6 +1,6 @@
 ---
 name: check
-version: "1.1.0"
+version: "1.2.0"
 description: "Pre-commit and pre-merge gate. Runs tests, lint, build, then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/cook`."
 model: opus
 allowed-tools: "Read Grep Glob Bash"
@@ -8,7 +8,7 @@ argument-hint: "[gate|review|full]"
 tags: [check, review, quality, security, gate]
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers.
@@ -104,16 +104,32 @@ Scale depth to scope. In `full` mode, artifact drift findings come before normal
 
 Apply all `safe_auto` first. Batch all `gated_auto` into one confirmation block — never ask separately about each one.
 
+## Pattern-Fix Completeness
+
+When the diff fixes one instance of a class-of-bug (missing validation, wrong selector, off-by-one, missing lock), the same shape often lives elsewhere. Extract the pattern signature, `grep -rn` it across the repo (exclude generated dirs), and confirm sibling instances were also handled. List any unswept sibling: flag as a hard stop when it carries the same risk, advisory when lower-risk.
+
 ## Hard Stops
 Flag before merging. Use judgment — list is not exhaustive.
+- **No unverified claims**: do not write "I verified X", "I ran Y", "tests pass" unless the shell output is in this turn's transcript. If reasoning without running, say "based on reading the code" instead of "I verified". Every verification claim in the sign-off must point to a command that actually ran in this session.
 - **Unknown identifiers**: any function, var, or type in the diff that does not exist in the codebase — grep before approving: `grep -r "name" .`
 - **Hardcoded credentials**: secrets, tokens, or API keys in code, logs, or docs
 - **Version skew**: version fields across manifests, changelogs, and tags out of sync
 - **Generated artifact drift**: source changed but generated outputs not regenerated
 - **Injection / validation gap**: SQL, command, or path injection at system entry points
+- **Safety sinks**: destructive file operations (delete/move/overwrite user files, caches, history), shell/AppleScript/SQL/path construction from user input, cwd/symlink/path-traversal guard changes, sandbox/approval boundary changes, signing/notarization/appcast flows. Review validation and rollback for each.
 - **Spec contradiction**: implemented behavior conflicts with a locked requirement
 - **Phase boundary violation**: changed files exceed allowed surfaces without an approved plan refresh
 - **Missing proof trail**: planned verification commands absent from the cook run artifact or gate evidence
+
+## Knowledge Sync
+
+After reviewing the diff, check whether it introduces invariants not yet captured in project docs:
+- New safety gate or path-guard rule → `AGENTS.md` or `CLAUDE.md`
+- New UI constraint (layout rule, animation, overlay registration) → `.claude/rules/*.md`
+- New deploy/release step or artifact → `AGENTS.md` or `docs/`
+- New cross-file sync requirement (enum ↔ HTML anchors, keys ↔ translations) → `AGENTS.md`
+
+If found, apply the doc update as `safe_auto` (when the invariant is clear from the diff) or flag in sign-off as `doc debt`. When no new invariants exist, sign-off says `doc debt: none`.
 
 ## Output Format
 Save to: chat response always. Also save `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md` when harness artifacts are present or the user asks for a persisted report. When a persisted report is written, refresh `.kit/workflow-state.yml` so `latest_check_report` and `last_updated` match the saved verdict.
