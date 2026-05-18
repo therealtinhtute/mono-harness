@@ -23,12 +23,11 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   │   ├── handoff/
 │   │   └── watzup/
 │   ├── shipping/           # Build & ship code
-│   │   ├── bash-tui/
+│   │   ├── create-cli/
 │   │   └── turbo-mono-platform/
 │   └── craft/              # Research, writing, meta-skills
 │       ├── write/
 │       ├── librarian/
-│       ├── create-cli/
 │       ├── skill-creator/
 │       └── prompt-leverage/
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)

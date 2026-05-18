@@ -5,7 +5,7 @@ description: >
   Design CLI interfaces (commands, flags, I/O, errors, config) and produce implementation
   roadmaps with framework choice and shipping strategy. Handles greenfield and retrofit.
 argument-hint: "[cli name or existing script path]"
-effort: medium
+effort: high
 context: fork
 compatibility: Designed for Claude Code
 metadata:
@@ -166,10 +166,22 @@ Like greenfield Phase 3, but ordered to minimize breakage:
 
 ## Output Format
 
-Save spec to: `.kit/planning/cli-{name}-spec.md`
-Save roadmap to: `.kit/planning/cli-{name}-roadmap.md`
+Save to: `.kit/planning/cli-{name}-spec.md` (spec) and `.kit/planning/cli-{name}-roadmap.md` (roadmap).
 
 These integrate with `/brainstorm → /plan → /cook` workflow.
+
+Frontmatter:
+```yaml
+---
+title: CLI Spec — {name}
+description: {one-liner}
+status: draft
+created: {date}
+tags: [cli, {language}]
+---
+```
+
+See `references/examples.md` for sample spec and roadmap outputs.
 
 </instructions>
 
@@ -179,4 +191,5 @@ Load as needed from `{baseDir}/references/`:
 - `framework-matrix.md` — Go vs Rust vs Node vs Bash decision matrix
 - `shipping-checklist.md` — Distribution, packaging, and release automation
 - `spec-template.md` — CLI spec skeleton to fill in
+- `examples.md` — Sample spec and roadmap outputs for greenfield and retrofit CLIs
 </references>
