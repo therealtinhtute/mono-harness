@@ -1,5 +1,6 @@
 ---
 name: create-cli
+model: sonnet
 description: >
   Design CLI interfaces (commands, flags, I/O, errors, config) and produce implementation
   roadmaps with framework choice and shipping strategy. Handles greenfield and retrofit.

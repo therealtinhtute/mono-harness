@@ -1,5 +1,6 @@
 ---
 name: turbo-mono-platform
+model: sonnet
 argument-hint: "[layer or feature]"
 description: >
   Full-stack TypeScript monorepo specialist: Turborepo, Next.js, Hono, tRPC, Drizzle,
