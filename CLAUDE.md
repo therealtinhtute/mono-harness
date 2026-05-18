@@ -16,7 +16,6 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── workflow/           # Agentic orchestration chain
 │   │   ├── brainstorm/
 │   │   ├── plan/
-│   │   ├── autoplan/
 │   │   ├── cook/
 │   │   ├── interview/
 │   │   ├── check/

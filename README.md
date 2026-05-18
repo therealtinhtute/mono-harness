@@ -99,7 +99,6 @@ bash scripts/setup-statusline.sh
 | :--- | :--- | :--- |
 | [`/brainstorm`](skills/workflow/brainstorm/SKILL.md) | Project bootstrap, feature scoping, ideation, architecture decisions | Turn an idea, notes, or markdown files into a locked `.kit/planning/SPEC.md` — exploring options and trade-offs along the way. |
 | [`/plan`](skills/workflow/plan/SKILL.md) | After brainstorm, before implementation | Turn a locked `.kit/planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
-| [`/autoplan`](skills/workflow/autoplan/SKILL.md) | Rough idea → execution plan | Start from a rough idea or markdown spec, clarify gaps, do light research, and produce an execution-ready plan. |
 | [`/cook`](skills/workflow/cook/SKILL.md) | "Implement this plan", "build it end-to-end" | Execution orchestrator after `brainstorm` + `plan`. Routes to upstream skills if artifacts are missing; runs phase waves; verifies every task; gates via `/check`. |
 | [`/interview`](skills/workflow/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
 | [`/check`](skills/workflow/check/SKILL.md) | Before commit, PR, or merge; phase gate after `/cook` | Gate (tests, lint, build) + code review (security, architecture, quality). |
