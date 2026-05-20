@@ -1,46 +1,36 @@
 # Validated Spec Template
 
-Use this template when writing validated specs after interview completion.
-
 ```markdown
 ---
 title: {Plan Title}
 status: validated
 interviewed: YYYY-MM-DD
-reviewer: interview-skill
 ---
 
-## Goal
-{What is being built and why}
+## Outcome
+{Single truth that must be real when this work is done}
 
-## Approach
-{How it will be built, validated through interview}
+## Success Condition
+{Measurable proof — verifiable by someone who wasn't in the interview}
 
 ## Scope
-**In scope:**
-- {item-1}
-- {item-2}
+**May change:** {files, modules, areas}
+**Must not change:** {contracts, schemas, behaviors}
 
-**Out of scope:**
-- {item-1}
-- {item-2}
+## Context to Read First
+- {file, doc, service needed to start cold}
 
 ## Key Decisions
-1. **{Decision}**: {Rationale and tradeoffs}
-2. **{Decision}**: {Rationale and tradeoffs}
+1. **{Decision}**: {Choice} — because {rationale}. Depends on: {related decision, if any}.
 
-## Technical Implementation
-{Detailed implementation plan from interview}
+## Validation Loop
+**During work:** {cheap, fast checks after each change}
+**Final proof:** {comprehensive checks before claiming done}
 
-## Edge Cases & Error Handling
-{Identified edge cases and handling strategy}
-
-## Testing Strategy
-{Test coverage and validation approach}
-
-## Rollback Plan
-{How to revert if needed}
-
-## Interview Notes
-{Key insights from interview process}
+## Stop / Pause
+**Done when:** {unambiguous criteria}
+**Pause if:** {conditions requiring human input}
 ```
+
+All six hard-gate fields must be filled. No TBD, TODO, or placeholders.
+Present the draft for acceptance before writing to file.
