@@ -77,7 +77,7 @@ brainstorm → plan → cook → check → git → handoff  (new work)
 - `check` — pre-commit gate and post-implementation review (also invoked per phase by `cook`)
 - `git` / `handoff` — session close-out
 
-`interview` is optional and only used when a plan needs human-in-the-loop validation before `cook`.
+`interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `cook`. Can sit between `brainstorm` and `plan`, or between `plan` and `cook`.
 
 ## Architecture Notes
 
