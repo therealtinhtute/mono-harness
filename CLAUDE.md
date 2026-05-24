@@ -34,6 +34,8 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── ask-user-question.md   # AskUserQuestion enforcement
 │   ├── english.md             # English coaching
 │   └── karpathy-guidelines.md # Karpathy coding principles
+├── docs/                   # Repo-wide reference docs
+│   └── prompt-engineering-principles.md  # Prompting principles for writing skills/rules
 ├── scripts/                # Repo utility scripts
 │   ├── sync-from-kit.sh       # Incubator → repo sync
 │   ├── setup-statusline.sh    # Statusline installer
@@ -78,6 +80,10 @@ brainstorm → plan → cook → check → git → handoff  (new work)
 - `git` / `handoff` — session close-out
 
 `interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `cook`. Can sit between `brainstorm` and `plan`, or between `plan` and `cook`.
+
+## Prompt Engineering Reference
+
+When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent instruction file, read `docs/prompt-engineering-principles.md` first. It covers: context engineering principles, formatting syntax (XML vs Markdown, bullets vs paragraphs), language rules, few-shot patterns, anti-patterns, and cross-model awareness.
 
 ## Architecture Notes
 
