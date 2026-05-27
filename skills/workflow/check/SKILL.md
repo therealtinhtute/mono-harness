@@ -1,7 +1,7 @@
 ---
 name: check
 version: "1.2.0"
-description: "Pre-commit and pre-merge gate. Runs tests, lint, build, then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/cook`."
+description: "Pre-commit and pre-merge gate. Runs tests, lint, build, then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/work`."
 model: opus
 allowed-tools: "Read Grep Glob Bash"
 argument-hint: "[gate|review|full]"
@@ -35,7 +35,7 @@ Act as a quality gate specialist. Run checks with real evidence, then review cod
 ## When to Use
 - Before committing, creating a PR, or merging
 - After implementing a feature or fix
-- As the per-phase quality gate after `cook`
+- As the per-phase quality gate after `work`
 - When the user mentions an issue or PR to review
 
 ## Defer To Instead
@@ -67,7 +67,7 @@ Drift = any changed file with no connection to the stated goal.
 Flag drift before running checks — do not silently continue.
 
 ## Step 1.5: Artifact Alignment
-When `.kit/planning/` artifacts are present, inspect `.kit/workflow-state.yml` first when available, then inspect `.kit/planning/SPEC.md`, `.kit/planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/cook/*.md` if `cook` was used. Treat manifest pointers as a fast index only: verify every pointed file exists before trusting it, and if a report is persisted write its exact path back into `latest_check_report`. Label alignment as **aligned** / **drift** / **skipped**.
+When `.kit/planning/` artifacts are present, inspect `.kit/workflow-state.yml` first when available, then inspect `.kit/planning/SPEC.md`, `.kit/planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/work/*.md` if `work` was used. Treat manifest pointers as a fast index only: verify every pointed file exists before trusting it, and if a report is persisted write its exact path back into `latest_check_report`. Label alignment as **aligned** / **drift** / **skipped**.
 Drift includes changed files outside allowed surfaces, behavior not justified by the spec, missing planned verification proof, or code that contradicts locked context decisions. See `references/artifact-alignment.md`.
 
 ## Phase 1 — Gate (`gate`, `review`, `full`)
@@ -119,7 +119,7 @@ Flag before merging. Use judgment — list is not exhaustive.
 - **Safety sinks**: destructive file operations (delete/move/overwrite user files, caches, history), shell/AppleScript/SQL/path construction from user input, cwd/symlink/path-traversal guard changes, sandbox/approval boundary changes, signing/notarization/appcast flows. Review validation and rollback for each.
 - **Spec contradiction**: implemented behavior conflicts with a locked requirement
 - **Phase boundary violation**: changed files exceed allowed surfaces without an approved plan refresh
-- **Missing proof trail**: planned verification commands absent from the cook run artifact or gate evidence
+- **Missing proof trail**: planned verification commands absent from the work run artifact or gate evidence
 
 ## Knowledge Sync
 

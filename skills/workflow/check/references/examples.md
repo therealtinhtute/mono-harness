@@ -1,6 +1,6 @@
 # Check Examples
 
-## Example 1 — Phase gate after cook
+## Example 1 — Phase gate after work
 
 **Input**: `check full`
 
@@ -8,7 +8,7 @@
 - phase diff touches `src/inbox/*`
 - `.kit/planning/SPEC.md` exists
 - `.kit/planning/phases/inbox-ui/inbox-ui-PLAN.md` exists
-- latest `.kit/runs/cook/20240901-1010-inbox-ui.md` shows `pnpm test inbox.spec.ts`
+- latest `.kit/runs/work/20240901-1010-inbox-ui.md` shows `pnpm test inbox.spec.ts`
 
 **Response shape**:
 ```text
@@ -18,10 +18,10 @@ scope: on target
 artifact_alignment: ❌ drift
 - spec coverage is consistent with inbox-ui requirements
 - phase boundary respected
-- cook run log is missing verification output for task T5
+- work run log is missing verification output for task T5
 
 next:
-- rerun `/cook phase inbox-ui` or append proof to the run artifact
+- rerun `/work phase inbox-ui` or append proof to the run artifact
 - then re-run `/check full`
 ```
 
@@ -51,7 +51,7 @@ next:
 **Input**: `check review`
 
 **Observed context**:
-- no `.kit/planning/` or `.kit/runs/cook/` artifacts exist
+- no `.kit/planning/` or `.kit/runs/work/` artifacts exist
 
 **Response shape**:
 ```text

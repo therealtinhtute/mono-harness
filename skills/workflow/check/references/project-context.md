@@ -33,7 +33,7 @@ When project context and this skill overlap, apply the stricter rule.
 
 If `AGENTS.md` or `CLAUDE.md` defines a verification command → use that, not auto-detection.
 If project docs say never auto-commit → skip any autofix that would commit.
-If `.kit/planning/` + `.kit/runs/cook/` are present → treat artifact alignment as part of the gate, not an optional note.
+If `.kit/planning/` + `.kit/runs/work/` are present → treat artifact alignment as part of the gate, not an optional note.
 
 ## Skip Context Extraction When
 
@@ -43,7 +43,7 @@ If `.kit/planning/` + `.kit/runs/cook/` are present → treat artifact alignment
 ## Harness Detection
 
 Classify the repo before review:
-- `full` — `.kit/planning/SPEC.md` plus roadmap/phase artifacts exist, and `cook` run logs are used
+- `full` — `.kit/planning/SPEC.md` plus roadmap/phase artifacts exist, and `work` run logs are used
 - `partial` — some planning artifacts exist, but run logs or phase artifacts are incomplete
 - `none` — no harness artifacts present
 

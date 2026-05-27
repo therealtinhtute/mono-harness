@@ -54,4 +54,4 @@ Rules:
 - do not restate the entire spec
 - rejected options should explain tradeoffs briefly
 - deferred ideas should not leak back into scope
-- allowed/forbidden surfaces should be concrete enough that `cook` can detect drift
+- allowed/forbidden surfaces should be concrete enough that `work` can detect drift

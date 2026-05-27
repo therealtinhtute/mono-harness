@@ -1,11 +1,11 @@
 # Cook Run Artifact Template
 
-Use this structure for `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md`:
+Use this structure for `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md`:
 
 ```markdown
 # COOK RUN
 
-Run ID: cook-YYYYMMDD-HHmm-{slug}
+Run ID: work-YYYYMMDD-HHmm-{slug}
 Mode: full | simple
 Status: running | blocked | passed | aborted
 Spec: .kit/planning/SPEC.md | none

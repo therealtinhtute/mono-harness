@@ -2,7 +2,7 @@
 
 Status: draft
 Scope: core development-workflow skills only
-Included skills: `brainstorm`, `plan`, `cook`, `check`, `handoff`, `watzup`
+Included skills: `brainstorm`, `plan`, `work`, `check`, `handoff`, `watzup`
 Excluded from this document: utility/domain-capability skills such as `librarian`, `prompt-leverage`, `git`, `turbo-mono-platform`, and `bash-tui`
 Last updated: 2026-05-11
 
@@ -43,7 +43,7 @@ The core harness should behave like this:
 User intent
   -> brainstorm
   -> plan
-  -> cook
+  -> work
   -> check
   -> handoff / watzup
 ```
@@ -52,7 +52,7 @@ And each step should answer a different question:
 
 - `brainstorm` — What exactly are we doing?
 - `plan` — How should the work be executed safely?
-- `cook` — What happened during execution?
+- `work` — What happened during execution?
 - `check` — What proof shows it is correct and on-contract?
 - `handoff` — How does the next session resume safely?
 - `watzup` — What friction, entropy, or risk should the harness learn from?
@@ -77,13 +77,13 @@ Owner: `plan`
 Purpose:
 - convert a locked contract into phased work
 - define execution boundaries and expected proof
-- prepare tasks so `cook` can execute without guessing
+- prepare tasks so `work` can execute without guessing
 
 Output class:
 - canonical planning artifacts
 
 ### 3. Execution runtime
-Owner: `cook`
+Owner: `work`
 
 Purpose:
 - execute the plan inside defined boundaries
@@ -158,11 +158,11 @@ Location:
 - `.kit/runs/`
 
 Files:
-- `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md`
+- `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md`
 - optional later: `.kit/runs/check/{YYYYMMDD-HHmm}-{slug}.md`
 
 Rules:
-- owned by `cook` (and optionally `check`)
+- owned by `work` (and optionally `check`)
 - append new runs; do not overwrite prior runs by default
 - not a replacement for planning artifacts
 - primary use: inspectability, auditability, and resume support
@@ -245,7 +245,7 @@ Ephemeral artifacts record support information, runtime traces, or reflections.
 
 Examples:
 - `.kit/workflow-state.yml`
-- `.kit/runs/cook/...`
+- `.kit/runs/work/...`
 - `.kit/HANDOFF.md`
 - `.kit/reports/watzup/...`
 
@@ -260,8 +260,8 @@ Properties:
 | --- | --- | --- | --- | --- |
 | `brainstorm` | intake + contract lock | user prompt, notes, markdown refs | `.kit/planning/IDEA.md`, `.kit/planning/SPEC.md`, explore reports | canonical planning |
 | `plan` | execution design | `.kit/planning/SPEC.md` | `.kit/planning/ROADMAP.md`, phase context, phase plan, `.kit/workflow-state.yml` init | canonical planning + state |
-| `cook` | execution runtime | planning artifacts, workflow state | `.kit/runs/cook/...`, `.kit/workflow-state.yml`, code changes | execution + state |
-| `check` | proof + alignment gate | code diff, planning artifacts, latest cook run, workflow state | console verdict, `.kit/reports/check/...`, `.kit/workflow-state.yml` | gate + state |
+| `work` | execution runtime | planning artifacts, workflow state | `.kit/runs/work/...`, `.kit/workflow-state.yml`, code changes | execution + state |
+| `check` | proof + alignment gate | code diff, planning artifacts, latest work run, workflow state | console verdict, `.kit/reports/check/...`, `.kit/workflow-state.yml` | gate + state |
 | `handoff` | continuity | branch state, planning artifacts, latest run/gate, workflow state | `.kit/HANDOFF.md`, `.kit/workflow-state.yml` | continuity + state |
 | `watzup` | retrospective + entropy scan | repo state, planning artifacts, run artifacts, handoff, workflow state | `.kit/reports/watzup/...` | retrospective |
 
@@ -279,7 +279,7 @@ Input Type: new-spec | spec-slice | change-request | new-initiative | maintenanc
 Lane: tiny | normal | high-risk
 Risk Flags: auth, public-contract, weak-proof, ...
 Affected Surfaces: api, ui, worker, db, docs
-Downstream: plan full | plan phase | cook simple | none
+Downstream: plan full | plan phase | work simple | none
 Updated At: YYYY-MM-DD
 ```
 
@@ -313,17 +313,17 @@ Recommended fields:
 Phase: {phase-slug}
 Status: ready | stale | blocked
 Wave Count: N
-Execution Owner: cook
+Execution Owner: work
 Updated At: YYYY-MM-DD
 ```
 
 ## Required metadata for execution artifacts
 
-### `cook` run artifact
+### `work` run artifact
 Recommended fields:
 
 ```text
-Run ID: cook-YYYYMMDD-HHmm-{slug}
+Run ID: work-YYYYMMDD-HHmm-{slug}
 Spec: .kit/planning/SPEC.md
 Roadmap: .kit/planning/ROADMAP.md
 Phase: {phase-slug}
@@ -356,7 +356,7 @@ Reason: they represent the current best known contract or current resume state.
 ### Append / create new files
 Use append-by-new-file semantics for historical execution and retrospective
 artifacts:
-- `.kit/runs/cook/...`
+- `.kit/runs/work/...`
 - `.kit/reports/watzup/...`
 
 Reason: these should preserve history and support inspection.
@@ -393,13 +393,13 @@ Refactor targets:
 - add blast radius and proof expectations per phase
 - give each task a stable mini-schema: inputs, touched surfaces, expected
   output, verification, stop conditions, escalation path
-- optimize artifacts so `cook` can execute without inventing missing structure
+- optimize artifacts so `work` can execute without inventing missing structure
 
 Definition of success:
-- `cook` can execute a phase by reading artifacts, not by reconstructing the
+- `work` can execute a phase by reading artifacts, not by reconstructing the
   plan from chat context
 
-### `cook`
+### `work`
 Current strength:
 - good orchestration shape
 - already routes back upstream when artifacts are missing
@@ -435,7 +435,7 @@ Needed upgrade:
 
 Refactor targets:
 - read the relevant planning artifacts before final verdict
-- read the latest cook run when present
+- read the latest work run when present
 - report not only code quality, but contract alignment
 - add artifact-state verdicts: current, stale, missing
 - add proof-gap detection when code changed but expected evidence is weak
@@ -452,7 +452,7 @@ Needed upgrade:
 
 Refactor targets:
 - link active phase explicitly
-- link latest cook run and latest gate result
+- link latest work run and latest gate result
 - categorize blockers
 - provide next safe action instead of vague next steps
 
@@ -498,7 +498,7 @@ Create and agree on the artifact architecture and role boundaries.
 ### PR 2 — `brainstorm` + `plan`
 Add intake metadata, contract headers, and machine-readable planning structure.
 
-### PR 3 — `cook`
+### PR 3 — `work`
 Add execution run artifacts, preflight drift checks, and stop taxonomy.
 
 ### PR 4 — `check`
@@ -514,7 +514,7 @@ system with distinct layers:
 
 - `brainstorm` locks the contract
 - `plan` makes the contract executable
-- `cook` records what execution did
+- `work` records what execution did
 - `check` proves alignment and readiness
 - `handoff` preserves continuity
 - `watzup` improves the harness from friction
@@ -522,5 +522,5 @@ system with distinct layers:
 The most important near-term leverage points are:
 
 1. codify artifact ownership and classes
-2. make `cook` produce durable execution traces
+2. make `work` produce durable execution traces
 3. make `brainstorm` and `plan` more machine-legible for downstream skills

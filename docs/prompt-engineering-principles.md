@@ -2,7 +2,7 @@
 
 Reference for writing effective prompts, skills (SKILL.md), and rules. Read this before creating or editing any skill or rule file.
 
-Complements: `skills/craft/skill-creator/references/writing-effective-instructions.md` (HOW), `token-efficiency-criteria.md` (SIZE). This file covers WHY and SYNTAX.
+Complements: `skills/craft/create-skill/references/writing-effective-instructions.md` (HOW), `token-efficiency-criteria.md` (SIZE). This file covers WHY and SYNTAX.
 
 ## Core Principle: Context Engineering
 

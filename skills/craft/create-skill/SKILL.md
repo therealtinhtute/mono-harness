@@ -1,5 +1,5 @@
 ---
-name: skill-creator
+name: create-skill
 model: opus
 description: Create or update Claude skills with stronger structure, references, and benchmark-oriented instructions.
 argument-hint: "[skill-name or description]"
@@ -133,5 +133,5 @@ Load as needed from `{baseDir}/references/`:
 **Output**: Added standard terminology, numbered workflow steps, concrete file:line examples, and abbreviation expansions.
 
 ### Example 4: Package for Distribution
-**Input**: "Package skill-creator for distribution"
-**Output**: Ran `scripts/package_skill.py`, validated frontmatter/security, and generated `skill-creator.zip`.
+**Input**: "Package create-skill for distribution"
+**Output**: Ran `scripts/package_skill.py`, validated frontmatter/security, and generated `create-skill.zip`.

@@ -103,7 +103,7 @@ Handoff written to: .kit/HANDOFF.md
 ---
 
 ## Example 4: Harness Phase Handoff
-**Scenario**: Phase finished in `cook`, but `check` requested proof follow-up
+**Scenario**: Phase finished in `work`, but `check` requested proof follow-up
 
 **Input**:
 ```bash
@@ -117,7 +117,7 @@ Handoff written to: .kit/HANDOFF.md
 ✓ Git state: feature/inbox-ui (5 commits)
 ✓ Continuity mode: full-harness
 ✓ Active phase: inbox-ui
-✓ Latest cook run: .kit/runs/cook/20240901-1010-inbox-ui.md
+✓ Latest work run: .kit/runs/work/20240901-1010-inbox-ui.md
 ✓ Latest check verdict: APPROVE with requests
 ✓ Next steps: 2 actions
 
@@ -134,14 +134,14 @@ active-phase: inbox-ui
 
 ## Continuity Anchors
 
-**Latest Cook Run**: `.kit/runs/cook/20240901-1010-inbox-ui.md`
+**Latest Cook Run**: `.kit/runs/work/20240901-1010-inbox-ui.md`
 **Latest Check Verdict**: approve-with-requests
 **Proof / Drift Notes**:
-- missing verification output for task T5 in cook run log
+- missing verification output for task T5 in work run log
 
 ## Next Steps
 
-1. **→ START HERE: append proof for T5** — update the cook run artifact or rerun `/cook phase inbox-ui` so `check` can pass cleanly
+1. **→ START HERE: append proof for T5** — update the work run artifact or rerun `/work phase inbox-ui` so `check` can pass cleanly
 2. **Re-run /check full** — confirm artifact alignment is now clean
 ```
 

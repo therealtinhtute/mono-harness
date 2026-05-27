@@ -65,7 +65,7 @@ Section order (omit a section entirely if it has no content, except the title wh
    - In harness repos: artifact chain status
 3. **Context** — bullet list, max 2 items:
    - HANDOFF.md summary (where left off, key blocker) or "Không có handoff"
-   - Artifact chain state (phase, latest cook/check) if present
+   - Artifact chain state (phase, latest work/check) if present
 4. **Thay đổi** — bullet list, max 5 items, grouped by intent:
    - Committed change themes (from branch commits vs main)
    - WIP changes labeled with `[WIP]` prefix

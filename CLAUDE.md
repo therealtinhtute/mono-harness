@@ -16,7 +16,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   ├── workflow/           # Agentic orchestration chain
 │   │   ├── brainstorm/
 │   │   ├── plan/
-│   │   ├── cook/
+│   │   ├── work/
 │   │   ├── interview/
 │   │   ├── check/
 │   │   ├── git/
@@ -28,7 +28,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 │   └── craft/              # Research, writing, meta-skills
 │       ├── write/
 │       ├── librarian/
-│       ├── skill-creator/
+│       ├── create-skill/
 │       └── prompt-leverage/
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
 │   ├── ask-user-question.md   # AskUserQuestion enforcement
@@ -69,17 +69,17 @@ bash scripts/sync-from-kit.sh
 
 Two entry points:
 ```
-watzup → cook → check → git → handoff          (resume existing work)
-brainstorm → plan → cook → check → git → handoff  (new work)
+watzup → work → check → git → handoff          (resume existing work)
+brainstorm → plan → work → check → git → handoff  (new work)
 ```
 - `watzup` — recap branch state, committed + uncommitted changes, handoff context, recommend next action (session start)
 - `brainstorm` — explore options and lock requirements into `.kit/planning/SPEC.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
 - `plan` — generate executable phase plans from the locked spec
-- `cook` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
-- `check` — pre-commit gate and post-implementation review (also invoked per phase by `cook`)
+- `work` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
+- `check` — pre-commit gate and post-implementation review (also invoked per phase by `work`)
 - `git` / `handoff` — session close-out
 
-`interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `cook`. Can sit between `brainstorm` and `plan`, or between `plan` and `cook`.
+`interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `plan`, or between `plan` and `work`.
 
 ## Prompt Engineering Reference
 

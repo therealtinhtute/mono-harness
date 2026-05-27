@@ -35,7 +35,7 @@ for the constraints, plan distribution, and hand off to implementation skills.
 ## Defer To Instead
 - `bash-tui` — interactive TUI components (menus, spinners, progress bars)
 - `think` — general architecture decisions not specific to CLIs
-- `cook` — actual implementation after spec is approved
+- `work` — actual implementation after spec is approved
 - `review` — auditing CLI code quality and security
 </context>
 
@@ -168,7 +168,7 @@ Like greenfield Phase 3, but ordered to minimize breakage:
 
 Save to: `.kit/planning/cli-{name}-spec.md` (spec) and `.kit/planning/cli-{name}-roadmap.md` (roadmap).
 
-These integrate with `/brainstorm → /plan → /cook` workflow.
+These integrate with `/brainstorm → /plan → /work` workflow.
 
 Frontmatter:
 ```yaml

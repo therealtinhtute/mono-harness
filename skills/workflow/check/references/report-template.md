@@ -13,7 +13,7 @@ Phase: {phase-slug} | none
 Spec: .kit/planning/SPEC.md | none
 Plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
 Workflow State: .kit/workflow-state.yml | none
-Cook Run: .kit/runs/cook/{file}.md | none
+Cook Run: .kit/runs/work/{file}.md | none
 Created At: YYYY-MM-DD HH:mm
 
 ## Gate Evidence
@@ -40,13 +40,13 @@ Created At: YYYY-MM-DD HH:mm
 - none | finding
 
 ## Next Action
-- rerun `cook`
+- rerun `work`
 - refresh `plan phase {slug}`
 - ready for PR
 ```
 
 Rules:
 - create one file per check run; do not overwrite older results from the same day unless the exact timestamp path is reused intentionally
-- when harness artifacts are present, include the active phase and latest cook run path if known
+- when harness artifacts are present, include the active phase and latest work run path if known
 - after persisting the report, update `.kit/workflow-state.yml` with `latest_check_report`, keep `current_phase` unchanged unless the gate closed the phase, and refresh `last_updated`
 - keep the persisted report consistent with the chat sign-off block

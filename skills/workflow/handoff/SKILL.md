@@ -12,7 +12,7 @@ metadata:
 Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
 
 <role>
-Act as a session continuity specialist. Snapshot current git state, active work, blockers, and next steps into `.kit/HANDOFF.md`. When harness artifacts exist, anchor the handoff to phase state, cook run evidence, and the latest quality-gate verdict. Focus on what the next session needs to pick up — not on re-reviewing the work.
+Act as a session continuity specialist. Snapshot current git state, active work, blockers, and next steps into `.kit/HANDOFF.md`. When harness artifacts exist, anchor the handoff to phase state, work run evidence, and the latest quality-gate verdict. Focus on what the next session needs to pick up — not on re-reviewing the work.
 </role>
 
 <security>
@@ -36,7 +36,7 @@ Act as a session continuity specialist. Snapshot current git state, active work,
 
 
 ## Scope
-This skill handles session state capture and handoff documentation. In harness flows, it summarizes continuity across `.kit/planning/`, `.kit/runs/cook/`, and the latest `check` outcome. It does NOT handle code implementation, testing, or deployment.
+This skill handles session state capture and handoff documentation. In harness flows, it summarizes continuity across `.kit/planning/`, `.kit/runs/work/`, and the latest `check` outcome. It does NOT handle code implementation, testing, or deployment.
 
 **IMPORTANT:** sacrifice grammar for concision, keep token use lean, and focus on actionable context.
 
@@ -69,7 +69,7 @@ Extract: current branch, upstream status, uncommitted changes, untracked files, 
 - `.kit/workflow-state.yml` as the first continuity index
 - `.kit/planning/ROADMAP.md` for active phase order
 - phase `-CONTEXT.md` + `-PLAN.md` for locked decisions and remaining tasks
-- latest `.kit/runs/cook/*.md` for task statuses, blockers, and proof trail
+- latest `.kit/runs/work/*.md` for task statuses, blockers, and proof trail
 - latest `check` verdict for gate state
 
 **From task tracking (fallback):**
@@ -80,7 +80,7 @@ find . -name "todo.md" -o -name "tasks.md" -o -name "HANDOFF.md" | head -3
 Read existing task files to understand planned work, completed items, pending items, and blockers.
 
 ### Step 3: Capture Context
-Document what is in progress, key decisions made this session, current environment state, and — when present — active phase, latest cook run state, and latest check verdict. See `references/context-guidelines.md` and `references/continuity-sources.md`.
+Document what is in progress, key decisions made this session, current environment state, and — when present — active phase, latest work run state, and latest check verdict. See `references/context-guidelines.md` and `references/continuity-sources.md`.
 
 ### Step 4: Identify Blockers
 
@@ -103,7 +103,7 @@ Check: branch state captured? blockers specific? next action has a clear first s
 
 ## Output Format
 Save to: `.kit/HANDOFF.md`. Frontmatter: not required.
-Always write branch + upstream status, continuity mode, active phase or `none`, latest cook run path or `none`, latest check verdict or `none`, and a single `→ START HERE` next action.
+Always write branch + upstream status, continuity mode, active phase or `none`, latest work run path or `none`, latest check verdict or `none`, and a single `→ START HERE` next action.
 See `references/examples.md` for console and file output formats.
 
 ## Error Handling

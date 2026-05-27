@@ -123,7 +123,7 @@ Next: Bắt đầu task mới hoặc kéo thay đổi mới nhất.
 
 ## Example 5: Resume with harness artifacts
 
-**Scenario:** Midway through a cook pipeline. HANDOFF.md and artifacts exist.
+**Scenario:** Midway through a work pipeline. HANDOFF.md and artifacts exist.
 
 **Input:**
 ```
@@ -140,7 +140,7 @@ Trạng thái
 - Readiness: needs-work
 
 Context
-- Handoff: Phase inbox-ui hoàn tất cook, gate còn thiếu proof cho 1 task
+- Handoff: Phase inbox-ui hoàn tất work, gate còn thiếu proof cho 1 task
 - Phase: inbox-ui | Cook run: passed | Check: needs-proof
 
 Thay đổi

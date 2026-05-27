@@ -1,6 +1,6 @@
 # Artifact Alignment Gate
 
-Use this after `cook` or whenever the diff claims to follow a locked plan.
+Use this after `work` or whenever the diff claims to follow a locked plan.
 
 ## Required Artifacts (full harness flow)
 
@@ -9,7 +9,7 @@ For a phase gate, inspect these before approving:
 - `.kit/planning/ROADMAP.md`
 - `.kit/planning/phases/{slug}/{slug}-CONTEXT.md`
 - `.kit/planning/phases/{slug}/{slug}-PLAN.md`
-- latest `.kit/runs/cook/*.md` for the same phase when execution happened through `cook`
+- latest `.kit/runs/work/*.md` for the same phase when execution happened through `work`
 
 If the repo is not using the full harness flow, say so explicitly and skip artifact alignment instead of pretending it passed.
 
@@ -27,7 +27,7 @@ If the repo is not using the full harness flow, say so explicitly and skip artif
 
 ### 3) Execution Proof Alignment
 - Did each materially changed behavior have a matching verification command in the phase plan?
-- Does the cook run log show those verification commands actually ran?
+- Does the work run log show those verification commands actually ran?
 - Did the diff add behavior with no proof trail?
 
 ### 4) Decision / Context Alignment
@@ -61,5 +61,5 @@ artifact_alignment: ❌ drift
 - spec gap: {requirement}
 - boundary drift: {file/path}
 - proof gap: {missing command or missing run log}
-next: refresh `/plan phase {slug}` or rerun `/cook` with verification
+next: refresh `/plan phase {slug}` or rerun `/work` with verification
 ```

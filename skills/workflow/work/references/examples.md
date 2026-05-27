@@ -6,7 +6,7 @@ Three worked scenarios covering the most common entry states.
 
 ## Example 1 — Missing spec (fail-fast routing)
 
-**Input**: "cook this feature, build the inbox triage logic"
+**Input**: "work this feature, build the inbox triage logic"
 
 **State detection**: `.kit/planning/SPEC.md` not found.
 
@@ -23,7 +23,7 @@ Run: `/brainstorm` with your idea, notes, or @file: refs.
 
 ## Example 2 — Ready to execute (auto mode, two waves)
 
-**Input**: `/cook` (no args, default `auto`)
+**Input**: `/work` (no args, default `auto`)
 
 **State detection**:
 - `.kit/planning/SPEC.md` ✅
@@ -33,7 +33,7 @@ Run: `/brainstorm` with your idea, notes, or @file: refs.
 
 **Cook's response (condensed)**:
 ```
-🥷 Phase `inbox-ui` ready. Run artifact: `.kit/runs/cook/20240901-1010-inbox-ui.md`.
+🥷 Phase `inbox-ui` ready. Run artifact: `.kit/runs/work/20240901-1010-inbox-ui.md`.
 
 Preflight:
 - required artifacts present
@@ -64,7 +64,7 @@ Starting Wave 1.
 
 Next:
 - `/git cm` to checkpoint this phase
-- `/cook` again to continue with phase 3 (`triage-rules`)
+- `/work` again to continue with phase 3 (`triage-rules`)
 - `/handoff` if you're stopping for the day
 ```
 
@@ -72,7 +72,7 @@ Next:
 
 ## Example 3 — Mid-flight blocker (sub-agent reports BLOCKED)
 
-**Input**: `/cook phase triage-rules`
+**Input**: `/work phase triage-rules`
 
 **State detection**: ready.
 
@@ -92,7 +92,7 @@ Conflict between SPEC and PLAN:
 - PLAN task 2 only covers sender + keyword
 - No recency field on `Message` type to derive from
 
-Run artifact updated: `.kit/runs/cook/20240901-1445-triage-rules.md`
+Run artifact updated: `.kit/runs/work/20240901-1445-triage-rules.md`
 
 This is a scope/spec gap, not an implementation issue. Two options:
 
@@ -110,7 +110,7 @@ Stopping the wave. Phase `triage-rules` is not clean.
 
 ## Example 4 — Simple mode from a direct prompt
 
-**Input**: `/cook simple` with prompt "Add a `--dry-run` flag to the CLI's `deploy` command that prints the deployment plan without executing it. See `src/cli/deploy.ts`."
+**Input**: `/work simple` with prompt "Add a `--dry-run` flag to the CLI's `deploy` command that prints the deployment plan without executing it. See `src/cli/deploy.ts`."
 
 **Mode resolution**: explicit `simple` argument.
 
@@ -152,7 +152,7 @@ Next:
 
 ## Example 5 — Simple mode from a brainstorm explore file
 
-**Input**: `/cook simple @.kit/reports/brainstorm/20240901-api-error-format.md`
+**Input**: `/work simple @.kit/reports/brainstorm/20240901-api-error-format.md`
 
 **Mode resolution**: explicit `simple` argument with @file ref.
 
@@ -204,6 +204,6 @@ Next:
 - `auto` mode resolves to `full` or `simple` based on available artifacts. `full` walks the roadmap forward. `simple` executes from prompt or brainstorm explore file.
 - `phase <slug>` is an alias for `full phase <slug>` — backward-compatible.
 - Cook never modifies `.kit/planning/SPEC.md` or `.kit/planning/ROADMAP.md` — those are owned by `brainstorm` and `plan` respectively.
-- Simple mode never writes to `.kit/planning/`; it still writes a run artifact under `.kit/runs/cook/` when execution starts.
-- The three statuses that pause full-mode execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions cook respects on its own in full mode. In simple mode, the scope guard is the only hard stop.
+- Simple mode never writes to `.kit/planning/`; it still writes a run artifact under `.kit/runs/work/` when execution starts.
+- The three statuses that pause full-mode execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions work respects on its own in full mode. In simple mode, the scope guard is the only hard stop.
 - Preferred blocker taxonomy: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`.

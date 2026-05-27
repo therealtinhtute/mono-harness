@@ -8,7 +8,7 @@ Use this structure for `.kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md`:
 Phase: {phase-slug}
 Status: ready | stale | blocked
 Wave Count: {N}
-Execution Owner: cook
+Execution Owner: work
 Updated At: YYYY-MM-DD
 
 ## Goal
@@ -68,4 +68,4 @@ Rules:
 - keep steps concrete enough for execution
 - verification must be observable
 - expected outputs should be explicit, not implied
-- each task should be specific enough that `cook` can report task-level status without inventing new structure
+- each task should be specific enough that `work` can report task-level status without inventing new structure

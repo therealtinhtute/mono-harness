@@ -24,5 +24,5 @@ Do not produce a final spec until six things are concrete: the outcome ("dashboa
 - In fast mode, walk the tree at surface level in 1-2 rounds and output a raw summary. 
 - In deep mode (default), walk every branch with no round cap, then draft a spec from `{baseDir}/references/spec-template.md`, present for acceptance, and stop.
 
-Defer to `brainstorm` for exploring options, `cook` for execution, `think` for architecture.
+Defer to `brainstorm` for exploring options, `work` for execution, `think` for architecture.
 </context>

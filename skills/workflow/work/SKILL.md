@@ -1,10 +1,10 @@
 ---
-name: cook
+name: work
 model: opus
 version: "1.2.0"
 description: "Execution orchestrator after `brainstorm` and `plan`. Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, or `handoff`."
 license: MIT
-argument-hint: "[mode:auto|full|simple|phase] [phase-name?]"
+argument-hint: "[mode:auto|full|simple|phase] [phase-name?] [--notes?]"
 compatibility: Designed for Claude Code
 metadata:
   version: "1.2.0"
@@ -13,7 +13,7 @@ metadata:
 Prefix your first line with `🥷` inline. Be direct: state, next move, evidence. No filler.
 
 <role>
-Act as the kitchen conductor: read planning artifacts, execute the next incomplete phase wave-by-wave, verify each task, route into `check` for the quality gate, and surface clean handoffs. Own the HOW of execution; never redesign scope.
+Act as the execution conductor: read planning artifacts, execute the next incomplete phase wave-by-wave, verify each task, route into `check` for the quality gate, and surface clean handoffs. Own the HOW of execution; never redesign scope.
 </role>
 
 <security>
@@ -36,13 +36,13 @@ Act as the kitchen conductor: read planning artifacts, execute the next incomple
 <hard-gate>
 **Full mode only**: Before any execution, confirm `.kit/planning/SPEC.md` is locked AND the target phase has both `-CONTEXT.md` and `-PLAN.md`. If either is missing or visibly stale (placeholders, contradictions, undated decisions), stop and route to the correct upstream skill. Never silently expand scope mid-flight.
 
-**Simple mode**: No `.kit/planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/plan` + `cook full`. See `references/simple-mode.md`.
+**Simple mode**: No `.kit/planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/plan` + `work full`. See `references/simple-mode.md`.
 </hard-gate>
 
 <context>
 ## When to Use
 - After `brainstorm` + `plan` produced a locked spec and phase artifacts (`full` mode)
-- User says "implement this plan", "build this", "finish the feature", "cook it", or similar
+- User says "implement this plan", "build this", "finish the feature", "work it", or similar
 - Resuming partial execution after a break or handoff
 - Quick fix or known-scope feature from a direct prompt or brainstorm explore file (`simple` mode)
 
@@ -59,6 +59,7 @@ In `simple` mode: executes from a prompt or brainstorm explore file, stays withi
 - `full` — strict pipeline requiring `.kit/planning/` artifacts; starts at first incomplete phase
 - `full phase <slug>` / `phase <slug>` — strict pipeline for one named phase
 - `simple [@file?]` — lightweight execution from prompt or brainstorm explore file; no `.kit/planning/` required
+- `--notes` — opt-in flag (any mode): append decisions, deviations, and tradeoffs to `.kit/implementation-notes.md` during execution. Default off.
 </context>
 
 <instructions>
@@ -98,7 +99,7 @@ Skip `.kit/planning/` gate entirely. Follow the 7-step workflow in `references/s
 ## Execution Loop (per phase)
 
 1. **Load context** — in `full` mode, read `.kit/workflow-state.yml` first when present, then verify its pointers against `.kit/planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions and treat stale pointers as a plan-refresh signal, not as truth.
-2. **Create the run artifact** — write `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md` using `references/run-artifact-template.md`. In `simple` mode, the slug comes from the prompt or brainstorm file.
+2. **Create the run artifact** — write `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` using `references/run-artifact-template.md`. In `simple` mode, the slug comes from the prompt or brainstorm file.
 3. **Preflight drift check** — compare the phase boundary (`Allowed Surfaces`, `Forbidden Surfaces`, task `touches`, task `avoid`) against the current working tree and requested scope. If files already changed outside boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask via `AskUserQuestion` only if the plan is ambiguous about which wave is next.
 5. **Run waves** — for each wave, execute tasks in order; parallelize only when `-PLAN.md` marks the wave as parallel-safe.
@@ -114,13 +115,14 @@ See `references/execution-loop.md` for wave dispatch, subagent prompts, and stat
 ## Output Rules
 - Write code under the spec boundaries; capture deviations or new assumptions inline in the phase `-CONTEXT.md` (append, never silently rewrite)
 - In `full` mode, treat `.kit/workflow-state.yml` as the first lookup index, then verify the pointed files before acting
-- Create one run artifact per invocation under `.kit/runs/cook/`; never overwrite an older run log
+- Create one run artifact per invocation under `.kit/runs/work/`; never overwrite an older run log
+- With `--notes`: after any task involving an off-spec decision, plan deviation, tradeoff, or `DONE_WITH_CONCERNS` — append one entry to `.kit/implementation-notes.md`. See `references/notes-mode.md`. Silent when flag is absent.
 - Stop taxonomy for execution blockers: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT` (optional finer cause may be named after the primary code)
-- Never edit `.kit/planning/SPEC.md` or `ROADMAP.md` from inside `cook` — route back to `brainstorm` or `plan` instead
+- Never edit `.kit/planning/SPEC.md` or `ROADMAP.md` from inside `work` — route back to `brainstorm` or `plan` instead
 - Surface every `BLOCKED` or `DONE_WITH_CONCERNS` status to the user before continuing
 
 ## Output Format
-Save to: `.kit/runs/cook/{YYYYMMDD-HHmm}-{slug}.md` for the execution log; code changes stay in the working tree.
+Save to: `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` for the execution log; code changes stay in the working tree.
 Frontmatter: not required.
 Return a concise chat summary with resolved mode, selected phase or prompt scope, preflight verdict, task status highlights, and next recommended action.
 
@@ -145,4 +147,5 @@ Load as needed from `{baseDir}/references/`:
 - `execution-loop.md` — wave dispatch, subagent dispatch prompt, status enum routing
 - `run-artifact-template.md` — execution run log structure and fields
 - `examples.md` — five worked scenarios (missing spec, ready-to-execute, mid-flight blocker, simple from prompt, simple from brainstorm file)
+- `notes-mode.md` — `--notes` flag: entry format, trigger conditions, append rules
 </references>

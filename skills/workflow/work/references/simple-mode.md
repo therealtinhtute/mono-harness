@@ -14,7 +14,7 @@ Activate when mode resolves to `simple` (explicit arg or auto-detected). Do NOT 
 - Task clearly touches > 5 files, > 100 lines, or enters an unfamiliar subsystem (even if user says "just do it")
 - Task is a bug with unknown root cause — use `/hunt`
 - Task is a scope-defining question — use `/brainstorm`
-- Task is a complete feature with multiple phases — use `cook full`
+- Task is a complete feature with multiple phases — use `work full`
 
 ---
 
@@ -32,7 +32,7 @@ Evaluate the input immediately. A good prompt answers:
 - Example questions: "Which file or component should change?", "What should the output look like after the fix?"
 
 **If still thin after AskUserQuestion**:
-- Stop and suggest `/prompt-leverage` to strengthen the prompt before re-invoking `/cook simple`
+- Stop and suggest `/prompt-leverage` to strengthen the prompt before re-invoking `/work simple`
 
 **Prompt quality rubric:**
 
@@ -72,7 +72,7 @@ After Step 2, count the impact:
 | ≤ 5 files AND ≤ 100 lines AND known subsystem | Proceed to Step 5 |
 | > 5 files OR > 100 lines OR unknown subsystem | **HARD STOP** — emit `scope-guard` message from `routing.md`, do not continue |
 
-The scope guard does not negotiate. Even if the user says "just do it", the stop is unconditional — they must explicitly invoke `cook full` to proceed past this gate.
+The scope guard does not negotiate. Even if the user says "just do it", the stop is unconditional — they must explicitly invoke `work full` to proceed past this gate.
 
 ### Step 5 — Execute
 
@@ -109,7 +109,7 @@ Never auto-run these. Suggest, then stop.
 ## Simple Mode Output Log (optional)
 
 If the project has a `.kit/reports/` directory, write a one-line summary to:
-`.kit/reports/cook/{YYYYMMDD}-{slug}.md`
+`.kit/reports/work/{YYYYMMDD}-{slug}.md`
 
 Format:
 ```yaml

@@ -7,7 +7,7 @@ Use this when the repo follows the harness flow (`.kit/planning/` artifacts pres
 1. `.kit/workflow-state.yml` — first lookup index
 2. `.kit/planning/ROADMAP.md` — active phase order
 3. Active phase `-CONTEXT.md` and `-PLAN.md` — locked decisions, remaining tasks
-4. Latest `.kit/runs/cook/*.md` — task statuses, blockers, proof trail
+4. Latest `.kit/runs/work/*.md` — task statuses, blockers, proof trail
 5. `.kit/HANDOFF.md` — previous session context
 6. Latest `.kit/reports/check/*.md` — gate verdict
 
@@ -15,7 +15,7 @@ Use this when the repo follows the harness flow (`.kit/planning/` artifacts pres
 
 ### Session Context
 - Which phase is active
-- Whether execution reached `cook`, `check`, `handoff`
+- Whether execution reached `work`, `check`, `handoff`
 - Whether the branch is `ready-for-pr`, `needs-work`, `needs-plan-refresh`, or `blocked`
 - Whether workflow-state pointers are still valid
 
@@ -31,13 +31,13 @@ Check each pointer in `.kit/workflow-state.yml`:
 |---------|-----------------|----------------|
 | Spec contradiction | cao | Refresh spec or phase plan before more code |
 | Boundary drift | cao | Split unrelated changes or refresh phase scope |
-| Missing verification proof | vừa | Re-run cook or append proof before merge |
+| Missing verification proof | vừa | Re-run work or append proof before merge |
 | Stale workflow-state pointers | vừa | Refresh pointers or re-run the stale phase |
 
 ## Output Integration
 
 In the recap output:
-- **Context** section: include phase name, cook run status, check verdict
+- **Context** section: include phase name, work run status, check verdict
 - **Risks** section: include artifact-derived risks alongside code-derived risks
 - **Readiness** state: factor artifact chain health into the overall assessment
 

@@ -71,7 +71,7 @@ Run: `/plan phase {slug}`.
 - {file or symbol that no longer exists}
 - {placeholder text and line}
 
-Run: `/plan phase {slug}` to refresh, then re-invoke `/cook`.
+Run: `/plan phase {slug}` to refresh, then re-invoke `/work`.
 ```
 
 ### contract-drift
@@ -109,7 +109,7 @@ This exceeds the simple mode limit (≤5 files, ≤100 lines, no unknown subsyst
 Upgrade to full pipeline:
 1. `/brainstorm` — lock the spec
 2. `/plan full` — generate phase artifacts
-3. `/cook full` — execute with verification gates
+3. `/work full` — execute with verification gates
 ```
 
 ### prompt-too-thin (before AskUserQuestion)
@@ -122,12 +122,12 @@ Upgrade to full pipeline:
 ```
 🥷 Still missing enough context to proceed.
 
-Run: `/prompt-leverage` to strengthen the prompt, then re-invoke `/cook simple`.
+Run: `/prompt-leverage` to strengthen the prompt, then re-invoke `/work simple`.
 ```
 
 ---
 
-## What `cook` Never Does Here
+## What `work` Never Does Here
 
 - Never invent missing artifacts to "unblock" itself
 - Never edit SPEC.md or ROADMAP.md to skip a stop condition

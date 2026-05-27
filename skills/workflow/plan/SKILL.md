@@ -84,13 +84,13 @@ Artifact expectations: `ROADMAP.md` identifies the recommended entry phase; each
 If blocked, return a short fail-fast explanation naming the missing spec gap.
 
 ## Done Criteria
-The skill is complete only when `.kit/planning/SPEC.md` was enforced, `.kit/planning/ROADMAP.md` exists, every phase has both `-CONTEXT.md` and `-PLAN.md`, plans are wave-based and executable, phase contexts declare boundaries/proof expectations, task detail is sufficient for `cook`, and next-step suggestions are clear.
+The skill is complete only when `.kit/planning/SPEC.md` was enforced, `.kit/planning/ROADMAP.md` exists, every phase has both `-CONTEXT.md` and `-PLAN.md`, plans are wave-based and executable, phase contexts declare boundaries/proof expectations, task detail is sufficient for `work`, and next-step suggestions are clear.
 
 ## Anti-Patterns
 - Creating phases that are just task lists — phases need goals, boundaries, allowed/forbidden surfaces, and proof expectations
-- Writing vague tasks ("implement the feature") — cook can't execute what it can't verify; every task needs a verification command
+- Writing vague tasks ("implement the feature") — work can't execute what it can't verify; every task needs a verification command
 - Adding scope beyond spec boundaries — scope creep via planning is still scope creep; route back to `brainstorm` instead
-- Omitting verification commands per task — cook treats missing verification as task-not-done
+- Omitting verification commands per task — work treats missing verification as task-not-done
 </instructions>
 
 ## Examples

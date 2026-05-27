@@ -57,5 +57,5 @@
 - [ ] Blockers identified with unblock criteria
 - [ ] Next steps are actionable
 - [ ] Technical context sufficient for continuation
-- [ ] Continuity anchors captured (phase, latest cook run, latest check verdict) when available
+- [ ] Continuity anchors captured (phase, latest work run, latest check verdict) when available
 - [ ] No sensitive data exposed

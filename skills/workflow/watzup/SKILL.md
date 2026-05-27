@@ -54,7 +54,7 @@ Extract: branch name, commits ahead/behind main, working tree cleanliness (stage
 ### Step 2: Load Context
 Read `.kit/HANDOFF.md` if present — extract where the previous session left off, blockers, and the `→ START HERE` action.
 
-Read `.kit/workflow-state.yml` if present — extract current phase, latest cook run, latest check verdict. Verify pointers exist before trusting them. If a pointer is broken, report it as stale.
+Read `.kit/workflow-state.yml` if present — extract current phase, latest work run, latest check verdict. Verify pointers exist before trusting them. If a pointer is broken, report it as stale.
 
 ### Step 3: Committed Work Summary
 From `git log --oneline main..HEAD`: group commits by type (feat/fix/refactor/etc.), identify change themes. Max 3 themes.

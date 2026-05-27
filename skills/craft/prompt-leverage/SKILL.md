@@ -31,7 +31,7 @@ task complexity and risk level.
 - Creating hooks that upgrade prompts before execution
 
 ## Defer To Instead
-- `skill-creator` — creating new skills from scratch
+- `create-skill` — creating new skills from scratch
 - `interview` — extracting requirements before prompt engineering
 - `brainstorm` — comparing multiple prompting approaches
 </context>

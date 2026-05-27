@@ -1,6 +1,6 @@
 # Workflow State Dogfood Example
 
-This reference shows one minimal end-to-end harness slice where `.kit/workflow-state.yml` stays coherent across `plan` → `cook` → `check` → `handoff` → `watzup`.
+This reference shows one minimal end-to-end harness slice where `.kit/workflow-state.yml` stays coherent across `plan` → `work` → `check` → `handoff` → `watzup`.
 
 ## Scenario
 
@@ -49,16 +49,16 @@ What changed:
 - phase pointers are exact
 - downstream artifacts stay `none` until they exist
 
-## 2) After `/cook full phase workflow-state-deeper-support`
+## 2) After `/work full phase workflow-state-deeper-support`
 
-`/cook` reads the manifest first, verifies the pointed phase files, creates a new cook run, then refreshes only the runtime pointers.
+`/work` reads the manifest first, verifies the pointed phase files, creates a new work run, then refreshes only the runtime pointers.
 
 ### New run artifact
 
 Path:
 
 ```text
-.kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
+.kit/runs/work/20260511-2202-workflow-state-deeper-support.md
 ```
 
 ### `.kit/workflow-state.yml`
@@ -70,7 +70,7 @@ spec: .kit/planning/SPEC.md
 roadmap: .kit/planning/ROADMAP.md
 active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
 active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
-latest_cook_run: .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
+latest_cook_run: .kit/runs/work/20260511-2202-workflow-state-deeper-support.md
 latest_check_report: none
 handoff: none
 last_updated: 2026-05-11 22:09
@@ -78,7 +78,7 @@ last_updated: 2026-05-11 22:09
 
 What changed:
 - `latest_cook_run` now points at the exact run artifact just created
-- phase pointers stay unchanged because `cook` does not guess the next phase
+- phase pointers stay unchanged because `work` does not guess the next phase
 
 ## 3) After `/check full`
 
@@ -101,7 +101,7 @@ spec: .kit/planning/SPEC.md
 roadmap: .kit/planning/ROADMAP.md
 active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
 active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
-latest_cook_run: .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
+latest_cook_run: .kit/runs/work/20260511-2202-workflow-state-deeper-support.md
 latest_check_report: .kit/reports/check/20260511-2211-workflow-state-deeper-support.md
 handoff: none
 last_updated: 2026-05-11 22:11
@@ -124,7 +124,7 @@ spec: .kit/planning/SPEC.md
 roadmap: .kit/planning/ROADMAP.md
 active_context: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-CONTEXT.md
 active_plan: .kit/planning/phases/workflow-state-deeper-support/workflow-state-deeper-support-PLAN.md
-latest_cook_run: .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
+latest_cook_run: .kit/runs/work/20260511-2202-workflow-state-deeper-support.md
 latest_check_report: .kit/reports/check/20260511-2211-workflow-state-deeper-support.md
 handoff: .kit/HANDOFF.md
 last_updated: 2026-05-11 22:14
@@ -144,7 +144,7 @@ What changed:
 .kit/workflow-state.yml
 → .kit/planning/ROADMAP.md
 → .kit/planning/phases/workflow-state-deeper-support/*
-→ .kit/runs/cook/20260511-2202-workflow-state-deeper-support.md
+→ .kit/runs/work/20260511-2202-workflow-state-deeper-support.md
 → .kit/reports/check/20260511-2211-workflow-state-deeper-support.md
 → .kit/HANDOFF.md
 ```
@@ -159,7 +159,7 @@ What changed:
 ## Operational rules this example demonstrates
 
 - `plan` initializes the manifest after writing canonical planning artifacts
-- `cook` updates only `current_phase`, phase pointers, `latest_cook_run`, and `last_updated`
+- `work` updates only `current_phase`, phase pointers, `latest_cook_run`, and `last_updated`
 - `check` updates only `latest_check_report` and `last_updated` unless it explicitly closes the phase
 - `handoff` updates `handoff`, preserves the active phase anchor, and refreshes `last_updated`
 - `watzup` reads the manifest first but does not mutate it

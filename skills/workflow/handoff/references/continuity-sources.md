@@ -18,7 +18,7 @@ Use these in priority order when the repo follows the harness flow.
 4. `.kit/planning/phases/{slug}/{slug}-PLAN.md`
    - extract current wave/task state, expected verification, and remaining work
 
-5. Latest `.kit/runs/cook/*.md`
+5. Latest `.kit/runs/work/*.md`
    - capture the real execution trail
    - pull task statuses, blockers, concerns, and proof commands
 
@@ -35,7 +35,7 @@ Use these in priority order when the repo follows the harness flow.
 - whether `.kit/workflow-state.yml` was current, stale, or missing
 
 ### Do Not Lose
-- blocker taxonomy from `cook` (`BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`)
+- blocker taxonomy from `work` (`BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`)
 - artifact drift or proof-gap findings from `check`
 - any plan boundary the next session must stay inside
 

@@ -82,7 +82,7 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 7. **Recommend or lock** — explore: pick one option with rationale and rejected alternatives. Lock: write SPEC via `references/spec-template.md`; capture rejected alternatives in `Key Decisions` and include classification metadata in the header.
 8. **Self-review** (lock modes) — apply `references/lock-checklist.md`: placeholders, contradictions, scope creep, ambiguity. Fix inline.
 9. **User review gate** (lock modes) — show SPEC.md path, ask user approval before suggesting `plan`. If changes requested, edit and re-run step 8.
-10. **Hand off** — suggest `plan` after approved lock; `refine` if exploration changed scope; `cook simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
+10. **Hand off** — suggest `plan` after approved lock; `refine` if exploration changed scope; `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
 
 You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `plan`.
 
@@ -98,7 +98,7 @@ You DO NOT generate implementation phases, task breakdowns, or wave plans — th
 - Mode confirmed; option-exploration articulated (per `<hard-gate>`)
 - Lock modes: SPEC.md exists with boundaries, acceptance criteria, classification metadata, and user approval
 - Explore mode: one recommendation with rationale and rejected alternatives, plus a best-effort input-type/lane recommendation when possible
-- Next handoff obvious (`plan` after lock, `refine` if scope shifted, `cook simple` only when intentionally warranted)
+- Next handoff obvious (`plan` after lock, `refine` if scope shifted, `work simple` only when intentionally warranted)
 </instructions>
 
 ## Output Format
