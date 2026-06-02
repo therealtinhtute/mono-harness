@@ -1,5 +1,6 @@
 ---
 name: create-cli
+disable-model-invocation: true
 model: sonnet
 description: >
   Design CLI interfaces (commands, flags, I/O, errors, config) and produce implementation

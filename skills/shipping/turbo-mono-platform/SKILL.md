@@ -1,5 +1,6 @@
 ---
 name: turbo-mono-platform
+disable-model-invocation: true
 model: sonnet
 argument-hint: "[layer or feature]"
 description: >
