@@ -97,12 +97,12 @@ Scale depth to scope. In `full` mode, artifact drift findings come before normal
 
 | Class | Definition | Action |
 |-------|------------|--------|
-| `safe_auto` | Typos, missing imports, style inconsistencies | Apply immediately |
-| `gated_auto` | Null checks, error handling additions | Batch into one user confirmation |
+| `safe_auto` | Typos, missing imports, style inconsistencies | Propose in sign-off as ready-to-apply |
+| `gated_auto` | Null checks, error handling additions | Propose in sign-off, batched, pending user confirmation |
 | `manual` | Architecture, behavior, security tradeoffs | Present in sign-off |
 | `advisory` | Informational only | Note in sign-off |
 
-Apply all `safe_auto` first. Batch all `gated_auto` into one confirmation block — never ask separately about each one.
+`check` is read-only (`allowed-tools`: Read, Grep, Glob, Bash) — it never edits files. List every `safe_auto` and `gated_auto` fix in the sign-off; the user applies them directly or via a follow-up `work` invocation. Batch `gated_auto` into one confirmation block — never ask separately about each one.
 
 ## Pattern-Fix Completeness
 
@@ -143,7 +143,7 @@ artifact_alignment: ✅ aligned / ❌ drift / skipped: [why]
 gate:               ✅ pass / ❌ fail: [checks]
 review:             APPROVED / APPROVE with requests / REQUEST CHANGES
 blockers:           N critical, N major
-autofix:            N safe applied, N awaiting confirmation
+autofix:            N safe_auto proposed, N gated_auto awaiting confirmation
 verification:       [command] → pass / fail / none
 ```
 

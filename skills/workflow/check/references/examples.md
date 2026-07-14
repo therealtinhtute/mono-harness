@@ -43,7 +43,7 @@ artifact_alignment: ❌ drift
 
 next:
 - split the unrelated change out, or
-- refresh `/plan phase inbox-ui` if billing is genuinely in scope
+- refresh `/to-plan phase inbox-ui` if billing is genuinely in scope
 ```
 
 ## Example 3 — Non-harness repo

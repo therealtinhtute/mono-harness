@@ -32,12 +32,12 @@ Run this self-review on `.kit/planning/SPEC.md` (and `.kit/planning/IDEA.md` if 
 
 After self-review passes, show the user:
 
-> "SPEC written to `.kit/planning/SPEC.md`. Please review and let me know if you want changes before I suggest `plan`."
+> "SPEC written to `.kit/planning/SPEC.md`. Please review and let me know if you want changes before I suggest `to-plan`."
 
-Wait for explicit response. If changes requested, edit and re-run this checklist. Only suggest `plan` after the user approves.
+Wait for explicit response. If changes requested, edit and re-run this checklist. Only suggest `to-plan` after the user approves.
 
 ## Anti-patterns
 
 - Skipping placeholder scan because "the spec looks complete" — placeholders hide in formatted text
-- Auto-suggesting `plan` without waiting for user response — defeats the gate
+- Auto-suggesting `to-plan` without waiting for user response — defeats the gate
 - Re-running this checklist after every minor edit — once per lock cycle is enough

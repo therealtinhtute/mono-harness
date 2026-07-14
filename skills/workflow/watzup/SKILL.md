@@ -95,7 +95,7 @@ Based on all evidence, recommend ONE concrete next action:
 | WIP present, no blockers | Continue the in-progress work (name the specific file/function) |
 | WIP present, has blockers | Resolve the blocker (name it specifically) |
 | All committed, tests passing | `/check review` or `/git cm` |
-| Artifacts stale | `/plan phase {slug}` to refresh |
+| Artifacts stale | `/to-plan phase {slug}` to refresh |
 | HANDOFF.md has `→ START HERE` | Follow that action |
 
 ## Readiness State

@@ -2,7 +2,7 @@
 
 Status: draft
 Scope: core development-workflow skills only
-Included skills: `brainstorm`, `plan`, `work`, `check`, `handoff`, `watzup`
+Included skills: `brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`
 Excluded from this document: utility/domain-capability skills such as `librarian`, `prompt-leverage`, `git`, `turbo-mono-platform`, and `bash-tui`
 Last updated: 2026-05-11
 
@@ -42,7 +42,7 @@ The core harness should behave like this:
 ```text
 User intent
   -> brainstorm
-  -> plan
+  -> to-plan
   -> work
   -> check
   -> handoff / watzup
@@ -51,7 +51,7 @@ User intent
 And each step should answer a different question:
 
 - `brainstorm` — What exactly are we doing?
-- `plan` — How should the work be executed safely?
+- `to-plan` — How should the work be executed safely?
 - `work` — What happened during execution?
 - `check` — What proof shows it is correct and on-contract?
 - `handoff` — How does the next session resume safely?
@@ -72,7 +72,7 @@ Output class:
 - canonical planning artifacts
 
 ### 2. Execution design
-Owner: `plan`
+Owner: `to-plan`
 
 Purpose:
 - convert a locked contract into phased work
@@ -146,7 +146,7 @@ Files:
 - `.kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md`
 
 Rules:
-- owned by `brainstorm` and `plan`
+- owned by `brainstorm` and `to-plan`
 - downstream skills may read them but must not rewrite them casually
 - should be stable enough that a later session can continue from them
 - should be treated as **canonical**, not scratch notes
@@ -191,7 +191,7 @@ Files:
 - `.kit/workflow-state.yml`
 
 Rules:
-- initialized by `plan` when roadmap + phase artifacts are created
+- initialized by `to-plan` when roadmap + phase artifacts are created
 - updated by downstream skills when canonical phase state changes
 - should stay tiny: pointers and status only, never duplicate full artifact content
 - latest state wins; overwrite in place
@@ -259,7 +259,7 @@ Properties:
 | Skill | Primary role | Reads | Writes | Artifact class |
 | --- | --- | --- | --- | --- |
 | `brainstorm` | intake + contract lock | user prompt, notes, markdown refs | `.kit/planning/IDEA.md`, `.kit/planning/SPEC.md`, explore reports | canonical planning |
-| `plan` | execution design | `.kit/planning/SPEC.md` | `.kit/planning/ROADMAP.md`, phase context, phase plan, `.kit/workflow-state.yml` init | canonical planning + state |
+| `to-plan` | execution design | `.kit/planning/SPEC.md` | `.kit/planning/ROADMAP.md`, phase context, phase plan, `.kit/workflow-state.yml` init | canonical planning + state |
 | `work` | execution runtime | planning artifacts, workflow state | `.kit/runs/work/...`, `.kit/workflow-state.yml`, code changes | execution + state |
 | `check` | proof + alignment gate | code diff, planning artifacts, latest work run, workflow state | console verdict, `.kit/reports/check/...`, `.kit/workflow-state.yml` | gate + state |
 | `handoff` | continuity | branch state, planning artifacts, latest run/gate, workflow state | `.kit/HANDOFF.md`, `.kit/workflow-state.yml` | continuity + state |
@@ -279,7 +279,7 @@ Input Type: new-spec | spec-slice | change-request | new-initiative | maintenanc
 Lane: tiny | normal | high-risk
 Risk Flags: auth, public-contract, weak-proof, ...
 Affected Surfaces: api, ui, worker, db, docs
-Downstream: plan full | plan phase | work simple | none
+Downstream: to-plan full | to-plan phase | work simple | none
 Updated At: YYYY-MM-DD
 ```
 
@@ -381,7 +381,7 @@ Definition of success:
 - a later session can read the spec and know exactly what kind of work it is,
   how risky it is, and which skill should run next
 
-### `plan`
+### `to-plan`
 Current strength:
 - good at phased breakdown and execution intent
 
@@ -495,7 +495,7 @@ We only need a clear markdown contract first.
 ### PR 1 — this document
 Create and agree on the artifact architecture and role boundaries.
 
-### PR 2 — `brainstorm` + `plan`
+### PR 2 — `brainstorm` + `to-plan`
 Add intake metadata, contract headers, and machine-readable planning structure.
 
 ### PR 3 — `work`
@@ -513,7 +513,7 @@ This repository should treat the six core workflow skills as a single harness
 system with distinct layers:
 
 - `brainstorm` locks the contract
-- `plan` makes the contract executable
+- `to-plan` makes the contract executable
 - `work` records what execution did
 - `check` proves alignment and readiness
 - `handoff` preserves continuity
@@ -523,4 +523,4 @@ The most important near-term leverage points are:
 
 1. codify artifact ownership and classes
 2. make `work` produce durable execution traces
-3. make `brainstorm` and `plan` more machine-legible for downstream skills
+3. make `brainstorm` and `to-plan` more machine-legible for downstream skills

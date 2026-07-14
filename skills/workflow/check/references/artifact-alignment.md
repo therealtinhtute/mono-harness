@@ -61,5 +61,5 @@ artifact_alignment: ❌ drift
 - spec gap: {requirement}
 - boundary drift: {file/path}
 - proof gap: {missing command or missing run log}
-next: refresh `/plan phase {slug}` or rerun `/work` with verification
+next: refresh `/to-plan phase {slug}` or rerun `/work` with verification
 ```

@@ -37,7 +37,7 @@ What this phase should accomplish.
 - stop if:
   - ambiguity / drift / dependency condition
 - escalate to:
-  - brainstorm refine | plan phase | user clarification | check
+  - brainstorm refine | to-plan phase | user clarification | check
 
 ## Wave 2
 ### T2 — Task name
@@ -57,7 +57,7 @@ What this phase should accomplish.
 - stop if:
   - ambiguity / drift / dependency condition
 - escalate to:
-  - brainstorm refine | plan phase | user clarification | check
+  - brainstorm refine | to-plan phase | user clarification | check
 
 ## Risks / Watch-fors
 - important coordination or sequencing risk

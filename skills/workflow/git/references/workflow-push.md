@@ -1,6 +1,6 @@
 # Push Workflow
 
-Execute via `git-manager` subagent.
+Run these commands directly; report only the summarized output.
 
 ## Pre-Push Checklist
 1. All changes committed

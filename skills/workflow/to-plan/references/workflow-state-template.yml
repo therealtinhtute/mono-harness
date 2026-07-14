@@ -16,7 +16,7 @@ last_updated: YYYY-MM-DD HH:mm
 ```
 
 Rules:
-- initialize in `plan` after roadmap + phase artifacts exist
+- initialize in `to-plan` after roadmap + phase artifacts exist
 - update only pointers/status fields; do not duplicate roadmap, run-log, or report content
 - overwrite in place; this file represents the latest canonical workflow position
 - `current_phase` = the phase actively being executed or resumed

@@ -169,7 +169,7 @@ Like greenfield Phase 3, but ordered to minimize breakage:
 
 Save to: `.kit/planning/cli-{name}-spec.md` (spec) and `.kit/planning/cli-{name}-roadmap.md` (roadmap).
 
-These integrate with `/brainstorm → /plan → /work` workflow.
+These integrate with `/brainstorm → /to-plan → /work` workflow.
 
 Frontmatter:
 ```yaml

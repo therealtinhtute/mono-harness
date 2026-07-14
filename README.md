@@ -29,7 +29,7 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 ```
 
 #### What lives where
-- `planning/` — canonical planning artifacts owned by `brainstorm` and `plan`
+- `planning/` — canonical planning artifacts owned by `brainstorm` and `to-plan`
 - `workflow-state.yml` — lightweight pointer index for the current phase and latest downstream artifacts
 - `HANDOFF.md` — latest continuity snapshot for the next session
 - `runs/work/` — execution logs created by `work`
@@ -98,8 +98,8 @@ bash scripts/setup-statusline.sh
 | Skill | When | What it does |
 | :--- | :--- | :--- |
 | [`/brainstorm`](skills/workflow/brainstorm/SKILL.md) | Project bootstrap, feature scoping, ideation, architecture decisions | Turn an idea, notes, or markdown files into a locked `.kit/planning/SPEC.md` — exploring options and trade-offs along the way. |
-| [`/plan`](skills/workflow/plan/SKILL.md) | After brainstorm, before implementation | Turn a locked `.kit/planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
-| [`/work`](skills/workflow/work/SKILL.md) | "Implement this plan", "build it end-to-end" | Execution orchestrator after `brainstorm` + `plan`. Routes to upstream skills if artifacts are missing; runs phase waves; verifies every task; gates via `/check`. |
+| [`/to-plan`](skills/workflow/to-plan/SKILL.md) | After brainstorm, before implementation | Turn a locked `.kit/planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
+| [`/work`](skills/workflow/work/SKILL.md) | "Implement this plan", "build it end-to-end" | Execution orchestrator after `brainstorm` + `to-plan`. Routes to upstream skills if artifacts are missing; runs phase waves; verifies every task; gates via `/check`. |
 | [`/interview`](skills/workflow/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
 | [`/check`](skills/workflow/check/SKILL.md) | Before commit, PR, or merge; phase gate after `/work` | Gate (tests, lint, build) + code review (security, architecture, quality). |
 | [`/git`](skills/workflow/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
@@ -133,7 +133,7 @@ This repo follows a shared output convention inspired by Waza for active skills:
 
 The icon is the visible mode switch. The real standard is the writing: concrete, direct, and specific to the skill.
 
-## Recommended workflow: `brainstorm` + `plan` + `work` + friends
+## Recommended workflow: `brainstorm` + `to-plan` + `work` + friends
 
 Two entry points (`watzup` for resume, `brainstorm` for new work), then execute and close out.
 
@@ -142,17 +142,17 @@ Two entry points (`watzup` for resume, `brainstorm` for new work), then execute 
 Canonical pipeline:
 ```
 watzup → work → check → git → handoff          (resume)
-brainstorm → plan → work → check → git → handoff  (new work)
+brainstorm → to-plan → work → check → git → handoff  (new work)
 ```
 
 ### 1. Lock the problem with `brainstorm`
 Use `brainstorm` when you have a raw idea, notes, markdown files, or a trade-off question. It runs in 4 modes (`explore`, `lock-from-idea`, `lock-from-files`, `refine`) and produces either a recommendation report or a locked `.kit/planning/SPEC.md`.
 
-### 2. Derive execution with `plan`
-Use `plan` only after the spec is locked. It turns `.kit/planning/SPEC.md` into `.kit/planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files. If the spec is missing or too weak, `plan` fails fast and points back to `brainstorm`.
+### 2. Derive execution with `to-plan`
+Use `to-plan` only after the spec is locked. It turns `.kit/planning/SPEC.md` into `.kit/planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files. If the spec is missing or too weak, `to-plan` fails fast and points back to `brainstorm`.
 
 ### 3. Execute with `work`
-Use `work` to execute the plan. It checks for missing artifacts and routes back to `brainstorm` or `plan` if needed; otherwise it runs the active phase wave-by-wave, dispatches subagents for heavy tasks, verifies every task, and calls `/check` as the phase gate. It never auto-commits — handoffs are suggested, not executed.
+Use `work` to execute the plan. It checks for missing artifacts and routes back to `brainstorm` or `to-plan` if needed; otherwise it runs the active phase wave-by-wave, dispatches subagents for heavy tasks, verifies every task, and calls `/check` as the phase gate. It never auto-commits — handoffs are suggested, not executed.
 
 ### 0. Orient with `watzup` (resume path)
 Use `watzup` at the start of a session to recap branch state, review committed + uncommitted changes, read handoff context, and get a concrete next action. If the branch has no work yet, `watzup` points you to `brainstorm`.
@@ -164,7 +164,7 @@ Use `watzup` at the start of a session to recap branch state, review committed +
 ### Mental model
 - `watzup` = recap **WHERE AM I** (session start)
 - `brainstorm` = lock **WHAT**
-- `plan` = lock **HOW**
+- `to-plan` = lock **HOW**
 - `work` = **execute** (run phases, verify, gate)
 - `check` = catch risk and prove readiness (gate + analysis)
 - `git` / `handoff` = wrap up with discipline

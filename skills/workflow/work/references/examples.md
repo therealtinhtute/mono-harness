@@ -97,7 +97,7 @@ Run artifact updated: `.kit/runs/work/20240901-1445-triage-rules.md`
 This is a scope/spec gap, not an implementation issue. Two options:
 
 1. `/brainstorm refine` — clarify §4.2 (drop recency or define it concretely)
-2. `/plan phase triage-rules` — if SPEC is fine, refresh the plan to cover all three dimensions
+2. `/to-plan phase triage-rules` — if SPEC is fine, refresh the plan to cover all three dimensions
 
 Stopping the wave. Phase `triage-rules` is not clean.
 ```
@@ -203,7 +203,7 @@ Next:
 
 - `auto` mode resolves to `full` or `simple` based on available artifacts. `full` walks the roadmap forward. `simple` executes from prompt or brainstorm explore file.
 - `phase <slug>` is an alias for `full phase <slug>` — backward-compatible.
-- Cook never modifies `.kit/planning/SPEC.md` or `.kit/planning/ROADMAP.md` — those are owned by `brainstorm` and `plan` respectively.
+- Cook never modifies `.kit/planning/SPEC.md` or `.kit/planning/ROADMAP.md` — those are owned by `brainstorm` and `to-plan` respectively.
 - Simple mode never writes to `.kit/planning/`; it still writes a run artifact under `.kit/runs/work/` when execution starts.
 - The three statuses that pause full-mode execution (`NEEDS_CONTEXT`, `BLOCKED`, non-clean phase gate) are the only stop conditions work respects on its own in full mode. In simple mode, the scope guard is the only hard stop.
 - Preferred blocker taxonomy: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT`.

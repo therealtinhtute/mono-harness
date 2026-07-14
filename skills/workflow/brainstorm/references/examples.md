@@ -63,7 +63,7 @@ only when real evidence (100K+ users, specific bottlenecks) appears.
 
 ## Next Steps
 - Lock module boundaries (auth, users, billing) in a SPEC if proceeding
-- Run `plan` after locking to derive phases
+- Run `to-plan` after locking to derive phases
 ```
 
 ---
@@ -98,7 +98,7 @@ only when real evidence (100K+ users, specific bottlenecks) appears.
 5. Clarify gaps via `AskUserQuestion` (1-2 questions per turn during exploration)
 6. Write `.kit/planning/SPEC.md` referencing the source files in `Dependencies / Assumptions`; capture rejected alternatives in `Key Decisions`
 7. Run `lock-checklist.md` self-review; fix inline
-8. User review gate before suggesting `plan`
+8. User review gate before suggesting `to-plan`
 
 **Output**: `.kit/planning/SPEC.md` with traceability back to the source markdown and an explicit `Key Decisions` section showing what was *not* chosen and why. `IDEA.md` optional — only if the source files are loose notes rather than a structured RFC.
 

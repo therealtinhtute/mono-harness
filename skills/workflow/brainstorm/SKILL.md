@@ -43,7 +43,7 @@ Every session MUST include option exploration before any output. In `lock-from-f
 - Any choice between multiple valid approaches before committing
 
 ## Defer To Instead
-`plan` — roadmap and executable phases from a locked spec. `interview` — Q&A-driven requirement extraction. `check` — quality gate after implementation.
+`to-plan` — roadmap and executable phases from a locked spec. `interview` — Q&A-driven requirement extraction. `check` — quality gate after implementation.
 
 ## Core Principles
 **YAGNI**: remove speculative scope. **KISS**: prefer the simpler approach. **DRY**: deduplicate only when proven painful.
@@ -81,10 +81,10 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 6. **Clarify gaps** (lock modes) — apply `references/clarification-rubric.md` until goal, scope, constraints, acceptance are lockable.
 7. **Recommend or lock** — explore: pick one option with rationale and rejected alternatives. Lock: write SPEC via `references/spec-template.md`; capture rejected alternatives in `Key Decisions` and include classification metadata in the header.
 8. **Self-review** (lock modes) — apply `references/lock-checklist.md`: placeholders, contradictions, scope creep, ambiguity. Fix inline.
-9. **User review gate** (lock modes) — show SPEC.md path, ask user approval before suggesting `plan`. If changes requested, edit and re-run step 8.
-10. **Hand off** — suggest `plan` after approved lock; `refine` if exploration changed scope; `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
+9. **User review gate** (lock modes) — show SPEC.md path, ask user approval before suggesting `to-plan`. If changes requested, edit and re-run step 8.
+10. **Hand off** — suggest `to-plan` after approved lock; `refine` if exploration changed scope; `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
 
-You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `plan`.
+You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `to-plan`.
 
 ## Output Rules
 - Lock modes write planning artifacts inside `.kit/planning/`; they do NOT initialize or refresh `.kit/workflow-state.yml`
@@ -98,7 +98,7 @@ You DO NOT generate implementation phases, task breakdowns, or wave plans — th
 - Mode confirmed; option-exploration articulated (per `<hard-gate>`)
 - Lock modes: SPEC.md exists with boundaries, acceptance criteria, classification metadata, and user approval
 - Explore mode: one recommendation with rationale and rejected alternatives, plus a best-effort input-type/lane recommendation when possible
-- Next handoff obvious (`plan` after lock, `refine` if scope shifted, `work simple` only when intentionally warranted)
+- Next handoff obvious (`to-plan` after lock, `refine` if scope shifted, `work simple` only when intentionally warranted)
 </instructions>
 
 ## Output Format

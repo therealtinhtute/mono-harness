@@ -41,7 +41,7 @@ Created At: YYYY-MM-DD HH:mm
 
 ## Next Action
 - rerun `work`
-- refresh `plan phase {slug}`
+- refresh `to-plan phase {slug}`
 - ready for PR
 ```
 

@@ -10,7 +10,7 @@ Input Type: new-spec | spec-slice | change-request | new-initiative | maintenanc
 Lane: tiny | normal | high-risk
 Risk Flags: auth, authorization, data-model, audit-security, external-systems, public-contract, cross-platform, existing-behavior, weak-proof, multi-domain
 Affected Surfaces: api, browser, mobile, desktop, worker, db, provider, docs
-Downstream: plan full | plan phase | work simple | none
+Downstream: to-plan full | to-plan phase | work simple | none
 Updated At: YYYY-MM-DD
 
 ## Source Mode

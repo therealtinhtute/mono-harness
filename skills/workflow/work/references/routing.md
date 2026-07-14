@@ -31,12 +31,12 @@ Once mode is resolved, proceed to the matching section below.
 | State | Files checked | Signal | Action |
 |-------|---------------|--------|--------|
 | `no-spec` | `.kit/planning/SPEC.md` | missing or empty | Stop, route to `brainstorm` |
-| `no-plan` | `.kit/planning/ROADMAP.md` | missing | Stop, route to `plan` |
-| `no-phase` | `.kit/planning/phases/{slug}/{slug}-PLAN.md` | missing for selected phase | Stop, route to `plan phase {slug}` |
-| `no-context` | `.kit/planning/phases/{slug}/{slug}-CONTEXT.md` | missing | Stop, route to `plan phase {slug}` |
-| `stale-plan` | Phase plan references files/symbols that no longer exist | Detected via grep during context load | Stop, route to `plan phase {slug}` to refresh |
-| `placeholder-plan` | Phase plan contains `TBD`, `TODO`, `similar to`, "implement later" | Detected during context load | Stop, route to `plan phase {slug}` |
-| `contract-drift` | Working tree or requested scope already touches files outside `Allowed Surfaces` / task `touches`, or conflicts with `Forbidden Surfaces` / task `avoid` | Detected during preflight | Stop, route to `plan phase {slug}` or `brainstorm refine` |
+| `no-plan` | `.kit/planning/ROADMAP.md` | missing | Stop, route to `to-plan` |
+| `no-phase` | `.kit/planning/phases/{slug}/{slug}-PLAN.md` | missing for selected phase | Stop, route to `to-plan phase {slug}` |
+| `no-context` | `.kit/planning/phases/{slug}/{slug}-CONTEXT.md` | missing | Stop, route to `to-plan phase {slug}` |
+| `stale-plan` | Phase plan references files/symbols that no longer exist | Detected via grep during context load | Stop, route to `to-plan phase {slug}` to refresh |
+| `placeholder-plan` | Phase plan contains `TBD`, `TODO`, `similar to`, "implement later" | Detected during context load | Stop, route to `to-plan phase {slug}` |
+| `contract-drift` | Working tree or requested scope already touches files outside `Allowed Surfaces` / task `touches`, or conflicts with `Forbidden Surfaces` / task `avoid` | Detected during preflight | Stop, route to `to-plan phase {slug}` or `brainstorm refine` |
 | `multiple-incomplete` | More than one phase has incomplete waves | Default `auto` mode is ambiguous | Ask user via `AskUserQuestion` which phase to run |
 | `ready` | All required files present and concrete | — | Proceed to execution loop |
 
@@ -55,14 +55,14 @@ Run: `/brainstorm` with your idea, notes, or @file: refs.
 ```
 🥷 SPEC exists, no plan. Generate the roadmap first.
 
-Run: `/plan full`.
+Run: `/to-plan full`.
 ```
 
 ### no-phase / no-context
 ```
 🥷 Phase artifacts missing for `{slug}`. Refresh the phase plan.
 
-Run: `/plan phase {slug}`.
+Run: `/to-plan phase {slug}`.
 ```
 
 ### stale-plan / placeholder-plan
@@ -71,7 +71,7 @@ Run: `/plan phase {slug}`.
 - {file or symbol that no longer exists}
 - {placeholder text and line}
 
-Run: `/plan phase {slug}` to refresh, then re-invoke `/work`.
+Run: `/to-plan phase {slug}` to refresh, then re-invoke `/work`.
 ```
 
 ### contract-drift
@@ -83,7 +83,7 @@ Conflict:
 - outside allowed surfaces or inside forbidden scope
 
 Run one:
-- `/plan phase {slug}` if the phase contract should be refreshed
+- `/to-plan phase {slug}` if the phase contract should be refreshed
 - `/brainstorm refine` if the spec boundary itself changed
 ```
 
@@ -108,7 +108,7 @@ Research found: {files_count} files / {lines_count} lines / unknown subsystem: {
 This exceeds the simple mode limit (≤5 files, ≤100 lines, no unknown subsystem).
 Upgrade to full pipeline:
 1. `/brainstorm` — lock the spec
-2. `/plan full` — generate phase artifacts
+2. `/to-plan full` — generate phase artifacts
 3. `/work full` — execute with verification gates
 ```
 

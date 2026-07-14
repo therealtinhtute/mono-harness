@@ -2,7 +2,7 @@
 name: work
 model: opus
 version: "1.2.0"
-description: "Execution orchestrator after `brainstorm` and `plan`. Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, or `handoff`."
+description: "Execution orchestrator after `brainstorm` and `to-plan`. Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, or `handoff`."
 license: MIT
 argument-hint: "[mode:auto|full|simple|phase] [phase-name?] [--notes?]"
 compatibility: Designed for Claude Code
@@ -25,7 +25,7 @@ Act as the execution conductor: read planning artifacts, execute the next incomp
 <core-behaviors>
 - **Resolve mode first** — detect `auto`/`full`/`simple`/`phase` before any execution; see State Routing
 - **Inspect** `.kit/planning/` before doing anything in `full` mode; treat missing or stale artifacts as a fail-fast signal
-- **Route** to `brainstorm` (no spec) or `plan` (no roadmap/phase artifacts) instead of inventing them in `full` mode
+- **Route** to `brainstorm` (no spec) or `to-plan` (no roadmap/phase artifacts) instead of inventing them in `full` mode
 - **Create a run artifact** for every invocation so execution is inspectable and resumable
 - **Execute** the active phase task-by-task; run wave dependencies in parallel only when the plan says so
 - **Verify** every task with a verification command; missing verification = task not done
@@ -36,18 +36,18 @@ Act as the execution conductor: read planning artifacts, execute the next incomp
 <hard-gate>
 **Full mode only**: Before any execution, confirm `.kit/planning/SPEC.md` is locked AND the target phase has both `-CONTEXT.md` and `-PLAN.md`. If either is missing or visibly stale (placeholders, contradictions, undated decisions), stop and route to the correct upstream skill. Never silently expand scope mid-flight.
 
-**Simple mode**: No `.kit/planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/plan` + `work full`. See `references/simple-mode.md`.
+**Simple mode**: No `.kit/planning/` artifacts required. The hard gate is replaced by the scope guard — if research reveals > 5 files, > 100 lines, or an unknown subsystem, stop and route to `/brainstorm` + `/to-plan` + `work full`. See `references/simple-mode.md`.
 </hard-gate>
 
 <context>
 ## When to Use
-- After `brainstorm` + `plan` produced a locked spec and phase artifacts (`full` mode)
+- After `brainstorm` + `to-plan` produced a locked spec and phase artifacts (`full` mode)
 - User says "implement this plan", "build this", "finish the feature", "work it", or similar
 - Resuming partial execution after a break or handoff
 - Quick fix or known-scope feature from a direct prompt or brainstorm explore file (`simple` mode)
 
 ## Defer To Instead
-`brainstorm` — spec is missing or weak and task exceeds simple mode scope. `plan` — spec exists but no roadmap/phase files. `check` — gate-only or code-review-only request without execution. `git` — pure commit/push request. `hunt` — bug with unknown root cause.
+`brainstorm` — spec is missing or weak and task exceeds simple mode scope. `to-plan` — spec exists but no roadmap/phase files. `check` — gate-only or code-review-only request without execution. `git` — pure commit/push request. `hunt` — bug with unknown root cause.
 
 ## Scope
 In `full` mode: reads `.kit/planning/` artifacts, edits source code under spec boundaries, runs verification, calls `check`. Does NOT redo discovery, rewrite the spec, decompose phases, or replace `check`/`git`/`handoff`.
@@ -85,9 +85,9 @@ In `simple` mode: executes from a prompt or brainstorm explore file, stays withi
 | State | Detection | Action |
 |-------|-----------|--------|
 | No spec | `.kit/planning/SPEC.md` missing | Stop. Tell user to run `/brainstorm`. |
-| No plan | SPEC exists, no `ROADMAP.md` or no `phases/{slug}/*-PLAN.md` | Stop. Tell user to run `/plan`. |
-| Stale plan | Plan references files/symbols that no longer exist | Stop. Tell user to run `/plan phase {slug}` to refresh. |
-| Contract drift | Working tree or phase scope conflicts with phase boundaries / touched surfaces | Stop. Name the drift and route to `plan phase {slug}` or `brainstorm refine`. |
+| No plan | SPEC exists, no `ROADMAP.md` or no `phases/{slug}/*-PLAN.md` | Stop. Tell user to run `/to-plan`. |
+| Stale plan | Plan references files/symbols that no longer exist | Stop. Tell user to run `/to-plan phase {slug}` to refresh. |
+| Contract drift | Working tree or phase scope conflicts with phase boundaries / touched surfaces | Stop. Name the drift and route to `to-plan phase {slug}` or `brainstorm refine`. |
 | Ready | SPEC + ROADMAP + selected phase artifacts present | Proceed to execution loop. |
 
 See `references/routing.md` for the full decision table and stop messages.
@@ -118,7 +118,7 @@ See `references/execution-loop.md` for wave dispatch, subagent prompts, and stat
 - Create one run artifact per invocation under `.kit/runs/work/`; never overwrite an older run log
 - With `--notes`: after any task involving an off-spec decision, plan deviation, tradeoff, or `DONE_WITH_CONCERNS` — append one entry to `.kit/implementation-notes.md`. See `references/notes-mode.md`. Silent when flag is absent.
 - Stop taxonomy for execution blockers: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT` (optional finer cause may be named after the primary code)
-- Never edit `.kit/planning/SPEC.md` or `ROADMAP.md` from inside `work` — route back to `brainstorm` or `plan` instead
+- Never edit `.kit/planning/SPEC.md` or `ROADMAP.md` from inside `work` — route back to `brainstorm` or `to-plan` instead
 - Surface every `BLOCKED` or `DONE_WITH_CONCERNS` status to the user before continuing
 
 ## Output Format

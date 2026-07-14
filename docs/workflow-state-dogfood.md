@@ -1,6 +1,6 @@
 # Workflow State Dogfood Example
 
-This reference shows one minimal end-to-end harness slice where `.kit/workflow-state.yml` stays coherent across `plan` → `work` → `check` → `handoff` → `watzup`.
+This reference shows one minimal end-to-end harness slice where `.kit/workflow-state.yml` stays coherent across `to-plan` → `work` → `check` → `handoff` → `watzup`.
 
 ## Scenario
 
@@ -10,9 +10,9 @@ Phase slug: `workflow-state-deeper-support`
 
 Goal: tighten deeper operational support for the workflow-state manifest without adding new commands.
 
-## 0) Before `/plan`
+## 0) Before `/to-plan`
 
-`/brainstorm` may lock `.planning/SPEC.md`, but it does not initialize `.kit/workflow-state.yml`. The manifest starts at `plan`, not earlier.
+`/brainstorm` may lock `.planning/SPEC.md`, but it does not initialize `.kit/workflow-state.yml`. The manifest starts at `to-plan`, not earlier.
 
 ### Workflow-state status
 
@@ -23,11 +23,11 @@ Goal: tighten deeper operational support for the workflow-state manifest without
 What matters here:
 - scope can be locked before any execution-state index exists
 - `brainstorm` stays focused on planning artifacts only
-- `plan` is the first skill that creates the manifest
+- `to-plan` is the first skill that creates the manifest
 
-## 1) After `/plan`
+## 1) After `/to-plan`
 
-`/plan` writes or refreshes the canonical phase artifacts, then initializes the manifest as the first lookup index.
+`/to-plan` writes or refreshes the canonical phase artifacts, then initializes the manifest as the first lookup index.
 
 ### `.kit/workflow-state.yml`
 
@@ -158,7 +158,7 @@ What changed:
 
 ## Operational rules this example demonstrates
 
-- `plan` initializes the manifest after writing canonical planning artifacts
+- `to-plan` initializes the manifest after writing canonical planning artifacts
 - `work` updates only `current_phase`, phase pointers, `latest_cook_run`, and `last_updated`
 - `check` updates only `latest_check_report` and `last_updated` unless it explicitly closes the phase
 - `handoff` updates `handoff`, preserves the active phase anchor, and refreshes `last_updated`

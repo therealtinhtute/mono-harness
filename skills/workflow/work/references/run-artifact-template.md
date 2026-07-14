@@ -39,7 +39,7 @@ Started At: YYYY-MM-DD HH:mm
 
 ## Next Recommended Action
 - `check full`
-- `plan phase {slug}`
+- `to-plan phase {slug}`
 - `brainstorm refine`
 - `handoff`
 ```

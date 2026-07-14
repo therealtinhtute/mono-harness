@@ -1,5 +1,5 @@
 ---
-name: plan
+name: to-plan
 version: "1.1.0"
 model: opus
 description: Generate roadmap, phase context, and executable phase plans from a locked `.kit/planning/SPEC.md`. Use after `brainstorm` for artifact-first implementation planning.
@@ -61,7 +61,7 @@ Rules: split work into coherent phases; each phase must have a clear goal and de
 ### Step 3: Create phase context files
 For each roadmap phase, write `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md` using `references/phase-context-template.md`.
 
-Each context file should lock implementation decisions implied by the spec, phase-specific assumptions, canonical refs, rejected options, deferred ideas, allowed/forbidden surfaces, blast radius, expected proof class, and escalation conditions back to `brainstorm` or `plan`.
+Each context file should lock implementation decisions implied by the spec, phase-specific assumptions, canonical refs, rejected options, deferred ideas, allowed/forbidden surfaces, blast radius, expected proof class, and escalation conditions back to `brainstorm` or `to-plan`.
 If the repo context is too unclear, note it explicitly as an open assumption.
 
 ### Step 4: Create executable phase plans
@@ -71,7 +71,7 @@ Task rules: group tasks into waves; parallelize only when dependencies truly all
 
 ### Step 5: Workflow-state integrity + handoff guidance
 Before finishing, verify `.kit/workflow-state.yml` points at the exact phase files just written. In `full` mode, `current_phase` should default to the recommended entry phase; in `phase` mode, preserve prior pointers unless the refreshed phase becomes the active one.
-At the end, suggest `check` after implementation, plus `git` or `handoff` when wrap-up or transfer is relevant.
+At the end, suggest `work` to execute the phase next; `check` gates after implementation, and `git` or `handoff` follow for wrap-up or transfer.
 
 ## Output Format
 Save to: `.kit/planning/ROADMAP.md`, `.kit/planning/phases/{phase-slug}/`, and `.kit/workflow-state.yml`.
@@ -95,11 +95,11 @@ The skill is complete only when `.kit/planning/SPEC.md` was enforced, `.kit/plan
 
 ## Examples
 ### Example 1
-**Input**: `plan full` — reads `.kit/planning/SPEC.md`, writes `.kit/planning/ROADMAP.md`, then generates context and plan files for each phase.
+**Input**: `to-plan full` — reads `.kit/planning/SPEC.md`, writes `.kit/planning/ROADMAP.md`, then generates context and plan files for each phase.
 ### Example 2
-**Input**: `plan phase auth-foundation` — refreshes `.kit/planning/phases/auth-foundation/auth-foundation-CONTEXT.md` and `auth-foundation-PLAN.md` while preserving the roadmap.
+**Input**: `to-plan phase auth-foundation` — refreshes `.kit/planning/phases/auth-foundation/auth-foundation-CONTEXT.md` and `auth-foundation-PLAN.md` while preserving the roadmap.
 ### Example 3
-**Input**: `plan full` with no spec — refuses to continue and directs the user to run `brainstorm` first.
+**Input**: `to-plan full` with no spec — refuses to continue and directs the user to run `brainstorm` first.
 
 <references>
 Load as needed from `{baseDir}/references/`:

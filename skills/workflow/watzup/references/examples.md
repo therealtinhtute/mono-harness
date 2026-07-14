@@ -187,7 +187,7 @@ Thay đổi
 Risks
 | Risk | Mức độ | Action |
 |------|--------|--------|
-| Spec và phase plan lệch nhau | cao | Chạy /plan phase triage-rules để khóa scope đúng |
+| Spec và phase plan lệch nhau | cao | Chạy /to-plan phase triage-rules để khóa scope đúng |
 
-Next: Chạy /plan phase triage-rules để refresh scope trước khi code tiếp.
+Next: Chạy /to-plan phase triage-rules để refresh scope trước khi code tiếp.
 ```

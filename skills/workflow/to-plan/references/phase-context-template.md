@@ -46,7 +46,7 @@ Short restatement of the phase goal.
 - future idea intentionally not done now
 
 ## Escalate If
-- condition that should route back to `brainstorm` or `plan`
+- condition that should route back to `brainstorm` or `to-plan`
 ```
 
 Rules:
