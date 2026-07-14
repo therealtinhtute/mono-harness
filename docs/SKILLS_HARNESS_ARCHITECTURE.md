@@ -3,7 +3,7 @@
 Status: draft
 Scope: core development-workflow skills only
 Included skills: `brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`
-Excluded from this document: utility/domain-capability skills such as `librarian`, `prompt-leverage`, `git`, `turbo-mono-platform`, and `bash-tui`
+Excluded from this document: utility/domain-capability skills such as `librarian`, `prompt-leverage`, `git`, `turbo-mono-platform`, and `create-cli`
 Last updated: 2026-05-11
 
 ## Why this document exists

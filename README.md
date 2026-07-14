@@ -110,7 +110,7 @@ bash scripts/setup-statusline.sh
 
 | Skill | When | What it does |
 | :--- | :--- | :--- |
-| [`/bash-tui`](skills/shipping/bash-tui/SKILL.md) | Building interactive terminal UIs | Build bash/shell TUI apps with menus, selectors, forms, progress bars, spinners, banners, and color output. |
+| [`/create-cli`](skills/shipping/create-cli/SKILL.md) | Designing a CLI, greenfield or retrofit | Design CLI interfaces (commands, flags, I/O, errors, config) and produce implementation roadmaps with framework choice and shipping strategy. |
 | [`/turbo-mono-platform`](skills/shipping/turbo-mono-platform/SKILL.md) | Working on the monorepo stack | Full-stack TypeScript monorepo guidance (Turborepo, Next.js, Hono, tRPC, Drizzle, etc.). |
 
 ### Craft — Research, writing, meta-skills
