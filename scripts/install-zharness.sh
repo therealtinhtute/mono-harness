@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Installs the zharness CLI from a GitHub release into ~/.local/bin.
 #
-# Usage: install-zharness.sh [version]
-#   version defaults to the latest cli/v* release.
+# Usage: install-zharness.sh [tag]
+#   tag defaults to the latest zharness release. Releases are triggered by
+#   pushing a "cli/vX.Y.Z" tag, but goreleaser requires its current-tag to
+#   parse as semver, so the published release itself is always tagged with
+#   the bare version (e.g. "v0.1.0"), not the "cli/v..." trigger tag.
 #
 # Requires: gh (authenticated against this repo), tar.
 set -euo pipefail
@@ -35,10 +38,10 @@ esac
 
 tag="${1:-}"
 if [ -z "$tag" ]; then
-  tag=$(gh release list --repo "$REPO" --limit 50 --json tagName,isDraft,isPrerelease \
-    --jq '[.[] | select(.isDraft==false) | select(.tagName | startswith("cli/v"))][0].tagName')
+  tag=$(gh release list --repo "$REPO" --limit 50 --json tagName,name,isDraft \
+    --jq '[.[] | select(.isDraft==false) | select(.name | startswith("zharness "))][0].tagName')
   if [ -z "$tag" ] || [ "$tag" = "null" ]; then
-    echo "error: no cli/v* release found on $REPO" >&2
+    echo "error: no zharness release found on $REPO" >&2
     exit 1
   fi
 fi
