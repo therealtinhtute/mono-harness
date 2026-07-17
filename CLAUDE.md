@@ -81,6 +81,8 @@ brainstorm → to-plan → work → check → git → handoff  (new work)
 
 `interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `to-plan`, or between `to-plan` and `work`.
 
+State underneath this pipeline is harness-backed: durable SQLite (`.kit/harness.db`, gitignored) materialized from committed ULID-named changesets in `.kit/changesets/`, read/written via the `zharness` CLI — not a hand-edited `workflow-state.yml` pointer file. See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for adopting it on a legacy project.
+
 ## Prompt Engineering Reference
 
 When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent instruction file, read `docs/prompt-engineering-principles.md` first. It covers: context engineering principles, formatting syntax (XML vs Markdown, bullets vs paragraphs), language rules, few-shot patterns, anti-patterns, and cross-model awareness.

@@ -1,5 +1,4 @@
 **/.validation-report.json
-.kit/**
-.kit
-.kit/planning
+.kit/harness.db
+.kit/cache/
 cli/dist/

@@ -63,3 +63,17 @@ Once the spec is locked, `to-plan` derives `.kit/planning/ROADMAP.md` and per-ph
 - Markdown fallback / CLI-optional compatibility mode — explicitly rejected; `zharness` is mandatory
 
 See `.kit/planning/SPEC.md` for the full requirement set and `docs/workflow-harness/gap-matrix.md` for the current-state gap inventory.
+
+## Pilot Evidence & Go/No-Go
+
+Piloted 2026-07-17 by dogfooding this repo (`Lab/skills`) itself — real legacy `.kit/workflow-state.yml`-driven history, not a synthetic target. Full evidence: `docs/workflow-harness/pilot-evidence/2026-07-17-lab-skills-import.md`.
+
+**Verdict: GO.**
+
+- `zharness init && zharness import && zharness query state --json` — **pass**. Derived state matched this repo's real pre-import `workflow-state.yml` (`current_phase`, `entry_phase`) exactly, on real history, not a fixture.
+- Rebuild-from-changesets (cross-machine resume mechanism) — **pass**. A scratch copy of `.kit/changesets/**` replayed through `zharness init` + `zharness db changeset apply` in ULID order produced a byte-identical `resume --json` to the original. Zero divergence.
+- `zharness validate` / `zharness audit` — **2 real gaps found, both filed, neither blocking**:
+  - [#24](https://github.com/therealtinhtute/skills/issues/24) — `resume.go`'s drift `Recovery` strings don't match `cli/docs/STATE.md`'s documented text (escalated from continuity's `check` gate)
+  - [#25](https://github.com/therealtinhtute/skills/issues/25) — phases 1-6's RUN/CHECK/HANDOFF artifacts predate the harness and fail `validate`'s ULID cross-link checks (`entropy_score: 100`, zero DB-level `pointer_drift` — the gap is markdown frontmatter, not the harness itself)
+
+Neither gap breaks the chain's core promise: state derivation from legacy `.kit/` is correct, and the changeset-rebuild mechanism is proven byte-exact on this repo's own real history. Both gaps are scoped, filed, and routed to future planning cycles rather than hotfixed mid-pilot, per this phase's own rule.

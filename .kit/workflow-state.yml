@@ -1,0 +1,10 @@
+current_phase: pilot-migration
+entry_phase: harness-concept
+spec: .kit/planning/SPEC.md
+roadmap: .kit/planning/ROADMAP.md
+active_context: .kit/planning/phases/pilot-migration/pilot-migration-CONTEXT.md
+active_plan: .kit/planning/phases/pilot-migration/pilot-migration-PLAN.md
+latest_cook_run: .kit/runs/work/20260717-2200-pilot-migration.md
+latest_check_report: .kit/reports/check/20260717-2208-pilot-migration.md
+handoff: .kit/HANDOFF.md
+last_updated: 2026-07-17 (pilot-migration check full gate APPROVED — scope on target, artifact alignment aligned, 0 critical/major findings, 1 advisory (stale literal grep in PLAN.md T4, non-blocking); next: git cm to commit the phase)

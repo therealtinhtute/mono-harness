@@ -18,7 +18,8 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 │       └── {phase-slug}/
 │           ├── {phase-slug}-CONTEXT.md
 │           └── {phase-slug}-PLAN.md
-├── workflow-state.yml
+├── harness.db          (gitignored — rebuilt from changesets)
+├── changesets/         (ULID-named JSONL, source of truth)
 ├── HANDOFF.md
 ├── runs/
 │   └── work/
@@ -30,7 +31,7 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 
 #### What lives where
 - `planning/` — canonical planning artifacts owned by `brainstorm` and `to-plan`
-- `workflow-state.yml` — lightweight pointer index for the current phase and latest downstream artifacts
+- `harness.db` + `changesets/` — durable, queryable state (`zharness query state`/`resume`); replaces the retired `workflow-state.yml` pointer file — see [Workflow Harness](#workflow-harness)
 - `HANDOFF.md` — latest continuity snapshot for the next session
 - `runs/work/` — execution logs created by `work`
 - `reports/check/` — persisted gate verdicts from `check`
@@ -41,7 +42,7 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 - `.kit/planning/` answers **what is currently locked**
 - `.kit/runs/` answers **what happened during execution**
 - `.kit/reports/` answers **what the gate concluded**
-- `.kit/workflow-state.yml` answers **where the harness should look first**
+- `zharness resume --json` answers **where the harness should look first**
 
 ## Machine Setup
 
@@ -172,6 +173,25 @@ Use `watzup` at the start of a session to recap branch state, review committed +
 ## Workflow Harness
 
 The workflow chain above is evolving from prompt-only orchestration into a harness-backed runtime (`zharness` CLI, durable state, deterministic gates). See [`skills/workflow/README.md`](skills/workflow/README.md) for the concept doc and [`docs/workflow-harness/`](docs/workflow-harness/) for the gap inventory. Initiative in progress — chain UX above is unaffected.
+
+### Quickstart: `zharness`
+
+```bash
+# install (no cli/v* release yet — see docs/workflow-harness/migration.md#install for the current build-from-source path)
+bash scripts/install-zharness.sh
+
+# new project (init does not create the .kit/ directory itself)
+mkdir -p .kit
+zharness init --json
+zharness story --slug my-phase --goal "..." --json
+
+# existing project with legacy .kit/workflow-state.yml
+zharness init --json
+zharness import --json
+zharness query state --json
+```
+
+Full install/import/validate/rollback walkthrough, proven on this repo's own real history: [`docs/workflow-harness/migration.md`](docs/workflow-harness/migration.md). Pilot evidence and go/no-go verdict: [`skills/workflow/README.md`](skills/workflow/README.md#pilot-evidence--gono-go).
 
 ## Local Development
 
