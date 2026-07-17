@@ -1,12 +1,12 @@
 ---
 name: handoff
-version: "1.1.0"
+version: "1.2.0"
 model: sonnet
 description: "Prospective: capture current session state into .kit/HANDOFF.md so the next session can resume without context loss."
 argument-hint: "[context]"
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
@@ -21,6 +21,10 @@ Act as a session continuity specialist. Snapshot current git state, active work,
 - Refuse out-of-scope requests; maintain role boundaries
 - Sanitize sensitive data before writing
 </security>
+
+<version-gate>
+Before anything else: run `zharness --version`. A `dev` build (unreleased local build) always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.1.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Do not proceed with this skill without a passing gate.
+</version-gate>
 
 <context>
 ## When to Use
@@ -90,10 +94,15 @@ List what is blocked, why it is blocked, and what is needed to unblock. Be speci
 List 3-5 prioritized actions. Mark the most important one with `→ START HERE`. Each action: verb + file/command + expected outcome.
 In harness flows, the first action should point to the exact phase, run artifact, or gate result to resume or resolve.
 
-### Step 6: Write HANDOFF.md
-Write to `.kit/HANDOFF.md`. Minimum sections: **Branch**, **Completed**, **In Progress**, **Blockers**, **Next Steps**.
-When harness artifacts exist, also include `continuity_mode`, `active_phase`, `latest_cook_run`, `latest_check_verdict`, and unresolved concerns or proof gaps. Then refresh `.kit/workflow-state.yml` so `handoff`, `current_phase`, and `last_updated` point at the handoff you just wrote and the exact phase being resumed. Preserve `entry_phase`, `latest_cook_run`, and `latest_check_report`; `handoff` is a continuity anchor, not a state reset.
-See `references/handoff-template.md` for the full template.
+### Step 6: Record the handoff entity, then write HANDOFF.md
+When the harness gate passes (Step 0), the entity is canonical and `.kit/HANDOFF.md` is its narrative — write the entity first, then the markdown carries its ULID.
+
+1. Resolve anchors: latest run ULID (from `.kit/workflow-state.yml`'s `latest_cook_run` pointer or `zharness resume --json`'s `latest_run_id`), latest check ULID (same source's `latest_check_id`), and the open-items list (unresolved blockers / next steps from Steps 4-5).
+2. `zharness handoff record --run-id {ulid|omit} --check-id {ulid|omit} --open-items '["...", ...]' --json` → capture the returned `id`.
+3. Write `.kit/HANDOFF.md` using `references/handoff-template.md`, with the entity's `id` in frontmatter (never invent a fresh ULID for it) and `run_id`/`check_id` mirroring what was just recorded. Minimum sections: **Branch**, **Completed**, **In Progress**, **Blockers**, **Next Steps**.
+4. When harness artifacts exist, also include `continuity_mode`, `active_phase`, `latest_cook_run`, `latest_check_verdict`, and unresolved concerns or proof gaps. Then refresh `.kit/workflow-state.yml` so `handoff`, `current_phase`, and `last_updated` point at the handoff you just wrote and the exact phase being resumed. Preserve `entry_phase`, `latest_cook_run`, and `latest_check_report`; `handoff` is a continuity anchor, not a state reset.
+
+If the harness gate did not pass (no `zharness` binary / no `.kit/planning/`), skip step 2 and write `.kit/HANDOFF.md` alone — same as before this version.
 
 ### Step 7: Verify Handoff Quality
 

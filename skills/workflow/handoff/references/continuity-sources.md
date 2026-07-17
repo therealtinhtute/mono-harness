@@ -2,6 +2,10 @@
 
 Use these in priority order when the repo follows the harness flow.
 
+## Canonical vs. Narrative
+
+The `handoffs` entity (written by `zharness handoff record`) is canonical — it is what `resume`/`watzup` read to reconstruct state on another machine. `.kit/HANDOFF.md` is the narrative layer: human-readable prose carrying the same anchors (entity `id`, `run_id`, `check_id`, open items) for a person reading cold. Never let the markdown diverge from the entity — write the entity first, then mirror its fields into the markdown frontmatter.
+
 ## Primary Sources
 
 1. `.kit/workflow-state.yml`

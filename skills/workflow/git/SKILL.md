@@ -5,7 +5,7 @@ description: "Git operations with conventional commits. Use for staging, committ
 argument-hint: "cm|cp|pr|merge [args]"
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
@@ -56,6 +56,9 @@ Sacrifice grammar for concision. Pass token-efficiency rules to subagents.
 
 <instructions>
 ## Core Workflow
+
+### Step 0: Check Latest Gate Verdict (warn, never block)
+Before commit/PR steps, run `zharness query check --latest --json`. If it returns `verdict: REQUEST_CHANGES`, or the command fails (no `zharness` binary, `db_unreadable`, or no check recorded yet), print a one-line warning naming the verdict or the reason it's unavailable, then proceed anyway — this never blocks staging or committing. Only a verdict of `APPROVED` or `APPROVE_WITH_REQUESTS` proceeds silently.
 
 ### Step 1: Stage + Analyze
 ```bash

@@ -1,6 +1,6 @@
 ---
 name: check
-version: "1.3.0"
+version: "1.4.0"
 description: "Pre-commit and pre-merge gate. Runs tests, lint, build, then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/work`."
 model: opus
 allowed-tools: "Read Grep Glob Bash"
@@ -8,7 +8,7 @@ argument-hint: "[gate|review|full]"
 tags: [check, review, quality, security, gate]
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers.
@@ -82,7 +82,7 @@ CLI-first and deterministic — the matrix replaces judgment on whether gathered
 4. Evaluate `references/gate-checklist.md`'s Validation Matrix for the resolved lane against proof actually gathered this session: verification command output → `command-output`; a real test run → `unit`/`integration`/`e2e`; the Phase 2 review pass itself → `manual-check`. A `required` cell with no matching evidence ⇒ **gate FAIL**, name the exact missing evidence class, and stop — identical discipline to a failing test in Phase 1 (do not proceed to Phase 2, no judgment override).
 5. Once Phase 1 (including this step) and Phase 2 both complete, translate this skill's verdict label to the CLI's enum (`APPROVED`, `APPROVE with requests` → `APPROVE_WITH_REQUESTS`, `REQUEST CHANGES` → `REQUEST_CHANGES`) and run:
    `zharness check record --verdict {verdict} --run-id {run id from the RUN artifact's frontmatter} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}, ...]' --json`
-   List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line.
+   List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line. No live command sets `meta.latest_check_id` going forward (only legacy `import` does — the same pointer-maintenance gap `work` closed for `latest_run_id` in Phase 5) — author a one-line meta changeset (`.kit/changesets/{ULID}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"latest_check_id":"{check id just returned}"},"at":"{RFC3339 now}"}`) and apply it with `zharness db changeset apply {path} --json`, the same generic command `work`/`to-plan` already use for their own meta pointers.
 6. A missing required proof or a FAIL verdict is never overridden by this skill. If a human judges the gap acceptable to ship anyway, they record that decision themselves — `check` does not invoke it: `zharness intervention --verdict-id {check id} --reason "..."`.
 
 ## Phase 1 — Gate (`gate`, `review`, `full`)

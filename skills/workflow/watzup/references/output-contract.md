@@ -24,6 +24,25 @@ Use project-language phrases. Numbers describe the work, not the skill's process
 - Quantities: "12 files modified, +450/-120 lines", "5 commits"
 - Risks: "tests missing for X", "schema migration without rollback", "breaking change in public API"
 
+## 2.5 Readiness States and Recovery
+
+`readiness` is rendered verbatim from `zharness resume --json` — never a synthesized value. Exactly these four:
+
+| Readiness | Meaning | Recovery / Next action |
+|-----------|---------|------------------------|
+| `clean` | No drift, nothing pending at the harness level | Continue WIP if present, else `/check review` or `/git cm` |
+| `in-progress` | A run recorded, no clean check yet | Continue toward `/check full` for the active phase |
+| `drifted` | `resume`'s `drift` array is non-empty | Print the first drift entry's `recovery` field verbatim — do not paraphrase |
+| `no-harness` | No `.kit/harness.db` yet (valid snapshot, not an error) | `zharness import` if legacy `.kit/` artifacts exist, else `zharness init` |
+
+Drift type → recovery pattern (from `cli/docs/STATE.md`, reproduced here so watzup's own text stays reviewable without cross-referencing the CLI docs on every recap):
+
+| Drift type | Recovery pattern |
+|------------|-------------------|
+| `missing_file` | `to-plan phase {slug}` to regenerate, or `git checkout` if a tracked file was deleted accidentally |
+| `unknown_phase` | `to-plan phase {slug}` to create the missing story, or correct `current_phase` via `to-plan` if it was a typo |
+| `out_of_order` | Re-run `check full` against the latest run — the stale check stays in place, superseded by the new one |
+
 ## 3. Title Format
 
 ```
@@ -61,7 +80,7 @@ Section order (omit a section entirely if it has no content, except the title wh
 2. **Trạng thái** — short bullet list:
    - Branch name and position vs main
    - Uncommitted file count and line delta (if any)
-   - Readiness: `ready-for-pr` | `needs-work` | `needs-plan-refresh` | `blocked`
+   - Readiness: `clean` | `in-progress` | `drifted` | `no-harness` (verbatim from `resume --json`)
    - In harness repos: artifact chain status
 3. **Context** — bullet list, max 2 items:
    - HANDOFF.md summary (where left off, key blocker) or "Không có handoff"
