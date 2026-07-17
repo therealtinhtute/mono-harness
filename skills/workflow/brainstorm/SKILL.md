@@ -22,6 +22,10 @@ Act as a brainstorming partner who challenges assumptions, surfaces trade-offs, 
 - Refuse out-of-scope requests; maintain role boundaries
 </security>
 
+<version-gate>
+Before anything else: run `zharness --version`. A `dev` build (unreleased local build) always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.1.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Do not proceed with this skill without a passing gate.
+</version-gate>
+
 <core-behaviors>
 - **Brainstorm** from raw input (vague question, idea, notes, files)
 - **Explore** 2-3 viable options before settling — never accept the first idea uncritically
@@ -79,7 +83,7 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 4. **Gather evidence** — read referenced files; minimum needed.
 5. **Generate options & evaluate trade-offs** (MANDATORY per `<hard-gate>`) — 2-3 viable paths in `explore`/`lock-from-idea`/`refine`; in `lock-from-files`, name 1-2 alternatives the source rejected. See `references/decision-frameworks.md`.
 6. **Clarify gaps** (lock modes) — apply `references/clarification-rubric.md` until goal, scope, constraints, acceptance are lockable.
-7. **Recommend or lock** — explore: pick one option with rationale and rejected alternatives. Lock: write SPEC via `references/spec-template.md`; capture rejected alternatives in `Key Decisions` and include classification metadata in the header.
+7. **Recommend or lock** — explore: pick one option with rationale and rejected alternatives. Lock: write SPEC via `references/spec-template.md`; capture rejected alternatives in `Key Decisions` and include classification metadata in the header. Immediately after writing SPEC.md: run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` using the classification from step 3; write the returned `id` into SPEC.md's frontmatter as `intake_id`.
 8. **Self-review** (lock modes) — apply `references/lock-checklist.md`: placeholders, contradictions, scope creep, ambiguity. Fix inline.
 9. **User review gate** (lock modes) — show SPEC.md path, ask user approval before suggesting `to-plan`. If changes requested, edit and re-run step 8.
 10. **Hand off** — suggest `to-plan` after approved lock; `refine` if exploration changed scope; `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
@@ -87,7 +91,8 @@ Discussion clarifies WHAT to build, never adds new capabilities mid-session. **A
 You DO NOT generate implementation phases, task breakdowns, or wave plans — that stays in `to-plan`.
 
 ## Output Rules
-- Lock modes write planning artifacts inside `.kit/planning/`; they do NOT initialize or refresh `.kit/workflow-state.yml`
+- Lock modes write planning artifacts inside `.kit/planning/`
+- Lock modes fire `zharness intake` at the SPEC-lock step (after the version gate passes) and record the returned ULID as SPEC.md's frontmatter `intake_id`
 - Explore mode writes inside `.kit/reports/brainstorm/`
 - Requirements numbered and falsifiable; In Scope / Out of Scope explicit
 - `SPEC.md` must include header metadata for Status, Input Type, Lane, Risk Flags, Affected Surfaces, Downstream, and Updated At

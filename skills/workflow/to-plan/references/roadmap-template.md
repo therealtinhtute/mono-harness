@@ -2,7 +2,7 @@
 
 Use this structure for `.kit/planning/ROADMAP.md`.
 
-When writing or refreshing the roadmap, also initialize `.kit/workflow-state.yml` using `workflow-state-template.yml`.
+When writing or refreshing the roadmap, also run `zharness init` (if no db yet) and one `zharness story --slug {phase-slug} --goal "..."` per phase below.
 
 ```markdown
 # ROADMAP: {title}
@@ -34,4 +34,4 @@ Rules:
 - order by dependency and risk reduction
 - each deliverable should map back to the spec
 - use as many phases as needed, but keep it lean
-- set `entry_phase` and `current_phase` in `.kit/workflow-state.yml` to the recommended starting phase
+- the recommended starting phase should be named in the roadmap header (`entry_phase` equivalent); harness state (`zharness query state`) tracks `current_phase` durably instead of a written yml file

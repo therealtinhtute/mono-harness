@@ -22,6 +22,10 @@ Act as the execution conductor: read planning artifacts, execute the next incomp
 - Refuse out-of-scope requests; maintain role boundaries
 </security>
 
+<version-gate>
+Before anything else: run `zharness --version`. A `dev` build (unreleased local build) always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.1.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Do not proceed with this skill without a passing gate.
+</version-gate>
+
 <core-behaviors>
 - **Resolve mode first** — detect `auto`/`full`/`simple`/`phase` before any execution; see State Routing
 - **Inspect** `.kit/planning/` before doing anything in `full` mode; treat missing or stale artifacts as a fail-fast signal
@@ -98,23 +102,24 @@ Skip `.kit/planning/` gate entirely. Follow the 7-step workflow in `references/s
 
 ## Execution Loop (per phase)
 
-1. **Load context** — in `full` mode, read `.kit/workflow-state.yml` first when present, then verify its pointers against `.kit/planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions and treat stale pointers as a plan-refresh signal, not as truth.
-2. **Create the run artifact** — write `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` using `references/run-artifact-template.md`. In `simple` mode, the slug comes from the prompt or brainstorm file.
+1. **Load context** — in `full` mode, run `zharness query state --json` and `zharness query phases --json` first when a db exists, then verify against `.kit/planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions and treat a `current_phase` mismatch as a plan-refresh signal, not as truth.
+2. **Create the run artifact** — write `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` using `references/run-artifact-template.md`. In `simple` mode, the slug comes from the prompt or brainstorm file. Run `zharness init` if no db exists yet (idempotent). Then register the run in the harness: author a two-line changeset (`.kit/changesets/{ULID}.changeset.jsonl`) — line 1 creates the run row (`{"op":"create","entity":"run","id":"{run's own frontmatter id}","fields":{"story_slug":"{phase-slug}","artifact_path":"{run file path}","created_at":"{RFC3339 now}"},"at":"{RFC3339 now}"}`), line 2 points `meta.latest_run_id` at it (`{"op":"update","entity":"meta","id":"meta","fields":{"latest_run_id":"{run's own frontmatter id}"},"at":"{RFC3339 now}"}`) — and apply the file in one shot with `zharness db changeset apply {path} --json` — this is the mechanism SCHEMA.md names for `work` (no dedicated "run create" CLI command exists; `db changeset apply` is the same generic, already-shipped command `continuity` uses to rebuild state from changesets). Both lines land in the same transaction, so `latest_run_id` never lags the run it points to. cli-domain's own T3 notes flagged this exact pointer-maintenance gap and named `skill-adapters`/`work` as the natural owner — resolved here rather than deferred further.
 3. **Preflight drift check** — compare the phase boundary (`Allowed Surfaces`, `Forbidden Surfaces`, task `touches`, task `avoid`) against the current working tree and requested scope. If files already changed outside boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask via `AskUserQuestion` only if the plan is ambiguous about which wave is next.
 5. **Run waves** — for each wave, execute tasks in order; parallelize only when `-PLAN.md` marks the wave as parallel-safe.
 6. **Per-task discipline** — for heavy or isolated tasks (file generation, refactor across many files, research), dispatch a fresh subagent with the task text + verification command. For trivial edits (1-3 lines, single file), run inline.
 7. **Verify per task** — run the task's verification command; capture output. Failed verification = task not done; do not advance the wave.
 8. **Status enums** — after each task, mark `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`. Continue on `DONE`; surface the rest before moving on. Always append task results to the run artifact.
-9. **Workflow-state update** — after run creation and after any terminal status (`BLOCKED`, `NEEDS_CONTEXT`, clean phase completion), refresh `.kit/workflow-state.yml` with `current_phase`, `active_context`, `active_plan`, `latest_cook_run`, and `last_updated`. Do not guess the next phase here.
-10. **Phase gate** — when all waves complete, invoke `check` (full mode) on the phase diff. Do not advance to the next phase on a non-clean gate.
-11. **Handoff suggestion** — on clean gate, offer `/git cm` or `/handoff` based on what's natural; never run them automatically.
+9. **Wave completion trace** — once a wave reaches `DONE`/`DONE_WITH_CONCERNS`, run `zharness trace add --wave {N} --summary "{one-line wave outcome}" --run-id {this run's id} --json`; append the returned `id` to the run artifact frontmatter's `trace_ids` list.
+10. **State check** — after run creation and after any terminal status (`BLOCKED`, `NEEDS_CONTEXT`, clean phase completion), run `zharness query state --json` and confirm `current_phase` still matches; the harness rows written in steps 2 and 9 are the durable record, there is no separate index file to refresh.
+11. **Phase gate** — when all waves complete, invoke `check` (full mode) on the phase diff. Do not advance to the next phase on a non-clean gate.
+12. **Handoff suggestion** — on clean gate, offer `/git cm` or `/handoff` based on what's natural; never run them automatically.
 
 See `references/execution-loop.md` for wave dispatch, subagent prompts, and status routing.
 
 ## Output Rules
 - Write code under the spec boundaries; capture deviations or new assumptions inline in the phase `-CONTEXT.md` (append, never silently rewrite)
-- In `full` mode, treat `.kit/workflow-state.yml` as the first lookup index, then verify the pointed files before acting
+- In `full` mode, treat `zharness query state --json` / `zharness query phases --json` as the first lookup index, then verify the pointed files before acting
 - Create one run artifact per invocation under `.kit/runs/work/`; never overwrite an older run log
 - With `--notes`: after any task involving an off-spec decision, plan deviation, tradeoff, or `DONE_WITH_CONCERNS` — append one entry to `.kit/implementation-notes.md`. See `references/notes-mode.md`. Silent when flag is absent.
 - Stop taxonomy for execution blockers: `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, `BLOCKED_CONTRACT_DRIFT` (optional finer cause may be named after the primary code)

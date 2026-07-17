@@ -21,6 +21,10 @@ Act as a planning specialist. Read a locked `.kit/planning/SPEC.md`, then turn i
 - Refuse out-of-scope requests; maintain role boundaries
 </security>
 
+<version-gate>
+Before anything else: run `zharness --version`. A `dev` build (unreleased local build) always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.1.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Do not proceed with this skill without a passing gate.
+</version-gate>
+
 <context>
 ## When to Use
 - After `brainstorm` has produced a locked `.kit/planning/SPEC.md`
@@ -56,7 +60,7 @@ If the spec is too weak for planning, stop and point back to `brainstorm` with t
 ### Step 2: Build or refresh `.kit/planning/ROADMAP.md`
 Use `references/roadmap-template.md`.
 
-Rules: split work into coherent phases; each phase must have a clear goal and deliverables; order must respect dependencies and risk; do not create fake phases; roadmap header should name the current recommended entry phase and execution mode. Initialize or refresh `.kit/workflow-state.yml` from `references/workflow-state-template.yml` with `entry_phase`, `current_phase`, `spec`, `roadmap`, `active_context`, `active_plan`, `latest_cook_run`, `latest_check_report`, `handoff`, and `last_updated`.
+Rules: split work into coherent phases; each phase must have a clear goal and deliverables; order must respect dependencies and risk; do not create fake phases; roadmap header should name the current recommended entry phase and execution mode. Run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then run `zharness story --slug {phase-slug} --goal "{phase goal}" [--depends-on {slug}]` once per roadmap phase — this is the durable record of roadmap/phase state. No command sets `current_phase`/`entry_phase` for a live project (only legacy `import` does); in `full` mode, after all stories are created, author a one-line meta changeset (`.kit/changesets/{ULID}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"current_phase":"{entry phase slug}","entry_phase":"{entry phase slug}"},"at":"{RFC3339 now}"}`) and apply it with `zharness db changeset apply {path} --json` — the same generic, already-shipped command `work` uses to register runs. In `phase` mode, only touch `current_phase` this way if the refreshed phase should now be active.
 
 ### Step 3: Create phase context files
 For each roadmap phase, write `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md` using `references/phase-context-template.md`.
@@ -69,16 +73,16 @@ For each roadmap phase, write `.kit/planning/phases/{phase-slug}/{phase-slug}-PL
 
 Task rules: group tasks into waves; parallelize only when dependencies truly allow it; keep each task specific and actionable; include expected outputs, verification, touched/avoid surfaces, stop conditions, and escalation path; keep tasks inside spec boundaries; do not drift into post-hoc product design.
 
-### Step 5: Workflow-state integrity + handoff guidance
-Before finishing, verify `.kit/workflow-state.yml` points at the exact phase files just written. In `full` mode, `current_phase` should default to the recommended entry phase; in `phase` mode, preserve prior pointers unless the refreshed phase becomes the active one.
+### Step 5: State integrity + handoff guidance
+Before finishing, run `zharness query state --json` and confirm `current_phase` matches the recommended entry phase (`full` mode) or the just-refreshed phase (`phase` mode, only if it should now be active); run `zharness query phases --json` and confirm one story exists per roadmap phase, slugs matching.
 At the end, suggest `work` to execute the phase next; `check` gates after implementation, and `git` or `handoff` follow for wrap-up or transfer.
 
 ## Output Format
-Save to: `.kit/planning/ROADMAP.md`, `.kit/planning/phases/{phase-slug}/`, and `.kit/workflow-state.yml`.
+Save to: `.kit/planning/ROADMAP.md` and `.kit/planning/phases/{phase-slug}/`.
 
 Frontmatter: not required.
 
-Write planning artifacts inside `.kit/planning/`: `.kit/planning/ROADMAP.md`, `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`, and `.kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md`. Also write or refresh `.kit/workflow-state.yml` as the lightweight workflow index.
+Write planning artifacts inside `.kit/planning/`: `.kit/planning/ROADMAP.md`, `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md`, and `.kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md`. Phase/roadmap state lives in the harness (`zharness story`/`zharness query state`), not in a written yml file.
 Artifact expectations: `ROADMAP.md` identifies the recommended entry phase; each `-CONTEXT.md` declares boundaries, blast radius, and expected proof; each `-PLAN.md` declares inputs, touched/avoid surfaces, verification, stop conditions, and escalation path.
 
 If blocked, return a short fail-fast explanation naming the missing spec gap.
@@ -107,5 +111,4 @@ Load as needed from `{baseDir}/references/`:
 - `phase-context-template.md` — structure for per-phase context files
 - `phase-plan-template.md` — structure for per-phase executable plans
 - `planning-rules.md` — sequencing, wave, and boundary rules
-- `workflow-state-template.yml` — initialize `.kit/workflow-state.yml` as the lightweight workflow index
 </references>
