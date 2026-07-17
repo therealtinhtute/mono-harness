@@ -1,5 +1,24 @@
 # Gate Checklist — Per-Stack Commands
 
+## Validation Matrix (harness-aware gate)
+
+When a `zharness` binary passes the version gate and `.kit/planning/` artifacts exist, the automated gate evaluates this lane × proof-class matrix instead of (not in addition to) the generic pass/fail table below. Lane comes from `.kit/planning/SPEC.md`'s frontmatter `lane:` field (set by `intake --lane` at brainstorm time — there is no live CLI query for it, SPEC.md's frontmatter is the source of truth). Every cell is `required` (must have matching evidence or the gate is FAIL), `optional` (nice to have, absence never fails the gate), or `n-a` (not expected for this lane, never requested):
+
+| Lane \ Proof class | unit | integration | e2e | manual-check | command-output |
+|---|---|---|---|---|---|
+| tiny | optional | n-a | n-a | optional | required |
+| normal | required | optional | n-a | optional | required |
+| high-risk | required | required | optional | required | required |
+
+Proof-class meaning:
+- `unit` — a unit test run covering the changed behavior (`go test ./... -run ...`, `npm test`, etc.)
+- `integration` — a test that crosses a real boundary (DB, filesystem, another package's public API) rather than mocking it
+- `e2e` — a full user-facing flow exercised end-to-end (browser automation, CLI smoke test against a real binary, etc.)
+- `manual-check` — the Phase 2 code-review pass itself (Security/Performance/Architecture/Code Quality from `review-dimensions.md`) counts as this class's evidence; a clean review with no 🔴/🟠 findings satisfies it, a 🔴 finding never satisfies it regardless of lane
+- `command-output` — any verification command's actual captured output (build, lint, a one-off script) — the floor every lane always requires, since it's the cheapest proof and the core "no unverified claims" hard stop already demands it
+
+A `required` cell with no matching proof link ⇒ gate FAIL naming that exact missing evidence class (see `check/SKILL.md`'s Harness Gate Flow). This is a hard rule, not a suggestion — the skill does not use judgment to wave through a missing required proof; a human overrides via `zharness intervention` if the missing proof is genuinely acceptable to skip.
+
 ## Conditional Reorder Rules
 
 Apply before running checks:

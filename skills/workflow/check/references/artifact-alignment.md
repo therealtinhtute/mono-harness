@@ -29,6 +29,7 @@ If the repo is not using the full harness flow, say so explicitly and skip artif
 - Did each materially changed behavior have a matching verification command in the phase plan?
 - Does the work run log show those verification commands actually ran?
 - Did the diff add behavior with no proof trail?
+- When `zharness` applies: does gathered proof satisfy every `required` cell in `gate-checklist.md`'s Validation Matrix for the resolved lane? A required cell with no matching evidence is a proof gap here, not just a Phase 1 gate concern — name it the same way (missing evidence class).
 
 ### 4) Decision / Context Alignment
 - Did implementation contradict locked decisions in the phase context?

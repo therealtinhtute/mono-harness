@@ -1,6 +1,6 @@
 ---
 name: check
-version: "1.2.0"
+version: "1.3.0"
 description: "Pre-commit and pre-merge gate. Runs tests, lint, build, then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/work`."
 model: opus
 allowed-tools: "Read Grep Glob Bash"
@@ -8,7 +8,7 @@ argument-hint: "[gate|review|full]"
 tags: [check, review, quality, security, gate]
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: verdict first, evidence for blockers.
@@ -23,6 +23,10 @@ Act as a quality gate specialist. Run checks with real evidence, then review cod
 - Refuse out-of-scope requests; maintain role boundaries
 - Scan for secrets; never commit credentials or API keys
 </security>
+
+<version-gate>
+Before anything else: run `zharness --version`. A `dev` build (unreleased local build) always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.1.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Do not proceed with this skill without a passing gate.
+</version-gate>
 
 <context>
 ## Modes
@@ -70,8 +74,19 @@ Flag drift before running checks — do not silently continue.
 When `.kit/planning/` artifacts are present, inspect `.kit/workflow-state.yml` first when available, then inspect `.kit/planning/SPEC.md`, `.kit/planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/work/*.md` if `work` was used. Treat manifest pointers as a fast index only: verify every pointed file exists before trusting it, and if a report is persisted write its exact path back into `latest_check_report`. Label alignment as **aligned** / **drift** / **skipped**.
 Drift includes changed files outside allowed surfaces, behavior not justified by the spec, missing planned verification proof, or code that contradicts locked context decisions. See `references/artifact-alignment.md`.
 
+## Step 1.6: Harness Gate Flow (when the version gate passes and `.kit/planning/` artifacts exist)
+CLI-first and deterministic — the matrix replaces judgment on whether gathered proof is sufficient. Skip this step entirely for non-harness repos or when the version gate already stopped the skill.
+1. Read the lane (`tiny`/`normal`/`high-risk`) from `.kit/planning/SPEC.md`'s frontmatter `lane:` field — there is no live CLI query for it, SPEC.md is the source of truth.
+2. Run `zharness audit --json`. Any non-empty `pointer_drift` or `contract_violations` touching the artifacts under review is a finding — rate it with the normal Severity table below (🟠 Major at minimum), it is not a separate pass/fail axis. `unlinked_proofs` and `entropy_score` are informational context for the sign-off.
+3. For each id in the RUN artifact's `trace_ids` frontmatter, run `zharness score-trace {id} --json` inline. A trace scored `minimal` is too thin to count as evidence for any matrix cell below — only `standard`/`detailed` tier traces satisfy a proof-class requirement that cites a trace.
+4. Evaluate `references/gate-checklist.md`'s Validation Matrix for the resolved lane against proof actually gathered this session: verification command output → `command-output`; a real test run → `unit`/`integration`/`e2e`; the Phase 2 review pass itself → `manual-check`. A `required` cell with no matching evidence ⇒ **gate FAIL**, name the exact missing evidence class, and stop — identical discipline to a failing test in Phase 1 (do not proceed to Phase 2, no judgment override).
+5. Once Phase 1 (including this step) and Phase 2 both complete, translate this skill's verdict label to the CLI's enum (`APPROVED`, `APPROVE with requests` → `APPROVE_WITH_REQUESTS`, `REQUEST CHANGES` → `REQUEST_CHANGES`) and run:
+   `zharness check record --verdict {verdict} --run-id {run id from the RUN artifact's frontmatter} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}, ...]' --json`
+   List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line.
+6. A missing required proof or a FAIL verdict is never overridden by this skill. If a human judges the gap acceptable to ship anyway, they record that decision themselves — `check` does not invoke it: `zharness intervention --verdict-id {check id} --reason "..."`.
+
 ## Phase 1 — Gate (`gate`, `review`, `full`)
-Run in order: tests, types, lint, build. Cite actual output — never self-certify. See `references/gate-checklist.md`.
+Run in order: tests, types, lint, build. Cite actual output — never self-certify. See `references/gate-checklist.md`. When harness artifacts apply, Step 1.6's matrix evaluation is part of this phase — a matrix FAIL stops the gate exactly like a failing test.
 If gate fails: stop, report which check failed with actual output, and do not proceed to review.
 
 ## Phase 2 — Review (`review`, `full`)
@@ -145,6 +160,7 @@ review:             APPROVED / APPROVE with requests / REQUEST CHANGES
 blockers:           N critical, N major
 autofix:            N safe_auto proposed, N gated_auto awaiting confirmation
 verification:       [command] → pass / fail / none
+harness_verdict:    zharness check record id / not recorded: [why]
 ```
 
 ## Anti-Patterns
