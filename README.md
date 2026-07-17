@@ -177,7 +177,7 @@ The workflow chain above is evolving from prompt-only orchestration into a harne
 ### Quickstart: `zharness`
 
 ```bash
-# install (no cli/v* release yet — see docs/workflow-harness/migration.md#install for the current build-from-source path)
+# install (downloads the latest release into ~/.local/bin)
 bash scripts/install-zharness.sh
 
 # new project (init does not create the .kit/ directory itself)

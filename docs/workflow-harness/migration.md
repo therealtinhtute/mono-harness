@@ -4,18 +4,18 @@ This doc is the pilot-migration deliverable: install → import → validate →
 
 ## Install
 
-**Intended path (once a `cli/v*` release exists):**
 ```bash
-bash scripts/install-zharness.sh        # downloads the latest cli/v* release into ~/.local/bin
+bash scripts/install-zharness.sh        # downloads the latest zharness release into ~/.local/bin
 zharness --version
 ```
 
-**Current actual path** — no `cli/v*` release has been cut yet ([tracked in #26](https://github.com/therealtinhtute/skills/issues/26)). Every phase of this initiative, including this pilot, used a local dev build instead:
+Releases are cut by pushing a `cli/vX.Y.Z` tag, but goreleaser requires its current-tag to parse as semver, so it publishes the actual GitHub Release under the bare version (e.g. `v0.1.0`), not the `cli/v...` tag used to trigger CI. `install-zharness.sh` resolves the latest release by name (`zharness ...`), not by tag prefix, to account for this. First release (`v0.1.0`) shipped from [#26](https://github.com/therealtinhtute/skills/issues/26).
+
+Building from source instead of installing a release:
 ```bash
 cd cli && go build -o /tmp/zharness ./cmd/zharness
 /tmp/zharness --version   # prints a dev-build version; skills' version gate accepts this
 ```
-Once #26 ships, switch to the intended path above — no other doc changes needed.
 
 ## Legacy `.kit/` checklist (adopting zharness on a project with existing markdown-only artifacts)
 
