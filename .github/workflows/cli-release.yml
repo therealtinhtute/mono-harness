@@ -27,6 +27,13 @@ jobs:
         id: tag
         run: echo "version=${GITHUB_REF_NAME#cli/}" >> "$GITHUB_OUTPUT"
 
+      # goreleaser's git-state validation resolves GORELEASER_CURRENT_TAG
+      # against a real git tag pointing at the released commit. Only the
+      # prefixed "cli/v..." tag exists in the repo, so create a local
+      # (never pushed) bare-semver tag for goreleaser to find.
+      - name: Create local bare tag for goreleaser
+        run: git tag "${{ steps.tag.outputs.version }}" "$GITHUB_SHA"
+
       - name: Run goreleaser
         uses: goreleaser/goreleaser-action@v6
         with:
