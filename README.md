@@ -169,6 +169,10 @@ Use `watzup` at the start of a session to recap branch state, review committed +
 - `check` = catch risk and prove readiness (gate + analysis)
 - `git` / `handoff` = wrap up with discipline
 
+## Workflow Harness
+
+The workflow chain above is evolving from prompt-only orchestration into a harness-backed runtime (`zharness` CLI, durable state, deterministic gates). See [`skills/workflow/README.md`](skills/workflow/README.md) for the concept doc and [`docs/workflow-harness/`](docs/workflow-harness/) for the gap inventory. Initiative in progress — chain UX above is unaffected.
+
 ## Local Development
 
 This repo is the stable release. The incubator workspace is a local clone at a path of your choice.
