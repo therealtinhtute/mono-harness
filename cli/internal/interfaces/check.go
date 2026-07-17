@@ -1,0 +1,67 @@
+package interfaces
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"github.com/therealtinhtute/skills/cli/internal/application"
+	"github.com/therealtinhtute/skills/cli/internal/domain"
+	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
+)
+
+func newCheckCmd() *cobra.Command {
+	check := &cobra.Command{
+		Use:   "check",
+		Short: "Check (gate verdict) operations",
+	}
+
+	record := &cobra.Command{
+		Use:   "record",
+		Short: "Record a gate verdict (deterministic, no free-text-only verdicts)",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			verdict, _ := cmd.Flags().GetString("verdict")
+			runID, _ := cmd.Flags().GetString("run-id")
+			proofLinksRaw, _ := cmd.Flags().GetString("proof-links")
+			return runCheckRecord(cmd, verdict, runID, proofLinksRaw)
+		},
+	}
+	record.Flags().String("verdict", "", "APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES")
+	record.Flags().String("run-id", "", "ulid of the run being gated")
+	record.Flags().String("proof-links", "[]", `JSON array: [{"command":"...","output_ref":"...","artifact_path":"..."}]`)
+
+	check.AddCommand(record)
+	return check
+}
+
+func runCheckRecord(cmd *cobra.Command, verdict, runID, proofLinksRaw string) error {
+	var proofLinks []domain.ProofLink
+	if err := json.Unmarshal([]byte(proofLinksRaw), &proofLinks); err != nil {
+		return newUserError("invalid_proof_links", fmt.Sprintf("check record: --proof-links is not valid JSON: %v", err))
+	}
+
+	if !infrastructure.Exists(dbPath) {
+		return newSystemError("db_unreadable", "check record: no db at "+dbPath+"; run `zharness init` first")
+	}
+	db, err := infrastructure.Open(dbPath)
+	if err != nil {
+		return newSystemError("db_unreadable", fmt.Sprintf("check record: %v", err))
+	}
+	defer db.Close()
+
+	id, _, err := application.RecordCheck(db, changesetDir, runID, verdict, proofLinks)
+	if err != nil {
+		if ve, ok := err.(*domain.ValidationError); ok {
+			return mapValidationError(ve)
+		}
+		return newSystemError("db_not_writable", fmt.Sprintf("check record: %v", err))
+	}
+
+	if jsonOutput {
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{"id": id, "verdict": verdict})
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "check %s recorded (%s)\n", id, verdict)
+	return nil
+}
