@@ -62,7 +62,7 @@ Once the spec is locked, `to-plan` derives `.kit/planning/ROADMAP.md` and per-ph
 - Any skill outside `skills/workflow/` (`craft/`, `shipping/` untouched)
 - Markdown fallback / CLI-optional compatibility mode — explicitly rejected; `zharness` is mandatory
 
-See `.kit/planning/SPEC.md` for the full requirement set and `docs/workflow-harness/gap-matrix.md` for the current-state gap inventory.
+See `.kit/planning/archive/workflow-harness-2026-07-17/SPEC.md` (archived — this initiative's roadmap is complete) for the full requirement set, and `docs/workflow-harness/gap-matrix.md` for the current-state gap inventory.
 
 ## Pilot Evidence & Go/No-Go
 
