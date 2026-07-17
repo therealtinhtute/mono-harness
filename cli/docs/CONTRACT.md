@@ -2,7 +2,7 @@
 
 `zharness` command surface. Every command supports `--json`; human-readable output is the default without the flag. Exit code `0` = success; non-zero = failure, and every JSON error response carries a stable machine-readable `code` string (`snake_case`) alongside the numeric exit code, so scripts can branch on `code` without parsing text.
 
-> **Escalation note**: SPEC R6 names exactly 19 commands, and this contract documents exactly those 19 — no `handoff` command is included here, even though R18 ("handoff records entity") and continuity's Wave 1 T1 depend on one existing. `continuity-CONTEXT.md`'s own Assumption pre-answers this: "if the CLI lacks it, that is a Phase 4 gap — escalate, don't shim." This is a real SPEC-internal inconsistency (R6's enumerated list vs. R18's requirement) — see `.kit/implementation-notes.md` for the full reasoning — but the fix belongs to whichever phase actually hits the gap (cli-domain or continuity), via `brainstorm refine`, not to a preemptive addition here that would violate this phase's own locked 19-command scope.
+> **Resolved 2026-07-17**: SPEC R6 named exactly 19 commands and omitted `handoff`, despite R18 ("handoff records entity") and continuity's Wave 1 T1 depending on one existing. This contract now documents a 20th command, `handoff record` (see "Domain — workflow additions" below), added via a narrow reopening of the already-gated cli-domain phase (`cli-domain-CONTEXT.md`'s "Reopened 2026-07-17" note) rather than a full `brainstorm refine` of R6's count — the underlying entity/table already existed (Phase 4 built them ahead of the gap being hit), only the write-path command was missing.
 
 ## Error Codes
 
@@ -116,6 +116,12 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 - Errors: `unknown_run_id` (1), `invalid_verdict` (1), `empty_proof_links` (1, verdict other than REQUEST_CHANGES with zero proof links)
 - Consumer: `check` (deterministic — no free-text-only verdicts, R19)
 
+### `handoff record`
+- Args: `--run-id {ulid} --check-id {ulid} --open-items '["...","..."]'` — `--run-id`/`--check-id` optional (anchors are nullable pointers), `--open-items` defaults `[]`
+- `--json`: `{"id": "ulid"}`
+- Errors: `invalid_open_items` (1, malformed JSON or an empty-string entry), `unknown_run_id` (1, `--run-id` given but not found), `unknown_check_id` (1, `--check-id` given but not found)
+- Consumer: `handoff` skill (close-out — writes both this entity and the human-readable `.kit/HANDOFF.md`); `resume`'s `latest_handoff_id` reads it back unchanged
+
 ### `validate`
 - Args: none — walks SPEC→PLAN→RUN→CHECK→HANDOFF by frontmatter ULID cross-links
 - `--json`: `{"valid": true|false, "findings": [{"link": "SPEC->PLAN", "issue": "missing_key"|"broken_link"|"stale_pointer", "detail": "..."}]}`
@@ -165,6 +171,6 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 | check: gate evaluation | `audit --json` + `score-trace <id> --json` → matrix → `check record --verdict … --json` |
 | check: human override | `intervention --verdict-id … --reason …` (manual, documented escalation only) |
 | watzup: recap render | `resume --json` (1:1, no fallback) |
-| handoff: close-out | **not yet in the 19-command surface** — R18 requires this, no verb exists among R6's 19; see escalation note at top of this doc |
+| handoff: close-out | `handoff record --run-id … --check-id … --open-items … --json` |
 | git: pre-commit/PR | `query check --latest --json` (warn-not-block on FAIL/missing) |
 | continuity: fresh-machine rebuild | `db changeset apply <path>` (per committed changeset, ULID order) |

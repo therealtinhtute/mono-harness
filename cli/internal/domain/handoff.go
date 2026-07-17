@@ -7,10 +7,9 @@ type HandoffAnchors struct {
 	OpenItems     []string `json:"open_items"`
 }
 
-// Handoff has no producing command among CONTRACT.md's 19 (R6/R18 gap,
-// see cli/docs/CONTRACT.md's escalation note). The table and struct exist
-// now per SPEC R13 so no breaking migration is needed once the gap
-// resolves.
+// Handoff is a close-out record (CONTRACT.md `handoff record`, added
+// cli-domain Wave 4 to close the R6/R18 gap — see cli/docs/CONTRACT.md).
+// RunID/CheckID are optional anchors, same shape as HandoffAnchors.
 type Handoff struct {
 	ID        string
 	RunID     *string
@@ -20,5 +19,10 @@ type Handoff struct {
 }
 
 func (h Handoff) Validate() error {
+	for _, item := range h.Anchors.OpenItems {
+		if item == "" {
+			return &ValidationError{Code: "invalid_open_items", Message: "handoff: open_items entries must not be empty"}
+		}
+	}
 	return nil
 }
