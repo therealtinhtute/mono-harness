@@ -3,6 +3,16 @@
 Use this structure for `.kit/planning/SPEC.md`:
 
 ```markdown
+---
+id: {ULID}
+type: spec
+phase: none
+lane: {tiny|normal|high-risk}
+intake_id: {ULID returned by `zharness intake` at SPEC lock}
+created: {YYYY-MM-DD}
+updated: {YYYY-MM-DD}
+---
+
 # SPEC: {title}
 
 Status: draft | locked
@@ -80,3 +90,6 @@ Rules:
 - open questions must be visible, not hidden in prose
 - risk flags should describe why the work is sensitive, not repeat the entire spec
 - downstream should name the next intended workflow step
+- frontmatter `id` is this SPEC's ULID; `phase` is always `none` — a SPEC precedes phase decomposition, `to-plan` assigns phases downstream
+- frontmatter `lane` mirrors the body's `Lane:` field; keep both in sync when either changes
+- frontmatter `intake_id` is the ULID returned by `zharness intake` when brainstorm fires it at the SPEC-lock step; absent only if the version gate blocked the skill (should not happen in normal operation)
