@@ -1,0 +1,80 @@
+package infrastructure
+
+import (
+	"path/filepath"
+	"sort"
+	"testing"
+)
+
+// schemaMDTables is the frozen 11-table list from cli/docs/SCHEMA.md.
+var schemaMDTables = []string{
+	"backlog",
+	"checks",
+	"decisions",
+	"handoffs",
+	"intakes",
+	"interventions",
+	"meta",
+	"runs",
+	"stories",
+	"tools",
+	"traces",
+}
+
+func TestMigrate(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "harness.db")
+
+	db, err := Open(dbPath)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer db.Close()
+
+	applied, schemaVersion, err := Migrate(db)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	if len(applied) != 1 || applied[0] != "0001_init" {
+		t.Fatalf("applied = %v, want [0001_init]", applied)
+	}
+	if schemaVersion != 1 {
+		t.Fatalf("schemaVersion = %d, want 1", schemaVersion)
+	}
+
+	rows, err := db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`)
+	if err != nil {
+		t.Fatalf("query sqlite_master: %v", err)
+	}
+	defer rows.Close()
+
+	var got []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			t.Fatalf("scan table name: %v", err)
+		}
+		got = append(got, name)
+	}
+	sort.Strings(got)
+
+	if len(got) != len(schemaMDTables) {
+		t.Fatalf("table count = %d, want %d (got %v)", len(got), len(schemaMDTables), got)
+	}
+	for i, name := range got {
+		if name != schemaMDTables[i] {
+			t.Fatalf("table[%d] = %q, want %q (full list: %v)", i, name, schemaMDTables[i], got)
+		}
+	}
+
+	// Re-running Migrate on an already-current db must be a no-op.
+	applied2, schemaVersion2, err := Migrate(db)
+	if err != nil {
+		t.Fatalf("Migrate (second run): %v", err)
+	}
+	if len(applied2) != 0 {
+		t.Fatalf("second Migrate applied = %v, want none", applied2)
+	}
+	if schemaVersion2 != 1 {
+		t.Fatalf("second Migrate schemaVersion = %d, want 1", schemaVersion2)
+	}
+}

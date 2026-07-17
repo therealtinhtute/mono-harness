@@ -1,0 +1,37 @@
+version: 2
+
+project_name: zharness
+
+builds:
+  - id: zharness
+    main: ./cmd/zharness
+    binary: zharness
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: zharness
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: therealtinhtute
+    name: skills
+  prerelease: auto
+  name_template: "zharness {{.Version}}"
+
+changelog:
+  disable: true

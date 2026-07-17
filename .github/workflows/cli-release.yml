@@ -1,0 +1,39 @@
+name: cli-release
+
+on:
+  push:
+    tags:
+      - "cli/v*"
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      # Tags are prefixed "cli/v0.1.0" (monorepo convention: components tag
+      # independently). goreleaser's version templating expects a bare
+      # semver tag, so tell it the un-prefixed version via
+      # GORELEASER_CURRENT_TAG rather than the real git.ref_name.
+      - name: Derive bare semver tag
+        id: tag
+        run: echo "version=${GITHUB_REF_NAME#cli/}" >> "$GITHUB_OUTPUT"
+
+      - name: Run goreleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean --config .goreleaser.yaml
+          workdir: cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ steps.tag.outputs.version }}

@@ -2,3 +2,4 @@
 .kit/**
 .kit
 .kit/planning
+cli/dist/
