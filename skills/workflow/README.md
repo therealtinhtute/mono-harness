@@ -8,7 +8,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 
 - **harness** — the durable state layer. SQLite (`harness.db`, gitignored) materialized by replaying committed, ULID-named JSONL changesets under `.kit/changesets/`. This is the source of truth for intake, story/phase, trace, and check history — not the markdown.
 - **workflows** — the lifecycle contract itself: `Intent → Intake → Story/Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that implement the lifecycle for Claude Code and other skills.sh-compatible agents. Each is rewritten CLI-first: `zharness` calls are inline in the instructions, not tucked into references.
+- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) are thin triggers (≤30 rendered lines): version-gate, ensure `.kit/docs/` is scaffolded, then read and follow the matching embedded playbook under `.kit/docs/playbooks/`. The operating logic itself lives in those playbooks — not in this file, not in `references/` — so any agent that can read a file and run a CLI can execute the same lifecycle, not just Claude Code.
 - **cli** — `zharness`, the Go binary (cobra command tree, `modernc.org/sqlite`, CGO disabled) that skills call to read and write the harness layer. Every mutating command appends a changeset before touching the database.
 
 ## Lifecycle
@@ -32,7 +32,28 @@ Once the spec is locked, `to-plan` derives `.kit/planning/ROADMAP.md` and per-ph
 
 ## Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.1.0`. Every rewritten skill (`brainstorm`, `to-plan`, `work`) runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate, since no tagged release exists yet during this initiative's own dogfooding. Otherwise, a missing binary or a version below `0.1.0` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+`MIN_ZHARNESS_VERSION = 0.2.0` (the first release with embedded playbooks — bumped from `0.1.0` once `cli/v0.2.0` shipped). Every one of the 6 spine skills runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate. Otherwise, a missing binary or a version below `0.2.0` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+
+## Thin-Trigger Template
+
+Every one of the 6 spine skills follows this shape, ≤30 rendered lines including frontmatter:
+
+```markdown
+---
+name: {skill-name}
+description: {unchanged from before this initiative — skills.sh discovery/trigger UX is Claude-facing content, stays here}
+---
+
+Run `zharness --version`. Below MIN_ZHARNESS_VERSION (0.2.0) or missing: stop, tell the user to run `bash scripts/install-zharness.sh`. A `dev` build always passes.
+
+Ensure docs are present: run `zharness init` if `.kit/docs/` is missing (idempotent — always safe to run).
+
+Read `.kit/docs/playbooks/{stage}.md` and follow it exactly. That file is the operating logic; this file only triggers it.
+
+Defer to: {one line naming the skills this stage hands off to or resumes from}
+```
+
+`references/` for a rewritten skill is pruned to only what the corresponding playbook does *not* absorb — most of it is deleted once the playbook is proven to carry the same content (diff-checked during `playbook-authoring`).
 
 ## Skill ↔ Command ↔ Entity Mapping
 
