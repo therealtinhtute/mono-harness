@@ -1,0 +1,1 @@
+{"op":"create","entity":"backlog","id":"01KXTTAR8B4DSH59HZPQ6FEGT3","fields":{"created_at":"2026-07-18T14:33:20Z","priority":"tiny","summary":"check playbook's artifact-alignment step lacks the 'Suggested Output Snippets' (clean/misalignment phrasing examples) from skills/workflow/check/references/artifact-alignment.md"},"at":"2026-07-18T14:33:20Z"}

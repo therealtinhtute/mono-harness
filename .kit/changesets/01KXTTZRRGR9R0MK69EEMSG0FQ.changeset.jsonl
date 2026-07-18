@@ -1,0 +1,1 @@
+{"op":"create","entity":"backlog","id":"01KXTTZRRGR9R0MK69EDB6A4SX","fields":{"created_at":"2026-07-18T14:44:49Z","priority":"tiny","summary":"brainstorm.md SPEC.md template 'Affected Surfaces' enum (api, browser, mobile, desktop, worker, db, provider, docs) has no value for a standalone CLI tool — cold agents approximate with 'worker'"},"at":"2026-07-18T14:44:49Z"}
