@@ -1,0 +1,1 @@
+{"op":"create","entity":"story","id":"01KXSTEHY5QQSTEVJ3N9R50WCP","fields":{"created_at":"2026-07-18T05:16:10Z","depends_on":"cli-release","goal":"Second-agent pilot: non-Claude agent completes intake-\u003estory-\u003etrace-\u003echeck record using only written docs + CLI; evidence recorded","slug":"agent-pilot","status":"planned"},"at":"2026-07-18T05:16:10Z"}

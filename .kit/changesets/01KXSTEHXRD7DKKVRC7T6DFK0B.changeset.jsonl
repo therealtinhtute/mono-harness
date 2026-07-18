@@ -1,0 +1,1 @@
+{"op":"create","entity":"story","id":"01KXSTEHXRD7DKKVRC7RBEYKQD","fields":{"created_at":"2026-07-18T05:16:10Z","depends_on":"cli-stale-drift","goal":"Ship cli/v0.2.0 with embedded docs through the release pipeline; install script resolves it","slug":"cli-release","status":"planned"},"at":"2026-07-18T05:16:10Z"}

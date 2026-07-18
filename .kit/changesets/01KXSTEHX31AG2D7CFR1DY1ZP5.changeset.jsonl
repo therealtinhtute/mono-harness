@@ -1,0 +1,1 @@
+{"op":"create","entity":"story","id":"01KXSTEHX2B6QYBEZ48S646FAB","fields":{"created_at":"2026-07-18T05:16:10Z","goal":"Author the canonical embedded doc set: 6 stage playbooks + AGENTS.md shim + CONTEXT_RULES.md + AUTHORITY.md under cli/docs/embedded/","slug":"playbook-authoring","status":"planned"},"at":"2026-07-18T05:16:10Z"}
