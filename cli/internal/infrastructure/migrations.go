@@ -11,10 +11,10 @@ type migration struct {
 	SQL     string
 }
 
-// migrations is the full, frozen SCHEMA.md v1 table set (11 tables).
-// Table order below satisfies FK forward-references; SQLite itself does
-// not require referenced tables to predate the reference, but keeping
-// this order matches how the tables read in SCHEMA.md.
+// migrations holds the versioned schema history. v1 is the frozen
+// SCHEMA.md table set (11 tables); table order within it satisfies FK
+// forward-references (SQLite itself doesn't require this, but it matches
+// how the tables read in SCHEMA.md). Later versions are additive.
 var migrations = []migration{
 	{
 		Version: 1,
@@ -109,6 +109,11 @@ CREATE TABLE traces (
 	created_at TEXT NOT NULL
 );
 `,
+	},
+	{
+		Version: 2,
+		Name:    "0002_meta_docs_version",
+		SQL:     `ALTER TABLE meta ADD COLUMN docs_version TEXT;`,
 	},
 }
 

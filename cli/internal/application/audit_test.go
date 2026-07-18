@@ -13,7 +13,7 @@ func TestAuditCleanState(t *testing.T) {
 	root := t.TempDir()
 	seedRun(t, db, changesetDir) // no meta pointer set, so Resume's drift checks have nothing to cross-check
 
-	report, err := Audit(db, root)
+	report, err := Audit(db, root, "dev")
 	if err != nil {
 		t.Fatalf("Audit: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestAuditUnlinkedProofFixture(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	root := t.TempDir()
 
-	baseline, err := Audit(db, root)
+	baseline, err := Audit(db, root, "dev")
 	if err != nil {
 		t.Fatalf("Audit (baseline): %v", err)
 	}
@@ -60,7 +60,7 @@ func TestAuditUnlinkedProofFixture(t *testing.T) {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 
-	after, err := Audit(db, root)
+	after, err := Audit(db, root, "dev")
 	if err != nil {
 		t.Fatalf("Audit (after): %v", err)
 	}
@@ -86,11 +86,11 @@ func TestAuditDeterministic(t *testing.T) {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 
-	first, err := Audit(db, root)
+	first, err := Audit(db, root, "dev")
 	if err != nil {
 		t.Fatalf("Audit (first): %v", err)
 	}
-	second, err := Audit(db, root)
+	second, err := Audit(db, root, "dev")
 	if err != nil {
 		t.Fatalf("Audit (second): %v", err)
 	}
@@ -119,7 +119,7 @@ func TestProposeFromAuditFindings(t *testing.T) {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 
-	report, err := Propose(db, root)
+	report, err := Propose(db, root, "dev")
 	if err != nil {
 		t.Fatalf("Propose: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestProposeCleanState(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	seedRun(t, db, changesetDir)
 
-	report, err := Propose(db, filepath.Join("..", "..", "testdata", "chain-valid"))
+	report, err := Propose(db, filepath.Join("..", "..", "testdata", "chain-valid"), "dev")
 	if err != nil {
 		t.Fatalf("Propose: %v", err)
 	}

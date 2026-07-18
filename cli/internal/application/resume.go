@@ -22,6 +22,17 @@ type DriftFinding struct {
 	Recovery string `json:"recovery"`
 }
 
+// StaleDocsRecovery is the single source of truth for the stale_docs
+// recovery instruction — STATE.md's stale-pointer table quotes this
+// constant verbatim rather than duplicating the string (the #24 lesson).
+const StaleDocsRecovery = "zharness init --refresh-docs"
+
+// docsVersionMinSchema is the schema_version that introduced
+// meta.docs_version (infrastructure migration 0002_meta_docs_version).
+// Below this, the column doesn't exist yet — an un-migrated project is
+// unversioned, not an error.
+const docsVersionMinSchema = 2
+
 // ResumeView mirrors CONTRACT.md's locked `resume --json` shape.
 type ResumeView struct {
 	Position        Position       `json:"position"`
@@ -71,8 +82,10 @@ func latestHandoffID(db *sql.DB) (id string, exists bool, err error) {
 // them (see cli-domain's implementation-notes.md entry on the
 // meta-pointer-maintenance gap: no command in this phase's 19-command
 // surface writes latest_run_id/latest_check_id going forward, only the
-// existing `import`).
-func Resume(db *sql.DB) (ResumeView, error) {
+// existing `import`). cliVersion is the running binary's own version
+// (`"dev"` for unreleased builds) — compared against meta.docs_version to
+// detect stale_docs drift; resume never writes it back.
+func Resume(db *sql.DB, cliVersion string) (ResumeView, error) {
 	view := ResumeView{Drift: []DriftFinding{}}
 
 	state, err := QueryState(db)
@@ -130,6 +143,21 @@ func Resume(db *sql.DB) (ResumeView, error) {
 				Type:     "out_of_order",
 				Detail:   fmt.Sprintf("latest_check %s belongs to run %s, but latest_run_id is %s", *state.LatestCheckID, runID, *state.LatestRunID),
 				Recovery: "record a new check for the latest run via `check record`, or correct latest_run_id/latest_check_id",
+			})
+		}
+	}
+
+	if state.SchemaVersion >= docsVersionMinSchema {
+		var writtenVersion sql.NullString
+		if err := db.QueryRow(`SELECT docs_version FROM meta LIMIT 1`).Scan(&writtenVersion); err != nil {
+			return view, fmt.Errorf("resume: read meta.docs_version: %w", err)
+		}
+		if written := writtenVersion.String; writtenVersion.Valid && written != "" &&
+			written != "dev" && cliVersion != "dev" && written != cliVersion {
+			view.Drift = append(view.Drift, DriftFinding{
+				Type:     "stale_docs",
+				Detail:   fmt.Sprintf("docs written at version %q, CLI is version %q", written, cliVersion),
+				Recovery: StaleDocsRecovery,
 			})
 		}
 	}

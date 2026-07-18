@@ -10,13 +10,13 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-func newResumeCmd() *cobra.Command {
+func newResumeCmd(version string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "resume",
 		Short: "Snapshot of current position, drift, and readiness",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runResume(cmd)
+			return runResume(cmd, version)
 		},
 	}
 }
@@ -24,7 +24,7 @@ func newResumeCmd() *cobra.Command {
 // runResume implements CONTRACT.md's `resume`: a missing db is a valid
 // "no-harness" response, not a db_unreadable error (that's reserved for a
 // db that exists but can't be opened/read).
-func runResume(cmd *cobra.Command) error {
+func runResume(cmd *cobra.Command, version string) error {
 	if !infrastructure.Exists(dbPath) {
 		return emitResume(cmd, application.ResumeView{Drift: []application.DriftFinding{}, Readiness: "no-harness"})
 	}
@@ -35,7 +35,7 @@ func runResume(cmd *cobra.Command) error {
 	}
 	defer db.Close()
 
-	view, err := application.Resume(db)
+	view, err := application.Resume(db, version)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("resume: %v", err))
 	}

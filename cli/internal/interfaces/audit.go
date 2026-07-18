@@ -10,18 +10,18 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-func newAuditCmd() *cobra.Command {
+func newAuditCmd(version string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "audit",
 		Short: "Report pointer drift, contract violations, unlinked proofs, and an entropy score",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAudit(cmd)
+			return runAudit(cmd, version)
 		},
 	}
 }
 
-func runAudit(cmd *cobra.Command) error {
+func runAudit(cmd *cobra.Command, version string) error {
 	if !infrastructure.Exists(dbPath) {
 		return newSystemError("db_unreadable", "audit: no db at "+dbPath+"; run `zharness init` first")
 	}
@@ -31,7 +31,7 @@ func runAudit(cmd *cobra.Command) error {
 	}
 	defer db.Close()
 
-	report, err := application.Audit(db, kitRoot)
+	report, err := application.Audit(db, kitRoot, version)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("audit: %v", err))
 	}
@@ -44,18 +44,18 @@ func runAudit(cmd *cobra.Command) error {
 	return nil
 }
 
-func newProposeCmd() *cobra.Command {
+func newProposeCmd(version string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "propose",
 		Short: "Reserved: suggest improvements from observed audit patterns (documented only, not adopted into any skill)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runPropose(cmd)
+			return runPropose(cmd, version)
 		},
 	}
 }
 
-func runPropose(cmd *cobra.Command) error {
+func runPropose(cmd *cobra.Command, version string) error {
 	if !infrastructure.Exists(dbPath) {
 		return newSystemError("db_unreadable", "propose: no db at "+dbPath+"; run `zharness init` first")
 	}
@@ -65,7 +65,7 @@ func runPropose(cmd *cobra.Command) error {
 	}
 	defer db.Close()
 
-	report, err := application.Propose(db, kitRoot)
+	report, err := application.Propose(db, kitRoot, version)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("propose: %v", err))
 	}

@@ -19,8 +19,9 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 ## Core (Phase 3 — cli-core)
 
 ### `init`
-- Args: none; `--force` reinitializes an empty db if one already exists (refuses on a non-empty db without `--force`)
-- `--json`: `{"status": "created"|"exists", "db_path": "...", "schema_version": N}`
+- Args: none; `--force` reinitializes an empty db if one already exists (refuses on a non-empty db without `--force`); `--refresh-docs` forces `.kit/docs/**` to be rewritten from the embedded doc set and `docs_version` re-stamped even if docs already exist — canonical overwrite, never a merge with user edits; independent of `--force` and the db's own status
+- Side effects beyond the db, run on every invocation and each individually idempotent (a repeat call with nothing to do performs zero writes): creates `.kit/` if missing; scaffolds `.kit/docs/**` from the CLI's embedded doc set if `.kit/docs` doesn't already exist or `--refresh-docs` was passed, and stamps `meta.docs_version` (the CLI's own version, `"dev"` for unreleased builds) whenever it changes; writes a root `AGENTS.md` shim only if the repo has none (never overwrites an existing one — prints a notice naming the canonical copy under `.kit/docs/AGENTS.md` instead); appends any of `.kit/harness.db`, `.kit/cache/` missing from the root `.gitignore` (append-only, existing content untouched)
+- `--json`: `{"status": "created"|"exists", "db_path": "...", "schema_version": N}` — unchanged by the side effects above; they are not reflected in JSON output
 - Errors: `db_not_writable` (2)
 - Consumer: `to-plan` (creates db if absent, before first `story`)
 
@@ -106,7 +107,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ### `resume`
 - Args: none
-- `--json`: `{"position": {"current_phase": "...", "status": "..."}, "latest_run_id": "ulid"|null, "latest_check_id": "ulid"|null, "latest_handoff_id": "ulid"|null, "drift": [{"type": "missing_file"|"unknown_phase"|"out_of_order", "detail": "...", "recovery": "..."}], "readiness": "clean"|"in-progress"|"drifted"|"no-harness"}`
+- `--json`: `{"position": {"current_phase": "...", "status": "..."}, "latest_run_id": "ulid"|null, "latest_check_id": "ulid"|null, "latest_handoff_id": "ulid"|null, "drift": [{"type": "missing_file"|"unknown_phase"|"out_of_order"|"stale_docs", "detail": "...", "recovery": "..."}], "readiness": "clean"|"in-progress"|"drifted"|"no-harness"}`
 - Errors: `db_unreadable` (2, distinct from `readiness: no-harness` — that's a valid successful response, not an error)
 - Consumer: `watzup` (renders 1:1 from this snapshot, no independent prose re-derivation)
 

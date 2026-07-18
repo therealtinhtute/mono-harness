@@ -5,6 +5,7 @@ Defines how `zharness` represents workflow position and status, replacing the le
 ## State Model
 
 - `schema_version` — integer, bumped on any breaking table/entity change; stored in a single-row `meta` table
+- `docs_version` — the embedded-docs version stamped by `init`/`init --refresh-docs`; the CLI's own version string for release builds, `"dev"` for unreleased builds. `"dev"` never triggers staleness (staleness detection is `cli-stale-drift`'s concern, not defined here). Stored in the same single-row `meta` table.
 - `current_phase` — story slug of the phase actively being executed or resumed (`none` if no phase started)
 - `entry_phase` — story slug recommended as the next phase when execution has not started yet
 - `phase.status` enum: `planned | in-progress | checked | done`
@@ -36,6 +37,7 @@ No command outside this table writes phase/status/pointer state. Skills that onl
 | Unknown phase slug | `current_phase` references a story slug not in the `story` table | `drift: unknown_phase`; recovery = `to-plan phase {slug}` to create the missing story, or correct `current_phase` via `to-plan` if it was a typo |
 | Out-of-order run/check IDs | A `check` row's `created_at` (ULID-ordered) predates the `run` it claims to gate | `drift: out_of_order`; recovery = re-run `check full` against the latest `run` — the stale `check` is left in place (append-only), superseded by the new one |
 | DB unreadable / absent | `zharness resume` cannot open `harness.db` | readiness state `no-harness`; recovery = `zharness init` (new project) or `zharness import` (legacy `.kit/` present) |
+| Docs stale | `meta.docs_version` is set and differs from the running CLI's own version, and neither side is `dev` | `drift: stale_docs`, detail names both versions; recovery = `zharness init --refresh-docs` (the exact string is defined once as `application.StaleDocsRecovery` in Go — this row quotes it, not a parallel copy, per the #24 lesson). A project with no `docs_version` stamped yet (imported legacy, or pre-embed) is `unversioned`, not drifted — never blocks old projects. `dev` on either side never fires, so dogfooding a local build never spams drift. |
 
 ## Legacy Field Mapping (`workflow-state.yml` → DB)
 

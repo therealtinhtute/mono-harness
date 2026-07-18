@@ -65,6 +65,7 @@ var metaColumns = map[string]bool{
 	"entry_phase":     true,
 	"latest_run_id":   true,
 	"latest_check_id": true,
+	"docs_version":    true,
 }
 
 // validateFieldNames rejects any key not allowlisted for table, before it

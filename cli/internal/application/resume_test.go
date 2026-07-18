@@ -30,7 +30,7 @@ func TestResumeCleanState(t *testing.T) {
 	}
 	setMeta(t, db, changesetDir, map[string]any{"current_phase": "cli-domain"})
 
-	view, err := Resume(db)
+	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestResumeInProgress(t *testing.T) {
 	seedRun(t, db, changesetDir)
 	setMeta(t, db, changesetDir, map[string]any{"current_phase": "cli-domain"})
 
-	view, err := Resume(db)
+	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestResumeUnknownPhaseDrift(t *testing.T) {
 		t.Fatalf("re-enable foreign_keys: %v", err)
 	}
 
-	view, err := Resume(db)
+	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestResumeMissingRunArtifactDrift(t *testing.T) {
 	runID := seedRun(t, db, changesetDir) // seedRun's artifact_path (.kit/runs/work/x.md) never exists on disk
 	setMeta(t, db, changesetDir, map[string]any{"latest_run_id": runID})
 
-	view, err := Resume(db)
+	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestResumeOutOfOrderStaledPointer(t *testing.T) {
 		"latest_check_id": staleCheckID,
 	})
 
-	view, err := Resume(db)
+	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestResumeSurfacesLatestHandoffID(t *testing.T) {
 		t.Fatalf("seed handoff: %v", err)
 	}
 
-	view, err := Resume(db)
+	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}

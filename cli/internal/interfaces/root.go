@@ -33,7 +33,7 @@ func NewRootCmd(version string) *cobra.Command {
 	}
 	root.PersistentFlags().BoolVar(&jsonOutput, "json", false, "emit machine-readable JSON output")
 
-	root.AddCommand(newInitCmd())
+	root.AddCommand(newInitCmd(version))
 	root.AddCommand(newMigrateCmd())
 	root.AddCommand(newImportCmd())
 	root.AddCommand(newDBCmd())
@@ -45,14 +45,14 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newToolCmd())
 	root.AddCommand(newInterventionCmd())
 	root.AddCommand(newTraceCmd())
-	root.AddCommand(newResumeCmd())
+	root.AddCommand(newResumeCmd(version))
 	root.AddCommand(newCheckCmd())
 	root.AddCommand(newHandoffCmd())
 	root.AddCommand(newValidateCmd())
 	root.AddCommand(newScoreTraceCmd())
 	root.AddCommand(newScoreContextCmd())
-	root.AddCommand(newAuditCmd())
-	root.AddCommand(newProposeCmd())
+	root.AddCommand(newAuditCmd(version))
+	root.AddCommand(newProposeCmd(version))
 
 	return root
 }

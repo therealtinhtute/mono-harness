@@ -15,6 +15,7 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `latest_run_id` | TEXT, nullable | FK `runs.id` |
 | `latest_check_id` | TEXT, nullable | FK `checks.id` |
 | `last_applied_changeset` | TEXT, nullable | ULID of the most recently applied changeset file — the replay fence marker, see Epoch-Fence Adaptation below |
+| `docs_version` | TEXT, nullable | added in migration `0002_meta_docs_version`; stamps the embedded-docs version written into a project by `init`/`init --refresh-docs` — the CLI's own version string for release builds, `"dev"` for unreleased builds. Set via the same changeset-first path as the other meta columns (`metaColumns` allowlist in `changeset.go`). |
 
 ### Workflow entities
 

@@ -35,14 +35,14 @@ type AuditReport struct {
 // CONTRACT.md's locked audit shape has no story/decision/backlog/tool
 // categories to score upstream's exact formula against (see
 // .kit/implementation-notes.md).
-func Audit(db *sql.DB, root string) (AuditReport, error) {
+func Audit(db *sql.DB, root, cliVersion string) (AuditReport, error) {
 	report := AuditReport{
 		PointerDrift:       []DriftFinding{},
 		ContractViolations: []AuditFinding{},
 		UnlinkedProofs:     []AuditFinding{},
 	}
 
-	resumeView, err := Resume(db)
+	resumeView, err := Resume(db, cliVersion)
 	if err != nil {
 		return report, fmt.Errorf("audit: %w", err)
 	}
@@ -157,10 +157,10 @@ type ProposeReport struct {
 // survives, since zharness's schema has no equivalent of upstream's
 // trace-friction or intervention-pattern fields to detect the other two
 // rules upstream describes (see .kit/implementation-notes.md).
-func Propose(db *sql.DB, root string) (ProposeReport, error) {
+func Propose(db *sql.DB, root, cliVersion string) (ProposeReport, error) {
 	report := ProposeReport{Proposals: []Proposal{}}
 
-	audit, err := Audit(db, root)
+	audit, err := Audit(db, root, cliVersion)
 	if err != nil {
 		return report, fmt.Errorf("propose: %w", err)
 	}
