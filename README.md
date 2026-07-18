@@ -172,7 +172,7 @@ Use `watzup` at the start of a session to recap branch state, review committed +
 
 ## Workflow Harness
 
-The workflow chain above is evolving from prompt-only orchestration into a harness-backed runtime (`zharness` CLI, durable state, deterministic gates). See [`skills/workflow/README.md`](skills/workflow/README.md) for the concept doc and [`docs/workflow-harness/`](docs/workflow-harness/) for the gap inventory. Initiative in progress — chain UX above is unaffected.
+The workflow chain above is harness-backed (`zharness` CLI, durable state, deterministic gates). Each of the 6 spine skills is a thin trigger: it version-gates on `zharness`, then defers to a canonical playbook embedded in the CLI binary and scaffolded into `.kit/docs/playbooks/` by `zharness init`. The operating logic lives in those playbooks, not in the `SKILL.md` files. See [`skills/workflow/README.md`](skills/workflow/README.md) for the concept doc and [`docs/workflow-harness/`](docs/workflow-harness/) for the gap inventory.
 
 ### Quickstart: `zharness`
 

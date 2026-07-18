@@ -17,13 +17,24 @@ cd cli && go build -o /tmp/zharness ./cmd/zharness
 /tmp/zharness --version   # prints a dev-build version; skills' version gate accepts this
 ```
 
+## New-adopter path (no existing `.kit/`)
+
+Nothing to migrate — just install and initialize:
+
+```bash
+bash scripts/install-zharness.sh
+mkdir -p .kit && zharness init --json
+```
+
+`zharness init` scaffolds `.kit/docs/playbooks/` from the CLI's embedded docs (idempotent — safe to rerun) and creates `harness.db`. Every skill's `SKILL.md` is a thin trigger that runs this same `init` call itself if `.kit/docs/` is missing, so a first-time `/brainstorm` or `/work` invocation self-scaffolds without any of the steps below. The legacy checklist below only applies when a project already has pre-harness markdown (`workflow-state.yml`, hand-written `.kit/planning/**`) to import.
+
 ## Legacy `.kit/` checklist (adopting zharness on a project with existing markdown-only artifacts)
 
 0. `zharness init` does not create the `.kit/` directory itself — if `.kit/` doesn't already exist (new project with no prior planning artifacts), `mkdir -p .kit` first or `init` fails with `db_not_writable`. An existing legacy `.kit/` (the case this checklist is for) already has the directory, so this step is a no-op there.
 1. **Import**: `zharness init --json && zharness import --json` (run from the repo root, where `.kit/` lives). This parses `.kit/workflow-state.yml` and `.kit/planning/**` into changesets under `.kit/changesets/` and materializes `harness.db`. It is intentionally minimal: it only creates `story` rows for phases actually referenced by `current_phase`/`entry_phase`/the latest run's phase — not a full historical backfill of every roadmap phase — and it never synthesizes a `checks` row (no check-report body parsing), so `latest_check_id` stays `null` until a real `check record` happens.
 2. **Verify**: `zharness query state --json` — confirm `current_phase`/`entry_phase` match your pre-import `workflow-state.yml` values.
 3. **Validate**: `zharness validate --json` and `zharness audit --json`. On a project with history that predates the harness, expect real findings here — pre-harness `run`/`check`/`handoff` artifacts won't have the ULID `id`/`run_id`/`check_id` frontmatter the cross-link contract expects. This is a known, filed gap ([#25](https://github.com/therealtinhtute/skills/issues/25)), not a sign the import failed — check `pointer_drift` (should be empty) separately from `contract_violations` (frontmatter completeness) to tell the two apart.
-4. **`.gitignore`**: make sure only `harness.db` (and any local cache dir) is ignored — `.kit/changesets/**`, `.kit/planning/**`, `.kit/runs/**`, `.kit/reports/**`, and `.kit/HANDOFF.md` must be git-tracked, or cross-machine resume silently breaks. This repo's own `.gitignore` previously excluded all of `.kit/` and had to be narrowed as part of this pilot.
+4. **`.gitignore`**: make sure only `harness.db`, any local cache dir, and `.kit/docs/` are ignored — `.kit/docs/` is a generated scaffold (`zharness init` rewrites it from the CLI's embedded playbooks every run, so committing it just invites drift). `.kit/changesets/**`, `.kit/planning/**`, `.kit/runs/**`, `.kit/reports/**`, and `.kit/HANDOFF.md` must be git-tracked, or cross-machine resume silently breaks. This repo's own `.gitignore` previously excluded all of `.kit/` and had to be narrowed as part of this pilot.
 5. **`trash` the legacy template, not the state file**: once the harness is live, `workflow-state.yml` on a given project becomes redundant with `zharness query state`, but this repo's own copy is left in place as a historical artifact (do not delete another project's live state file without checking whether anything outside the harness still reads it).
 
 ## Rollback

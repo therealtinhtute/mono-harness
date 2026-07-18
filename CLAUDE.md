@@ -81,7 +81,7 @@ brainstorm → to-plan → work → check → git → handoff  (new work)
 
 `interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `to-plan`, or between `to-plan` and `work`.
 
-State underneath this pipeline is harness-backed: durable SQLite (`.kit/harness.db`, gitignored) materialized from committed ULID-named changesets in `.kit/changesets/`, read/written via the `zharness` CLI — not a hand-edited `workflow-state.yml` pointer file. See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for adopting it on a legacy project.
+State underneath this pipeline is harness-backed: durable SQLite (`.kit/harness.db`, gitignored) materialized from committed ULID-named changesets in `.kit/changesets/`, read/written via the `zharness` CLI — not a hand-edited `workflow-state.yml` pointer file. The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines): they version-gate on `zharness`, then defer entirely to a canonical playbook embedded in the CLI binary and scaffolded into `.kit/docs/playbooks/` by `zharness init` — the operating logic lives there, not in the skill files, so any agent that can read a file and run a CLI can execute the same lifecycle. See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for adopting it on a legacy project.
 
 ## Prompt Engineering Reference
 

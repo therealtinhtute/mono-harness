@@ -1,6 +1,6 @@
 # Workflow Harness — Concept
 
-The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, check, git, handoff`) is evolving from prompt-only orchestration into a harness-backed runtime. This doc locks the mental model before any contract or code work begins.
+The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, check, git, handoff`) is a harness-backed runtime: the 6 spine skills are thin triggers that defer to canonical playbooks embedded in the `zharness` binary. This doc locks the mental model.
 
 **Workflow chain UX is preserved.** Skill order, names, and intent do not change. What changes is *underneath*: every stage that matters gets a durable, machine-recorded, replayable trail instead of relying on markdown pointers alone.
 
