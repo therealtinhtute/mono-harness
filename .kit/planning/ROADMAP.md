@@ -115,3 +115,31 @@ Spec: `.kit/planning/SPEC.md` (intake `01KXSS7DWDT03WF2N70QRGWWAR`, lane high-ri
 
 **Risks / Watch-fors:**
 - Same Forbidden Surfaces as Phase 6: scratch target + `pilot-evidence/` only, read-only elsewhere, no `cli/**`, no `skills/workflow/**`, no this repo's live `.kit/` — pilot failures route to a new finding, never a live hotfix mid-pilot
+
+## Phase 9: autonomous-entry-parity
+**Goal:** Resolve GitHub #39: `brainstorm.md`'s unconditional mode-confirmation and post-SPEC approval gates stop a genuinely isolated non-Claude agent even when the original request is fully specified and explicitly authorizes autonomous end-to-end execution. Make that explicit execution intent durable across obvious workflow transitions while preserving human questions for real ambiguity or product decisions.
+
+**Deliverables:**
+- `brainstorm.md`: distinguish explicit execution intent from interactive/ambiguous brainstorming; Step 2 asks only when mode/scope is genuinely ambiguous; Step 9 treats explicit autonomous end-to-end intent as approval to continue when self-review has no unresolved product question
+- Focused embedded-doc regression test proving the autonomy carve-out ships in the binary and the preserved ambiguity gate remains documented
+- New CLI release past v0.3.0 through the proven tag → goreleaser flow; `MIN_ZHARNESS_VERSION` bumped across README + 6 spine triggers
+
+**Dependencies:** Phase 8's isolated rerun attempt (zero SKILL.md reads) surfaced #39 directly from the embedded `brainstorm.md`; this phase's scope supersedes Phase 8's read-only boundary for the fix only
+
+**Risks / Watch-fors:**
+- Do not remove user approval generally — preserve it for ambiguous mode/scope, replacement of an existing SPEC, unresolved product choices, destructive actions, or outward-facing effects
+- The original prompt's explicit intent must be the evidence; do not invent authorization from silence or a vague request
+- Keep the change within `brainstorm.md` plus its direct regression/release surfaces; #37's broken root-shim paths remain a separate issue
+
+## Phase 10: agent-pilot-final
+**Goal:** Run the final Codex pilot in a fully isolated HOME/CODEX_HOME (auth only), with prompt/transcript outside the target repo and unchanged root-`AGENTS.md` + task-only protocol. Close R9 only when the transcript has zero SKILL.md reads, no harness-mechanics coaching/questions, the task tests pass, and `zharness validate --json` returns `valid:true`.
+
+**Deliverables:**
+- `docs/workflow-harness/pilot-evidence/{date}-agent-pilot-final.md` — command trail covering excluded attempts, isolation controls, complete successful lifecycle, verbatim validation output, and GO/NO-GO verdict
+- R9 formally closed with a GO verdict, or a new distinct finding routed without hotfixing inside the pilot phase
+
+**Dependencies:** Phase 9 release installed and scaffolded into a fresh scratch project
+
+**Risks / Watch-fors:**
+- Same pilot Forbidden Surfaces: fresh scratch target + evidence doc only; no mid-pilot edits to `cli/**`, `skills/workflow/**`, or this repo's live `.kit/`
+- Any global SKILL.md read invalidates the attempt even if task/validate pass; any procedural question requiring human coaching is also a FAIL
