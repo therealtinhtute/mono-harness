@@ -4,7 +4,7 @@ type: run
 phase: harness-mode-parity
 lane: high-risk
 plan_id: 01KXX1PPNZV87JQSS6JAF2QEJR
-trace_ids: [01KXX20P82K47DTYCRDF369W8Y, 01KXX24V8KK1T2915X1H9QV0CE]
+trace_ids: [01KXX20P82K47DTYCRDF369W8Y, 01KXX24V8KK1T2915X1H9QV0CE, 01KXX2S2B4BP5M3BZ49P9V8WHQ]
 created: 2026-07-19
 updated: 2026-07-19
 ---
@@ -13,7 +13,7 @@ updated: 2026-07-19
 
 Run ID: work-20260719-1821-harness-mode-parity
 Mode: full
-Status: running
+Status: passed
 Spec: .kit/planning/SPEC.md
 Roadmap: .kit/planning/ROADMAP.md
 Phase: harness-mode-parity
@@ -105,4 +105,14 @@ Started At: 2026-07-19 18:21
 - notes:
   - **Assumption correction during execution**: `harness-mode-parity-CONTEXT.md`'s Forbidden Surfaces assumed the 6 spine SKILL.md files symbolically reference README.md's constant. On inspection they hardcode the literal version string per file — bumping only README.md's prose would have left every skill's actual gate check still passing a buggy `0.2.0` binary. Corrected inline in CONTEXT.md's Assumptions section before editing; the mechanical fix (`0.2.0`→`0.3.0`, 6 files, same pattern `thin-triggers` used for `0.1.0`→`0.2.0`) is a one-line-per-file string replacement, not new scope.
   - `~/.claude/skills/*` (globally installed copies outside this repo) were deliberately NOT hand-edited — they resync via the documented `npx skills add ... -g -y` installer (`CLAUDE.md` Development Commands), not ad-hoc patching of untracked files. Flagged to the user as a follow-up.
+  - Post-release verification: `install-zharness.sh` in a fresh scratch dir resolves `v0.3.0`; the system's own installed `zharness` (`/Users/tinhtute/.local/bin/zharness`, on PATH) is now `0.3.0`
+
+## Summary
+- passed tasks: T1 (validate.go mode-awareness), T2 (work.md), T3 (check.md), T4 (CONTRACT.md), T5 (scratch-dir integration proof), T6 (cli/v0.3.0 release), T7 (MIN_ZHARNESS_VERSION bump)
+- blocked tasks: none
+- unresolved concerns:
+  - `~/.claude/skills/*` global install copies not yet resynced to 0.3.0 (user action via `npx skills add ... -g -y`, not part of this phase's scope)
+
+## Next Recommended Action
+- `check full`
 
