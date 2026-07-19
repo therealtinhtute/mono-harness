@@ -18,6 +18,13 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ## Core (Phase 3 — cli-core)
 
+### `id`
+- Args: none — mints one fresh ULID without reading or mutating harness state; does not require `init` or a database
+- Human output: the ULID followed by a newline
+- `--json`: `{"id": "ulid"}`
+- Errors: standard Cobra argument error if positional arguments are supplied
+- Consumer: playbooks that author artifacts or changeset filenames directly (`work`, `check`, `to-plan`); mint a separate ID for each semantic object and each changeset filename
+
 ### `init`
 - Args: none; `--force` reinitializes an empty db if one already exists (refuses on a non-empty db without `--force`); `--refresh-docs` forces `.kit/docs/**` to be rewritten from the embedded doc set and `docs_version` re-stamped even if docs already exist — canonical overwrite, never a merge with user edits; independent of `--force` and the db's own status
 - Side effects beyond the db, run on every invocation and each individually idempotent (a repeat call with nothing to do performs zero writes): creates `.kit/` if missing; scaffolds `.kit/docs/**` from the CLI's embedded doc set if `.kit/docs` doesn't already exist or `--refresh-docs` was passed, and stamps `meta.docs_version` (the CLI's own version, `"dev"` for unreleased builds) whenever it changes; writes a root `AGENTS.md` shim only if the repo has none (never overwrites an existing one — prints a notice naming the canonical copy under `.kit/docs/AGENTS.md` instead); appends any of `.kit/harness.db`, `.kit/cache/` missing from the root `.gitignore` (append-only, existing content untouched)

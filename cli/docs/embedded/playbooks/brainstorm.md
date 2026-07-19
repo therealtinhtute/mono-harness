@@ -13,16 +13,16 @@ Defer elsewhere: use `to-plan` for roadmap/phase generation from an already-lock
 
 ## Modes
 
-Mode is a hint from input shape, not a commitment — confirm it with the user (ask a short structured question) before producing output. Users may pivot mid-session.
+Mode is a hint from input shape, not a commitment. Ask the user only when mode or scope is genuinely ambiguous. A request that explicitly asks to implement, complete, or work autonomously end-to-end **and** already supplies bounded scope plus a checkable success criterion carries **explicit execution intent**: select the obvious mode and proceed without a second procedural confirmation. This intent does not authorize replacing an existing SPEC, deciding an unresolved product choice, or taking a destructive or outward-facing action — ask before any of those.
 
-| Input shape | Mode | Confirm before | Artifact |
+| Input shape | Mode | Ask before | Artifact |
 |---|---|---|---|
-| Vague trade-off question, no lock intent (e.g. "REST or GraphQL?") | `explore` | Generating options | `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md` |
-| Raw idea, notes, or partial draft | `lock-from-idea` | Writing IDEA.md or SPEC.md | `.kit/planning/SPEC.md` (+ `.kit/planning/IDEA.md`) |
-| `@file:` references to RFC / PRD / README / markdown | `lock-from-files` | Extracting and clarifying | `.kit/planning/SPEC.md` |
-| Existing `.kit/planning/SPEC.md` present, user wants to revise/update | `refine` | Editing SPEC.md | `.kit/planning/SPEC.md` (edited in place) |
+| Vague trade-off question, no lock intent (e.g. "REST or GraphQL?") | `explore` | Generating options (intent is ambiguous) | `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md` |
+| Raw idea, notes, or partial draft | `lock-from-idea` | Writing IDEA.md or SPEC.md, unless the request carries explicit execution intent | `.kit/planning/SPEC.md` (+ `.kit/planning/IDEA.md`) |
+| `@file:` references to RFC / PRD / README / markdown | `lock-from-files` | Extracting and clarifying, unless the request carries explicit execution intent | `.kit/planning/SPEC.md` |
+| Existing `.kit/planning/SPEC.md` present, user wants to revise/update | `refine` | Editing SPEC.md; always ask before replacing/discarding it | `.kit/planning/SPEC.md` (edited in place) |
 
-When multiple shapes co-occur (idea plus a file reference), default to `lock-from-files` and confirm.
+When multiple shapes co-occur (idea plus a file reference), default to `lock-from-files`; ask only if that choice changes the user's intended scope.
 
 **Ambiguous cases** — resolve by asking the user before producing output:
 - User pastes a file but asks "what do you think?" → could be `explore` or `lock-from-files`; ask which.
@@ -49,7 +49,7 @@ Every session must include option exploration before any output. In `lock-from-f
 ## Steps
 
 1. **Detect mode** from input shape (hint only, see Modes table).
-2. **Confirm intent** — ask the user a short structured question to verify mode and scope. Prefer 1-2 questions per turn; batch up to 4 only when finalizing scope.
+2. **Resolve intent** — when the request carries explicit execution intent and mode/scope are unambiguous, state the resolved mode briefly and proceed. Otherwise ask a short structured question to verify mode and scope. Prefer 1-2 questions per turn; batch up to 4 only when finalizing scope.
 3. **Classify the work item** (mandatory for lock modes, best-effort for explore) — declare:
    - input type: `new-spec` | `spec-slice` | `change-request` | `new-initiative` | `maintenance` | `harness-improvement`
    - lane: `tiny` | `normal` | `high-risk`
@@ -62,8 +62,8 @@ Every session must include option exploration before any output. In `lock-from-f
    - `explore`: pick one option with rationale and rejected alternatives, then write the Explore report below to `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
    - lock modes: write SPEC via the SPEC Template below; capture rejected alternatives in `Key Decisions`; include classification metadata (step 3) in the header. Immediately after writing SPEC.md: run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` using the step-3 classification; write the returned `id` into SPEC.md's frontmatter as `intake_id`.
 8. **Self-review** (lock modes only) — apply the Lock Checklist below. Fix issues inline.
-9. **User review gate** (lock modes only) — show the SPEC.md path, ask the user to approve before suggesting `to-plan`. If changes are requested, edit and re-run step 8.
-10. **Hand off** — suggest `to-plan` after an approved lock; suggest `refine` if exploration changed scope; suggest `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
+9. **User review gate** (lock modes only) — show the SPEC.md path and a concise decision summary. If the original request carries explicit execution intent, self-review found no unresolved product decision, and the next step is neither destructive nor outward-facing, that original intent satisfies this gate: continue to the declared downstream stage without a second procedural response. Otherwise ask the user to approve before suggesting `to-plan`; if changes are requested, edit and re-run step 8.
+10. **Hand off** — proceed to `to-plan` after an approved lock (including qualifying explicit execution intent); suggest `refine` if exploration changed scope; suggest `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
 
 ## Clarification Rubric (lock modes, apply before locking)
 
@@ -109,9 +109,9 @@ Run on `.kit/planning/SPEC.md` (and `.kit/planning/IDEA.md` if present) before t
 4. **Ambiguity check** — every requirement has one interpretation, not two; every actor is named (not "the user" without specifying which); every external dependency is named, not implied.
 5. **HARD-GATE compliance** — at least 1-2 alternatives explicitly named; rejection reason captured for each; `Key Decisions` documents trade-offs, not just outcomes.
 
-After self-review passes, tell the user: "SPEC written to `.kit/planning/SPEC.md`. Please review and let me know if you want changes before I suggest `to-plan`." Wait for an explicit response. If changes are requested, edit and re-run this checklist. Only suggest `to-plan` after the user approves.
+After self-review passes, report: "SPEC written to `.kit/planning/SPEC.md`" plus the chosen mode and key decisions. If the request carries qualifying explicit execution intent (Step 9), continue to its declared downstream stage and include the SPEC summary in the eventual final response. Otherwise ask the user to review and wait for an explicit response; if changes are requested, edit and re-run this checklist. Never infer approval from silence or from a vague request.
 
-Anti-patterns: skipping the placeholder scan because "the spec looks complete" (placeholders hide in formatted text); auto-suggesting `to-plan` without waiting for the user's response (defeats the gate); re-running this checklist after every minor edit (once per lock cycle is enough).
+Anti-patterns: skipping the placeholder scan because "the spec looks complete" (placeholders hide in formatted text); treating ambiguous or merely conversational input as explicit execution intent; replacing an existing SPEC or deciding a product trade-off without confirmation; re-running this checklist after every minor edit (once per lock cycle is enough).
 
 ## Artifacts
 
@@ -227,6 +227,6 @@ Body order: recommendation first, problem statement, evaluated approaches with p
 ## Exit / Handoff Conditions
 
 - `explore` done: one recommendation with rationale and rejected alternatives, plus a best-effort input-type/lane suggestion when possible, and the Explore report written to `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
-- Lock modes done: `SPEC.md` exists with boundaries, acceptance criteria, classification metadata, `intake_id` recorded, and explicit user approval.
+- Lock modes done: `SPEC.md` exists with boundaries, acceptance criteria, classification metadata, `intake_id` recorded, and the review gate is satisfied by either an explicit response or qualifying explicit execution intent from the original request.
 - Next handoff must be obvious: `to-plan` after an approved lock, `refine` if scope shifted mid-session, `work simple` only when intentionally warranted.
 - Never produce both `.kit/planning/SPEC.md` and a `.kit/reports/brainstorm/` artifact in the same session unless the user explicitly asked for both.
