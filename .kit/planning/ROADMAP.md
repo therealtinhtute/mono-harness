@@ -86,3 +86,32 @@ Spec: `.kit/planning/SPEC.md` (intake `01KXSS7DWDT03WF2N70QRGWWAR`, lane high-ri
 
 **Risks / Watch-fors:**
 - Pilot failures are findings, not hotfix targets — file gaps and route them to the next cycle unless they block the acceptance criterion itself
+
+## Phase 7: harness-mode-parity
+**Goal:** Close the gap Phase 6's pilot exposed (GitHub #38 and its check-side twin): `work`/`check` simple mode currently attempts DB registration against a schema that has no concept of a story-less run or run-less check (`runs.story_slug` and `checks.run_id` are both `NOT NULL` FKs), and `validate` has no mode-awareness so it flags the resulting gaps as hard failures. Make `zharness validate --json` capable of returning `valid:true` on a simple-mode-produced chain for the first time in this repo's history, without weakening full-mode validation.
+
+**Deliverables:**
+- `work.md`: RUN artifact frontmatter gains `mode: full|simple`; Step 2 branches by mode — full mode registers via the existing two-line changeset (unchanged), simple mode skips DB registration entirely (no story to satisfy the FK) and records why inline
+- `check.md`: persisted report frontmatter gains `mode: full|simple` (inherited from the RUN it gates); Step 4 skips `zharness check record` when the gated run is simple-mode (no run row to FK against)
+- `validate.go`: reads `mode` from RUN/CHECK frontmatter; `mode: simple` exempts phase-existence, `plan_id` ULID, and DB stale-pointer checks (artifact hygiene — `id` must still be a well-formed ULID — still enforced); `mode: full` or absent keeps today's strict behavior unchanged
+- `CONTRACT.md`: `validate`'s documented issue enum gains `not_yet_implemented` (already emitted by code, undocumented — pre-existing drift); new mode-aware carve-out documented
+- New CLI release past v0.2.0 through the proven tag → goreleaser pipeline; `MIN_ZHARNESS_VERSION` bumped if the fix changes required playbook behavior
+
+**Dependencies:** Phase 6 (`agent-pilot` surfaced #38 as the trigger; this phase's `-CONTEXT.md` supersedes agent-pilot's Forbidden Surface on `cli/**` for this scope only)
+
+**Risks / Watch-fors:**
+- Must not loosen full-mode validation — every change is additive/mode-gated, guarded by regression tests on existing full-mode artifacts
+- The check-side twin (no CLI path for ad-hoc/simple-mode checks, already backlogged as `01KXWH4YNC9RRFR1VPE6DK8P14`) must be resolved by the same mode-aware design, not patched separately
+- Old artifacts predating the `mode` field must default to full-mode strictness, not silently pass
+
+## Phase 8: agent-pilot-rerun
+**Goal:** Re-run the second-agent pilot (same protocol as Phase 6, Codex CLI) against the Phase 7 release to confirm R9's literal acceptance bar is now met: `zharness validate --json` returns `valid:true` on a genuinely cold, simple-mode-produced chain.
+
+**Deliverables:**
+- `docs/workflow-harness/pilot-evidence/{date}-agent-pilot-rerun.md` — new dated evidence doc, citing `validate --json` output showing `valid: true`
+- R9 formally closed (GO verdict) or a new, distinct blocking finding routed for a further cycle
+
+**Dependencies:** Phase 7 (fixed CLI + docs must be released first)
+
+**Risks / Watch-fors:**
+- Same Forbidden Surfaces as Phase 6: scratch target + `pilot-evidence/` only, read-only elsewhere, no `cli/**`, no `skills/workflow/**`, no this repo's live `.kit/` — pilot failures route to a new finding, never a live hotfix mid-pilot

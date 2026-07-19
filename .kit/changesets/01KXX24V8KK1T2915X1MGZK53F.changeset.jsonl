@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KXX24V8KK1T2915X1H9QV0CE","fields":{"created_at":"2026-07-19T11:28:24Z","run_id":"01KXX1RG84Z8JSW2EG3Y5G6D80","summary":"CONTRACT.md doc-parity fixed + scratch-dir proof: simple-mode chain reaches valid:true for the first time, full-mode regression confirmed clean","wave":2},"at":"2026-07-19T11:28:24Z"}
