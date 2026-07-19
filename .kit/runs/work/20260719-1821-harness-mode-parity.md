@@ -82,3 +82,27 @@ Started At: 2026-07-19 18:21
   - additional check (advisor-prompted): docs_version is literally the CLI's own release version string (`-X main.version` via goreleaser), not a separate counter — verified by building two binaries at `0.2.0`/`0.3.0`, confirming `resume --json` reports `stale_docs` drift with the correct `zharness init --refresh-docs` recovery when the newer binary meets docs stamped by the older one. Shipping any new, distinct version tag in T6 is sufficient; no separate docs_version bump needed.
   - full suite re-run per PLAN T6 step 1: `go build ./... && go test ./...` → all packages pass, including `internal/embedded` (embed-integrity tests, confirms no accidental drift in the embedded doc set)
 
+### Wave 3
+#### T6 — Release cli/v0.3.0
+- status: DONE
+- changed files:
+  - none (git tag + GitHub release; local commits pushed)
+- verification:
+  - user confirmed via AskUserQuestion: push now, version v0.3.0 (minor — changes documented CONTRACT.md behavior + embedded playbook content, not a pure internal bugfix)
+  - `git push origin master` (12 commits, phases 1-7 — none had been pushed before this phase) then `git tag cli/v0.3.0 && git push origin cli/v0.3.0`
+  - GitHub Actions `cli-release` workflow run 29685388973 triggered; tracked via `gh run watch`
+- notes:
+  - master was 12 commits behind origin before this push — all prior phases' work (1-6) shipped to the remote for the first time as part of this push, not just this phase's changes
+
+#### T7 — MIN_ZHARNESS_VERSION bump
+- status: DONE
+- changed files:
+  - skills/workflow/README.md
+  - skills/workflow/{watzup,brainstorm,to-plan,work,check,handoff}/SKILL.md
+- verification:
+  - `grep -rn "MIN_ZHARNESS_VERSION" skills/workflow/README.md skills/workflow/*/SKILL.md` → 6 spine skills + README.md now read `0.3.0`; `interview/SKILL.md` correctly untouched (stale `0.1.0`, pre-existing, out of scope per SPEC R8, already backlogged)
+  - `cd cli && go build ./... && go test ./...` → clean after these doc-only changes (no code touched)
+- notes:
+  - **Assumption correction during execution**: `harness-mode-parity-CONTEXT.md`'s Forbidden Surfaces assumed the 6 spine SKILL.md files symbolically reference README.md's constant. On inspection they hardcode the literal version string per file — bumping only README.md's prose would have left every skill's actual gate check still passing a buggy `0.2.0` binary. Corrected inline in CONTEXT.md's Assumptions section before editing; the mechanical fix (`0.2.0`→`0.3.0`, 6 files, same pattern `thin-triggers` used for `0.1.0`→`0.2.0`) is a one-line-per-file string replacement, not new scope.
+  - `~/.claude/skills/*` (globally installed copies outside this repo) were deliberately NOT hand-edited — they resync via the documented `npx skills add ... -g -y` installer (`CLAUDE.md` Development Commands), not ad-hoc patching of untracked files. Flagged to the user as a follow-up.
+

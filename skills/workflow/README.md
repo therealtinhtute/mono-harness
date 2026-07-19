@@ -32,7 +32,7 @@ Once the spec is locked, `to-plan` derives `.kit/planning/ROADMAP.md` and per-ph
 
 ## Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.2.0` (the first release with embedded playbooks — bumped from `0.1.0` once `cli/v0.2.0` shipped). Every one of the 6 spine skills runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate. Otherwise, a missing binary or a version below `0.2.0` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+`MIN_ZHARNESS_VERSION = 0.3.0` (bumped from `0.2.0` once `cli/v0.3.0` shipped — it fixes `work`/`check` simple mode's `runs.story_slug` FOREIGN KEY crash and adds `validate`'s mode-aware carve-out; a `0.2.0` binary still crashes on every simple-mode run, so pre-`0.3.0` binaries are unsafe to gate on). Every one of the 6 spine skills runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate. Otherwise, a missing binary or a version below `0.3.0` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
 
 ## Thin-Trigger Template
 
