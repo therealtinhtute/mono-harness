@@ -84,22 +84,22 @@ Started At: 2026-07-19 19:05
   - fresh `install-zharness.sh` → resolves v0.4.0; `/Users/tinhtute/.local/bin/zharness --version` → 0.4.0; `zharness id --json` → valid ULID
 
 #### T7 — Bump MIN_ZHARNESS_VERSION
-- status: DONE_WITH_CONCERNS
+- status: DONE
 - changed files: `skills/workflow/README.md`, six spine `SKILL.md` files
-- verification: all seven intended gate references read 0.4.0; interview/git untouched
-- concern: check's pattern-completeness sweep found `brainstorm.md`, `to-plan.md`, and `check.md` also author ULID-bearing artifacts/changesets; v0.4.0 contains the helper but not exact usage at every consumer
+- verification: all seven intended gate references read 0.4.1; interview/git untouched
+- notes: v0.4.1 is the minimum because it completes exact ID usage across every manual-ID playbook consumer
 
 #### Gate pattern-completeness correction — #40 sibling sites
 - status: DONE
 - changed files: `cli/docs/embedded/playbooks/{brainstorm,to-plan,check}.md`, `cli/internal/embedded/embedded_test.go`, phase CONTEXT correction
 - verification: embedded content-contract tests 8/8 pass; full `go test ./...`, `go vet ./...`, gofmt, diff-check clean
-- notes: SPEC id now mints separately from intake id; to-plan/check meta changeset filenames mint via `zharness id --json`; patch release v0.4.1 required before Phase 10
+- notes: SPEC id now mints separately from intake id; to-plan/check meta changeset filenames mint via `zharness id --json`; `cli/v0.4.1` release run 29687384273 passed; fresh installer resolves 0.4.1 with full asset matrix
 
 ## Summary
 - passed tasks: T1-T7
 - blocked tasks: none
 - resolved findings: #39 (autonomous brainstorm gates), #40 (exact ULID generation)
-- unresolved concerns: publish/install v0.4.1 for the completeness patch, then Phase 10 final pilot; use a naturally >5-file task to force full mode without mechanics coaching
+- unresolved concerns: Phase 10 final pilot only; use a naturally >5-file task to force full mode without mechanics coaching
 
 ## Next Recommended Action
 - `check full`, then Phase 10 `agent-pilot-final`
