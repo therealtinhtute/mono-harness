@@ -5,7 +5,7 @@ phase: autonomous-entry-parity
 lane: high-risk
 mode: full
 plan_id: 01KXX46V7DFEY533T716CNCC43
-trace_ids: [01KXX548C3Z82WZVJ2M6B9HMEK, 01KXX5DXNM8M59KDYCZ6P3C8P9]
+trace_ids: [01KXX548C3Z82WZVJ2M6B9HMEK, 01KXX5DXNM8M59KDYCZ6P3C8P9, 01KXX5QY2B5NHMNMQVCB6MQ394]
 created: 2026-07-19
 updated: 2026-07-19
 ---
@@ -14,7 +14,7 @@ updated: 2026-07-19
 
 Run ID: work-20260719-1905-autonomous-entry-parity
 Mode: full
-Status: running
+Status: passed
 Spec: .kit/planning/SPEC.md
 Roadmap: .kit/planning/ROADMAP.md
 Phase: autonomous-entry-parity
@@ -74,4 +74,26 @@ Started At: 2026-07-19 19:05
   - `zharness validate --json` → `valid:true` (only non-blocking SPEC→PLAN `not_yet_implemented`)
   - `resume --json` → drift `[]`; `audit --json` → pointer_drift `[]`, unlinked_proofs `[]`, entropy 5
 - notes: dry task correctly resolved to simple mode; Phase 10 final task will naturally exceed the simple-mode guard (>5 explicit files) to exercise R9's full `story → trace → check record` lifecycle without any harness hint
+
+### Wave 3
+#### T6 — Release cli/v0.4.0
+- status: DONE
+- verification:
+  - pushed `cli/v0.4.0`; GitHub Actions run 29687012956 → success (all goreleaser steps green; only pre-existing Node/cache warnings)
+  - `gh release view v0.4.0` → non-draft, non-prerelease, checksums + darwin/linux amd64/arm64 assets
+  - fresh `install-zharness.sh` → resolves v0.4.0; `/Users/tinhtute/.local/bin/zharness --version` → 0.4.0; `zharness id --json` → valid ULID
+
+#### T7 — Bump MIN_ZHARNESS_VERSION
+- status: DONE
+- changed files: `skills/workflow/README.md`, six spine `SKILL.md` files
+- verification: all seven intended gate references read 0.4.0; interview/git untouched
+
+## Summary
+- passed tasks: T1-T7
+- blocked tasks: none
+- resolved findings: #39 (autonomous brainstorm gates), #40 (exact ULID generation)
+- unresolved concerns: Phase 10 final pilot still required; use a naturally >5-file task to force full mode without mechanics coaching
+
+## Next Recommended Action
+- `check full`, then Phase 10 `agent-pilot-final`
 

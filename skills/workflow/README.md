@@ -32,7 +32,7 @@ Once the spec is locked, `to-plan` derives `.kit/planning/ROADMAP.md` and per-ph
 
 ## Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.3.0` (bumped from `0.2.0` once `cli/v0.3.0` shipped — it fixes `work`/`check` simple mode's `runs.story_slug` FOREIGN KEY crash and adds `validate`'s mode-aware carve-out; a `0.2.0` binary still crashes on every simple-mode run, so pre-`0.3.0` binaries are unsafe to gate on). Every one of the 6 spine skills runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate. Otherwise, a missing binary or a version below `0.3.0` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+`MIN_ZHARNESS_VERSION = 0.4.0` (bumped from `0.3.0` once `cli/v0.4.0` shipped — it makes explicit unambiguous end-to-end intent cross brainstorm's procedural gates and adds the pure `zharness id` helper required for cold agents to author valid RUN/changeset ULIDs; a pre-`0.4.0` binary/docs set still blocks or fabricates IDs in an isolated agent run). Every one of the 6 spine skills runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate. Otherwise, a missing binary or a version below `0.4.0` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
 
 ## Thin-Trigger Template
 
@@ -44,7 +44,7 @@ name: {skill-name}
 description: {unchanged from before this initiative — skills.sh discovery/trigger UX is Claude-facing content, stays here}
 ---
 
-Run `zharness --version`. Below MIN_ZHARNESS_VERSION (0.2.0) or missing: stop, tell the user to run `bash scripts/install-zharness.sh`. A `dev` build always passes.
+Run `zharness --version`. Below MIN_ZHARNESS_VERSION (0.4.0) or missing: stop, tell the user to run `bash scripts/install-zharness.sh`. A `dev` build always passes.
 
 Ensure docs are present: run `zharness init` if `.kit/docs/` is missing (idempotent — always safe to run).
 

@@ -11,7 +11,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
 
-Run `zharness --version`. A `dev` build always passes. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.3.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP.
+Run `zharness --version`. A `dev` build always passes. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.4.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP.
 
 Ensure docs are present: run `zharness init` if `.kit/docs/` is missing (idempotent — always safe to run).
 

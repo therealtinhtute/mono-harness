@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KXX5QY2B5NHMNMQVCB6MQ394","fields":{"created_at":"2026-07-19T12:31:15Z","run_id":"01KXX48XMXQE9W0W70R3FTJQHC","summary":"cli/v0.4.0 released with full asset matrix; installer resolves 0.4.0 and zharness id; MIN_ZHARNESS_VERSION bumped across README + six spine triggers","wave":3},"at":"2026-07-19T12:31:15Z"}
