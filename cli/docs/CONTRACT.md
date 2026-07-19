@@ -125,10 +125,11 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ### `validate`
 - Args: none — walks SPEC→PLAN→RUN→CHECK→HANDOFF by frontmatter ULID cross-links
-- `--json`: `{"valid": true|false, "findings": [{"link": "SPEC->PLAN", "issue": "missing_key"|"broken_link"|"stale_pointer", "detail": "..."}]}`
-- Errors: exits 1 with non-empty `findings` on any violation
+- `--json`: `{"valid": true|false, "findings": [{"link": "SPEC->PLAN", "issue": "missing_key"|"broken_link"|"stale_pointer"|"not_yet_implemented", "detail": "..."}]}`
+- Errors: exits 1 (`!valid`) when any finding's `issue` is not `not_yet_implemented` — a `not_yet_implemented`-only findings list is a passing (`valid: true`) response, not a violation
 - Consumer: `skill-adapters` T4 sample-chain proof, `pilot-migration` evidence bundle
-- **Known gap**: the `SPEC->PLAN` link cannot currently be validated — `phase-plan-template.md` was not in harness-contracts' Allowed Surfaces, so PLAN artifacts don't yet carry a `spec_id` field. `validate` should skip that one link with a `not_yet_implemented` finding rather than a hard failure, until a later phase adds it (see `.kit/implementation-notes.md`).
+- **Known gap**: the `SPEC->PLAN` link cannot currently be validated — `phase-plan-template.md` was not in harness-contracts' Allowed Surfaces, so PLAN artifacts don't yet carry a `spec_id` field. `validate` skips that one link with a `not_yet_implemented` finding rather than a hard failure, until a later phase adds it (see `.kit/implementation-notes.md`).
+- **Mode-aware carve-out** (`harness-mode-parity`, GitHub #38): RUN and CHECK artifacts carry a `mode: full|simple` frontmatter field (`work.md`/`check.md`). `mode: simple` artifacts are phase-less, plan-less, and never DB-registered by design — `runs.story_slug` and `checks.run_id` are both `NOT NULL` FKs with no story/run to reference in simple mode, so `work`/`check` skip DB registration entirely rather than crash. `validate` reflects this: a `mode: simple` RUN is exempt from the `phase`-existence check and the `plan_id` ULID requirement; a `mode: simple` RUN or CHECK is exempt from its DB stale-pointer check. `id` remains a required, well-formed ULID unconditionally — the carve-out is about DB/phase/plan linkage, not artifact hygiene. Missing `mode` (artifacts predating this field) or `mode: full` keeps every check at full strictness, unchanged from before this phase.
 
 ---
 

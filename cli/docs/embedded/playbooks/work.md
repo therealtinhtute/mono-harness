@@ -65,10 +65,12 @@ State the blocker plainly, then the exact recovery command:
 - stale-plan/placeholder-plan: name the specific file/symbol or placeholder text and line; run `to-plan phase {slug}` to refresh, then re-invoke `work`.
 - contract-drift: name the working-tree file or requested-scope item and why it's outside/inside the forbidden boundary; run `to-plan phase {slug}` if the contract should refresh, or `brainstorm refine` if the spec boundary itself changed.
 
-## Execution Loop (per phase, full mode)
+## Execution Loop (per phase; Step 2 branches by mode, everything else is full-mode)
 
 1. **Load context** — run `zharness query state --json` and `zharness query phases --json` first when a db exists, then verify against `.kit/planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions; treat a `current_phase` mismatch as a plan-refresh signal, not as truth.
-2. **Create the run artifact** — write `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` (see Artifacts below). In simple mode, the slug comes from the prompt or brainstorm file. Run `zharness init` if no db exists yet (idempotent). Register the run in the harness: author a two-line changeset (`.kit/changesets/{ULID}.changeset.jsonl`) — line 1 creates the run row (`{"op":"create","entity":"run","id":"{run's own frontmatter id}","fields":{"story_slug":"{phase-slug}","artifact_path":"{run file path}","created_at":"{RFC3339 now}"},"at":"{RFC3339 now}"}`), line 2 points `meta.latest_run_id` at it (`{"op":"update","entity":"meta","id":"meta","fields":{"latest_run_id":"{run's own frontmatter id}"},"at":"{RFC3339 now}"}`) — and apply the file in one shot with `zharness db changeset apply {path} --json` (no dedicated "run create" command exists; `db changeset apply` is the same generic command used to rebuild state from changesets). Both lines land in the same transaction, so `latest_run_id` never lags the run it points to.
+2. **Create the run artifact** — write `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` (see Artifacts below), with `mode: full` or `mode: simple` in the frontmatter matching the resolved mode. In simple mode, the slug comes from the prompt or brainstorm file, and `phase`/`plan_id` are both `none`. Run `zharness init` if no db exists yet (idempotent).
+   - **Full mode**: register the run in the harness — author a two-line changeset (`.kit/changesets/{ULID}.changeset.jsonl`) — line 1 creates the run row (`{"op":"create","entity":"run","id":"{run's own frontmatter id}","fields":{"story_slug":"{phase-slug}","artifact_path":"{run file path}","created_at":"{RFC3339 now}"},"at":"{RFC3339 now}"}`), line 2 points `meta.latest_run_id` at it (`{"op":"update","entity":"meta","id":"meta","fields":{"latest_run_id":"{run's own frontmatter id}"},"at":"{RFC3339 now}"}`) — and apply the file in one shot with `zharness db changeset apply {path} --json` (no dedicated "run create" command exists; `db changeset apply` is the same generic command used to rebuild state from changesets). Both lines land in the same transaction, so `latest_run_id` never lags the run it points to.
+   - **Simple mode**: do NOT author or apply a run changeset. Simple mode has no phase and therefore no story, and `runs.story_slug` is a `NOT NULL` foreign key into `stories(slug)` — there is nothing for it to reference, and forcing a write here always fails with a FOREIGN KEY constraint error. Skip DB registration entirely; the run artifact file itself (with `mode: simple`) is the durable record, and `validate` treats `mode: simple` RUN artifacts as exempt from phase/plan/DB-registration checks by design (see `CONTRACT.md`). Note the skip inline in the run artifact.
 3. **Preflight drift check** — compare the phase boundary (Allowed/Forbidden Surfaces, task `touches`/`avoid`) against the current working tree and requested scope. If files already changed outside the boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask the user only if the plan is ambiguous about which wave is next.
 5. **Run waves** — for each wave, execute tasks in order; parallelize only when the `-PLAN.md` marks the wave as parallel-safe.
@@ -160,9 +162,10 @@ Rules: write the entry immediately after the task, not batched at phase end; app
 ---
 id: {ULID}
 type: run
-phase: {phase-slug}
+phase: {phase-slug} | none
 lane: {tiny|normal|high-risk}
-plan_id: {ULID of the phase PLAN this run executes}
+mode: {full|simple}
+plan_id: {ULID of the phase PLAN this run executes} | none
 trace_ids: [{ULID}, ...]
 created: {YYYY-MM-DD}
 updated: {YYYY-MM-DD}
@@ -208,7 +211,7 @@ Started At: YYYY-MM-DD HH:mm
 - `handoff`
 ```
 
-Rules: one new run file per invocation, never overwrite an older one; every task attempted appears in the log; blocker reasons map to the stop taxonomy; after each wave reaches `DONE`/`DONE_WITH_CONCERNS`, run `zharness trace add ...` and append the returned `id` to the frontmatter `trace_ids` list; `plan_id` links to the phase PLAN this run executes (or the phase's story ULID if no dedicated plan ULID exists), `trace_ids` accumulates one ULID per `trace add` call.
+Rules: one new run file per invocation, never overwrite an older one; every task attempted appears in the log; blocker reasons map to the stop taxonomy; after each wave reaches `DONE`/`DONE_WITH_CONCERNS`, run `zharness trace add ...` and append the returned `id` to the frontmatter `trace_ids` list; `plan_id` links to the phase PLAN this run executes (or the phase's story ULID if no dedicated plan ULID exists), `trace_ids` accumulates one ULID per `trace add` call; `mode` must match the resolved mode from Mode Resolution above — it is what `validate` reads to apply full-mode strictness or the simple-mode carve-out.
 
 ## Command Reference
 

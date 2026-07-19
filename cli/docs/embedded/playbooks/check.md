@@ -102,9 +102,11 @@ The **RUN artifact** is the latest matching `.kit/runs/work/{YYYYMMDD-HHmm}-{slu
 2. Run `zharness audit --json`. Any non-empty `pointer_drift` or `contract_violations` touching the artifacts under review is a finding — rate it with the Severity table below (🟠 Major at minimum), it is not a separate pass/fail axis. `unlinked_proofs` and `entropy_score` are informational context for the sign-off.
 3. For each id in the RUN artifact's `trace_ids` frontmatter, run `zharness score-trace {id} --json` inline. A trace scored `minimal` is too thin to count as evidence for any matrix cell below — only `standard`/`detailed` tier traces satisfy a proof-class requirement that cites a trace.
 4. Evaluate the Validation Matrix below for the resolved lane against proof actually gathered this session: verification command output → `command-output`; a real test run → `unit`/`integration`/`e2e`; the Phase 2 review pass itself → `manual-check`. A `required` cell with no matching evidence ⇒ **gate FAIL**, name the exact missing evidence class, and stop — identical discipline to a failing test in Phase 1 (do not proceed to Phase 2, no judgment override).
-5. Once Phase 1 (including this step) and Phase 2 both complete, translate this playbook's verdict label to the CLI's enum (`APPROVED`, `APPROVE with requests` → `APPROVE_WITH_REQUESTS`, `REQUEST CHANGES` → `REQUEST_CHANGES`) and run:
-   `zharness check record --verdict {verdict} --run-id {run id from the RUN artifact's frontmatter} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}, ...]' --json`
-   List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line. No live command sets `meta.latest_check_id` going forward (only legacy `import` does) — author a one-line meta changeset (`.kit/changesets/{ULID}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"latest_check_id":"{check id just returned}"},"at":"{RFC3339 now}"}`) and apply it with `zharness db changeset apply {path} --json`, the same generic command `work`/`to-plan` already use for their own meta pointers.
+5. Once Phase 1 (including this step) and Phase 2 both complete, translate this playbook's verdict label to the CLI's enum (`APPROVED`, `APPROVE with requests` → `APPROVE_WITH_REQUESTS`, `REQUEST CHANGES` → `REQUEST_CHANGES`).
+   - **If the gated RUN's `mode` is `full`** (or the RUN artifact predates the `mode` field): run
+     `zharness check record --verdict {verdict} --run-id {run id from the RUN artifact's frontmatter} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}, ...]' --json`
+     List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line. No live command sets `meta.latest_check_id` going forward (only legacy `import` does) — author a one-line meta changeset (`.kit/changesets/{ULID}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"latest_check_id":"{check id just returned}"},"at":"{RFC3339 now}"}`) and apply it with `zharness db changeset apply {path} --json`, the same generic command `work`/`to-plan` already use for their own meta pointers.
+   - **If the gated RUN's `mode` is `simple`**: skip `zharness check record` entirely. The RUN was never registered in the `runs` table (`work.md` Step 2, simple-mode branch), so `check record`'s `--run-id` would always fail with `unknown_run_id` — there is no row to link `checks.run_id` against. Write the persisted report with `mode: simple` and note the skip in its `## Next Action` section. `validate` treats `mode: simple` CHECK artifacts as exempt from the DB-registration check by design (see `CONTRACT.md`).
 6. A missing required proof or a FAIL verdict is never overridden by this playbook. If a human judges the gap acceptable to ship anyway, they record that decision themselves: `zharness intervention --verdict-id {check id} --reason "..."`.
 
 **Validation Matrix** (harness-aware gate) — when a `zharness` binary passes the version gate and `.kit/planning/` artifacts exist, the automated gate evaluates this lane × proof-class matrix instead of (not in addition to) the generic pass/fail table. Lane comes from `.kit/planning/SPEC.md`'s frontmatter `lane:` field (set by `intake --lane` at brainstorm time). Every cell is `required` (must have matching evidence or the gate is FAIL), `optional` (nice to have, absence never fails the gate), or `n-a` (not expected for this lane, never requested):
@@ -266,8 +268,9 @@ Write this when harness artifacts are present or a persisted report is requested
 ---
 id: {ULID}
 type: check
-phase: {phase-slug}
+phase: {phase-slug} | none
 lane: {tiny|normal|high-risk}
+mode: {full|simple}
 run_id: {ULID of the RUN this check gates}
 proof_links: [{command, output_ref, artifact_path}, ...]
 created: {YYYY-MM-DD}
@@ -315,7 +318,7 @@ Created At: YYYY-MM-DD HH:mm
 - ready for PR
 ```
 
-Rules: create one file per check run; do not overwrite older results from the same day unless the exact timestamp path is reused intentionally. `run_id` links to the RUN this check gates; each `proof_links` entry is `{command, output_ref, artifact_path}` — `command` is the exact verification command run, `output_ref` is where its output is recorded (inline in the report or a path), `artifact_path` is the file the command verified.
+Rules: create one file per check run; do not overwrite older results from the same day unless the exact timestamp path is reused intentionally. `run_id` links to the RUN this check gates; each `proof_links` entry is `{command, output_ref, artifact_path}` — `command` is the exact verification command run, `output_ref` is where its output is recorded (inline in the report or a path), `artifact_path` is the file the command verified. `mode` is inherited verbatim from the gated RUN artifact's own `mode` field — it decides whether Step 4 below calls `check record` or skips it.
 
 ## Output Format
 
@@ -344,7 +347,7 @@ harness_verdict:    zharness check record id / not recorded: [why]
 
 ## Exit / Handoff Conditions
 
-Complete only when: gate ran with real command output for every applicable check; artifact alignment was evaluated when harness artifacts exist; review covered Security → Performance → Architecture → Code Quality at the scope-appropriate depth; the sign-off block is printed; when harness applies, `zharness check record` ran and its meta changeset was applied. On a clean or approve-with-requests verdict, `git` or `handoff` are natural next steps — never run them automatically.
+Complete only when: gate ran with real command output for every applicable check; artifact alignment was evaluated when harness artifacts exist; review covered Security → Performance → Architecture → Code Quality at the scope-appropriate depth; the sign-off block is printed; when harness applies and the gated RUN is `mode: full`, `zharness check record` ran and its meta changeset was applied — for `mode: simple`, the deliberate skip (Step 4) satisfies this instead. On a clean or approve-with-requests verdict, `git` or `handoff` are natural next steps — never run them automatically.
 
 ## Anti-Patterns
 

@@ -82,12 +82,21 @@ func Validate(db *sql.DB, root string) (ValidateResult, error) {
 			return ValidateResult{}, err
 		}
 		ctx := fmt.Sprintf("RUN %s", rf)
+		simple := fields["mode"] == "simple"
 
 		id, idOK := requireULID(&findings, "PLAN->RUN", fields, "id", ctx)
 		phase, phaseOK := requireKey(&findings, "PLAN->RUN", fields, "phase", ctx)
-		requireULID(&findings, "PLAN->RUN", fields, "plan_id", ctx)
+		if !simple {
+			requireULID(&findings, "PLAN->RUN", fields, "plan_id", ctx)
+		}
 
-		if phaseOK {
+		// Simple-mode runs are phase-less and plan-less by design (no
+		// story exists to satisfy the DB's runs.story_slug FK, so
+		// work.md never registers them) — phase-existence, plan_id
+		// shape, and DB-row checks below don't apply to them. Missing
+		// or non-"simple" mode keeps full strictness (mode was absent
+		// on every artifact before this carve-out existed).
+		if phaseOK && !simple {
 			planPath := filepath.Join(root, "planning", "phases", phase, phase+"-PLAN.md")
 			if _, statErr := os.Stat(planPath); statErr != nil {
 				findings = append(findings, ValidateFinding{
@@ -97,7 +106,7 @@ func Validate(db *sql.DB, root string) (ValidateResult, error) {
 			}
 		}
 		if idOK {
-			if db != nil {
+			if db != nil && !simple {
 				exists, err := rowExists(db, "runs", id)
 				if err != nil {
 					return ValidateResult{}, err
@@ -126,6 +135,7 @@ func Validate(db *sql.DB, root string) (ValidateResult, error) {
 			return ValidateResult{}, err
 		}
 		ctx := fmt.Sprintf("CHECK %s", cf)
+		simple := fields["mode"] == "simple"
 
 		id, idOK := requireULID(&findings, "RUN->CHECK", fields, "id", ctx)
 		runID, runIDOK := requireULID(&findings, "RUN->CHECK", fields, "run_id", ctx)
@@ -137,7 +147,11 @@ func Validate(db *sql.DB, root string) (ValidateResult, error) {
 			})
 		}
 		if idOK {
-			if db != nil {
+			// Simple-mode checks are never registered via `check
+			// record` (the run they gate has no runs-table row to
+			// satisfy checks.run_id's FK against), so a DB row is
+			// never expected here either.
+			if db != nil && !simple {
 				exists, err := rowExists(db, "checks", id)
 				if err != nil {
 					return ValidateResult{}, err
