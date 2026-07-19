@@ -60,7 +60,7 @@ Every session must include option exploration before any output. In `lock-from-f
 6. **Clarify gaps** (lock modes only) — apply the Clarification Rubric below until goal, scope, constraints, acceptance are lockable.
 7. **Recommend or lock**:
    - `explore`: pick one option with rationale and rejected alternatives, then write the Explore report below to `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
-   - lock modes: write SPEC via the SPEC Template below; capture rejected alternatives in `Key Decisions`; include classification metadata (step 3) in the header. Immediately after writing SPEC.md: run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` using the step-3 classification; write the returned `id` into SPEC.md's frontmatter as `intake_id`.
+   - lock modes: run `zharness id --json` first; save the returned `id` as the SPEC's own frontmatter `id` (distinct from `intake_id`) and never invent a placeholder. Write SPEC via the SPEC Template below; capture rejected alternatives in `Key Decisions`; include classification metadata (step 3) in the header. Immediately after writing SPEC.md: run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` using the step-3 classification; write that separate returned `id` into SPEC.md's frontmatter as `intake_id`.
 8. **Self-review** (lock modes only) — apply the Lock Checklist below. Fix issues inline.
 9. **User review gate** (lock modes only) — show the SPEC.md path and a concise decision summary. If the original request carries explicit execution intent, self-review found no unresolved product decision, and the next step is neither destructive nor outward-facing, that original intent satisfies this gate: continue to the declared downstream stage without a second procedural response. Otherwise ask the user to approve before suggesting `to-plan`; if changes are requested, edit and re-run step 8.
 10. **Hand off** — proceed to `to-plan` after an approved lock (including qualifying explicit execution intent); suggest `refine` if exploration changed scope; suggest `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
@@ -221,6 +221,7 @@ Body order: recommendation first, problem statement, evaluated approaches with p
 ## Command Reference
 
 - `zharness --version` — version gate
+- `zharness id --json` — mint the SPEC artifact's own ULID before writing frontmatter; do not reuse `intake_id`
 - `zharness init` — idempotent; run before the first `intake` if no db exists
 - `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` — fired once, at the SPEC-lock step, after self-review passes; returned `id` goes into SPEC.md's frontmatter `intake_id`
 

@@ -111,3 +111,34 @@ func TestWorkPlaybook_UsesIDCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestPlaybooks_ManualIDsUseIDCommand(t *testing.T) {
+	cases := map[string][]string{
+		"playbooks/brainstorm.md": {
+			"run `zharness id --json` first",
+			"SPEC's own frontmatter `id`",
+			"do not reuse `intake_id`",
+		},
+		"playbooks/to-plan.md": {
+			"run `zharness id --json`",
+			"`.kit/changesets/{changeset-id}.changeset.jsonl`",
+		},
+		"playbooks/check.md": {
+			"run `zharness id --json`",
+			"`.kit/changesets/{changeset-id}.changeset.jsonl`",
+		},
+	}
+
+	for path, phrases := range cases {
+		data, err := FS.ReadFile(path)
+		if err != nil {
+			t.Fatalf("ReadFile(%s): %v", path, err)
+		}
+		content := string(data)
+		for _, phrase := range phrases {
+			if !strings.Contains(content, phrase) {
+				t.Errorf("%s missing ID contract phrase %q", path, phrase)
+			}
+		}
+	}
+}

@@ -27,7 +27,7 @@ Use the Roadmap Template below.
 
 Rules: split work into coherent phases; each phase needs a clear goal and deliverables; order respects dependencies and risk; do not create fake phases; the roadmap header names the current recommended entry phase and execution mode.
 
-Run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then run `zharness story --slug {phase-slug} --goal "{phase goal}" [--depends-on {slug}]` once per roadmap phase — this is the durable record of roadmap/phase state. No command sets `current_phase`/`entry_phase` for a live project (only legacy `import` does); in `full` mode, after all stories are created, author a one-line meta changeset (`.kit/changesets/{ULID}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"current_phase":"{entry phase slug}","entry_phase":"{entry phase slug}"},"at":"{RFC3339 now}"}`) and apply it with `zharness db changeset apply {path} --json` — the same generic, already-shipped command `work` uses to register runs. In `phase` mode, only touch `current_phase` this way if the refreshed phase should now be active.
+Run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then run `zharness story --slug {phase-slug} --goal "{phase goal}" [--depends-on {slug}]` once per roadmap phase — this is the durable record of roadmap/phase state. No command sets `current_phase`/`entry_phase` for a live project (only legacy `import` does); in `full` mode, after all stories are created, run `zharness id --json` and use that fresh ID as the filename for a one-line meta changeset (`.kit/changesets/{changeset-id}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"current_phase":"{entry phase slug}","entry_phase":"{entry phase slug}"},"at":"{RFC3339 now}"}`), then apply it with `zharness db changeset apply {path} --json` — the same generic, already-shipped command `work` uses to register runs. In `phase` mode, only touch `current_phase` this way if the refreshed phase should now be active; mint a fresh changeset ID the same way.
 
 ### Step 3 — Create phase context files
 For each roadmap phase, write `.kit/planning/phases/{phase-slug}/{phase-slug}-CONTEXT.md` using the Phase Context Template below. Each context file locks implementation decisions implied by the spec, phase-specific assumptions, canonical refs, rejected options, deferred ideas, allowed/forbidden surfaces, blast radius, expected proof class, and escalation conditions back to `brainstorm` or `to-plan`. If repo context is too unclear, note it explicitly as an open assumption.
@@ -183,6 +183,7 @@ Rules: only place tasks in the same wave if they can proceed independently; step
 ## Command Reference
 
 - `zharness --version` — version gate
+- `zharness id --json` — mint a fresh filename ID before every manually-authored meta changeset
 - `zharness init` — idempotent; run before the first `story` if no db exists
 - `zharness story --slug {phase-slug} --goal "{phase goal}" [--depends-on {slug}]` — once per roadmap phase
 - `zharness db changeset apply {path} --json` — applies the meta changeset that sets `current_phase`/`entry_phase`

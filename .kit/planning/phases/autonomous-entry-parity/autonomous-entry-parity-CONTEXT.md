@@ -45,6 +45,7 @@ Resolve GitHub #39 and #40. A fully isolated Codex run first stopped because `br
 - The isolated Codex attempt's stop is entirely caused by `brainstorm.md` lines 16/52/65/112; it had already found `.kit/docs`, read only embedded docs, and asked exactly the prohibited procedural question.
 - The Phase 9 dry pilot proves the autonomy wording works (no question, zero SKILL reads, implementation/tests complete) and isolates #40: its only hard validation failure is the fabricated RUN ID `01K0A1RUNDEF23456789GHJKMN`.
 - The unchanged final protocol contains explicit autonomous end-to-end intent, so both fixes are exercised naturally without harness-mechanics coaching.
+- **Pattern-completeness correction (gate pass):** CONTRACT.md already names `brainstorm`, `to-plan`, `work`, and `check` as consumers of the ID helper, but the first implementation documented only `work.md`. A pre-approval sweep found the same manual-ID shape in SPEC frontmatter (`brainstorm.md`) and meta changeset filenames (`to-plan.md`, `check.md`). These three direct contradictions are now in scope under Allowed Surfaces' explicit exception; this is the same #40 pattern, not a new feature.
 
 ## Canonical Refs
 - GitHub #39, #40

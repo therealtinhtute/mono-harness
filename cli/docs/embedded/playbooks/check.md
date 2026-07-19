@@ -105,7 +105,7 @@ The **RUN artifact** is the latest matching `.kit/runs/work/{YYYYMMDD-HHmm}-{slu
 5. Once Phase 1 (including this step) and Phase 2 both complete, translate this playbook's verdict label to the CLI's enum (`APPROVED`, `APPROVE with requests` → `APPROVE_WITH_REQUESTS`, `REQUEST CHANGES` → `REQUEST_CHANGES`).
    - **If the gated RUN's `mode` is `full`** (or the RUN artifact predates the `mode` field): run
      `zharness check record --verdict {verdict} --run-id {run id from the RUN artifact's frontmatter} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}, ...]' --json`
-     List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line. No live command sets `meta.latest_check_id` going forward (only legacy `import` does) — author a one-line meta changeset (`.kit/changesets/{ULID}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"latest_check_id":"{check id just returned}"},"at":"{RFC3339 now}"}`) and apply it with `zharness db changeset apply {path} --json`, the same generic command `work`/`to-plan` already use for their own meta pointers.
+     List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line. No live command sets `meta.latest_check_id` going forward (only legacy `import` does) — run `zharness id --json`, use that fresh ID as the filename for a one-line meta changeset (`.kit/changesets/{changeset-id}.changeset.jsonl`, `{"op":"update","entity":"meta","id":"meta","fields":{"latest_check_id":"{check id just returned}"},"at":"{RFC3339 now}"}`), and apply it with `zharness db changeset apply {path} --json`, the same generic command `work`/`to-plan` already use for their own meta pointers.
    - **If the gated RUN's `mode` is `simple`**: skip `zharness check record` entirely. The RUN was never registered in the `runs` table (`work.md` Step 2, simple-mode branch), so `check record`'s `--run-id` would always fail with `unknown_run_id` — there is no row to link `checks.run_id` against. Write the persisted report with `mode: simple` and note the skip in its `## Next Action` section. `validate` treats `mode: simple` CHECK artifacts as exempt from the DB-registration check by design (see `CONTRACT.md`).
 6. A missing required proof or a FAIL verdict is never overridden by this playbook. If a human judges the gap acceptable to ship anyway, they record that decision themselves: `zharness intervention --verdict-id {check id} --reason "..."`.
 
@@ -339,6 +339,7 @@ harness_verdict:    zharness check record id / not recorded: [why]
 ## Command Reference
 
 - `zharness --version` — version gate
+- `zharness id --json` — mint a fresh filename ID before the manually-authored `latest_check_id` meta changeset
 - `zharness audit --json` — pointer drift / contract violations
 - `zharness score-trace {id} --json` — trace evidence tier, once per `trace_ids` entry
 - `zharness check record --verdict {...} --run-id {...} --proof-links '[...]' --json` — record the verdict
