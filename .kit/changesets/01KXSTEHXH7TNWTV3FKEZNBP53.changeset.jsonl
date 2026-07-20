@@ -1,1 +1,0 @@
-{"op":"create","entity":"story","id":"01KXSTEHXH7TNWTV3FKE4S394E","fields":{"created_at":"2026-07-18T05:16:10Z","depends_on":"cli-embed-scaffold","goal":"resume reports stale_docs drift with named recovery; refresh clears it; scratch-dir integration test of full init-\u003echeck lifecycle","slug":"cli-stale-drift","status":"planned"},"at":"2026-07-18T05:16:10Z"}

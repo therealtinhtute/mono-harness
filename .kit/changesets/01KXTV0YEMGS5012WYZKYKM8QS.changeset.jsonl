@@ -1,1 +1,0 @@
-{"op":"create","entity":"backlog","id":"01KXTV0YEMGS5012WYZHJ976DD","fields":{"created_at":"2026-07-18T14:45:27Z","priority":"tiny","summary":"check.md Modes table (gate/review/full) has no diff-size-based selection guidance — caller must pick a mode with no documented default heuristic beyond 'full' as the static default"},"at":"2026-07-18T14:45:27Z"}

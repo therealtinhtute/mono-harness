@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KXTBDEEBTQJGJR90JG9HGNGB","fields":{"created_at":"2026-07-18T10:12:40Z","run_id":"01KXT8WSQ5KJR03JGKJZHCGSN8","summary":"T3 init scaffolding + idempotency matrix DONE; T4 --refresh-docs DONE; T5 scratch-dir integration + manifest/disk guard DONE","wave":2},"at":"2026-07-18T10:12:40Z"}

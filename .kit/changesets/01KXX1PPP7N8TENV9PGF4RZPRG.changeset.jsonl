@@ -1,1 +1,0 @@
-{"op":"create","entity":"story","id":"01KXX1PPP7N8TENV9PGD9NCX76","fields":{"created_at":"2026-07-19T11:20:40Z","depends_on":"harness-mode-parity","goal":"Re-run second-agent pilot against harness-mode-parity release; confirm validate --json valid:true, close R9","slug":"agent-pilot-rerun","status":"planned"},"at":"2026-07-19T11:20:40Z"}

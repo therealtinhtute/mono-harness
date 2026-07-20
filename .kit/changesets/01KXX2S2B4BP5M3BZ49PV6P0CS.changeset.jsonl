@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KXX2S2B4BP5M3BZ49P9V8WHQ","fields":{"created_at":"2026-07-19T11:39:26Z","run_id":"01KXX1RG84Z8JSW2EG3Y5G6D80","summary":"cli/v0.3.0 released and verified (goreleaser green, install-zharness.sh resolves it); MIN_ZHARNESS_VERSION bumped to 0.3.0 across 6 spine skills + README.md","wave":3},"at":"2026-07-19T11:39:26Z"}

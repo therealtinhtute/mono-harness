@@ -1,1 +1,0 @@
-{"op":"create","entity":"story","id":"01KXSTEHXB8GQ2S54CZCJKDGEB","fields":{"created_at":"2026-07-18T05:16:10Z","depends_on":"playbook-authoring","goal":"go:embed the doc set; init scaffolds .kit/ + docs + shim + .gitignore; docs_version stamped in meta; init --refresh-docs","slug":"cli-embed-scaffold","status":"planned"},"at":"2026-07-18T05:16:10Z"}

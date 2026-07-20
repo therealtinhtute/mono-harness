@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KXX20P82K47DTYCRDF369W8Y","fields":{"created_at":"2026-07-19T11:26:08Z","run_id":"01KXX1RG84Z8JSW2EG3Y5G6D80","summary":"validate.go mode-awareness + work.md/check.md doc branches landed, 9/9 tests pass","wave":1},"at":"2026-07-19T11:26:08Z"}

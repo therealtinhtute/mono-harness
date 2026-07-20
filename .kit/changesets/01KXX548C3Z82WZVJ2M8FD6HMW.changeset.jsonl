@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KXX548C3Z82WZVJ2M6B9HMEK","fields":{"created_at":"2026-07-19T12:20:30Z","run_id":"01KXX48XMXQE9W0W70R3FTJQHC","summary":"brainstorm explicit-execution-intent carve-out + embedded regression test landed; dry pilot confirmed autonomy gate fixed and exposed missing ULID helper #40","wave":1},"at":"2026-07-19T12:20:30Z"}

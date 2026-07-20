@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KXX6FAN63V6G0J1NMBGTYD2N","fields":{"created_at":"2026-07-19T12:44:02Z","run_id":"01KXX48XMXQE9W0W70R3FTJQHC","summary":"gate completeness correction shipped cli/v0.4.1; all manual-ID playbook consumers now use zharness id; installer and full tests verified","wave":3},"at":"2026-07-19T12:44:02Z"}

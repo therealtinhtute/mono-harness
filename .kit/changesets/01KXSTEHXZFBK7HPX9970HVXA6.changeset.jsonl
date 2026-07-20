@@ -1,1 +1,0 @@
-{"op":"create","entity":"story","id":"01KXSTEHXZFBK7HPX993GSNRRN","fields":{"created_at":"2026-07-18T05:16:10Z","depends_on":"cli-release","goal":"Rewrite 6 spine SKILL.md as \u003c=30-line thin triggers, prune references, bump MIN_ZHARNESS_VERSION, update repo docs, prove Claude chain parity","slug":"thin-triggers","status":"planned"},"at":"2026-07-18T05:16:10Z"}
