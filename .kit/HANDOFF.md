@@ -1,5 +1,5 @@
 ---
-id: 01KY2MR98ZAVYC287H3ZD85TKQ
+id: 01KY2NFDEC90CPNY67YHCQW479
 type: handoff
 phase: slim-playbooks-S1
 lane: high-risk
@@ -12,20 +12,20 @@ branch: master
 status: in-progress
 continuity-mode: full-harness
 active-phase: slim-playbooks-S1 (informal — not a harness story; harness current_phase still reads write-boundary/planned)
-last-updated: 2026-07-21 22:29
+last-updated: 2026-07-21 22:42
 ---
 
 # Session Handoff — master
 
 ## Current State
 
-**Branch**: `master` (up to date with origin/master; this session's work all uncommitted)
-**Status**: in-progress — Track A "Slim Playbooks", phase S1 wave W1 done + compile/test/smoke-verified; W2/W3 remain
+**Branch**: `master` (4 commits ahead of origin/master — NOT pushed)
+**Status**: in-progress — Track A "Slim Playbooks", phase S1 waves W1 + W2 done, committed + build/test/smoke-verified; **W3 (check gate) + S2 + S3 remain**
 **Continuity Mode**: full-harness (SPEC/ROADMAP/phase chain from the Harness Subtraction Pass present; the slim work rides on top informally, no harness story row)
 **Active Work**: `slim-playbooks` initiative, `S1` (scaffold command). Note: harness `resume` still shows `current_phase: write-boundary / planned` — a pre-existing status-transition gap, not this session's concern.
-**Last Commit**: d675def — docs(workflow-harness): readme-workflow-refresh follow-up polish (this session's changes are NOT yet committed)
+**Last Commit**: 627c0aa — refactor(playbooks): slim-playbooks S1-W2 (working tree CLEAN — all this session's work is committed)
 
-**Working Tree** (all uncommitted): 0 staged, 5 modified, 11 untracked
+**Working Tree**: clean. **4 unpushed commits on master**: 49303d2 (execution-discipline rule) · 94fdf5d (S1-W1 scaffold command) · 627c0aa (S1-W2 playbooks call scaffold) · plus this handoff commit.
 
 ## What We're Building
 
@@ -55,14 +55,15 @@ Also completed this session (separate, Track B): `rules/execution-discipline.md`
   - `cli/internal/application/scaffold.go` + `interfaces/scaffold.go` + registered in `root.go`.
   - `cli/internal/application/scaffold_test.go` (5 unit tests) + extended `internal/embedded/manifest_disk_test.go` to cover the second embed.
   - `go build`/`go vet`/`go test ./...` all pass; CLI smoke: `scaffold` emits, refuses overwrite (`file_exists`), rejects unknown kind (`unknown_kind`).
-  - **Additive/dormant**: no playbook calls it yet (that's W2) — repo fully works, nothing depends on it.
+  - **Additive/dormant** at W1: no playbook called it yet (wired in W2).
+- **S1-W2 — playbooks call scaffold** (committed 627c0aa): work/check/handoff/brainstorm now emit skeletons via `zharness scaffold <kind>` instead of inline template blocks; field-semantics "Rules:" prose retained. **−281 lines** (work 244→194, check 356→303, handoff 232→132, brainstorm 233→155). Binary reinstalled with scaffold; `.kit/docs` re-scaffolded byte-identical to the embed; `go build`/`go test ./...` green; installed-binary smoke green. Playbook corpus 1577→1296 lines.
 
 ### In Progress ⏳
-- None mid-task. W1 is a clean stopping point. Next action (below) is a fresh wave.
+- None mid-task. W1 + W2 both committed — a clean stopping point. Next action (below) is a fresh wave.
 
 ### Not Started
-- S1-W2, S1-W3, S2, S3 (see Next Steps).
-- Committing this session's work (user asked: handoff → commit → then continue W2).
+- S1-W3 (check gate), S2, S3 (see Next Steps).
+- Pushing master to origin (4 commits ahead, not pushed).
 
 ## Key Decisions
 
@@ -88,10 +89,10 @@ None. One nuance to carry: harness `current_phase` reads `write-boundary/planned
 
 ## Next Steps
 
-1. **→ START HERE: commit this session's work**, then **S1-W2** — in `cli/docs/embedded/playbooks/{work,check,handoff,brainstorm}.md`, replace each inline ```markdown template block``` with a `zharness scaffold <kind> --path {path} --json` call + a 2-3 line "fill these sections" note; re-scaffold `.kit/docs` and byte-verify against the embed.
-2. **S1-W3** — run the `check` gate on the S1 diff (high-risk lane: unit + integration + command-output + manual-check), record the verdict.
-3. **S2** — build `zharness next` (folds `query state`/`phases` routing) + strip work.md Mode-Resolution/Detection tables; port every routing outcome into `next`'s tests (table→test parity invariant).
-4. **S3** — add `zharness resume` text rendering (harness-state block; git/WIP stays agent-gathered) + strip watzup Output Contract + all Examples.
+1. **→ START HERE: S1-W3** — run the `check` gate (`check full`) on the S1 diff (commits 94fdf5d + 627c0aa), high-risk lane: unit + integration + command-output + manual-check; record the verdict via `zharness check record`. The scaffold command already has unit tests + smoke; the gate adds the review pass (security/arch/quality) + a recorded verdict.
+2. **S2** — build `zharness next` (folds `query state`/`phases` routing) + strip work.md Mode-Resolution/Detection tables; port every routing outcome into `next`'s tests (table→test parity invariant).
+3. **S3** — add `zharness resume` text rendering (harness-state block; git/WIP stays agent-gathered) + strip watzup Output Contract + all Examples.
+4. **Optional**: `git push` the 4 commits to origin/master.
 
 ## Notes
 
