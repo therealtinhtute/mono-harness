@@ -33,6 +33,7 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
 │   ├── ask-user-question.md   # AskUserQuestion enforcement
 │   ├── english.md             # English coaching
+│   ├── execution-discipline.md # Lean tool-call economy, check-in cadence, stop-don't-guess
 │   └── karpathy-guidelines.md # Karpathy coding principles
 ├── docs/                   # Repo-wide reference docs
 │   └── prompt-engineering-principles.md  # Prompting principles for writing skills/rules
