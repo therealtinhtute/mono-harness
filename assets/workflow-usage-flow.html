@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>README workflow usage flow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      background: #f5f5f5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f5f5;
+    }
+
+    main {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0;
+    }
+
+    .diagram-scroll {
+      width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-color: #7a8399 #ececec;
+    }
+
+    svg {
+      display: block;
+      width: 960px;
+      height: auto;
+      max-width: none;
+    }
+
+    @media (max-width: 640px) {
+      main {
+        width: calc(100% - 16px);
+        padding: 8px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="diagram-scroll" role="region" aria-label="Scrollable zharness workflow flowchart" tabindex="0">
+<svg width="960" height="1160" viewBox="0 0 960 1160" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="diagram-title diagram-desc">
+  <title id="diagram-title">The zharness-backed README workflow</title>
+  <desc id="diagram-desc">A top-to-bottom flowchart showing one-time setup, full, simple, and resume paths across brainstorm, to-plan, work, check, git, handoff, and watzup.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#4f5d75"/>
+    </marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#eb6c36"/>
+    </marker>
+    <marker id="arrow-link" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 L8 4 L0 8 Z" fill="#2e5aa8"/>
+    </marker>
+    <style>
+      .title { font: 400 32px 'Instrument Serif', Georgia, serif; fill: #2d3142; }
+      .subtitle { font: 400 12px 'Geist', Arial, sans-serif; fill: #4f5d75; }
+      .eyebrow { font: 600 8px 'Geist Mono', monospace; fill: #4f5d75; letter-spacing: 0.16em; }
+      .setup-label { font: 600 8px 'Geist Mono', monospace; fill: #4f5d75; letter-spacing: 0.12em; }
+      .setup-command { font: 600 12px 'Geist Mono', monospace; fill: #2d3142; }
+      .setup-copy { font: 500 12px 'Geist', Arial, sans-serif; fill: #2d3142; }
+      .node-label { font: 600 16px 'Geist', Arial, sans-serif; fill: #2d3142; }
+      .node-sublabel { font: 500 12px 'Geist Mono', monospace; fill: #4f5d75; }
+      .node-note { font: 500 8px 'Geist Mono', monospace; fill: #7a8399; letter-spacing: 0.04em; }
+      .arrow-label { font: 600 8px 'Geist Mono', monospace; fill: #4f5d75; letter-spacing: 0.08em; }
+      .callout { font: italic 400 16px 'Instrument Serif', Georgia, serif; fill: #4f5d75; }
+      .legend { font: 600 8px 'Geist Mono', monospace; fill: #4f5d75; letter-spacing: 0.12em; }
+      .legend-copy { font: 500 8px 'Geist Mono', monospace; fill: #7a8399; }
+      .primary-arrow { stroke: #4f5d75; stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+      .route-arrow { stroke: #4f5d75; stroke-width: 1; fill: none; stroke-dasharray: 8 8; marker-end: url(#arrow); }
+      .route-rail { stroke: rgba(79,93,117,0.40); stroke-width: 1; stroke-dasharray: 8 8; }
+      .node-mask { fill: #f5f5f5; }
+      .node-box { fill: #ffffff; stroke: #2d3142; stroke-width: 1; }
+      .node-soft { fill: rgba(45,49,66,0.05); stroke: #4f5d75; stroke-width: 1; }
+      .node-terminal { fill: #ececec; stroke: #4f5d75; stroke-width: 1; }
+      .node-optional { fill: rgba(45,49,66,0.02); stroke: rgba(45,49,66,0.40); stroke-width: 1; stroke-dasharray: 8 4; }
+      .node-focal { fill: rgba(235,108,54,0.08); stroke: #eb6c36; stroke-width: 1.2; }
+    </style>
+  </defs>
+
+  <rect width="960" height="1160" fill="#f5f5f5"/>
+
+  <text x="72" y="48" class="eyebrow">README WORKFLOW · ZHARNESS-BACKED</text>
+  <text x="72" y="88" class="title">From intent to durable proof</text>
+  <text x="72" y="120" class="subtitle">Skills stay user-facing while zharness persists planning, run, trace, and verdict state underneath.</text>
+
+  <rect x="72" y="144" width="816" height="80" rx="8" fill="#ececec" stroke="rgba(45,49,66,0.12)" stroke-width="1"/>
+  <rect x="72" y="144" width="4" height="80" fill="#eb6c36"/>
+  <text x="96" y="168" class="setup-label">ONE-TIME SETUP</text>
+  <text x="96" y="196" class="setup-command">zharness init --json</text>
+  <text x="280" y="196" class="setup-copy">scaffolds the project harness</text>
+  <text x="96" y="216" class="node-note">.kit/ · local database · generated docs · ignore entries as applicable</text>
+
+  <text x="320" y="252" class="eyebrow">FULL PATH</text>
+  <text x="32" y="288" class="callout">Optional interview</text>
+  <text x="32" y="312" class="subtitle">sharpen fuzzy intent before planning.</text>
+  <text x="760" y="288" class="eyebrow">RESUME ROUTE</text>
+  <text x="32" y="488" class="eyebrow">SIMPLE PATH</text>
+
+  <!-- Arrows are intentionally drawn before action boxes. -->
+  <g id="arrows">
+    <path data-arrow="brainstorm-to-to-plan" class="primary-arrow" d="M480 352 V392"/>
+    <path data-arrow="to-plan-to-work" class="primary-arrow" d="M480 472 V512"/>
+    <path data-arrow="work-to-check" class="primary-arrow" d="M480 592 V632"/>
+    <path data-arrow="check-to-git" class="primary-arrow" d="M432 712 V744 H320 V784"/>
+    <path data-arrow="check-to-handoff" class="primary-arrow" d="M528 712 V744 H640 V784"/>
+    <path data-arrow="handoff-to-watzup" class="route-arrow" d="M640 856 V912"/>
+    <path data-arrow="watzup-to-readiness-rail" class="route-arrow" d="M760 960 H888"/>
+    <line class="route-rail" x1="888" y1="432" x2="888" y2="960"/>
+    <path data-arrow="readiness-to-to-plan" class="route-arrow" d="M888 432 H640"/>
+    <path data-arrow="readiness-to-work" class="route-arrow" d="M888 552 H640"/>
+    <path data-arrow="readiness-to-check" class="route-arrow" d="M888 672 H640"/>
+    <path data-arrow="watzup-to-git" class="route-arrow" d="M520 984 H160 V820 H200"/>
+    <path data-arrow="work-simple-to-check" class="route-arrow" d="M152 592 V672 H320"/>
+  </g>
+
+  <g id="arrow-labels">
+    <rect x="440" y="360" width="80" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="480" y="372" class="arrow-label" text-anchor="middle">LOCK SPEC</text>
+
+    <rect x="436" y="480" width="88" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="480" y="492" class="arrow-label" text-anchor="middle">PHASE PLAN</text>
+
+    <rect x="452" y="600" width="56" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="480" y="612" class="arrow-label" text-anchor="middle">RUN</text>
+
+    <rect x="356" y="732" width="64" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="388" y="744" class="arrow-label" text-anchor="middle">SHIP</text>
+
+    <rect x="540" y="732" width="64" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="572" y="744" class="arrow-label" text-anchor="middle">PAUSE</text>
+
+    <rect x="584" y="876" width="112" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="640" y="888" class="arrow-label" text-anchor="middle">NEXT SESSION</text>
+
+    <rect x="780" y="948" width="88" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="824" y="960" class="arrow-label" text-anchor="middle">READINESS</text>
+
+    <rect x="748" y="420" width="56" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="776" y="432" class="arrow-label" text-anchor="middle">PLAN</text>
+
+    <rect x="752" y="540" width="48" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="776" y="552" class="arrow-label" text-anchor="middle">RUN</text>
+
+    <rect x="744" y="660" width="64" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="776" y="672" class="arrow-label" text-anchor="middle">PROVE</text>
+
+    <rect x="292" y="972" width="96" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="340" y="984" class="arrow-label" text-anchor="middle">GIT READY</text>
+
+    <rect x="220" y="660" width="112" height="16" rx="4" fill="#f5f5f5"/>
+    <text x="276" y="672" class="arrow-label" text-anchor="middle">LIGHT VERIFY</text>
+  </g>
+
+  <g data-node="brainstorm">
+    <rect class="node-mask" x="320" y="272" width="320" height="80" rx="8"/>
+    <rect class="node-box" x="320" y="272" width="320" height="80" rx="8"/>
+    <text x="480" y="304" class="node-label" text-anchor="middle">brainstorm</text>
+    <text x="480" y="328" class="node-sublabel" text-anchor="middle">intake + SPEC</text>
+  </g>
+
+  <g data-node="to-plan">
+    <rect class="node-mask" x="320" y="392" width="320" height="80" rx="8"/>
+    <rect class="node-box" x="320" y="392" width="320" height="80" rx="8"/>
+    <text x="480" y="424" class="node-label" text-anchor="middle">to-plan</text>
+    <text x="480" y="448" class="node-sublabel" text-anchor="middle">story + ROADMAP + phase plans</text>
+  </g>
+
+  <g data-node="work-simple">
+    <rect class="node-mask" x="32" y="512" width="240" height="80" rx="8"/>
+    <rect class="node-optional" x="32" y="512" width="240" height="80" rx="8"/>
+    <text x="152" y="544" class="node-label" text-anchor="middle">work simple</text>
+    <text x="152" y="568" class="node-sublabel" text-anchor="middle">bounded task/no phase row</text>
+  </g>
+
+  <g data-node="work">
+    <rect class="node-mask" x="320" y="512" width="320" height="80" rx="8"/>
+    <rect class="node-focal" x="320" y="512" width="320" height="80" rx="8"/>
+    <text x="480" y="544" class="node-label" text-anchor="middle">work</text>
+    <text x="480" y="568" class="node-sublabel" text-anchor="middle">run + traces</text>
+  </g>
+
+  <g data-node="check">
+    <rect class="node-mask" x="320" y="632" width="320" height="80" rx="8"/>
+    <rect class="node-soft" x="320" y="632" width="320" height="80" rx="8"/>
+    <text x="480" y="664" class="node-label" text-anchor="middle">check</text>
+    <text x="480" y="688" class="node-sublabel" text-anchor="middle">proof + verdict</text>
+  </g>
+
+  <g data-node="git">
+    <rect class="node-mask" x="200" y="784" width="240" height="72" rx="8"/>
+    <rect class="node-terminal" x="200" y="784" width="240" height="72" rx="8"/>
+    <text x="320" y="812" class="node-label" text-anchor="middle">git</text>
+    <text x="320" y="836" class="node-sublabel" text-anchor="middle">commit/push/PR</text>
+  </g>
+
+  <g data-node="handoff">
+    <rect class="node-mask" x="520" y="784" width="240" height="72" rx="8"/>
+    <rect class="node-terminal" x="520" y="784" width="240" height="72" rx="8"/>
+    <text x="640" y="812" class="node-label" text-anchor="middle">handoff</text>
+    <text x="640" y="836" class="node-sublabel" text-anchor="middle">handoff entity + HANDOFF.md</text>
+  </g>
+
+  <g data-node="watzup">
+    <rect class="node-mask" x="520" y="912" width="240" height="96" rx="8"/>
+    <rect class="node-soft" x="520" y="912" width="240" height="96" rx="8"/>
+    <text x="640" y="940" class="node-label" text-anchor="middle">watzup</text>
+    <text x="640" y="964" class="node-sublabel" text-anchor="middle">resume snapshot</text>
+    <text x="640" y="988" class="node-note" text-anchor="middle">routes by readiness · never a gate</text>
+  </g>
+
+  <line x1="72" y1="1048" x2="888" y2="1048" stroke="rgba(45,49,66,0.12)" stroke-width="0.8"/>
+  <text x="72" y="1080" class="legend">LEGEND</text>
+  <line x1="176" y1="1076" x2="224" y2="1076" stroke="#4f5d75" stroke-width="1.2"/>
+  <text x="236" y="1080" class="legend-copy">primary skill path</text>
+  <line x1="392" y1="1076" x2="440" y2="1076" stroke="#4f5d75" stroke-width="1" stroke-dasharray="8 8"/>
+  <text x="452" y="1080" class="legend-copy">optional / resume route</text>
+  <text x="680" y="1080" class="node-note">SPEC</text>
+  <text x="724" y="1080" class="legend-copy">durable artifact</text>
+  <text x="72" y="1120" class="legend">SKILLS UP FRONT · ZHARNESS DURABILITY UNDERNEATH</text>
+</svg>
+    </div>
+  </main>
+</body>
+</html>

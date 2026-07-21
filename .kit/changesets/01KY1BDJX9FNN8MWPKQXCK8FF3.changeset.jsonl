@@ -1,0 +1,2 @@
+{"op":"create","entity":"run","id":"01KY1BD7D5P2PQTCRYDP5KJKPC","fields":{"story_slug":"write-boundary","artifact_path":".kit/runs/work/20260721-1027-write-boundary.md","created_at":"2026-07-21T03:27:29Z"},"at":"2026-07-21T03:27:29Z"}
+{"op":"update","entity":"meta","id":"meta","fields":{"latest_run_id":"01KY1BD7D5P2PQTCRYDP5KJKPC"},"at":"2026-07-21T03:27:29Z"}

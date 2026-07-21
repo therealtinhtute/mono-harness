@@ -100,10 +100,10 @@ func TestWorkPlaybook_UsesIDCommand(t *testing.T) {
 
 	want := []string{
 		"zharness id --json",
-		"save the returned `id` as the **RUN id**",
-		"save this second, distinct ID as the **changeset id**",
+		"zharness run create",
+		"Save the returned `id` as the **RUN id**",
 		"Never invent a placeholder ULID",
-		"never reuse the RUN id as the filename",
+		"never hand-author a `.changeset.jsonl` file for this",
 	}
 	for _, phrase := range want {
 		if !strings.Contains(content, phrase) {
@@ -120,10 +120,6 @@ func TestPlaybooks_ManualIDsUseIDCommand(t *testing.T) {
 			"do not reuse `intake_id`",
 		},
 		"playbooks/to-plan.md": {
-			"run `zharness id --json`",
-			"`.kit/changesets/{changeset-id}.changeset.jsonl`",
-		},
-		"playbooks/check.md": {
 			"run `zharness id --json`",
 			"`.kit/changesets/{changeset-id}.changeset.jsonl`",
 		},

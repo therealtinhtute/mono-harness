@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KY1BTHY7WSP68D4JXQ5EN8PR","fields":{"created_at":"2026-07-21T03:34:30Z","run_id":"01KY1BD7D5P2PQTCRYDP5KJKPC","summary":"replay-safety integration test added; full build+test+vet green; fixed 2 pre-existing embedded-doc tests locked to old phrasing","wave":3},"at":"2026-07-21T03:34:30Z"}

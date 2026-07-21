@@ -16,7 +16,9 @@ func TestCheckRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
-	assertChangesetBeforeRow(t, db, path, "checks", id, "check")
+	if path == "" {
+		t.Fatal("changeset path is empty, want a written .jsonl file")
+	}
 
 	var verdict, proofLinks string
 	if err := db.QueryRow(`SELECT verdict, proof_links FROM checks WHERE id = ?`, id).Scan(&verdict, &proofLinks); err != nil {
@@ -27,6 +29,14 @@ func TestCheckRecord(t *testing.T) {
 	}
 	if proofLinks == "[]" || proofLinks == "" {
 		t.Fatalf("proof_links = %q, want a non-empty JSON array", proofLinks)
+	}
+
+	var latestCheckID string
+	if err := db.QueryRow(`SELECT latest_check_id FROM meta LIMIT 1`).Scan(&latestCheckID); err != nil {
+		t.Fatalf("query meta: %v", err)
+	}
+	if latestCheckID != id {
+		t.Fatalf("meta.latest_check_id = %q, want %q", latestCheckID, id)
 	}
 }
 

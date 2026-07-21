@@ -1,0 +1,1 @@
+{"op":"create","entity":"story","id":"01KY1AJ7MXPBJNF8GT7XWYJBX0","fields":{"created_at":"2026-07-21T03:12:29Z","depends_on":"dead-surface-removal","goal":"Remove score-trace tier + entropy_score; keep lane x proof matrix as the verdict; update audit shape + check playbook","slug":"scoring-removal","status":"planned"},"at":"2026-07-21T03:12:29Z"}

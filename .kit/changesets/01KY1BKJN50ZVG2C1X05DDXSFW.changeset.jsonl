@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KY1BKJN50ZVG2C1X03SFH05N","fields":{"created_at":"2026-07-21T03:30:41Z","run_id":"01KY1BD7D5P2PQTCRYDP5KJKPC","summary":"run create + check record meta-pointer implemented and verified","wave":1},"at":"2026-07-21T03:30:41Z"}

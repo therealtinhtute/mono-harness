@@ -1,0 +1,53 @@
+package application
+
+import (
+	"database/sql"
+	"time"
+
+	"github.com/oklog/ulid/v2"
+
+	"github.com/therealtinhtute/skills/cli/internal/domain"
+	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
+)
+
+// CreateRun validates and records a new run entity (CONTRACT.md `run
+// create`), changeset-first, and atomically points meta.latest_run_id at
+// it in the same changeset/tx — the two-line semantics work.md's playbook
+// previously hand-authored, now owned by the CLI. unknown_story is
+// DB-lookup-dependent, so it's enforced here rather than in
+// domain.Run.Validate(). Full-mode only: simple mode has no story to
+// reference (runs.story_slug is a NOT NULL FK) and must keep skipping DB
+// registration entirely.
+func CreateRun(db *sql.DB, changesetDir, storySlug, artifactPath, planID string) (id, path string, err error) {
+	entity := domain.Run{StorySlug: storySlug, ArtifactPath: artifactPath}
+	if err := entity.Validate(); err != nil {
+		return "", "", err
+	}
+
+	_, _, exists, err := storyByExactSlug(db, storySlug)
+	if err != nil {
+		return "", "", err
+	}
+	if !exists {
+		return "", "", &domain.ValidationError{Code: "unknown_story", Message: "run create: story slug " + storySlug + " not found"}
+	}
+
+	at := time.Now().UTC().Format(time.RFC3339)
+	id = ulid.Make().String()
+	fields := map[string]any{
+		"story_slug":    storySlug,
+		"artifact_path": artifactPath,
+		"created_at":    at,
+	}
+	if planID != "" {
+		fields["plan_id"] = planID
+	}
+	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
+		{Op: "create", Entity: "run", ID: id, Fields: fields, At: at},
+		{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_run_id": id}, At: at},
+	})
+	if err != nil {
+		return "", "", err
+	}
+	return id, path, nil
+}

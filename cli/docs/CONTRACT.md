@@ -112,6 +112,12 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ## Domain — workflow additions (Phase 4 — cli-domain)
 
+### `run create`
+- Args: `--slug {phase-slug} --artifact-path {run file path} [--plan-id {ulid}]` — full-mode only
+- `--json`: `{"id": "ulid"}`
+- Errors: `missing_required_field` (1, `--slug`/`--artifact-path`), `unknown_story` (1, `--slug` has no matching story)
+- Consumer: `work` (full mode only; mints the run row and points `meta.latest_run_id` at it atomically, one changeset/tx — simple mode still skips DB registration entirely, `runs.story_slug` has no row for it to reference)
+
 ### `resume`
 - Args: none
 - `--json`: `{"position": {"current_phase": "...", "status": "..."}, "latest_run_id": "ulid"|null, "latest_check_id": "ulid"|null, "latest_handoff_id": "ulid"|null, "drift": [{"type": "missing_file"|"unknown_phase"|"out_of_order"|"stale_docs", "detail": "...", "recovery": "..."}], "readiness": "clean"|"in-progress"|"drifted"|"no-harness"}`
@@ -123,6 +129,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 - `--json`: `{"id": "ulid", "verdict": "..."}`
 - Errors: `unknown_run_id` (1), `invalid_verdict` (1), `empty_proof_links` (1, verdict other than REQUEST_CHANGES with zero proof links)
 - Consumer: `check` (deterministic — no free-text-only verdicts, R19)
+- Side effect: also points `meta.latest_check_id` at the new check row, atomically in the same changeset/tx (no separate manual pointer update needed)
 
 ### `handoff record`
 - Args: `--run-id {ulid} --check-id {ulid} --open-items '["...","..."]'` — `--run-id`/`--check-id` optional (anchors are nullable pointers), `--open-items` defaults `[]`
@@ -176,6 +183,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 | to-plan: roadmap init | `init` (if no db) |
 | to-plan: per-phase | `story --slug {phase} --goal … --json` |
 | to-plan: status render | `query state --json`, `query phases --json` |
+| work: run registration (full mode) | `run create --slug {phase} --artifact-path … [--plan-id …] --json` |
 | work: wave completion | `trace add --wave N --summary … --json` |
 | check: gate evaluation | `audit --json` + `score-trace <id> --json` → matrix → `check record --verdict … --json` |
 | check: human override | `intervention --verdict-id … --reason …` (manual, documented escalation only) |
