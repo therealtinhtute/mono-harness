@@ -4,7 +4,14 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 
 ## Structure
 
-![Layer stack — 3 abstraction layers of the repository](assets/diagram-layer-stack.png)
+The repository has **14 skills** organized above a four-layer workflow runtime:
+
+| Layer | Responsibility |
+| :--- | :--- |
+| **Harness** | Durable state: committed ULID changesets plus a rebuildable local SQLite database. |
+| **Workflows** | Tool-independent lifecycle: intent → intake → plan → trace → proof → handoff/resume. |
+| **Skills** | User-facing triggers, including the 8 workflow skills and 6 shipping/craft skills. |
+| **CLI** | `zharness`, which scaffolds playbooks and reads or mutates harness state deterministically. |
 
 ### Harness artifact layout: `.kit/`
 
@@ -14,46 +21,50 @@ A collection of personal Claude Code skills following the [skills.sh](https://sk
 │   ├── IDEA.md
 │   ├── SPEC.md
 │   ├── ROADMAP.md
-│   └── phases/
-│       └── {phase-slug}/
-│           ├── {phase-slug}-CONTEXT.md
-│           └── {phase-slug}-PLAN.md
-├── harness.db          (gitignored — rebuilt from changesets)
-├── changesets/         (ULID-named JSONL, source of truth)
-├── HANDOFF.md
-├── runs/
-│   └── work/
-└── reports/
-    ├── brainstorm/
-    ├── check/
-    └── watzup/
+│   └── phases/{phase-slug}/
+│       ├── {phase-slug}-CONTEXT.md
+│       └── {phase-slug}-PLAN.md
+├── changesets/         (committed ULID-named JSONL — replay source)
+├── runs/work/          (execution logs)
+├── reports/            (brainstorm, check, and optional work evidence)
+├── HANDOFF.md          (latest continuity snapshot)
+├── docs/               (generated playbooks — gitignored)
+└── harness.db          (generated SQLite view — gitignored)
 ```
 
 #### What lives where
-- `planning/` — canonical planning artifacts owned by `brainstorm` and `to-plan`
-- `harness.db` + `changesets/` — durable, queryable state (`zharness query state`/`resume`); replaces the retired `workflow-state.yml` pointer file — see [Workflow Harness](#workflow-harness)
-- `HANDOFF.md` — latest continuity snapshot for the next session
-- `runs/work/` — execution logs created by `work`
-- `reports/check/` — persisted gate verdicts from `check`
-- `reports/watzup/` — recap reports from `watzup` (legacy; current version is console-only)
-- `reports/brainstorm/` — optional explore-mode output when `brainstorm` is used without locking a spec
+
+- `planning/` locks the intent, roadmap, phase boundaries, and executable plans.
+- `changesets/` is the replayable source for harness entities and pointers.
+- `harness.db` is a local materialized view rebuilt from committed changesets.
+- `docs/` contains generated canonical playbooks scaffolded by `zharness init`.
+- `runs/work/` records execution; `reports/check/` records gate evidence and verdicts.
+- `HANDOFF.md` captures the latest session handoff while `zharness resume --json` derives continuity from durable state.
 
 #### Mental model
-- `.kit/planning/` answers **what is currently locked**
-- `.kit/runs/` answers **what happened during execution**
-- `.kit/reports/` answers **what the gate concluded**
-- `zharness resume --json` answers **where the harness should look first**
+
+- `.kit/planning/` answers **what is locked**.
+- `.kit/runs/` answers **what execution did**.
+- `.kit/reports/` answers **what evidence and review concluded**.
+- `zharness resume --json` answers **where to continue and whether recovery is needed**.
 
 ## Machine Setup
 
-Full bootstrap for a new machine — installs CLAUDE.md, rules, hooks, statusline, and all skills:
+Bootstrap Claude Code configuration and install all repository skills:
 
 ```bash
 git clone git@github.com:therealtinhtute/skills.git ~/skills
 bash ~/skills/setup/install.sh
 ```
 
-After install: edit `~/.claude/settings.json` and set `ANTHROPIC_AUTH_TOKEN`.
+Install the required harness CLI separately. The six workflow spine skills require `zharness >= 0.4.1`:
+
+```bash
+bash ~/skills/scripts/install-zharness.sh
+zharness --version
+```
+
+`setup/install.sh` does not install the CLI. After bootstrap, review `~/.claude/settings.json` and set `ANTHROPIC_AUTH_TOKEN` when needed.
 
 **Skills only** (no config changes):
 
@@ -134,64 +145,83 @@ This repo follows a shared output convention inspired by Waza for active skills:
 
 The icon is the visible mode switch. The real standard is the writing: concrete, direct, and specific to the skill.
 
-## Recommended workflow: `brainstorm` + `to-plan` + `work` + friends
+## Usage flow
 
-Two entry points (`watzup` for resume, `brainstorm` for new work), then execute and close out.
+Skills are the user-facing interface. `zharness` persists intake, stories, runs, traces, verdicts, and handoffs underneath them.
 
-![Recommended workflow for brainstorm + plan + work with supporting skills](assets/spec-plan-workflow.svg)
+![zharness-backed workflow for full, simple, and resume paths](assets/spec-plan-workflow.svg)
 
-Canonical pipeline:
-```
-watzup → work → check → git → handoff          (resume)
-brainstorm → to-plan → work → check → git → handoff  (new work)
-```
+[Open the self-contained diagram source](assets/workflow-usage-flow.html).
 
-### 1. Lock the problem with `brainstorm`
-Use `brainstorm` when you have a raw idea, notes, markdown files, or a trade-off question. It runs in 4 modes (`explore`, `lock-from-idea`, `lock-from-files`, `refine`) and produces either a recommendation report or a locked `.kit/planning/SPEC.md`.
-
-### 2. Derive execution with `to-plan`
-Use `to-plan` only after the spec is locked. It turns `.kit/planning/SPEC.md` into `.kit/planning/ROADMAP.md` plus per-phase `-CONTEXT.md` and `-PLAN.md` files. If the spec is missing or too weak, `to-plan` fails fast and points back to `brainstorm`.
-
-### 3. Execute with `work`
-Use `work` to execute the plan. It checks for missing artifacts and routes back to `brainstorm` or `to-plan` if needed; otherwise it runs the active phase wave-by-wave, dispatches subagents for heavy tasks, verifies every task, and calls `/check` as the phase gate. It never auto-commits — handoffs are suggested, not executed.
-
-### 0. Orient with `watzup` (resume path)
-Use `watzup` at the start of a session to recap branch state, review committed + uncommitted changes, read handoff context, and get a concrete next action. If the branch has no work yet, `watzup` points you to `brainstorm`.
-
-### 4. Close the loop
-- [`/check`](skills/workflow/check/SKILL.md) is invoked by `work` per phase, or directly for ad-hoc gate/review
-- [`/git`](skills/workflow/git/SKILL.md) and [`/handoff`](skills/workflow/handoff/SKILL.md) close or transfer a work session cleanly
-
-### Mental model
-- `watzup` = recap **WHERE AM I** (session start)
-- `brainstorm` = lock **WHAT**
-- `to-plan` = lock **HOW**
-- `work` = **execute** (run phases, verify, gate)
-- `check` = catch risk and prove readiness (gate + analysis)
-- `git` / `handoff` = wrap up with discipline
-
-## Workflow Harness
-
-The workflow chain above is harness-backed (`zharness` CLI, durable state, deterministic gates). Each of the 6 spine skills is a thin trigger: it version-gates on `zharness`, then defers to a canonical playbook embedded in the CLI binary and scaffolded into `.kit/docs/playbooks/` by `zharness init`. The operating logic lives in those playbooks, not in the `SKILL.md` files. See [`skills/workflow/README.md`](skills/workflow/README.md) for the concept doc and [`docs/workflow-harness/`](docs/workflow-harness/) for the gap inventory.
-
-### Quickstart: `zharness`
+### Initialize a project once
 
 ```bash
-# install (downloads the latest release into ~/.local/bin)
-bash scripts/install-zharness.sh
-
-# new project (init does not create the .kit/ directory itself)
-mkdir -p .kit
+cd /path/to/project
 zharness init --json
-zharness story --slug my-phase --goal "..." --json
+```
 
-# existing project with legacy .kit/workflow-state.yml
+`init` creates `.kit/` when needed, initializes the local database, scaffolds missing `.kit/docs/` playbooks, and adds the generated harness paths to `.gitignore` as applicable.
+
+### Full work: lock, plan, execute, prove
+
+```text
+/brainstorm <idea, notes, or @file references>
+/to-plan full
+/work
+```
+
+1. `brainstorm` explores alternatives, writes `.kit/planning/SPEC.md`, and records the intake.
+2. `to-plan` writes the roadmap and phase context/plans, then records one story per phase.
+3. `work` executes the active phase wave-by-wave and records the run plus trace evidence.
+4. `check` gates each completed phase with tests, review, proof scoring, and a verdict.
+5. `git` commits or ships clean work; `handoff` records continuity when the session pauses or transfers.
+
+Use `/interview` before locking or planning when the intent needs structured clarification.
+
+| Skill | Human-readable artifact | Durable harness record |
+| :--- | :--- | :--- |
+| `brainstorm` | `SPEC.md` | intake |
+| `to-plan` | `ROADMAP.md` + phase plans | story |
+| `work` | `runs/work/*.md` | run + traces |
+| `check` | `reports/check/*.md` | proof + verdict |
+| `handoff` | `HANDOFF.md` | handoff |
+| `watzup` | console recap | resume snapshot |
+
+### Small, bounded work
+
+```text
+/work simple <concrete task>
+```
+
+Use simple mode only for a known subsystem within five files and roughly 100 changed lines. It skips phase planning and deliberately does not create phase-bound database run/check rows; run a lightweight verification or `/check` when the change warrants it.
+
+### Resume by readiness
+
+```text
+/watzup
+```
+
+`watzup` is read-only. It renders `zharness resume --json`, checks branch and artifact continuity, then recommends one next action: initialize or import, recover drift, continue work, run the gate, or commit. The recommendation follows readiness instead of assuming the next step.
+
+### Adopt a legacy project
+
+For a project that already has markdown-only `.kit/` history:
+
+```bash
 zharness init --json
 zharness import --json
 zharness query state --json
+zharness validate --json
+zharness audit --json
 ```
 
-Full install/import/validate/rollback walkthrough, proven on this repo's own real history: [`docs/workflow-harness/migration.md`](docs/workflow-harness/migration.md). Pilot evidence and go/no-go verdict: [`skills/workflow/README.md`](skills/workflow/README.md#pilot-evidence--gono-go).
+Do not use `import` for a new project. Full migration and rollback guidance: [`docs/workflow-harness/migration.md`](docs/workflow-harness/migration.md).
+
+### Harness implementation model
+
+The six spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) are thin triggers. They version-gate on `zharness`, ensure generated docs exist, then follow the matching canonical playbook under `.kit/docs/playbooks/`. `interview` and `git` remain sidecars rather than harness entity owners.
+
+See [`skills/workflow/README.md`](skills/workflow/README.md) for the four-layer concept and [`docs/workflow-harness/`](docs/workflow-harness/) for migration notes and pilot evidence.
 
 ## Local Development
 
