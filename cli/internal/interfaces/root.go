@@ -34,6 +34,7 @@ func NewRootCmd(version string) *cobra.Command {
 	root.PersistentFlags().BoolVar(&jsonOutput, "json", false, "emit machine-readable JSON output")
 
 	root.AddCommand(newIDCmd())
+	root.AddCommand(newScaffoldCmd())
 	root.AddCommand(newInitCmd(version))
 	root.AddCommand(newMigrateCmd())
 	root.AddCommand(newImportCmd())

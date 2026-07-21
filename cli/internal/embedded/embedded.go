@@ -13,6 +13,11 @@ import (
 // and playbooks/*.md, rooted at cli/docs/embedded.
 var FS = docsembedded.FS
 
+// Templates is the embedded artifact-skeleton set (run/check/handoff/spec)
+// emitted on demand by `zharness scaffold`. It is deliberately separate
+// from FS so it is never walked into the .kit/docs projection at init.
+var Templates = docsembedded.Templates
+
 // Manifest lists every embedded doc path alongside the docs_version stamp
 // identifying which CLI build produced them.
 type Manifest struct {

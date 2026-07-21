@@ -1,7 +1,7 @@
 ---
-id: 01KY1CFJS2GZ94VACCVDPP63PA
+id: 01KY2MR98ZAVYC287H3ZD85TKQ
 type: handoff
-phase: write-boundary
+phase: slim-playbooks-S1
 lane: high-risk
 run_id: 01KY1BD7D5P2PQTCRYDP5KJKPC
 check_id: 01KY1CD8MSWR9FYR9EYVXG1V3W
@@ -11,107 +11,92 @@ session-date: 2026-07-21
 branch: master
 status: in-progress
 continuity-mode: full-harness
-active-phase: write-boundary
-last-updated: 2026-07-21 10:52
+active-phase: slim-playbooks-S1 (informal — not a harness story; harness current_phase still reads write-boundary/planned)
+last-updated: 2026-07-21 22:29
 ---
 
 # Session Handoff — master
 
 ## Current State
 
-**Branch**: `master` (up to date with origin/master)
-**Status**: in-progress — write-boundary (Phase 1 of 4) implemented and check-gated APPROVED; 3 phases remain
-**Continuity Mode**: full-harness (SPEC + ROADMAP + 4× CONTEXT/PLAN + stories + RUN + CHECK all present)
-**Active Phase**: `write-boundary` (implementation + gate done — harness `current_phase` still reads `planned`, review on next resume)
-**Last Commit**: 0106cf0 — chore(harness): reset workflow state (this session's changes are still uncommitted)
+**Branch**: `master` (up to date with origin/master; this session's work all uncommitted)
+**Status**: in-progress — Track A "Slim Playbooks", phase S1 wave W1 done + compile/test/smoke-verified; W2/W3 remain
+**Continuity Mode**: full-harness (SPEC/ROADMAP/phase chain from the Harness Subtraction Pass present; the slim work rides on top informally, no harness story row)
+**Active Work**: `slim-playbooks` initiative, `S1` (scaffold command). Note: harness `resume` still shows `current_phase: write-boundary / planned` — a pre-existing status-transition gap, not this session's concern.
+**Last Commit**: d675def — docs(workflow-harness): readme-workflow-refresh follow-up polish (this session's changes are NOT yet committed)
 
-**Working Tree** (all uncommitted):
-- 0 staged
-- 14 modified/added under `cli/` (write-boundary implementation) + 3 modified pre-existing (prior initiative): `README.md`, `assets/spec-plan-workflow.svg`, `docs/workflow-harness/migration.md`
-- untracked: this session's `.kit/planning/**`, `.kit/reports/{audit,check}/**`, `.kit/runs/work/**`, 23 new changesets; plus pre-existing `assets/workflow-usage-flow.html` and prior readme-refresh run/check reports
+**Working Tree** (all uncommitted): 0 staged, 5 modified, 11 untracked
 
 ## What We're Building
 
-**Initiative: Harness Subtraction Pass** (`.kit/planning/SPEC.md`, lane high-risk, intake `01KY1AG58T7HEV3JYKGCBWTQMY`). A subtraction/refactor pass on the harness itself, driven by the architecture audit (`.kit/reports/audit/20260721-harness-architecture-audit.md`). Three big problems, four linear phases:
-1. **write-boundary** — ✅ DONE. Added `zharness run create` + made `check record` set `latest_check_id`, so no playbook hand-authors changeset JSONL (closes the audit's #1 "inverted value proposition"). Check gate: **APPROVED**.
-2. **dead-surface-removal** — delete unused `decision`/`backlog`/`tool`/`propose`/`score-context` + drop tables (schema 2→3).
-3. **scoring-removal** — delete `score-trace` tier + `entropy_score`, keep the lane×proof matrix as the verdict.
-4. **single-source-playbooks** — `.kit/docs/` becomes a pure projection of the Go embed + drift-guard test.
+**Track A — Slim Playbooks** (plan: `.kit/plans/2026-07-21-slim-playbooks/PLAN.md`). Un-defers architecture-audit §5/§6/§11 (per-run playbook prose is ~13–16k tokens/pass). Driven by user feedback 2026-07-21: sessions too long / too many tool calls / too many tokens. Interview locked 4 decisions → move the fat (templates, watzup format, work routing) out of per-invocation markdown into the Go binary:
+- **S1 scaffold** — `zharness scaffold <run|check|handoff|spec>` emits artifact skeletons; playbooks call it instead of carrying ~200 lines of inline template prose.
+- **S2 next** — `zharness next` returns mode + active phase + stop message; work.md drops ~54 lines of routing tables.
+- **S3 resume-render** — `zharness resume` emits the formatted recap; watzup drops its Output Contract + Examples (~130–150 lines).
+- Simple mode kept, its FK carve-out prose compressed.
 
-Deferred (NOT this initiative): dropping SQLite, memory unification, playbook shrink, `interview`→`brainstorm`. Captured in SPEC "Deferred Ideas".
+Also completed this session (separate, Track B): `rules/execution-discipline.md` — a lean global guardrail (tool-call economy, check-in cadence, stop-don't-guess), installed to `~/.claude/rules/`.
 
 ## Continuity Anchors
 
-**Latest Cook Run**: `.kit/runs/work/20260721-1027-write-boundary.md` (id `01KY1BD7D5P2PQTCRYDP5KJKPC`, status: passed, all 5 tasks across 3 waves DONE)
-**Latest Check Verdict**: APPROVED (`.kit/reports/check/20260721-1044-write-boundary.md`, id `01KY1CD8MSWR9FYR9EYVXG1V3W`)
-**Proof / Drift Notes**:
-- `zharness resume --json` drift: empty ✓
-- `zharness audit --json` after check record: `pointer_drift` empty ✓; remaining `contract_violations`/`entropy_score: 35` are pre-existing/known gaps unrelated to this phase (documented in the check report)
-- current_phase = write-boundary, but its story/phase status in harness state still reads `planned` despite RUN+CHECK both closed — this looks like a status-transition gap in `work`/`check` (or `to-plan`'s story lifecycle) that wasn't part of this phase's scope; flagged for review, not fixed this session
+**Latest harness RUN/CHECK**: write-boundary run `01KY1BD7D5P2PQTCRYDP5KJKPC` + check `01KY1CD8MSWR9FYR9EYVXG1V3W` (APPROVED). This session's W1 was built directly (not through `work`), so it has no RUN row of its own.
+**State-readiness check this session**: `.kit/reports/check/20260721-2029-state-readiness-audit.md` (verdict APPROVE-with-requests, drove the deploy).
+**Proof / Drift Notes**: `zharness resume --json` drift is now **empty** ✓ (deploy replayed the 23 pending changesets). `audit --json` residual findings (`plan_id: none`, readme-refresh link, entropy_score 100 from historical unlinked_proofs) are all pre-existing/known.
 
 ## Progress This Session
 
 ### Completed ✓
-- Ran `work full` on **write-boundary**, wave-by-wave (3 waves, 5 tasks T1-T5), all verified:
-  - T1: `zharness run create` command (new `cli/internal/application/run_create.go`, `cli/internal/interfaces/run.go`)
-  - T2: `check record` now atomically sets `meta.latest_check_id` (`cli/internal/application/check_record.go`)
-  - T3/T4: rewired `work.md`/`check.md` embeds to call the new commands instead of hand-authoring changeset JSONL; re-scaffolded `.kit/docs/playbooks/` from the embeds (byte-verified)
-  - T5: replay-safety integration test (`run_create_replay_test.go`) + fixed 2 pre-existing embedded-doc tests that locked in the old hand-authored-changeset phrasing
-- Ran `check full` gate (high-risk lane): found and fixed a documentation gap (`cli/docs/CONTRACT.md` had no `run create` section) as part of Step 3, then ran the full Harness Gate Flow + Phase 1/2 review → **verdict APPROVED**
-- Recorded the verdict via `zharness check record` — confirmed `meta.latest_check_id` set atomically and `audit`'s `pointer_drift` cleared
-- Recorded this handoff via `zharness handoff record` (id `01KY1CFJS2GZ94VACCVDPP63PA`), anchored to the write-boundary RUN + CHECK
+- **Track B rule**: wrote + installed `rules/execution-discipline.md` (repo + `~/.claude/rules/`), updated CLAUDE.md rules list.
+- **Audit + interview + plan** for Track A slim: measured all 6 playbooks (1577 lines) + references (1449), locked 4 move-to-CLI/keep decisions, wrote `.kit/plans/2026-07-21-slim-playbooks/PLAN.md`.
+- **Deploy Phase 1** (prerequisite, verified): rebuilt+installed `zharness` (dev build, now has `run create`); replayed 23 pending changesets → 0 pending; re-scaffolded `.kit/docs` → 0 drift; write-boundary stale-pointers cleared.
+- **S1-W1 — scaffold command** (compile + test + smoke all green):
+  - `cli/docs/embedded/templates/{run,check,handoff,spec}.md` — skeletons copied verbatim from the playbooks.
+  - `cli/docs/embedded/embed.go` + `internal/embedded/embedded.go`: separate `Templates` embed.FS (NOT walked into the manifest / `.kit/docs` projection — deliberate).
+  - `cli/internal/application/scaffold.go` + `interfaces/scaffold.go` + registered in `root.go`.
+  - `cli/internal/application/scaffold_test.go` (5 unit tests) + extended `internal/embedded/manifest_disk_test.go` to cover the second embed.
+  - `go build`/`go vet`/`go test ./...` all pass; CLI smoke: `scaffold` emits, refuses overwrite (`file_exists`), rejects unknown kind (`unknown_kind`).
+  - **Additive/dormant**: no playbook calls it yet (that's W2) — repo fully works, nothing depends on it.
 
 ### In Progress ⏳
-- None — write-boundary is fully done and gated; nothing left uncommitted-but-incomplete
+- None mid-task. W1 is a clean stopping point. Next action (below) is a fresh wave.
 
 ### Not Started
-- Phases 2-4 (dead-surface-removal, scoring-removal, single-source-playbooks)
-- Committing this session's changes (deferred to user — see Next Steps)
+- S1-W2, S1-W3, S2, S3 (see Next Steps).
+- Committing this session's work (user asked: handoff → commit → then continue W2).
 
 ## Key Decisions
 
-1. **Scope = subtraction slice A + scoring removal** (not full core rework): low risk, no cross-deps, fastest leverage. Rejected Option C (drop SQLite + unify memory).
-2. **Keep SQLite, add write-commands**: conservative boundary fix. Rejected dropping the DB / in-memory fold (deferred).
-3. **Remove scoring, keep the matrix**: score-trace/entropy are deterministic-but-meaningless (measure string length / finding counts). Rejected enriching the trace schema.
-4. **Linear phase order**: Phases 2 & 3 both edit `score.go`/`audit.go`; Phase 4 depends on final playbook text. Linear avoids same-file conflicts.
-5. **Archived (not deleted)** the prior initiative's planning artifacts — reversible.
-6. **`check record` sets `latest_check_id` by default**, no `--set-latest` flag (resolved this session — the plan's open question leaned default, kept it simple per Karpathy Simplicity First).
-7. **`run create` mints its own ULID** (doesn't accept a pre-minted id) — changed `work.md`'s step-2 ordering from "mint id → write artifact → register" to "register (mints id) → write artifact using the returned id" for full mode. Small deviation from the plan's literal wording, necessary consequence of the command's actual shape.
+1. **Scope A behavioral rule first, then structural slim** — user chose Track B rule (done) then Track A slim.
+2. **Move templates/format/routing to CLI, keep simple mode** — 4 interview decisions, all "recommended" option.
+3. **`Templates` as a separate embed.FS** — so scaffold skeletons are emitted on demand only, never projected into `.kit/docs` at init; keeps `init`/manifest/drift model untouched.
+4. **W1 built outside the harness `work` flow** — user chose "build S1 directly" over "formalize into harness (to-plan)", so no story/run row for S1.
+5. **Deploy Phase 1 before building S1** — the new playbook CLI calls need a current installed binary; done first.
 
 ## Blockers & Issues
 
-None currently. One remaining open question from planning (non-blocking — decide when Phase 2 reaches it):
-- Drop dead tables in `migrations.go` (schema bump) vs leave tables, delete commands only? (Lean: drop, guarded by replay-safety test)
-
-One non-blocking observation (see Continuity Anchors): write-boundary's phase/story status in harness state didn't auto-transition off `planned` despite RUN+CHECK both closing — worth a quick look next session, not a phase blocker.
+None. One nuance to carry: harness `current_phase` reads `write-boundary/planned` while actual work is `slim-playbooks`; pre-existing status-transition gap, not blocking.
 
 ## Technical Context
 
-**Approach**: dogfood the harness's own workflow to improve the harness. Each phase has grep-verify hard-stops (Phase 2) and invariant guards (Phase 3: gate pass/fail must not change).
+**Approach**: dogfood the harness to slim the harness. Each S-phase = one CLI command + playbook rewrite, independently mergeable, no schema change.
 
 **Key Files**:
-- `.kit/planning/SPEC.md` — locked spec
-- `.kit/planning/ROADMAP.md` — 4-phase map
-- `.kit/planning/phases/*/` — CONTEXT (boundaries) + PLAN (waves w/ verification cmds)
-- `.kit/reports/audit/20260721-harness-architecture-audit.md` — source of the problems
-- `.kit/runs/work/20260721-1027-write-boundary.md` — write-boundary's full task log
-- `.kit/reports/check/20260721-1044-write-boundary.md` — write-boundary's gate report
-- `cli/internal/application/{run_create,check_record}.go` — Phase 1's new/changed write-owning commands
-- `cli/internal/infrastructure/changeset.go`, `application/{score,audit}.go` — main edit targets for Phases 2-3
-
-**Dependencies**: `zharness 0.4.1` (gate passed, dev build used this session); Go 1.25 module in `cli/`
+- `.kit/plans/2026-07-21-slim-playbooks/PLAN.md` — the full plan (command shapes, phases, sequencing, rollback)
+- `cli/docs/embedded/templates/*.md` — the 4 skeletons W2 will wire the playbooks to
+- `cli/internal/application/scaffold.go`, `interfaces/scaffold.go` — W1's command
+- `cli/docs/embedded/playbooks/{work,check,handoff,brainstorm}.md` — W2's edit targets (strip inline template blocks, replace with a `zharness scaffold` call + terse rules note)
 
 ## Next Steps
 
-1. **→ START HERE: decide whether/how to commit this session's changes** — write-boundary's `cli/` diff (14 files) + planning/run/check/handoff artifacts under `.kit/` are ready; the 3 lingering pre-existing file changes (`README.md`, `assets/spec-plan-workflow.svg`, `docs/workflow-harness/migration.md`) belong to a prior, unrelated initiative — consider separating them into their own commit rather than bundling.
-2. **`brainstorm`/`to-plan` already locked Phase 2 (dead-surface-removal)** — when ready, `work full` on it same as this session (read `.kit/planning/phases/dead-surface-removal/*-PLAN.md`).
-3. **Look into the phase-status-not-transitioning observation** above before it compounds across more phases.
+1. **→ START HERE: commit this session's work**, then **S1-W2** — in `cli/docs/embedded/playbooks/{work,check,handoff,brainstorm}.md`, replace each inline ```markdown template block``` with a `zharness scaffold <kind> --path {path} --json` call + a 2-3 line "fill these sections" note; re-scaffold `.kit/docs` and byte-verify against the embed.
+2. **S1-W3** — run the `check` gate on the S1 diff (high-risk lane: unit + integration + command-output + manual-check), record the verdict.
+3. **S2** — build `zharness next` (folds `query state`/`phases` routing) + strip work.md Mode-Resolution/Detection tables; port every routing outcome into `next`'s tests (table→test parity invariant).
+4. **S3** — add `zharness resume` text rendering (harness-state block; git/WIP stays agent-gathered) + strip watzup Output Contract + all Examples.
 
 ## Notes
 
-- Workflow skills (brainstorm/to-plan/work/check/handoff) are NOT registered as invocable Skills in this environment — they were executed by following the embedded playbooks under `.kit/docs/playbooks/` manually. Next session: same approach (read playbook, run `zharness`).
-- The lingering `README.md`/`migration.md`/`spec-plan-workflow.svg`/`workflow-usage-flow.html` changes predate this session (prior readme-workflow-refresh work); do not assume they belong to this initiative.
+Sequencing recommendation (from the plan): fold the existing Harness Subtraction Pass Phase 3 (scoring-removal, edits check.md) in before/with the check.md slim to avoid double-editing; run Phase 4 (single-source-playbooks) LAST so it projects the final slim text.
 
 ---
 
-*Generated by handoff on 2026-07-21 10:52*
+*Generated by handoff on 2026-07-21 22:29*
