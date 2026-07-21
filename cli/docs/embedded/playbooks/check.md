@@ -262,61 +262,7 @@ If found, apply the doc update as `safe_auto` (when the invariant is clear from 
 
 ### Persisted Report — `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md`
 
-Write this when harness artifacts are present or a persisted report is requested:
-
-```markdown
----
-id: {ULID}
-type: check
-phase: {phase-slug} | none
-lane: {tiny|normal|high-risk}
-mode: {full|simple}
-run_id: {ULID of the RUN this check gates}
-proof_links: [{command, output_ref, artifact_path}, ...]
-created: {YYYY-MM-DD}
-updated: {YYYY-MM-DD}
----
-
-# CHECK REPORT
-
-Run ID: check-YYYYMMDD-HHmm-{slug}
-Scope: gate | review | full
-Artifact Alignment: aligned | drift | skipped
-Review Verdict: APPROVED | APPROVE with requests | REQUEST CHANGES
-Phase: {phase-slug} | none
-Spec: .kit/planning/SPEC.md | none
-Plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
-Cook Run: .kit/runs/work/{file}.md | none
-Created At: YYYY-MM-DD HH:mm
-
-## Gate Evidence
-- tests: {command} → pass | fail | none
-- types: {command} → pass | fail | none
-- lint: {command} → pass | fail | none
-- build: {command} → pass | fail | none
-
-## Artifact Alignment
-- status: aligned | drift | skipped
-- notes:
-  - spec coverage / gap
-  - boundary compliance / drift
-  - proof trail status
-
-## Findings
-### Critical
-- none | finding
-
-### Major
-- none | finding
-
-### Minor / Suggestions
-- none | finding
-
-## Next Action
-- rerun `work`
-- refresh `to-plan phase {slug}`
-- ready for PR
-```
+Write this when harness artifacts are present or a persisted report is requested. Emit the skeleton with `zharness scaffold check --path {report path} --json`, then fill it — the CLI carries the full template so it no longer lives in this playbook. Frontmatter: `type: check`, `phase`, `lane`, `mode`, `run_id` (the RUN this check gates), `proof_links` (each `{command, output_ref, artifact_path}`), `created`/`updated`. Body: Gate Evidence (tests/types/lint/build → pass|fail|none), Artifact Alignment (status + notes), Findings (Critical/Major/Minor), Next Action.
 
 Rules: create one file per check run; do not overwrite older results from the same day unless the exact timestamp path is reused intentionally. `run_id` links to the RUN this check gates; each `proof_links` entry is `{command, output_ref, artifact_path}` — `command` is the exact verification command run, `output_ref` is where its output is recorded (inline in the report or a path), `artifact_path` is the file the command verified. `mode` is inherited verbatim from the gated RUN artifact's own `mode` field — it decides whether Step 4 below calls `check record` or skips it.
 
@@ -339,6 +285,7 @@ harness_verdict:    zharness check record id / not recorded: [why]
 ## Command Reference
 
 - `zharness --version` — version gate
+- `zharness scaffold check --path {report path} --json` — emit the check report skeleton to fill
 - `zharness audit --json` — pointer drift / contract violations
 - `zharness score-trace {id} --json` — trace evidence tier, once per `trace_ids` entry
 - `zharness check record --verdict {...} --run-id {...} --proof-links '[...]' --json` — records the verdict and sets `meta.latest_check_id` atomically

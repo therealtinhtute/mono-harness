@@ -71,7 +71,7 @@ State the blocker plainly, then the exact recovery command:
 2. **Create the run artifact** — run `zharness init` first if no db exists yet (idempotent). Compute the run file path `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` (see Artifacts below) before minting an id — it's deterministic and doesn't require the file to exist yet.
    - **Full mode**: register the run in the harness with `zharness run create --slug {phase-slug} --artifact-path {run file path} --json` (add `--plan-id {ULID}` when the phase PLAN has one). The command mints the run ULID itself, returns it as `{"id":"<ULID>"}`, and writes + applies the run-create + `meta.latest_run_id` changeset atomically in one transaction, so `latest_run_id` never lags the run it points to. Save the returned `id` as the **RUN id** — use it exactly in the artifact's `id:` frontmatter and every later `--run-id`/run-row reference. Never invent a placeholder ULID; never hand-author a `.changeset.jsonl` file for this.
    - **Simple mode**: do NOT call `run create` or author a run changeset. Simple mode has no phase and therefore no story, and `runs.story_slug` is a `NOT NULL` foreign key into `stories(slug)` — there is nothing for it to reference, and forcing a write here always fails with a FOREIGN KEY constraint error. Instead run `zharness id --json` to mint the RUN id locally. Skip DB registration entirely; the run artifact file itself (with `mode: simple`) is the durable record, and `validate` treats `mode: simple` RUN artifacts as exempt from phase/plan/DB-registration checks by design (see `CONTRACT.md`). Note the skip inline in the run artifact.
-   - Either way, write the run artifact file at the computed path with `mode: full` or `mode: simple` in the frontmatter matching the resolved mode. In simple mode, the slug comes from the prompt or brainstorm file, and `phase`/`plan_id` are both `none`.
+   - Either way, emit the run artifact skeleton with `zharness scaffold run --path {run file path} --json` and fill it, with `mode: full` or `mode: simple` in the frontmatter matching the resolved mode. In simple mode, the slug comes from the prompt or brainstorm file, and `phase`/`plan_id` are both `none`.
 3. **Preflight drift check** — compare the phase boundary (Allowed/Forbidden Surfaces, task `touches`/`avoid`) against the current working tree and requested scope. If files already changed outside the boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask the user only if the plan is ambiguous about which wave is next.
 5. **Run waves** — for each wave, execute tasks in order; parallelize only when the `-PLAN.md` marks the wave as parallel-safe.
@@ -159,58 +159,7 @@ Rules: write the entry immediately after the task, not batched at phase end; app
 
 ### Run artifact — `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md`
 
-```markdown
----
-id: {ULID}
-type: run
-phase: {phase-slug} | none
-lane: {tiny|normal|high-risk}
-mode: {full|simple}
-plan_id: {ULID of the phase PLAN this run executes} | none
-trace_ids: [{ULID}, ...]
-created: {YYYY-MM-DD}
-updated: {YYYY-MM-DD}
----
-
-# COOK RUN
-
-Run ID: work-YYYYMMDD-HHmm-{slug}
-Mode: full | simple
-Status: running | blocked | passed | aborted
-Spec: .kit/planning/SPEC.md | none
-Roadmap: .kit/planning/ROADMAP.md | none
-Phase: {phase-slug} | none
-Plan: .kit/planning/phases/{phase-slug}/{phase-slug}-PLAN.md | none
-Started At: YYYY-MM-DD HH:mm
-
-## Preflight
-- scope drift: yes | no
-- working tree note
-- required artifacts present: yes | no
-- selected phase / source prompt
-
-## Wave / Task Log
-### Wave 1
-#### T1 — Task name
-- status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
-- changed files:
-  - path
-- verification:
-  - command → pass | fail
-- notes:
-  - concern or blocker detail
-
-## Summary
-- passed tasks
-- blocked tasks
-- unresolved concerns
-
-## Next Recommended Action
-- `check full`
-- `to-plan phase {slug}`
-- `brainstorm refine`
-- `handoff`
-```
+Emit the skeleton with `zharness scaffold run --path {run file path} --json`, then fill it during execution — the CLI carries the full template so it no longer lives in this playbook. Set `id:` to the ULID `run create` returned (full mode) or `zharness id` returned (simple mode). Frontmatter: `type: run`, `phase`, `lane`, `mode`, `plan_id`, `trace_ids` (one ULID appended per completed wave), `created`/`updated`. Body sections: Preflight, Wave/Task Log (per task: status enum, changed files, verification command → pass/fail, notes), Summary, Next Recommended Action.
 
 Rules: one new run file per invocation, never overwrite an older one; every task attempted appears in the log; blocker reasons map to the stop taxonomy; after each wave reaches `DONE`/`DONE_WITH_CONCERNS`, run `zharness trace add ...` and append the returned `id` to the frontmatter `trace_ids` list; `plan_id` links to the phase PLAN this run executes (or the phase's story ULID if no dedicated plan ULID exists), `trace_ids` accumulates one ULID per `trace add` call; `mode` must match the resolved mode from Mode Resolution above — it is what `validate` reads to apply full-mode strictness or the simple-mode carve-out.
 
@@ -221,6 +170,7 @@ Rules: one new run file per invocation, never overwrite an older one; every task
 - `zharness init` — idempotent; run if no db exists yet
 - `zharness query state --json` / `zharness query phases --json` — first lookup index for context and post-run/wave state checks; always verify the pointed files before acting
 - `zharness run create --slug {phase-slug} --artifact-path {run file path} [--plan-id {ULID}] --json` — full-mode only; registers the run and points `meta.latest_run_id` at it atomically
+- `zharness scaffold run --path {run file path} --json` — emit the run artifact skeleton (both modes) to fill during execution
 - `zharness trace add --wave {N} --summary "{one-line wave outcome}" --run-id {run id} --json` — fired once per completed wave
 
 ## Exit / Handoff Conditions

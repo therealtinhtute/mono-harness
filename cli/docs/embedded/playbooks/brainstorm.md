@@ -60,7 +60,7 @@ Every session must include option exploration before any output. In `lock-from-f
 6. **Clarify gaps** (lock modes only) — apply the Clarification Rubric below until goal, scope, constraints, acceptance are lockable.
 7. **Recommend or lock**:
    - `explore`: pick one option with rationale and rejected alternatives, then write the Explore report below to `.kit/reports/brainstorm/{YYYYMMDD}-{slug}.md`.
-   - lock modes: run `zharness id --json` first; save the returned `id` as the SPEC's own frontmatter `id` (distinct from `intake_id`) and never invent a placeholder. Write SPEC via the SPEC Template below; capture rejected alternatives in `Key Decisions`; include classification metadata (step 3) in the header. Immediately after writing SPEC.md: run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` using the step-3 classification; write that separate returned `id` into SPEC.md's frontmatter as `intake_id`.
+   - lock modes: run `zharness id --json` first; save the returned `id` as the SPEC's own frontmatter `id` (distinct from `intake_id`) and never invent a placeholder. Emit the SPEC skeleton via `zharness scaffold spec --path .kit/planning/SPEC.md --json` and fill it (see Artifacts below); capture rejected alternatives in `Key Decisions`; include classification metadata (step 3) in the header. Immediately after writing SPEC.md: run `zharness init` if no db exists yet (idempotent — `--json` reports `status: "exists"` when already initialized), then `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` using the step-3 classification; write that separate returned `id` into SPEC.md's frontmatter as `intake_id`.
 8. **Self-review** (lock modes only) — apply the Lock Checklist below. Fix issues inline.
 9. **User review gate** (lock modes only) — show the SPEC.md path and a concise decision summary. If the original request carries explicit execution intent, self-review found no unresolved product decision, and the next step is neither destructive nor outward-facing, that original intent satisfies this gate: continue to the declared downstream stage without a second procedural response. Otherwise ask the user to approve before suggesting `to-plan`; if changes are requested, edit and re-run step 8.
 10. **Hand off** — proceed to `to-plan` after an approved lock (including qualifying explicit execution intent); suggest `refine` if exploration changed scope; suggest `work simple` only when the scoped change is intentionally direct and planning overhead is unnecessary.
@@ -117,86 +117,7 @@ Anti-patterns: skipping the placeholder scan because "the spec looks complete" (
 
 ### SPEC.md — `.kit/planning/SPEC.md`
 
-```markdown
----
-id: {ULID}
-type: spec
-phase: none
-lane: {tiny|normal|high-risk}
-intake_id: {ULID returned by `zharness intake` at SPEC lock}
-created: {YYYY-MM-DD}
-updated: {YYYY-MM-DD}
----
-
-# SPEC: {title}
-
-Status: draft | locked
-Input Type: new-spec | spec-slice | change-request | new-initiative | maintenance | harness-improvement
-Lane: tiny | normal | high-risk
-Risk Flags: auth, authorization, data-model, audit-security, external-systems, public-contract, cross-platform, existing-behavior, weak-proof, multi-domain
-Affected Surfaces: api, browser, mobile, desktop, worker, db, provider, docs
-Downstream: to-plan full | to-plan phase | work simple | none
-Updated At: YYYY-MM-DD
-
-## Source Mode
-idea | files | refine
-
-## Source Inputs
-- user prompt summary
-- @file references
-- prior spec / decision if relevant
-
-## Scenario
-project bootstrap | feature bootstrap | module bootstrap | refine existing spec
-
-## Goal
-Short statement of what is being built and why.
-
-## Users / Actors
-Who this work serves or affects.
-
-## Requirements
-1. Requirement one
-2. Requirement two
-3. Requirement three
-
-## Boundaries
-### In Scope
-- explicit included items
-
-### Out of Scope
-- explicit excluded items
-
-## Constraints
-Technical, product, timeline, policy, or dependency constraints.
-
-## Acceptance Criteria
-- concrete checks proving the spec is good enough
-
-## Validation Expectations
-- expected proof shape for downstream planning/execution
-- unit / integration / e2e / platform expectations if already knowable
-
-## Dependencies / Assumptions
-- known dependencies
-- assumptions made during clarification
-
-## Key Decisions
-- chosen path and rationale
-- rejected alternative + why not chosen
-
-## Open Questions
-- unresolved but visible gaps
-
-## Deferred Ideas
-- intentionally excluded future ideas
-
-## Ambiguity Report
-- goal clarity
-- scope clarity
-- constraints clarity
-- acceptance clarity
-```
+Emit the skeleton with `zharness scaffold spec --path .kit/planning/SPEC.md --json`, then fill it — the CLI carries the full template so it no longer lives in this playbook. Frontmatter: `id` (this SPEC's own ULID), `type: spec`, `phase: none`, `lane`, `intake_id`, `created`/`updated`. Body sections: header block (Status, Input Type, Lane, Risk Flags, Affected Surfaces, Downstream, Updated At), Source Mode, Source Inputs, Scenario, Goal, Users / Actors, Requirements, Boundaries (In/Out of Scope), Constraints, Acceptance Criteria, Validation Expectations, Dependencies / Assumptions, Key Decisions, Open Questions, Deferred Ideas, Ambiguity Report.
 
 Rules: requirements numbered and falsifiable; boundaries explicit; acceptance criteria concrete enough for planning; open questions visible, not hidden in prose; risk flags describe why the work is sensitive, not repeat the whole spec; downstream names the next intended step; frontmatter `id` is this SPEC's ULID; `phase` is always `none` (a SPEC precedes phase decomposition — `to-plan` assigns phases); frontmatter `lane` mirrors the body's `Lane:` field, keep both in sync; frontmatter `intake_id` is the ULID `zharness intake` returns at the SPEC-lock step, absent only if the version gate blocked this playbook.
 
@@ -222,6 +143,7 @@ Body order: recommendation first, problem statement, evaluated approaches with p
 
 - `zharness --version` — version gate
 - `zharness id --json` — mint the SPEC artifact's own ULID before writing frontmatter; do not reuse `intake_id`
+- `zharness scaffold spec --path .kit/planning/SPEC.md --json` — emit the SPEC skeleton to fill
 - `zharness init` — idempotent; run before the first `intake` if no db exists
 - `zharness intake --type {input type} --summary "{one-line summary}" --lane {lane} --json` — fired once, at the SPEC-lock step, after self-review passes; returned `id` goes into SPEC.md's frontmatter `intake_id`
 
