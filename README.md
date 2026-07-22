@@ -160,7 +160,7 @@ cd /path/to/project
 zharness init --json
 ```
 
-`init` creates `.kit/` when needed, initializes the local database, scaffolds missing `.kit/docs/` playbooks, and adds the generated harness paths to `.gitignore` as applicable.
+`init` creates `.kit/` when needed, initializes the local database, scaffolds missing `.kit/docs/` playbooks, and adds the generated harness paths to `.gitignore` as applicable. Playbooks are edited in `cli/docs/embedded/playbooks/` only — `.kit/docs/playbooks/` is a generated projection, guarded by a test that fails on any divergence.
 
 ### Full work: lock, plan, execute, prove
 

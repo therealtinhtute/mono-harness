@@ -26,7 +26,7 @@ bash scripts/install-zharness.sh
 zharness init --json
 ```
 
-`zharness init` creates `.kit/` when needed, creates `harness.db`, and scaffolds missing `.kit/docs/playbooks/` from the CLI's embedded docs. Re-running plain `init` is idempotent and preserves existing generated docs; use `zharness init --refresh-docs --json` when those docs should be replaced with the embedded canonical versions. Every spine skill runs `init` itself when `.kit/docs/` is missing, so a first-time `/brainstorm` or `/work` invocation can self-scaffold. The legacy checklist below applies only when a project already has pre-harness markdown (`workflow-state.yml`, hand-written `.kit/planning/**`) to import.
+`zharness init` creates `.kit/` when needed, creates `harness.db`, and scaffolds missing `.kit/docs/playbooks/` from the CLI's embedded docs. Re-running plain `init` is idempotent and preserves existing generated docs; use `zharness init --refresh-docs --json` when those docs should be replaced with the embedded canonical versions. Every spine skill runs `init` itself when `.kit/docs/` is missing, so a first-time `/brainstorm` or `/work` invocation can self-scaffold. Playbooks are edited in `cli/docs/embedded/playbooks/` only; `.kit/docs/playbooks/` is generated output, guarded by a test that fails on divergence — never hand-edit the scaffold. The legacy checklist below applies only when a project already has pre-harness markdown (`workflow-state.yml`, hand-written `.kit/planning/**`) to import.
 
 ## Legacy `.kit/` checklist (adopting zharness on a project with existing markdown-only artifacts)
 
