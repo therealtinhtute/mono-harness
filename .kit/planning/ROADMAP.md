@@ -67,6 +67,5 @@
 - The drift test must compare against the embed as the single source of truth, not freeze a stale `.kit/docs/` copy.
 
 ## Next Steps
-- **write-boundary is done** (see Phase 1 Status above); `work full phase dead-surface-removal` is next.
-- `check full` gates each phase (high-risk proof matrix).
-- `git` / `handoff` to wrap up.
+- **All 4 phases are done** — write-boundary (`32cb60c`), dead-surface-removal, scoring-removal (`2d6e2fc`), single-source-playbooks (`7ee007f`) — each gated APPROVED and committed/pushed. The Harness Subtraction Pass is closed; no further phase is queued.
+- Bookkeeping gap (pre-existing, not yet fixed): `stories.status` in the DB still shows `planned` for all 4 phases and `zharness query state`'s `current_phase` still reads `write-boundary` — there is no CLI command to transition story status, so this drift is expected, not a sign of unfinished work.
