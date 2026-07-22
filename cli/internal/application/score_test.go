@@ -74,29 +74,3 @@ func TestScoreTraceUnknownID(t *testing.T) {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_trace_id}", err)
 	}
 }
-
-func TestScoreContext(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
-	id, _, err := CreateTrace(db, changesetDir, 1, "did enough stuff", runID)
-	if err != nil {
-		t.Fatalf("CreateTrace: %v", err)
-	}
-
-	score, err := ScoreContext(db, id)
-	if err != nil {
-		t.Fatalf("ScoreContext: %v", err)
-	}
-	if score.Score != 2 {
-		t.Fatalf("score = %d, want 2 (summary present + linked)", score.Score)
-	}
-}
-
-func TestScoreContextUnknownID(t *testing.T) {
-	db, _ := freshDB(t)
-	_, err := ScoreContext(db, "01HZZZZZZZZZZZZZZZZZZZZZZZ")
-	ve, ok := err.(*domain.ValidationError)
-	if !ok || ve.Code != "unknown_trace_id" {
-		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_trace_id}", err)
-	}
-}

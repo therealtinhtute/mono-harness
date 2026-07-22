@@ -30,9 +30,6 @@ var entityTables = map[string]string{
 	"check":        "checks",
 	"handoff":      "handoffs",
 	"intake":       "intakes",
-	"decision":     "decisions",
-	"backlog":      "backlog",
-	"tool":         "tools",
 	"intervention": "interventions",
 	"trace":        "traces",
 }
@@ -49,9 +46,6 @@ var entityColumns = map[string]map[string]bool{
 	"checks":        {"run_id": true, "verdict": true, "proof_links": true, "artifact_path": true, "created_at": true},
 	"handoffs":      {"run_id": true, "check_id": true, "anchors": true, "created_at": true},
 	"intakes":       {"type": true, "summary": true, "lane": true, "created_at": true},
-	"decisions":     {"summary": true, "rationale": true, "rejected": true, "created_at": true},
-	"backlog":       {"summary": true, "priority": true, "created_at": true},
-	"tools":         {"name": true, "purpose": true, "created_at": true},
 	"interventions": {"verdict_id": true, "reason": true, "created_at": true},
 	"traces":        {"run_id": true, "wave": true, "summary": true, "created_at": true},
 }

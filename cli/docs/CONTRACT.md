@@ -66,7 +66,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ---
 
-## Domain — 7 ported (Phase 4 — cli-domain)
+## Domain — 4 ported (Phase 4 — cli-domain)
 
 ### `intake`
 - Args: `--type {new-spec|spec-slice|change-request|new-initiative|maintenance|harness-improvement} --summary "..." --lane {tiny|normal|high-risk}`
@@ -79,24 +79,6 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 - `--json`: `{"id": "ulid", "slug": "...", "status": "planned"}`
 - Errors: `duplicate_slug` (1, story already exists for this phase), `unknown_dependency` (1)
 - Consumer: `to-plan` (one story per roadmap phase, slug = phase slug — locked decision, Phase 1 gap-matrix)
-
-### `decision`
-- Args: `--summary "..." --rationale "..." [--rejected "..."]`
-- `--json`: `{"id": "ulid"}`
-- Errors: `missing_required_field` (1)
-- Consumer: none mandated inline — general-purpose, available for ad hoc recording outside the fixed skill flows (ported behavior, not adopted into a specific skill step)
-
-### `backlog`
-- Args: `--summary "..." [--priority tiny|normal|high-risk]`
-- `--json`: `{"id": "ulid"}`
-- Errors: `missing_required_field` (1)
-- Consumer: none mandated inline — general-purpose (same as `decision`)
-
-### `tool`
-- Args: `--name "..." --purpose "..."`
-- `--json`: `{"id": "ulid"}`
-- Errors: `missing_required_field` (1)
-- Consumer: none mandated inline — general-purpose (records tool/capability usage, ported behavior)
 
 ### `intervention`
 - Args: `--verdict-id {ulid} --reason "..."`
@@ -155,23 +137,11 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 - Errors: `unknown_trace_id` (1)
 - Consumer: `check` (wired into gate flow: `audit` + `score-trace` → matrix evaluation → `check record`)
 
-### `score-context <trace-id>`
-- Args: trace ULID
-- `--json`: `{"score": N, "reasons": ["..."]}`
-- Errors: `unknown_trace_id` (1)
-- Consumer: **reserved — documented only**, not adopted into any skill this initiative (validation-gate Forbidden Surfaces)
-
 ### `audit`
 - Args: none
 - `--json`: `{"pointer_drift": [...], "contract_violations": [...], "unlinked_proofs": [...], "entropy_score": N}`, stable ordering (determinism requirement)
 - Errors: `db_unreadable` (2)
 - Consumer: `check` (wired into gate flow)
-
-### `propose`
-- Args: none
-- `--json`: `{"proposals": [{"pattern": "...", "suggestion": "..."}]}`
-- Errors: `db_unreadable` (2)
-- Consumer: **reserved — documented only**, not adopted into any skill this initiative (validation-gate Forbidden Surfaces)
 
 ---
 

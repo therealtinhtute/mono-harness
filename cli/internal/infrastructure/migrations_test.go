@@ -6,18 +6,15 @@ import (
 	"testing"
 )
 
-// schemaMDTables is the frozen 11-table list from cli/docs/SCHEMA.md.
+// schemaMDTables is the post-dead-surface-removal 8-table list from cli/docs/SCHEMA.md.
 var schemaMDTables = []string{
-	"backlog",
 	"checks",
-	"decisions",
 	"handoffs",
 	"intakes",
 	"interventions",
 	"meta",
 	"runs",
 	"stories",
-	"tools",
 	"traces",
 }
 
@@ -34,7 +31,7 @@ func TestMigrate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Migrate: %v", err)
 	}
-	wantApplied := []string{"0001_init", "0002_meta_docs_version"}
+	wantApplied := []string{"0001_init", "0002_meta_docs_version", "0003_drop_dead_surface"}
 	if len(applied) != len(wantApplied) {
 		t.Fatalf("applied = %v, want %v", applied, wantApplied)
 	}
@@ -43,8 +40,8 @@ func TestMigrate(t *testing.T) {
 			t.Fatalf("applied = %v, want %v", applied, wantApplied)
 		}
 	}
-	if schemaVersion != 2 {
-		t.Fatalf("schemaVersion = %d, want 2", schemaVersion)
+	if schemaVersion != 3 {
+		t.Fatalf("schemaVersion = %d, want 3", schemaVersion)
 	}
 
 	rows, err := db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`)
@@ -80,7 +77,7 @@ func TestMigrate(t *testing.T) {
 	if len(applied2) != 0 {
 		t.Fatalf("second Migrate applied = %v, want none", applied2)
 	}
-	if schemaVersion2 != 2 {
-		t.Fatalf("second Migrate schemaVersion = %d, want 2", schemaVersion2)
+	if schemaVersion2 != 3 {
+		t.Fatalf("second Migrate schemaVersion = %d, want 3", schemaVersion2)
 	}
 }

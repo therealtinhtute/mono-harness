@@ -69,31 +69,6 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `lane` | TEXT | enum `tiny\|normal\|high-risk` |
 | `created_at` | TEXT | |
 
-#### `decisions`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | TEXT PK | ULID |
-| `summary` | TEXT | |
-| `rationale` | TEXT | |
-| `rejected` | TEXT, nullable | |
-| `created_at` | TEXT | |
-
-#### `backlog`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | TEXT PK | ULID |
-| `summary` | TEXT | |
-| `priority` | TEXT, nullable | enum `tiny\|normal\|high-risk` |
-| `created_at` | TEXT | |
-
-#### `tools`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | TEXT PK | ULID |
-| `name` | TEXT | |
-| `purpose` | TEXT | |
-| `created_at` | TEXT | |
-
 #### `interventions`
 | Column | Type | Notes |
 |---|---|---|
@@ -123,13 +98,10 @@ Every table maps to exactly one changeset `entity` string (the value in `{op, en
 | `checks` | `check` | `check record` |
 | `handoffs` | `handoff` | **none yet** — SPEC R13 mandates this table, but no command among R6's 19 produces it (R6/R18 gap, see `CONTRACT.md`'s escalation note); table exists now so the schema doesn't need a breaking migration once the command lands |
 | `intakes` | `intake` | `intake` |
-| `decisions` | `decision` | `decision` |
-| `backlog` | `backlog` | `backlog` |
-| `tools` | `tool` | `tool` |
 | `interventions` | `intervention` | `intervention` |
 | `traces` | `trace` | `trace add` |
 
-Cross-check against CONTRACT.md: every mutating command listed there (`intake, story, decision, backlog, tool, intervention, trace, check record, handoff record`, plus `init`/`import`/`migrate` which write `meta` only) names exactly one entity string from this table. `resume`, `query`, `validate`, `score-trace`, `score-context`, `audit`, `propose` are read-only — they write no changeset.
+Cross-check against CONTRACT.md: every mutating command listed there (`intake, story, intervention, trace, check record, handoff record`, plus `init`/`import`/`migrate` which write `meta` only) names exactly one entity string from this table. `resume`, `query`, `validate`, `score-trace`, `audit` are read-only — they write no changeset.
 
 ## Changeset Format
 
@@ -163,5 +135,5 @@ This is a deliberate scale-down, not a full port: `harness-experimental`'s dual-
 
 ## Verification
 
-- Every table above has exactly one row in Table ↔ Changeset Entity Type: 11 tables (`meta` + 10 data tables), 11 entity-string mappings — count matches. `handoffs` is the one row with no current producing command (see note above); the table is still defined now per SPEC R13, so no breaking migration is needed once R6/R18's gap is resolved.
-- Cross-check against CONTRACT.md's 19 commands: entity-producing (`intake, story, decision, backlog, tool, intervention, trace, check record` = 8) + `meta`-only (`init, import, migrate` = 3) + replay/special (`db` — applies existing changesets, doesn't mint a new entity type = 1) + read-only (`resume, query, validate, score-trace, score-context, audit, propose` = 7) = 8 + 3 + 1 + 7 = **19**, matching CONTRACT.md exactly.
+- Every table above has exactly one row in Table ↔ Changeset Entity Type: 8 tables (`meta` + 7 data tables), 8 entity-string mappings — count matches. `handoffs` is the one row with no current producing command (see note above); the table is still defined now per SPEC R13, so no breaking migration is needed once R6/R18's gap is resolved.
+- Cross-check against CONTRACT.md's 14 commands: entity-producing (`intake, story, intervention, trace, check record` = 5) + `meta`-only (`init, import, migrate` = 3) + replay/special (`db` — applies existing changesets, doesn't mint a new entity type = 1) + read-only (`resume, query, validate, score-trace, audit` = 5) = 5 + 3 + 1 + 5 = **14**, matching CONTRACT.md exactly (post `dead-surface-removal`; the pre-existing `handoff record` undercount noted above predates this phase and is unrelated).

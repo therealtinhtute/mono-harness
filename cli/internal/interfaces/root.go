@@ -42,9 +42,6 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newQueryCmd())
 	root.AddCommand(newIntakeCmd())
 	root.AddCommand(newStoryCmd())
-	root.AddCommand(newDecisionCmd())
-	root.AddCommand(newBacklogCmd())
-	root.AddCommand(newToolCmd())
 	root.AddCommand(newInterventionCmd())
 	root.AddCommand(newTraceCmd())
 	root.AddCommand(newRunCmd())
@@ -54,9 +51,7 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newHandoffCmd())
 	root.AddCommand(newValidateCmd())
 	root.AddCommand(newScoreTraceCmd())
-	root.AddCommand(newScoreContextCmd())
 	root.AddCommand(newAuditCmd(version))
-	root.AddCommand(newProposeCmd(version))
 
 	return root
 }

@@ -115,6 +115,15 @@ CREATE TABLE traces (
 		Name:    "0002_meta_docs_version",
 		SQL:     `ALTER TABLE meta ADD COLUMN docs_version TEXT;`,
 	},
+	{
+		Version: 3,
+		Name:    "0003_drop_dead_surface",
+		SQL: `
+DROP TABLE decisions;
+DROP TABLE backlog;
+DROP TABLE tools;
+`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

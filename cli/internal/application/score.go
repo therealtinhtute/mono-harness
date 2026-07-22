@@ -13,12 +13,6 @@ type TraceScore struct {
 	Reasons []string `json:"reasons"`
 }
 
-// ContextScore mirrors CONTRACT.md's locked `score-context --json` shape.
-type ContextScore struct {
-	Score   int      `json:"score"`
-	Reasons []string `json:"reasons"`
-}
-
 type traceRow struct {
 	ID        string
 	RunID     *string
@@ -105,35 +99,4 @@ func ScoreTrace(db *sql.DB, id string) (TraceScore, error) {
 	}
 
 	return TraceScore{Tier: tier, Reasons: reasons}, nil
-}
-
-// ScoreContext is CONTRACT.md's reserved `score-context` command (not
-// consumed by any skill this initiative). Upstream's context-read scoring
-// compares actual files_read against expected context — a field this
-// schema does not capture (same gap ScoreTrace documents). Rather than
-// fabricate a files-read comparison, this returns a coarse, honest proxy
-// score (0-2) using only the signals the schema actually has, and says so
-// in its own reasons.
-func ScoreContext(db *sql.DB, id string) (ContextScore, error) {
-	tr, exists, err := loadTrace(db, id)
-	if err != nil {
-		return ContextScore{}, err
-	}
-	if !exists {
-		return ContextScore{}, &domain.ValidationError{Code: "unknown_trace_id", Message: "score-context: trace " + id + " not found"}
-	}
-
-	reasons := []string{}
-	score := 0
-	if len(tr.Summary) >= 10 {
-		score++
-		reasons = append(reasons, "summary is present and >= 10 chars")
-	}
-	if tr.RunID != nil {
-		score++
-		reasons = append(reasons, "linked to run "+*tr.RunID)
-	}
-	reasons = append(reasons, "zharness's trace schema does not capture files_read; score reflects structural linkage only, not verified context reads")
-
-	return ContextScore{Score: score, Reasons: reasons}, nil
 }
