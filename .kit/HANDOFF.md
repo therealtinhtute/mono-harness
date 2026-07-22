@@ -19,7 +19,7 @@ last-updated: 2026-07-22
 
 ## Current State
 
-**Branch**: `master`, working tree clean, **6 commits ahead of origin/master — NOT pushed** (deferred by explicit user request, twice now this initiative).
+**Branch**: `master`, working tree clean, **pushed to origin/master** (8 commits: the 6 slim-playbooks S3 + handoff commits, plus the entity-record commit).
 **Status**: clean — Track A "Slim Playbooks" is **fully done**: S1 (scaffold), S2 (next), and S3 (resume --facts recap render) all implemented and gated (`check full`, APPROVED, no blockers on any phase). Nothing left in this track.
 **Continuity Mode**: full-harness (SPEC/ROADMAP/phase chain from the Harness Subtraction Pass present; the slim work rode on top informally, no harness story row)
 **Active Work**: none in-flight. The parked master initiative — Harness Subtraction Pass, Phase 1 `write-boundary` — is next; harness `resume` still shows `current_phase: write-boundary / planned`, untouched by the slim-playbooks side-track.
@@ -59,7 +59,6 @@ last-updated: 2026-07-22
 
 ### Not Started
 - **Harness Subtraction Pass Phase 1 (write-boundary)** — plan is `status: ready`, decision-complete, at `.kit/planning/phases/write-boundary/write-boundary-PLAN.md`. Not yet started.
-- Pushing master to origin (6 commits ahead).
 
 ## Key Decisions
 
@@ -88,8 +87,7 @@ None. Track A (slim-playbooks) closed clean. Track B (write-boundary) has no blo
 ## Next Steps
 
 1. **→ START HERE: Harness Subtraction Pass Phase 1 (write-boundary)** — run `work full` starting at `write-boundary`; plan is ready at `.kit/planning/phases/write-boundary/write-boundary-PLAN.md` (`zharness run create` command + `check record` setting its own `latest_check_id` + work.md/check.md rewire, 3 waves).
-2. **Push master to origin** — 6 commits ahead (`d1aa31e`, `2011921`, `cefd653`, `1a1d2cd`, `cae1e80`, `4b91689`), still deferred; decide independently of starting write-boundary.
-3. **Optional cleanup**: `cli/docs/CONTRACT.md` doesn't document `scaffold`, `next`, or `resume --facts` — low priority, batch into one pass whenever convenient.
+2. **Optional cleanup**: `cli/docs/CONTRACT.md` doesn't document `scaffold`, `next`, or `resume --facts` — low priority, batch into one pass whenever convenient.
 
 ## Notes
 
