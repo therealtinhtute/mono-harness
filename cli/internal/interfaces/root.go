@@ -49,6 +49,7 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newTraceCmd())
 	root.AddCommand(newRunCmd())
 	root.AddCommand(newResumeCmd(version))
+	root.AddCommand(newNextCmd())
 	root.AddCommand(newCheckCmd())
 	root.AddCommand(newHandoffCmd())
 	root.AddCommand(newValidateCmd())
