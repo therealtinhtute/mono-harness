@@ -1,10 +1,10 @@
 # Plan: write-boundary
 
 Phase: write-boundary
-Status: ready
+Status: done — implemented + gated APPROVED 2026-07-21 (commit `32cb60c`, check report `.kit/reports/check/20260721-1044-write-boundary.md`, run artifact `.kit/runs/work/20260721-1027-write-boundary.md`)
 Wave Count: 3
 Execution Owner: work
-Updated At: 2026-07-21
+Updated At: 2026-07-22
 
 ## Goal
 Add `zharness run create` and make `check record` set `latest_check_id`; rewire `work.md`/`check.md` to call them; delete hand-authored-JSONL steps.

@@ -8,6 +8,8 @@
 - sequencing: **linear** — phases 2 and 3 both edit `score.go`/`audit.go`/`check` playbook; phase 4 depends on the final playbook text. Linear order avoids same-file conflicts.
 
 ## Phase 1: write-boundary
+**Status:** done — implemented + gated APPROVED 2026-07-21 (commit `32cb60c`, check report `.kit/reports/check/20260721-1044-write-boundary.md`). Bookkeeping only was stale (this ROADMAP + the phase PLAN/CONTEXT status fields, and the harness `stories.status` DB row, which the CLI has no command to transition — a confirmed gap, not yet fixed).
+
 **Goal:** The CLI owns 100% of harness writes — no playbook hand-authors changeset JSONL.
 
 **Deliverables:**
@@ -65,6 +67,6 @@
 - The drift test must compare against the embed as the single source of truth, not freeze a stale `.kit/docs/` copy.
 
 ## Next Steps
-- `work full` starts at **write-boundary**.
+- **write-boundary is done** (see Phase 1 Status above); `work full phase dead-surface-removal` is next.
 - `check full` gates each phase (high-risk proof matrix).
 - `git` / `handoff` to wrap up.

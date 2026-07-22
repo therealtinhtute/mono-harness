@@ -1,7 +1,7 @@
 # Context: write-boundary
 
 Phase: write-boundary
-Status: ready
+Status: done — see write-boundary-PLAN.md header for gate/commit refs
 Spec Link: ../../SPEC.md
 Roadmap Link: ../../ROADMAP.md
 Blast Radius: medium

@@ -22,7 +22,7 @@ last-updated: 2026-07-22
 **Branch**: `master`, working tree clean, **pushed to origin/master** (8 commits: the 6 slim-playbooks S3 + handoff commits, plus the entity-record commit).
 **Status**: clean — Track A "Slim Playbooks" is **fully done**: S1 (scaffold), S2 (next), and S3 (resume --facts recap render) all implemented and gated (`check full`, APPROVED, no blockers on any phase). Nothing left in this track.
 **Continuity Mode**: full-harness (SPEC/ROADMAP/phase chain from the Harness Subtraction Pass present; the slim work rode on top informally, no harness story row)
-**Active Work**: none in-flight. The parked master initiative — Harness Subtraction Pass, Phase 1 `write-boundary` — is next; harness `resume` still shows `current_phase: write-boundary / planned`, untouched by the slim-playbooks side-track.
+**Active Work**: Harness Subtraction Pass Phase 2 `dead-surface-removal` starting now — Phase 1 `write-boundary` turned out to already be done (commit `32cb60c`, 2026-07-21, predates slim-playbooks), discovered this session when `work full phase write-boundary` was invoked and found all deliverables already shipped + gated. `zharness query state --json`'s `current_phase: write-boundary` field is a static entry-phase marker, not a live cursor (no CLI command advances it) — don't read it as "next phase."
 **Last Commits** (this session, oldest→newest): `1a1d2cd` feat(harness) S3-W1 resume --facts recap render · `cae1e80` refactor(playbooks) S3-W2 watzup.md slim (308→123 lines) + work.md projection refresh · `4b91689` chore(kit) bank S3 plan + gate report + harness state.
 
 ## What We're Building
@@ -32,9 +32,9 @@ last-updated: 2026-07-22
 - **S2 next** ✅ — `zharness next [argument] --json` resolves mode + active phase + stop; work.md dropped ~54 lines of routing tables.
 - **S3 resume-render** ✅ (this session) — `zharness resume --facts '<json>'` renders watzup's full Vietnamese Recap text deterministically (forbidden-phrase safety, risk-table shape, severity ladder, drifted-state recovery override all enforced in Go); watzup.md cut 308→123 lines, dropping its entire Output Contract + 4 worked Examples.
 
-**Next up — Track B: Harness Subtraction Pass** (`.kit/planning/ROADMAP.md`, spec locked, lane: high-risk, execution mode `work full`). 4 linear phases (2/3 share `score.go`/`audit.go`, 4 depends on 1+3 text being final):
-1. **write-boundary** (entry, `status: ready`) — `zharness run create` + `check record` sets `latest_check_id` itself; work.md/check.md rewired; hand-authored-JSONL steps deleted.
-2. dead-surface-removal — drop unused `decision`/`backlog`/`tool`/`propose`/`score-context` surface.
+**Track B: Harness Subtraction Pass** (`.kit/planning/ROADMAP.md`, spec locked, lane: high-risk, execution mode `work full`). 4 linear phases (2/3 share `score.go`/`audit.go`, 4 depends on 1+3 text being final):
+1. **write-boundary — already DONE**, discovered mid-session 2026-07-22: implemented + gated APPROVED on 2026-07-21 at commit `32cb60c` (before slim-playbooks even started), fully verified still green at current HEAD (`go build`/`go test` pass). This was wrongly carried in prior handoffs as "next, not started" — the harness `stories.status` DB row and the phase PLAN/CONTEXT/ROADMAP status text were never updated to `done` (no CLI command exists to do that transition — confirmed gap, see Blockers). ROADMAP.md + phase PLAN/CONTEXT now corrected to say `done`.
+2. **→ dead-surface-removal — actual next phase** — drop unused `decision`/`backlog`/`tool`/`propose`/`score-context` surface.
 3. scoring-removal — delete the vestigial deterministic-verdict scoring; lane×proof matrix remains the real gate.
 4. single-source-playbooks — `.kit/docs/playbooks/*` becomes a pure, drift-tested projection of the Go embed.
 
@@ -58,7 +58,7 @@ last-updated: 2026-07-22
 - None. Slim-playbooks is fully closed — clean stopping point.
 
 ### Not Started
-- **Harness Subtraction Pass Phase 1 (write-boundary)** — plan is `status: ready`, decision-complete, at `.kit/planning/phases/write-boundary/write-boundary-PLAN.md`. Not yet started.
+- **Harness Subtraction Pass Phase 2 (dead-surface-removal)** — plan at `.kit/planning/phases/dead-surface-removal/dead-surface-removal-PLAN.md`, depends_on write-boundary (now done). Not yet started.
 
 ## Key Decisions
 
@@ -70,7 +70,7 @@ last-updated: 2026-07-22
 
 ## Blockers & Issues
 
-None. Track A (slim-playbooks) closed clean. Track B (write-boundary) has no blockers either — its plan is ready and untouched, waiting on a start decision, not stuck on anything.
+None blocking. One confirmed CLI gap: no command exists to transition a `story` (phase) row's `status` from `planned`→`done` (`story` only creates; `stories.status` has no update path). This means `zharness next`/`work auto` in **auto** mode (no explicit phase argument) would still misidentify write-boundary as incomplete, since `selectActivePhase` cross-checks `stories.status == done` in the DB. Workaround in force: always invoke `work`/`next` with an explicit `phase <slug>` argument for this initiative until a story-status-update command exists (not in scope of any of the 4 planned phases — worth a future small addition).
 
 ## Technical Context
 
@@ -86,8 +86,9 @@ None. Track A (slim-playbooks) closed clean. Track B (write-boundary) has no blo
 
 ## Next Steps
 
-1. **→ START HERE: Harness Subtraction Pass Phase 1 (write-boundary)** — run `work full` starting at `write-boundary`; plan is ready at `.kit/planning/phases/write-boundary/write-boundary-PLAN.md` (`zharness run create` command + `check record` setting its own `latest_check_id` + work.md/check.md rewire, 3 waves).
+1. **→ START HERE: Harness Subtraction Pass Phase 2 (dead-surface-removal)** — run `work full phase dead-surface-removal` (always pass the explicit phase slug, see Blockers); plan at `.kit/planning/phases/dead-surface-removal/dead-surface-removal-PLAN.md`.
 2. **Optional cleanup**: `cli/docs/CONTRACT.md` doesn't document `scaffold`, `next`, or `resume --facts` — low priority, batch into one pass whenever convenient.
+3. **Optional CLI gap fix**: add a story-status-update command (e.g. `zharness story complete --slug ...`) so `next`/`work` auto mode stops needing explicit phase args for this initiative.
 
 ## Notes
 
