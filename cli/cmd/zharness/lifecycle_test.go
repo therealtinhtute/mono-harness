@@ -244,7 +244,6 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 			Issue string `json:"issue"`
 		} `json:"contract_violations"`
 		UnlinkedProofs []any `json:"unlinked_proofs"`
-		EntropyScore   int   `json:"entropy_score"`
 	}
 	mustUnmarshal(t, auditOut, &auditResp)
 	if len(auditResp.PointerDrift) != 0 {
@@ -255,9 +254,6 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	}
 	if len(auditResp.ContractViolations) != 1 || auditResp.ContractViolations[0].Issue != "not_yet_implemented" {
 		t.Fatalf("audit contract_violations = %+v, want exactly one not_yet_implemented", auditResp.ContractViolations)
-	}
-	if auditResp.EntropyScore != 5 {
-		t.Fatalf("audit entropy_score = %d, want 5 (one contract_violation * weight 5, nothing else)", auditResp.EntropyScore)
 	}
 }
 

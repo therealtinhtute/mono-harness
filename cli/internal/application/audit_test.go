@@ -29,14 +29,11 @@ func TestAuditCleanState(t *testing.T) {
 	if len(report.ContractViolations) != 1 || report.ContractViolations[0].Issue != "missing_key" {
 		t.Fatalf("contract_violations = %v, want exactly one missing_key (composed from Validate)", report.ContractViolations)
 	}
-	if report.EntropyScore != 5 {
-		t.Fatalf("entropy_score = %d, want 5 (one contract_violation * weight 5)", report.EntropyScore)
-	}
 }
 
 // TestAuditUnlinkedProofFixture proves audit's own new check (unlinked
-// proof links) fires and moves the entropy score, per T2's verification:
-// "staled-pointer fixture changes the score and lists the finding."
+// proof links) fires and lists the finding, per T2's verification:
+// "staled-pointer fixture ... lists the finding."
 func TestAuditUnlinkedProofFixture(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	root := t.TempDir()
@@ -48,8 +45,8 @@ func TestAuditUnlinkedProofFixture(t *testing.T) {
 	// root is an empty temp dir with no SPEC.md, so Validate's own doc-walk
 	// always reports its one baseline missing_key finding (see
 	// TestValidateMissingSpec) — that's the floor, not zero.
-	if len(baseline.UnlinkedProofs) != 0 || baseline.EntropyScore != 5 {
-		t.Fatalf("baseline = %+v, want zero unlinked_proofs and score 5 (one contract_violation)", baseline)
+	if len(baseline.UnlinkedProofs) != 0 {
+		t.Fatalf("baseline = %+v, want zero unlinked_proofs", baseline)
 	}
 
 	runID := seedRun(t, db, changesetDir)
@@ -66,9 +63,6 @@ func TestAuditUnlinkedProofFixture(t *testing.T) {
 	}
 	if len(after.UnlinkedProofs) != 1 {
 		t.Fatalf("unlinked_proofs = %v, want exactly one (missing artifact_path)", after.UnlinkedProofs)
-	}
-	if after.EntropyScore != 13 {
-		t.Fatalf("entropy_score = %d, want 13 (one contract_violation*5 + one unlinked_proof*8)", after.EntropyScore)
 	}
 }
 

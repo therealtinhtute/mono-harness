@@ -13,7 +13,7 @@ import (
 func newAuditCmd(version string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "audit",
-		Short: "Report pointer drift, contract violations, unlinked proofs, and an entropy score",
+		Short: "Report pointer drift, contract violations, and unlinked proofs",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAudit(cmd, version)
@@ -39,7 +39,7 @@ func runAudit(cmd *cobra.Command, version string) error {
 	if jsonOutput {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(report)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "entropy_score=%d pointer_drift=%d contract_violations=%d unlinked_proofs=%d\n",
-		report.EntropyScore, len(report.PointerDrift), len(report.ContractViolations), len(report.UnlinkedProofs))
+	fmt.Fprintf(cmd.OutOrStdout(), "pointer_drift=%d contract_violations=%d unlinked_proofs=%d\n",
+		len(report.PointerDrift), len(report.ContractViolations), len(report.UnlinkedProofs))
 	return nil
 }

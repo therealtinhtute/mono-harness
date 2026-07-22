@@ -131,15 +131,9 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ## Research (Phase 6 — validation-gate)
 
-### `score-trace <trace-id>`
-- Args: trace ULID
-- `--json`: `{"tier": "...", "reasons": ["..."]}`
-- Errors: `unknown_trace_id` (1)
-- Consumer: `check` (wired into gate flow: `audit` + `score-trace` → matrix evaluation → `check record`)
-
 ### `audit`
 - Args: none
-- `--json`: `{"pointer_drift": [...], "contract_violations": [...], "unlinked_proofs": [...], "entropy_score": N}`, stable ordering (determinism requirement)
+- `--json`: `{"pointer_drift": [...], "contract_violations": [...], "unlinked_proofs": [...]}`, stable ordering (determinism requirement)
 - Errors: `db_unreadable` (2)
 - Consumer: `check` (wired into gate flow)
 
@@ -155,7 +149,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 | to-plan: status render | `query state --json`, `query phases --json` |
 | work: run registration (full mode) | `run create --slug {phase} --artifact-path … [--plan-id …] --json` |
 | work: wave completion | `trace add --wave N --summary … --json` |
-| check: gate evaluation | `audit --json` + `score-trace <id> --json` → matrix → `check record --verdict … --json` |
+| check: gate evaluation | `audit --json` → matrix → `check record --verdict … --json` |
 | check: human override | `intervention --verdict-id … --reason …` (manual, documented escalation only) |
 | watzup: recap render | `resume --json` (1:1, no fallback) |
 | handoff: close-out | `handoff record --run-id … --check-id … --open-items … --json` |

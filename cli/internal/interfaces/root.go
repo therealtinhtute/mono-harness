@@ -50,7 +50,6 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newCheckCmd())
 	root.AddCommand(newHandoffCmd())
 	root.AddCommand(newValidateCmd())
-	root.AddCommand(newScoreTraceCmd())
 	root.AddCommand(newAuditCmd(version))
 
 	return root

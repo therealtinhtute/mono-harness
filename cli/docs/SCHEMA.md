@@ -101,7 +101,7 @@ Every table maps to exactly one changeset `entity` string (the value in `{op, en
 | `interventions` | `intervention` | `intervention` |
 | `traces` | `trace` | `trace add` |
 
-Cross-check against CONTRACT.md: every mutating command listed there (`intake, story, intervention, trace, check record, handoff record`, plus `init`/`import`/`migrate` which write `meta` only) names exactly one entity string from this table. `resume`, `query`, `validate`, `score-trace`, `audit` are read-only — they write no changeset.
+Cross-check against CONTRACT.md: every mutating command listed there (`intake, story, intervention, trace, check record, handoff record`, plus `init`/`import`/`migrate` which write `meta` only) names exactly one entity string from this table. `resume`, `query`, `validate`, `audit` are read-only — they write no changeset.
 
 ## Changeset Format
 
@@ -136,4 +136,4 @@ This is a deliberate scale-down, not a full port: `harness-experimental`'s dual-
 ## Verification
 
 - Every table above has exactly one row in Table ↔ Changeset Entity Type: 8 tables (`meta` + 7 data tables), 8 entity-string mappings — count matches. `handoffs` is the one row with no current producing command (see note above); the table is still defined now per SPEC R13, so no breaking migration is needed once R6/R18's gap is resolved.
-- Cross-check against CONTRACT.md's 14 commands: entity-producing (`intake, story, intervention, trace, check record` = 5) + `meta`-only (`init, import, migrate` = 3) + replay/special (`db` — applies existing changesets, doesn't mint a new entity type = 1) + read-only (`resume, query, validate, score-trace, audit` = 5) = 5 + 3 + 1 + 5 = **14**, matching CONTRACT.md exactly (post `dead-surface-removal`; the pre-existing `handoff record` undercount noted above predates this phase and is unrelated).
+- Cross-check against CONTRACT.md's 13 commands: entity-producing (`intake, story, intervention, trace, check record` = 5) + `meta`-only (`init, import, migrate` = 3) + replay/special (`db` — applies existing changesets, doesn't mint a new entity type = 1) + read-only (`resume, query, validate, audit` = 4) = 5 + 3 + 1 + 4 = **13**, matching CONTRACT.md exactly (post `scoring-removal`; the pre-existing `handoff record` undercount noted above predates this phase and is unrelated).

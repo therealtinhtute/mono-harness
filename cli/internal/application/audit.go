@@ -22,7 +22,6 @@ type AuditReport struct {
 	PointerDrift       []DriftFinding `json:"pointer_drift"`
 	ContractViolations []AuditFinding `json:"contract_violations"`
 	UnlinkedProofs     []AuditFinding `json:"unlinked_proofs"`
-	EntropyScore       int            `json:"entropy_score"`
 }
 
 // Audit composes Resume (pointer_drift) and Validate (contract_violations)
@@ -30,11 +29,6 @@ type AuditReport struct {
 // validate logic — audit composes it and adds scoring" — and adds one
 // genuinely new check: unlinked_proofs, a sweep of every recorded check's
 // proof_links for artifact_path entries that no longer resolve on disk.
-// entropy_score is an upstream-style (HARNESS_AUDIT.md) weighted sum
-// capped at 100; the three categories are zharness's own since
-// CONTRACT.md's locked audit shape has no story/decision/backlog/tool
-// categories to score upstream's exact formula against (see
-// .kit/implementation-notes.md).
 func Audit(db *sql.DB, root, cliVersion string) (AuditReport, error) {
 	report := AuditReport{
 		PointerDrift:       []DriftFinding{},
@@ -62,7 +56,6 @@ func Audit(db *sql.DB, root, cliVersion string) (AuditReport, error) {
 	}
 	report.UnlinkedProofs = unlinked
 
-	report.EntropyScore = entropyScore(report.PointerDrift, report.ContractViolations, report.UnlinkedProofs)
 	return report, nil
 }
 
@@ -123,17 +116,4 @@ func unlinkedProofs(db *sql.DB) ([]AuditFinding, error) {
 		}
 	}
 	return findings, nil
-}
-
-// entropyScore mirrors HARNESS_AUDIT.md's weighted-and-capped shape.
-// Weights are zharness's own (see Audit's doc comment): pointer_drift is
-// the most structural break (10), unlinked_proofs is a broken-evidence
-// signal analogous to upstream's broken_tools (8), contract_violations is
-// a lower-severity doc/format issue (5).
-func entropyScore(drift []DriftFinding, violations []AuditFinding, unlinked []AuditFinding) int {
-	score := 10*len(drift) + 5*len(violations) + 8*len(unlinked)
-	if score > 100 {
-		score = 100
-	}
-	return score
 }
