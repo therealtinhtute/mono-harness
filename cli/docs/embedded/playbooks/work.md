@@ -20,57 +20,20 @@ Defer elsewhere: `brainstorm` — spec missing or weak and the task exceeds simp
 - `simple [@file?]` — lightweight execution from a prompt or brainstorm explore file; no `.kit/planning/` required
 - `--notes` — opt-in flag (any mode): append decisions, deviations, and tradeoffs to `.kit/implementation-notes.md` during execution. Default off.
 
-## Mode Resolution (run first, every invocation)
+## Mode + Phase Routing (run first, every invocation)
 
-| Argument | Mode |
-|---|---|
-| `simple` or `simple @file` | `simple` |
-| `full`, `full phase <slug>`, `phase <slug>` | `full` |
-| No argument | auto-detect |
+Run `zharness next [argument] --json`, passing the invocation argument through as-is (empty for auto-detect, or `simple`, `simple @file`, `full`, `full phase <slug>`, `phase <slug>`). Its `mode` field is the resolved mode; its `active_phase` field (full mode) names the selected phase; its `stop` field, when present, carries `{code, message, recovery}` — state the message plainly, then run the exact `recovery` command/action. An `ambiguous` stop means asking the user a short structured question instead of running a recovery command.
 
-**Auto-detect (no argument):**
-
-| Observed state | Resolved mode |
-|---|---|
-| `.kit/planning/SPEC.md` + `ROADMAP.md` + target phase artifacts all present | `full` |
-| `.kit/reports/brainstorm/*.md` present or referenced, no SPEC.md | `simple` |
-| Only a direct prompt, no planning or brainstorm artifacts | `simple` (after prompt-quality check) |
-| No argument, no artifacts, no meaningful prompt | Stop → route to `brainstorm` |
-| Ambiguous (stale SPEC + new prompt, or SPEC exists but a brainstorm file is also referenced) | Ask the user a short structured question to clarify |
-
-## Full Mode Detection Table
-
-| State | Signal | Action |
-|---|---|---|
-| `no-spec` | `.kit/planning/SPEC.md` missing or empty | Stop, route to `brainstorm` |
-| `no-plan` | `.kit/planning/ROADMAP.md` missing | Stop, route to `to-plan` |
-| `no-phase` / `no-context` | `{slug}-PLAN.md` or `{slug}-CONTEXT.md` missing for the selected phase | Stop, route to `to-plan phase {slug}` |
-| `stale-plan` | Phase plan references files/symbols that no longer exist | Stop, route to `to-plan phase {slug}` to refresh |
-| `placeholder-plan` | Phase plan contains `TBD`, `TODO`, "similar to", "implement later" | Stop, route to `to-plan phase {slug}` |
-| `contract-drift` | Working tree or requested scope already touches files outside `Allowed Surfaces`/task `touches`, or conflicts with `Forbidden Surfaces`/task `avoid` | Stop, route to `to-plan phase {slug}` or `brainstorm refine` |
-| `multiple-incomplete` | More than one phase has incomplete waves | Ask the user which phase to run (mark the first incomplete phase by roadmap order as recommended) |
-| `ready` | All required files present and concrete | Proceed to the execution loop |
-
-### Selecting the active phase (auto mode)
-1. Parse `.kit/planning/ROADMAP.md` for the ordered phase list.
-2. For each phase, check whether its `-PLAN.md` shows all waves complete (status section, completion markers; if absent, assume incomplete).
-3. The first incomplete phase is the candidate.
-4. If two phases are partially done (rare — indicates a previous handoff), trigger `multiple-incomplete` and ask.
-
-### Stop message shapes
-State the blocker plainly, then the exact recovery command:
-- no-spec: "No `.kit/planning/SPEC.md` found. Lock the problem first. Run `brainstorm` with the idea, notes, or file refs."
-- no-plan: "SPEC exists, no plan. Generate the roadmap first. Run `to-plan full`."
-- no-phase/no-context: "Phase artifacts missing for `{slug}`. Run `to-plan phase {slug}`."
-- stale-plan/placeholder-plan: name the specific file/symbol or placeholder text and line; run `to-plan phase {slug}` to refresh, then re-invoke `work`.
-- contract-drift: name the working-tree file or requested-scope item and why it's outside/inside the forbidden boundary; run `to-plan phase {slug}` if the contract should refresh, or `brainstorm refine` if the spec boundary itself changed.
+Two rows stay agent-side — `next` is git-blind and plan-authoring-lifecycle-blind, so these are never folded into it, not silently dropped:
+- **contract-drift**: before proceeding past a `ready`/no-stop result, diff the working tree + requested scope against the phase's Allowed/Forbidden Surfaces and task `touches`/`avoid`. If it already touches out-of-boundary files, stop with `BLOCKED_CONTRACT_DRIFT` and route to `to-plan phase {slug}` or `brainstorm refine`.
+- **stale-plan** (phase plan references a file/symbol that no longer exists): a plan legitimately references files it hasn't created yet, so a naive existence check false-positives on almost every real plan. Catch this during Step 1 (Load context) as a manual read-through, not an automated gate.
 
 ## Execution Loop (per phase; Step 2 branches by mode, everything else is full-mode)
 
 1. **Load context** — run `zharness query state --json` and `zharness query phases --json` first when a db exists, then verify against `.kit/planning/SPEC.md`, the phase `-CONTEXT.md`, and the phase `-PLAN.md`. Note open assumptions; treat a `current_phase` mismatch as a plan-refresh signal, not as truth.
 2. **Create the run artifact** — run `zharness init` first if no db exists yet (idempotent). Compute the run file path `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` (see Artifacts below) before minting an id — it's deterministic and doesn't require the file to exist yet.
    - **Full mode**: register the run in the harness with `zharness run create --slug {phase-slug} --artifact-path {run file path} --json` (add `--plan-id {ULID}` when the phase PLAN has one). The command mints the run ULID itself, returns it as `{"id":"<ULID>"}`, and writes + applies the run-create + `meta.latest_run_id` changeset atomically in one transaction, so `latest_run_id` never lags the run it points to. Save the returned `id` as the **RUN id** — use it exactly in the artifact's `id:` frontmatter and every later `--run-id`/run-row reference. Never invent a placeholder ULID; never hand-author a `.changeset.jsonl` file for this.
-   - **Simple mode**: do NOT call `run create` or author a run changeset. Simple mode has no phase and therefore no story, and `runs.story_slug` is a `NOT NULL` foreign key into `stories(slug)` — there is nothing for it to reference, and forcing a write here always fails with a FOREIGN KEY constraint error. Instead run `zharness id --json` to mint the RUN id locally. Skip DB registration entirely; the run artifact file itself (with `mode: simple`) is the durable record, and `validate` treats `mode: simple` RUN artifacts as exempt from phase/plan/DB-registration checks by design (see `CONTRACT.md`). Note the skip inline in the run artifact.
+   - **Simple mode**: do NOT call `run create` or author a run changeset — it has no phase/story to satisfy `runs.story_slug`'s FK. Run `zharness id --json` to mint the RUN id locally instead; the run artifact file itself (`mode: simple`) is the durable record (`validate`'s exemption is documented in `CONTRACT.md`). Note the skip inline in the run artifact.
    - Either way, emit the run artifact skeleton with `zharness scaffold run --path {run file path} --json` and fill it, with `mode: full` or `mode: simple` in the frontmatter matching the resolved mode. In simple mode, the slug comes from the prompt or brainstorm file, and `phase`/`plan_id` are both `none`.
 3. **Preflight drift check** — compare the phase boundary (Allowed/Forbidden Surfaces, task `touches`/`avoid`) against the current working tree and requested scope. If files already changed outside the boundary, stop with `BLOCKED_CONTRACT_DRIFT`.
 4. **Confirm scope** — restate the phase goal and wave list in one block; ask the user only if the plan is ambiguous about which wave is next.
@@ -166,6 +129,7 @@ Rules: one new run file per invocation, never overwrite an older one; every task
 ## Command Reference
 
 - `zharness --version` — version gate
+- `zharness next [argument] --json` — resolve mode + active phase (or a stop) from the invocation argument; run first, every invocation
 - `zharness id --json` — mint one fresh ULID without DB state; simple-mode-only RUN id minting (full mode gets its RUN id from `run create`'s response)
 - `zharness init` — idempotent; run if no db exists yet
 - `zharness query state --json` / `zharness query phases --json` — first lookup index for context and post-run/wave state checks; always verify the pointed files before acting
