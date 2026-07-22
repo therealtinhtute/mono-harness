@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KY4BMQT1KXV6AXBGDWP9D3FS","fields":{"created_at":"2026-07-22T07:29:03Z","run_id":"01KY4BCT00MYGZFJAW9JP650JE","summary":"single-source-playbooks Wave 1 done: added TestProjectionDrift_KitDocsMatchesEmbed guard + documented embed-only edit contract in CONTRACT.md/README.md/migration.md","wave":1},"at":"2026-07-22T07:29:03Z"}
