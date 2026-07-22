@@ -44,3 +44,4 @@ Define expected output format in every delegation prompt.
 - `rules/karpathy-guidelines.md` — Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven
 - `rules/english.md` — passive correction at end of reply
 - `rules/ask-user-question.md` — AskUserQuestion enforcement details
+- `rules/workflow-core.md` — Core workflow skill auto-triggers (session start, planning, implementation, shipping, end)
