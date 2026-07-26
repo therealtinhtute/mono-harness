@@ -24,7 +24,7 @@ func CreateRun(db *sql.DB, changesetDir, storySlug, artifactPath, planID string)
 		return "", "", err
 	}
 
-	_, _, exists, err := storyByExactSlug(db, storySlug)
+	storyID, _, exists, err := storyByExactSlug(db, storySlug)
 	if err != nil {
 		return "", "", err
 	}
@@ -44,7 +44,8 @@ func CreateRun(db *sql.DB, changesetDir, storySlug, artifactPath, planID string)
 	}
 	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
 		{Op: "create", Entity: "run", ID: id, Fields: fields, At: at},
-		{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_run_id": id}, At: at},
+		{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryInProgress}, At: at},
+		{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_run_id": id, "current_phase": storySlug}, At: at},
 	})
 	if err != nil {
 		return "", "", err

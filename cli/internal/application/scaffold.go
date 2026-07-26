@@ -17,6 +17,7 @@ var scaffoldKinds = map[string]string{
 	"check":   "templates/check.md",
 	"handoff": "templates/handoff.md",
 	"spec":    "templates/spec.md",
+	"plan":    "templates/plan.md",
 }
 
 // ScaffoldArtifact writes the embedded skeleton for kind to path and
@@ -29,7 +30,7 @@ var scaffoldKinds = map[string]string{
 func ScaffoldArtifact(templates fs.FS, kind, path string) ([]byte, error) {
 	rel, ok := scaffoldKinds[kind]
 	if !ok {
-		return nil, &domain.ValidationError{Code: "unknown_kind", Message: "scaffold: unknown kind " + kind + " (want run|check|handoff|spec)"}
+		return nil, &domain.ValidationError{Code: "unknown_kind", Message: "scaffold: unknown kind " + kind + " (want run|check|handoff|spec|plan)"}
 	}
 	if path == "" {
 		return nil, &domain.ValidationError{Code: "missing_required_field", Message: "scaffold: --path is required"}

@@ -86,6 +86,19 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `summary` | TEXT | |
 | `created_at` | TEXT | |
 
+### Managed infrastructure
+
+#### `managed_docs`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | stable repository-relative path |
+| `path` | TEXT UNIQUE | managed root doc path |
+| `installed_sha256` | TEXT | embedded bytes last installed without conflict |
+| `docs_version` | TEXT | CLI docs version that recorded the hash |
+| `updated_at` | TEXT | last metadata update |
+
+The writable database is the ignored root `harness.db`. Tracked replay deltas remain under `.kit/changesets/`; no baseline or second database exists.
+
 ## Table ↔ Changeset Entity Type
 
 Every table maps to exactly one changeset `entity` string (the value in `{op, entity, id, fields, at}`). Table names are plural (SQL convention, SPEC R13's own wording); entity strings are singular, matching the CONTRACT.md command that produces them.
@@ -100,6 +113,7 @@ Every table maps to exactly one changeset `entity` string (the value in `{op, en
 | `intakes` | `intake` | `intake` |
 | `interventions` | `intervention` | `intervention` |
 | `traces` | `trace` | `trace add` |
+| `managed_docs` | `managed_doc` | `init`, `init --refresh-docs`, layout migration |
 
 Cross-check against CONTRACT.md: every mutating command listed there (`intake, story, intervention, trace, check record, handoff record`, plus `init`/`import`/`migrate` which write `meta` only) names exactly one entity string from this table. `resume`, `query`, `validate`, `audit` are read-only — they write no changeset.
 
@@ -135,5 +149,5 @@ This is a deliberate scale-down, not a full port: `harness-experimental`'s dual-
 
 ## Verification
 
-- Every table above has exactly one row in Table ↔ Changeset Entity Type: 8 tables (`meta` + 7 data tables), 8 entity-string mappings — count matches. `handoffs` is the one row with no current producing command (see note above); the table is still defined now per SPEC R13, so no breaking migration is needed once R6/R18's gap is resolved.
-- Cross-check against CONTRACT.md's 13 commands: entity-producing (`intake, story, intervention, trace, check record` = 5) + `meta`-only (`init, import, migrate` = 3) + replay/special (`db` — applies existing changesets, doesn't mint a new entity type = 1) + read-only (`resume, query, validate, audit` = 4) = 5 + 3 + 1 + 4 = **13**, matching CONTRACT.md exactly (post `scoring-removal`; the pre-existing `handoff record` undercount noted above predates this phase and is unrelated).
+- Nine persisted tables are active: `meta`, seven typed lifecycle tables, and `managed_docs`; each non-meta table has one allowlisted changeset entity mapping.
+- Repository replay tests migrate an empty database to the current schema and apply every tracked `.kit/changesets/*.changeset.jsonl` file in ULID order.

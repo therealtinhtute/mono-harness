@@ -1,0 +1,1 @@
+{"op":"create","entity":"story","id":"01KYF4Y6B9PRQ1TYHN382ANKZT","fields":{"created_at":"2026-07-26T12:03:31Z","depends_on":"universal-preflight","goal":"Activate one root database and safe root managed docs","slug":"root-layout","status":"planned"},"at":"2026-07-26T12:03:31Z"}

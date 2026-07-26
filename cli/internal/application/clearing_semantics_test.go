@@ -16,9 +16,8 @@ import (
 // cli-stale-drift-PLAN.md's T3 acceptance: a project stamped with an older
 // docs_version reports stale_docs via Resume; running the named recovery
 // (`init --refresh-docs`, exercised here as ScaffoldDocs(refresh=true))
-// clears the drift; and nothing outside .kit/docs/** + the docs_version
-// stamp changes — stories, runs, and the other meta pointers are
-// byte-stable across the refresh.
+// clears the drift; and lifecycle rows/pointers remain byte-stable while
+// managed root docs and their hash records advance.
 func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	root := t.TempDir()
@@ -49,7 +48,7 @@ func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 		"current_phase": "cli-domain", "entry_phase": "cli-domain", "latest_run_id": runID,
 	})
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "0.2.0", false); err != nil {
+	if _, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "0.2.0", false, false); err != nil {
 		t.Fatalf("initial ScaffoldDocs: %v", err)
 	}
 
@@ -77,7 +76,7 @@ func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 	preRefreshStoryStatus := queryStoryStatus(t, db, "cli-domain")
 	preRefreshRunArtifact := queryRunArtifactPath(t, db, runID)
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "0.3.0", true); err != nil {
+	if _, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "0.3.0", true, false); err != nil {
 		t.Fatalf("refresh ScaffoldDocs: %v", err)
 	}
 
@@ -92,8 +91,7 @@ func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 		t.Fatalf("drift after refresh = %v, want none", after.Drift)
 	}
 
-	// Only .kit/docs/** + the stamp may change — stories/runs/meta pointers
-	// are byte-stable.
+	// Managed docs/hash metadata may change; stories/runs/meta pointers stay stable.
 	var currentPhase, entryPhase, latestRunID string
 	if err := db.QueryRow(`SELECT current_phase, entry_phase, latest_run_id FROM meta`).Scan(&currentPhase, &entryPhase, &latestRunID); err != nil {
 		t.Fatalf("query meta pointers: %v", err)
@@ -116,8 +114,11 @@ func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 		t.Errorf("meta.docs_version after refresh = %q, want %q", docsVersion, "0.3.0")
 	}
 
-	if _, err := os.Stat(filepath.Join(kitDir, "docs", "AGENTS.md")); err != nil {
-		t.Errorf(".kit/docs/AGENTS.md missing after refresh: %v", err)
+	if _, err := os.Stat(filepath.Join(root, "docs", "WORKFLOW.md")); err != nil {
+		t.Errorf("docs/WORKFLOW.md missing after refresh: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "AGENTS.md")); err != nil {
+		t.Errorf("root AGENTS.md missing after refresh: %v", err)
 	}
 }
 

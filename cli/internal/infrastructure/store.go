@@ -27,6 +27,21 @@ func Open(path string) (*sql.DB, error) {
 	return db, nil
 }
 
+// OpenReadOnly opens an existing SQLite database without creating files,
+// enabling WAL, or permitting writes. Read-only routing commands use it so
+// inspection cannot mutate harness state as a side effect.
+func OpenReadOnly(path string) (*sql.DB, error) {
+	db, err := sql.Open(driverName, "file:"+path+"?mode=ro")
+	if err != nil {
+		return nil, fmt.Errorf("open db read-only: %w", err)
+	}
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("open db read-only: %w", err)
+	}
+	return db, nil
+}
+
 // Exists reports whether a db file is already present at path.
 func Exists(path string) bool {
 	_, err := os.Stat(path)

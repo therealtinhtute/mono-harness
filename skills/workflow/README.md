@@ -8,8 +8,8 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 
 - **harness** — the durable state layer. SQLite (`harness.db`, gitignored) materialized by replaying committed, ULID-named JSONL changesets under `.kit/changesets/`. This is the source of truth for intake, story/phase, trace, and check history — not the markdown.
 - **workflows** — the lifecycle contract itself: `Intent → Intake → Story/Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) are thin triggers (≤30 rendered lines): version-gate, ensure `.kit/docs/` is scaffolded, then read and follow the matching embedded playbook under `.kit/docs/playbooks/`. The operating logic itself lives in those playbooks — not in this file, not in `references/` — so any agent that can read a file and run a CLI can execute the same lifecycle, not just Claude Code.
-- **cli** — `zharness`, the Go binary (cobra command tree, `modernc.org/sqlite`, CGO disabled) that skills call to read and write the harness layer. Every mutating command appends a changeset before touching the database.
+- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. Every skill version-gates and calls `zharness preflight` for one shared readiness/rail-guard decision. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) then follow the playbook path returned by preflight; operating logic lives in those playbooks, not in the trigger.
+- **cli** — `zharness`, the Go binary (cobra command tree, `modernc.org/sqlite`, CGO disabled) that routes every workflow stage and reads/writes the harness layer. `preflight` is read-only; every mutating command appends a changeset before touching the database.
 
 ## Lifecycle
 
@@ -46,9 +46,7 @@ description: {unchanged from before this initiative — skills.sh discovery/trig
 
 Run `zharness --version`. Below MIN_ZHARNESS_VERSION (0.4.1) or missing: stop, tell the user to run `bash scripts/install-zharness.sh`. A `dev` build always passes.
 
-Ensure docs are present: run `zharness init` if `.kit/docs/` is missing (idempotent — always safe to run).
-
-Read `.kit/docs/playbooks/{stage}.md` and follow it exactly. That file is the operating logic; this file only triggers it.
+Run `zharness preflight {stage} [--mode {mode}] --json`. If it returns `stop`, state the message and follow the exact recovery. Otherwise read and follow its returned `playbook` path when present; reduced mode must remain read-only.
 
 Defer to: {one line naming the skills this stage hands off to or resumes from}
 ```
@@ -65,8 +63,8 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `check` | `.kit/reports/check/*.md` | `audit`, `score-trace`, `check record` | check (verdict) |
 | `handoff` | `.kit/HANDOFF.md` | `handoff record` | handoff |
 | `watzup` | console recap | `resume` | resume snapshot |
-| `git` | commit / PR | — | minimal-integration: no dedicated harness entity |
-| `interview` | feeds `brainstorm` / `to-plan` output | — | minimal-integration: no dedicated harness entity |
+| `git` | commit / PR | `preflight`, `query check --latest` | read-only: no dedicated harness entity |
+| `interview` | feeds `brainstorm` / `to-plan` output | `preflight` | read-only: no dedicated harness entity |
 
 ## Scope
 

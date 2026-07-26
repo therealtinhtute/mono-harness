@@ -13,7 +13,7 @@ import (
 
 func newScaffoldCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "scaffold <run|check|handoff|spec>",
+		Use:   "scaffold <run|check|handoff|spec|plan>",
 		Short: "Emit an artifact skeleton (frontmatter + section headers) for the agent to fill",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

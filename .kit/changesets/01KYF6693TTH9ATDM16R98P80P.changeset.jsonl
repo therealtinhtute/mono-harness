@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KYF6693TTH9ATDM16MPXJAW9","fields":{"created_at":"2026-07-26T12:25:25Z","run_id":"01KYF4Z95MQJG7PEZPF00JKC9H","summary":"Exposed read-only preflight command with stable JSON and stale-doc detection","wave":2},"at":"2026-07-26T12:25:25Z"}

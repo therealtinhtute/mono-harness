@@ -38,6 +38,9 @@ func TestCheckRecord(t *testing.T) {
 	if latestCheckID != id {
 		t.Fatalf("meta.latest_check_id = %q, want %q", latestCheckID, id)
 	}
+	if got := queryStoryStatus(t, db, "cli-domain"); got != domain.StoryChecked {
+		t.Fatalf("story status = %q, want checked", got)
+	}
 }
 
 func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
@@ -47,6 +50,9 @@ func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
 	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
+	}
+	if got := queryStoryStatus(t, db, "cli-domain"); got != domain.StoryInProgress {
+		t.Fatalf("story status = %q, want in-progress after REQUEST_CHANGES", got)
 	}
 }
 

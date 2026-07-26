@@ -14,8 +14,5 @@ func (r Run) Validate() error {
 	if r.StorySlug == "" {
 		return &ValidationError{Code: "missing_required_field", Message: "run: story_slug is required"}
 	}
-	if r.ArtifactPath == "" {
-		return &ValidationError{Code: "missing_required_field", Message: "run: artifact_path is required"}
-	}
 	return nil
 }

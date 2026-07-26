@@ -9,13 +9,13 @@ import (
 	docsembedded "github.com/therealtinhtute/skills/cli/docs/embedded"
 )
 
-// FS is the embedded doc set: AGENTS.md, AUTHORITY.md, CONTEXT_RULES.md,
-// and playbooks/*.md, rooted at cli/docs/embedded.
+// FS is the embedded managed doc set: AGENTS.md, WORKFLOW.md, and
+// playbooks/*.md, rooted at cli/docs/embedded.
 var FS = docsembedded.FS
 
-// Templates is the embedded artifact-skeleton set (run/check/handoff/spec)
+// Templates is the embedded artifact-skeleton set (run/check/handoff/spec/plan)
 // emitted on demand by `zharness scaffold`. It is deliberately separate
-// from FS so it is never walked into the .kit/docs projection at init.
+// from FS so it is never walked into the root docs projection at init.
 var Templates = docsembedded.Templates
 
 // Manifest lists every embedded doc path alongside the docs_version stamp

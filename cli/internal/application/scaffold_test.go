@@ -11,7 +11,7 @@ import (
 )
 
 func TestScaffoldArtifact_EachKind(t *testing.T) {
-	for _, kind := range []string{"run", "check", "handoff", "spec"} {
+	for _, kind := range []string{"run", "check", "handoff", "spec", "plan"} {
 		dst := filepath.Join(t.TempDir(), kind+".md")
 		data, err := ScaffoldArtifact(embedded.Templates, kind, dst)
 		if err != nil {

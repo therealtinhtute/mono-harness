@@ -32,6 +32,7 @@ var entityTables = map[string]string{
 	"intake":       "intakes",
 	"intervention": "interventions",
 	"trace":        "traces",
+	"managed_doc":  "managed_docs",
 }
 
 // entityColumns allowlists the writable, non-id columns per table (SCHEMA.md
@@ -45,9 +46,10 @@ var entityColumns = map[string]map[string]bool{
 	"runs":          {"story_slug": true, "plan_id": true, "trace_ids": true, "artifact_path": true, "created_at": true},
 	"checks":        {"run_id": true, "verdict": true, "proof_links": true, "artifact_path": true, "created_at": true},
 	"handoffs":      {"run_id": true, "check_id": true, "anchors": true, "created_at": true},
-	"intakes":       {"type": true, "summary": true, "lane": true, "created_at": true},
+	"intakes":       {"type": true, "summary": true, "lane": true, "plan_path": true, "created_at": true},
 	"interventions": {"verdict_id": true, "reason": true, "created_at": true},
 	"traces":        {"run_id": true, "wave": true, "summary": true, "created_at": true},
+	"managed_docs":  {"path": true, "installed_sha256": true, "docs_version": true, "updated_at": true},
 }
 
 // metaColumns allowlists the meta columns a changeset line may set.

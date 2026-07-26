@@ -25,7 +25,7 @@ func TestInit_FreshScratchDir_FullIntegration(t *testing.T) {
 		t.Fatalf("MkdirAll(%s): %v", kitDir, err)
 	}
 
-	db, err := infrastructure.Open(filepath.Join(kitDir, "harness.db"))
+	db, err := infrastructure.Open(filepath.Join(root, "harness.db"))
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestInit_FreshScratchDir_FullIntegration(t *testing.T) {
 		t.Fatalf("Migrate: %v", err)
 	}
 
-	scaffold, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "test-integration", false)
+	scaffold, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "test-integration", false, false)
 	if err != nil {
 		t.Fatalf("ScaffoldDocs: %v", err)
 	}
@@ -47,11 +47,14 @@ func TestInit_FreshScratchDir_FullIntegration(t *testing.T) {
 		t.Fatalf("BuildManifest: %v", err)
 	}
 	for _, p := range manifest.Paths {
+		if p == "AGENTS.md" {
+			continue
+		}
 		want, err := embedded.FS.ReadFile(p)
 		if err != nil {
 			t.Fatalf("read embedded %s: %v", p, err)
 		}
-		got, err := os.ReadFile(filepath.Join(kitDir, "docs", p))
+		got, err := os.ReadFile(filepath.Join(root, "docs", p))
 		if err != nil {
 			t.Fatalf("scaffolded doc %s missing on disk: %v", p, err)
 		}

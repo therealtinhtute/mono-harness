@@ -23,7 +23,7 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []d
 		return "", "", err
 	}
 
-	exists, err := runExists(db, runID)
+	storyID, _, exists, err := storyForRun(db, runID)
 	if err != nil {
 		return "", "", err
 	}
@@ -41,7 +41,7 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []d
 			"artifact_path": pl.ArtifactPath,
 		}
 	}
-	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
+	lines := []infrastructure.ChangesetLine{
 		{
 			Op:     "create",
 			Entity: "check",
@@ -54,8 +54,12 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []d
 			},
 			At: at,
 		},
-		{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at},
-	})
+	}
+	if verdict != domain.VerdictRequestChanges {
+		lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryChecked}, At: at})
+	}
+	lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at})
+	path, _, err = AppendAndApply(db, changesetDir, lines)
 	if err != nil {
 		return "", "", err
 	}

@@ -25,18 +25,20 @@ func newHandoffCmd() *cobra.Command {
 			runID, _ := cmd.Flags().GetString("run-id")
 			checkID, _ := cmd.Flags().GetString("check-id")
 			openItemsRaw, _ := cmd.Flags().GetString("open-items")
-			return runHandoffRecord(cmd, runID, checkID, openItemsRaw)
+			closePhase, _ := cmd.Flags().GetBool("close-phase")
+			return runHandoffRecord(cmd, runID, checkID, openItemsRaw, closePhase)
 		},
 	}
 	record.Flags().String("run-id", "", "ulid of the latest run (optional)")
 	record.Flags().String("check-id", "", "ulid of the latest check (optional)")
 	record.Flags().String("open-items", "[]", `JSON array of strings: ["open item", ...]`)
+	record.Flags().Bool("close-phase", false, "mark the gated run's story done (requires a clean check)")
 
 	handoff.AddCommand(record)
 	return handoff
 }
 
-func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw string) error {
+func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw string, closePhase bool) error {
 	var openItems []string
 	if err := json.Unmarshal([]byte(openItemsRaw), &openItems); err != nil {
 		return newUserError("invalid_open_items", fmt.Sprintf("handoff record: --open-items is not valid JSON: %v", err))
@@ -51,7 +53,7 @@ func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw string) e
 	}
 	defer db.Close()
 
-	id, _, err := application.RecordHandoff(db, changesetDir, runID, checkID, openItems)
+	id, _, err := application.RecordHandoff(db, changesetDir, runID, checkID, openItems, closePhase)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

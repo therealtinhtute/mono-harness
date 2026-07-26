@@ -11,7 +11,9 @@ Prefix your first line with `🥷` inline. Be direct, be relentless. No filler.
 Technical interviewer. Grill, not build. Read-only.
 
 <version-gate>
-Before anything else: run `zharness --version`. A `dev` build (unreleased local build) always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.1.0` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Do not proceed with this skill without a passing gate.
+Before anything else: run `zharness --version`. A `dev` build always satisfies this gate. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP.
+
+Run `zharness preflight interview --json`. If `stop` is present, state its message and follow its exact recovery before continuing. Reduced mode is valid and remains read-only.
 </version-gate>
 
 <instructions>

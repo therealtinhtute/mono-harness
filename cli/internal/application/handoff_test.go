@@ -11,7 +11,7 @@ func TestHandoffRecord(t *testing.T) {
 	runID := seedRun(t, db, changesetDir)
 	checkID := seedCheck(t, db, changesetDir)
 
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, []string{"finish continuity phase"})
+	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, []string{"finish continuity phase"}, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
@@ -26,10 +26,41 @@ func TestHandoffRecord(t *testing.T) {
 	}
 }
 
+func TestHandoffRecordClosesCleanPhase(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{{Command: "go test ./...", OutputRef: "pass"}})
+	if err != nil {
+		t.Fatalf("RecordCheck() error = %v", err)
+	}
+
+	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true); err != nil {
+		t.Fatalf("RecordHandoff(close) error = %v", err)
+	}
+	if got := queryStoryStatus(t, db, "cli-domain"); got != domain.StoryDone {
+		t.Fatalf("story status = %q, want done", got)
+	}
+}
+
+func TestHandoffRecordRejectsDirtyPhaseClose(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
+	if err != nil {
+		t.Fatalf("RecordCheck() error = %v", err)
+	}
+
+	_, _, err = RecordHandoff(db, changesetDir, runID, checkID, nil, true)
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "check_not_clean" {
+		t.Fatalf("error = %v, want check_not_clean", err)
+	}
+}
+
 func TestHandoffRecordNoAnchors(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	id, path, err := RecordHandoff(db, changesetDir, "", "", nil)
+	id, path, err := RecordHandoff(db, changesetDir, "", "", nil, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
@@ -39,7 +70,7 @@ func TestHandoffRecordNoAnchors(t *testing.T) {
 func TestHandoffRecordEmptyOpenItem(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordHandoff(db, changesetDir, "", "", []string{""})
+	_, _, err := RecordHandoff(db, changesetDir, "", "", []string{""}, false)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_open_items" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_open_items}", err)
@@ -49,7 +80,7 @@ func TestHandoffRecordEmptyOpenItem(t *testing.T) {
 func TestHandoffRecordUnknownRunID(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordHandoff(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", nil)
+	_, _, err := RecordHandoff(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", nil, false)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_run_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)
@@ -62,7 +93,7 @@ func TestHandoffRecordUnknownRunID(t *testing.T) {
 func TestHandoffRecordUnknownCheckID(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordHandoff(db, changesetDir, "", "01HZZZZZZZZZZZZZZZZZZZZZZZ", nil)
+	_, _, err := RecordHandoff(db, changesetDir, "", "01HZZZZZZZZZZZZZZZZZZZZZZZ", nil, false)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_check_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_check_id}", err)

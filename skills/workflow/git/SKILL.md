@@ -10,6 +10,10 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
 
+Run `zharness --version`. A `dev` build always passes. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP.
+
+Run `zharness preflight git --json`. If `stop` is present, state its message and follow its exact recovery before continuing. Reduced mode is valid; Git operations remain non-mutating to harness state.
+
 <role>
 Act as a git operations specialist. Handle staging, committing, pushing, pull requests, and merges
 with conventional commit standards. Auto-split commits by type/scope, scan for secrets before

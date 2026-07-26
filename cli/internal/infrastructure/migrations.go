@@ -124,6 +124,24 @@ DROP TABLE backlog;
 DROP TABLE tools;
 `,
 	},
+	{
+		Version: 4,
+		Name:    "0004_managed_docs",
+		SQL: `
+CREATE TABLE managed_docs (
+	id TEXT PRIMARY KEY,
+	path TEXT UNIQUE NOT NULL,
+	installed_sha256 TEXT NOT NULL,
+	docs_version TEXT NOT NULL,
+	updated_at TEXT NOT NULL
+);
+`,
+	},
+	{
+		Version: 5,
+		Name:    "0005_intake_plan_path",
+		SQL:     `ALTER TABLE intakes ADD COLUMN plan_path TEXT;`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

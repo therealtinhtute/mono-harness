@@ -29,7 +29,7 @@ func newRunCmd() *cobra.Command {
 		},
 	}
 	create.Flags().String("slug", "", "story (phase) slug this run executes")
-	create.Flags().String("artifact-path", "", "path to the run's markdown artifact")
+	create.Flags().String("artifact-path", "", "deprecated optional path to a legacy run markdown artifact")
 	create.Flags().String("plan-id", "", "ulid of the phase PLAN this run executes (optional)")
 
 	run.AddCommand(create)

@@ -35,12 +35,12 @@ func TestPlaybookCount(t *testing.T) {
 	}
 }
 
-func TestBuildManifest_ShimAndAuthorityDocsPresent(t *testing.T) {
+func TestBuildManifest_EntrypointAndWorkflowPresent(t *testing.T) {
 	m, err := BuildManifest("dev")
 	if err != nil {
 		t.Fatalf("BuildManifest: %v", err)
 	}
-	want := []string{"AGENTS.md", "AUTHORITY.md", "CONTEXT_RULES.md"}
+	want := []string{"AGENTS.md", "WORKFLOW.md"}
 	for _, w := range want {
 		found := false
 		for _, p := range m.Paths {

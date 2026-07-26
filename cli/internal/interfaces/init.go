@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -12,32 +13,31 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-const dbPath = ".kit/harness.db"
-const kitDir = ".kit"
-
 func newInitCmd(version string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Create the zharness database and scaffold .kit/docs if missing",
+		Short: "Create the root zharness database and safely scaffold managed docs",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			force, _ := cmd.Flags().GetBool("force")
 			refreshDocs, _ := cmd.Flags().GetBool("refresh-docs")
-			return runInit(cmd, force, refreshDocs, version)
+			forceDocs, _ := cmd.Flags().GetBool("force-docs")
+			return runInit(cmd, force, refreshDocs, forceDocs, version)
 		},
 	}
-	cmd.Flags().Bool("force", false, "reinitialize an empty db if one already exists")
-	cmd.Flags().Bool("refresh-docs", false, "rewrite .kit/docs from the embedded doc set and re-stamp docs_version, even if docs already exist")
+	cmd.Flags().Bool("force", false, "reinitialize the root database if one already exists")
+	cmd.Flags().Bool("refresh-docs", false, "safely refresh managed root docs from the embedded doc set")
+	cmd.Flags().Bool("force-docs", false, "overwrite locally changed managed docs during refresh")
 	return cmd
 }
 
-// runInit implements CONTRACT.md's `init`: safe-by-default (an existing db
-// is left untouched and reported as "exists"; `--force` wipes and recreates
-// it) plus doc scaffolding. Doc scaffolding runs independently of db status
-// per the idempotency matrix in cli-embed-scaffold-CONTEXT.md — a missing
-// {kitDir}/docs is always filled in, an existing one is left untouched unless
-// `--refresh-docs` forces a canonical overwrite.
-func runInit(cmd *cobra.Command, force, refreshDocs bool, version string) error {
+// runInit creates or migrates the one root database, then projects managed
+// workflow docs with hash-based conflict protection. A legacy .kit database
+// must use the explicit layout migrator so init cannot silently fork state.
+func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version string) error {
+	if !infrastructure.Exists(dbPath) && infrastructure.Exists(legacyDBPath) {
+		return newUserError("layout_migration_required", "init: legacy database found at "+legacyDBPath+"; run `zharness migrate layout --to v2`")
+	}
 	if err := os.MkdirAll(kitDir, 0o755); err != nil {
 		return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 	}
@@ -46,8 +46,12 @@ func runInit(cmd *cobra.Command, force, refreshDocs bool, version string) error 
 	if infrastructure.Exists(dbPath) {
 		if !force {
 			status = "exists"
-		} else if err := os.Remove(dbPath); err != nil {
-			return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
+		} else {
+			for _, path := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
+				if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+					return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
+				}
+			}
 		}
 	}
 
@@ -61,9 +65,18 @@ func runInit(cmd *cobra.Command, force, refreshDocs bool, version string) error 
 	if err != nil {
 		return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 	}
+	if status == "created" {
+		if _, err := infrastructure.Replay(db, changesetDir); err != nil {
+			return newSystemError("changeset_replay_failed", fmt.Sprintf("init: %v", err))
+		}
+	}
 
-	scaffold, err := application.ScaffoldDocs(db, changesetDir, ".", kitDir, embedded.FS, version, refreshDocs)
+	scaffold, err := application.ScaffoldDocs(db, changesetDir, ".", kitDir, embedded.FS, version, refreshDocs, forceDocs)
 	if err != nil {
+		var conflict *application.ManagedDocsConflictError
+		if errors.As(err, &conflict) {
+			return newUserError("docs_conflict", fmt.Sprintf("init: %v; inspect %s", conflict, conflictDir))
+		}
 		return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 	}
 
@@ -77,12 +90,10 @@ func runInit(cmd *cobra.Command, force, refreshDocs bool, version string) error 
 
 	fmt.Fprintf(cmd.OutOrStdout(), "%s %s (schema_version=%d)\n", status, dbPath, schemaVersion)
 	if scaffold.DocsWritten {
-		fmt.Fprintf(cmd.OutOrStdout(), "scaffolded %s/docs (docs_version=%s)\n", kitDir, scaffold.DocsVersion)
+		fmt.Fprintf(cmd.OutOrStdout(), "scaffolded managed %s (docs_version=%s)\n", docsDir, scaffold.DocsVersion)
 	}
 	if scaffold.AgentsShimWritten {
-		fmt.Fprintln(cmd.OutOrStdout(), "wrote AGENTS.md shim at repo root")
-	} else if scaffold.AgentsShimNoticePath != "" {
-		fmt.Fprintf(cmd.OutOrStdout(), "AGENTS.md already exists at repo root; canonical shim content is at %s\n", scaffold.AgentsShimNoticePath)
+		fmt.Fprintln(cmd.OutOrStdout(), "updated AGENTS.md managed block")
 	}
 	if scaffold.GitignoreUpdated {
 		fmt.Fprintln(cmd.OutOrStdout(), "updated .gitignore")

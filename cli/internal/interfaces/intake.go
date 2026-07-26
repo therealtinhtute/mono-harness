@@ -20,16 +20,18 @@ func newIntakeCmd() *cobra.Command {
 			typ, _ := cmd.Flags().GetString("type")
 			summary, _ := cmd.Flags().GetString("summary")
 			lane, _ := cmd.Flags().GetString("lane")
-			return runIntake(cmd, typ, summary, lane)
+			planPath, _ := cmd.Flags().GetString("plan-path")
+			return runIntake(cmd, typ, summary, lane, planPath)
 		},
 	}
 	cmd.Flags().String("type", "", "new-spec|spec-slice|change-request|new-initiative|maintenance|harness-improvement")
 	cmd.Flags().String("summary", "", "one-line summary")
 	cmd.Flags().String("lane", "", "tiny|normal|high-risk")
+	cmd.Flags().String("plan-path", "", "repository-relative path to the initiative's evolving plan (optional)")
 	return cmd
 }
 
-func runIntake(cmd *cobra.Command, typ, summary, lane string) error {
+func runIntake(cmd *cobra.Command, typ, summary, lane, planPath string) error {
 	if !infrastructure.Exists(dbPath) {
 		return newSystemError("db_unreadable", "intake: no db at "+dbPath+"; run `zharness init` first")
 	}
@@ -39,7 +41,7 @@ func runIntake(cmd *cobra.Command, typ, summary, lane string) error {
 	}
 	defer db.Close()
 
-	id, _, err := application.CreateIntake(db, changesetDir, typ, summary, lane)
+	id, _, err := application.CreateIntake(db, changesetDir, typ, summary, lane, planPath)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

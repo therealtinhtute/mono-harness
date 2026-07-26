@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KYF9113CZZDYCWDVCJYK1SGY","fields":{"created_at":"2026-07-26T13:14:59Z","run_id":"01KYF75AMDJ8VB806YXW2H8ZPQ","summary":"Added replay-parity layout migration with staged semantic backfill and rollback tests","wave":3},"at":"2026-07-26T13:14:59Z"}

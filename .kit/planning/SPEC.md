@@ -1,112 +1,134 @@
 ---
-id: 01KY1ACKSV6F2TSV46EYED8JRN
+id: 01KYF4NZQ49M3SK6EF68CY1SEA
 type: spec
 phase: none
 lane: high-risk
-intake_id: 01KY1AG58T7HEV3JYKGCBWTQMY
-created: 2026-07-21
-updated: 2026-07-21
+intake_id: 01KYF4PHXC6GWRMBASYR06Q5B5
+created: 2026-07-26
+updated: 2026-07-26
 ---
 
-# SPEC: Harness Subtraction Pass — close the write-boundary, cut dead surface, drop fake scoring
+# SPEC: Harness Convergence Pass v3 — docs-first, one DB, mandatory CLI guard
 
 Status: locked
 Input Type: harness-improvement
 Lane: high-risk
-Risk Flags: public-contract, existing-behavior, data-model, multi-domain
-Affected Surfaces: provider, docs
+Risk Flags: data-model, public-contract, existing-behavior, multi-domain
+Affected Surfaces: db, docs
 Downstream: to-plan full
-Updated At: 2026-07-21
+Updated At: 2026-07-26
 
 ## Source Mode
-files
+idea — decision-complete design approved by the user after two structured clarification rounds
 
 ## Source Inputs
-- `.kit/reports/audit/20260721-harness-architecture-audit.md` — the architecture audit (source of truth for the problems)
-- User scoping decisions (brainstorm, 2026-07-21): Scope **A + remove scoring**; SQLite **kept, add write-commands**; scoring layer **removed in favor of the proof matrix**
-- Code read this session: `cli/internal/infrastructure/changeset.go`, `application/{score,audit}.go`, `.kit/docs/playbooks/{work,check}.md`
+- User goal: simplify the local workflow harness while adopting the upstream repository-harness mental model.
+- Approved Harness Convergence Pass v3 from the 2026-07-26 design session.
+- Local contracts: `AGENTS.md`, `skills/workflow/README.md`, `cli/docs/{CONTRACT,SCHEMA,STATE}.md`, embedded playbooks, current Cobra command surface.
+- Upstream `hoangnb24/repository-harness` at `0a79bbebf02d70a281d01fd060d0fd0af125e027`; relevant AGENTS/WORKFLOW/HARNESS semantics are unchanged from the previously audited `5ceb95c` baseline.
+- Closed predecessor planning archived at `.kit/planning/archive/harness-subtraction-pass-2026-07-21/`.
 
 ## Scenario
-refine existing spec — a subtraction/refactor initiative on the harness itself
+Refine the existing workflow harness architecture without replacing its Go CLI, changeset replay, or lifecycle entities.
 
 ## Goal
-Make the CLI own 100% of harness writes, remove built-but-unused surface, and delete the "deterministic verdict" scoring that measures string length rather than evidence — so the harness is leaner, its playbooks shorter, and no non-deterministic component (the LLM) ever hand-authors durable state. Keep every guarantee that matters: replay, traceability, and the lane×proof gate.
+Make the repository docs, code, tests, and runtime evidence authoritative while `zharness` provides mandatory stage preflight, durable-lifecycle state, replay, and mechanical rail guards. Remove parallel markdown bookkeeping and converge on one root database, tracked `.kit/changesets`, root workflow docs, and one evolving plan per durable initiative.
 
 ## Users / Actors
-The single owner-operator of this repo (the author), via the `work`/`check` skills and the `zharness` CLI. No second user; no multi-team concern.
+- The repository owner, who installs and operates the skills collection.
+- Coding agents invoking the eight active skills under `skills/workflow/`.
+- Consumer repositories initialized and guarded by the released `zharness` binary.
 
 ## Requirements
-1. **Close the write-boundary.** Add CLI commands so no playbook hand-authors changeset JSONL:
-   - `zharness run create` — registers the run row AND sets `meta.latest_run_id` in one transaction (replaces `work.md` step 2 full-mode hand-authored two-line changeset).
-   - `check record` sets `meta.latest_check_id` itself (via flag or by default), replacing the hand-authored meta changeset in `check.md` step 4.
-   - Audit every playbook for any remaining "hand-author a changeset" instruction; each must map to a real command.
-2. **Delete dead surface** (built, tested, cobra-wired, zero playbook consumers — grep-verified): `decision`, `backlog`, `tool` subcommands + their entities/tables/columns; `propose` and `score-context` commands. Remove their tests. Bump `schema_version` if tables are dropped from `migrations.go`.
-3. **Remove the scoring layer, keep the proof matrix.** Delete `score-trace` tier logic and `entropy_score` from `audit --json`; remove the `score-trace` loop from `check.md` Step 4. The lane×proof-class matrix remains the verdict. Update `CONTRACT.md` for the changed `audit --json` shape.
-4. **Single-source the playbooks.** Make `.kit/docs/playbooks/*` a pure projection of the Go embed (`cli/docs/embedded/playbooks/`). Add a test (or `zharness playbooks verify`) that fails if a scaffolded copy diverges from the embed. Humans edit only the embed.
-5. **Update the playbooks** (`work.md`, `check.md`) to call the new commands and drop the removed steps — net line reduction is a success signal.
+1. **Keep `.kit` and exactly one database.** The final layout MUST use root `harness.db` as the only writable database, gitignore `harness.db`, `harness.db-wal`, and `harness.db-shm`, and keep replayable tracked deltas at `.kit/changesets/*.changeset.jsonl`. It MUST NOT introduce `.harness/`, a core-state database, or a second baseline/snapshot database.
+2. **Make repository truth authoritative.** `AGENTS.md`, `docs/WORKFLOW.md`, product/architecture/decision docs, code, tests, and observable runtime behavior define intent and proof. SQLite is an execution ledger and recovery index, not product or policy authority.
+3. **Add universal CLI preflight.** `zharness preflight <stage> [--mode <mode>] --json` MUST support brainstorm, to-plan, work, check, handoff, watzup, git, and interview. Every active workflow skill MUST invoke it after the version gate and follow its playbook/readiness/stop result instead of hardcoding lifecycle assumptions.
+4. **Keep CLI mandatory and DB conditional.** A missing binary remains a hard stop. Read-only and bounded work MAY continue in reduced docs-first mode when the DB is missing and MUST perform zero harness-state writes. Durable mutations—brainstorm lock, to-plan, work full, check full, and durable handoff—MUST require an initialized DB and return a stable recovery action when absent.
+5. **Use one evolving plan for durable work.** The canonical file MUST be `docs/plans/active/{slug}.md`, moved to `docs/plans/completed/{slug}.md` after validation. Brainstorm writes outcome/requirements, to-plan adds approach/phases/verification, work updates progress, check updates validation, and handoff updates current state. No new SPEC, ROADMAP, phase CONTEXT/PLAN, RUN, CHECK, or HANDOFF markdown files may be generated by the v3 workflow.
+6. **Retain lifecycle tables without artifact duplication.** Keep meta, intakes, stories, runs, traces, checks, handoffs, and interventions. Add only the fields/table needed for the one-plan and managed-doc contracts. Runs/checks/handoffs MUST no longer require dedicated markdown artifact paths.
+7. **Complete status transitions.** Durable execution MUST transition a story `planned → in-progress → checked → done` through run creation, check recording, and phase-closing handoff. `resume` MUST no longer report a closed phase as planned because no transition command exists.
+8. **Project managed workflow docs safely.** Root managed docs MUST be `docs/WORKFLOW.md` and `docs/playbooks/*.md`; `AGENTS.md` MUST use a marked managed block that preserves all bytes outside it. Installed per-file SHA-256 and docs version MUST live in a `managed_docs` DB table. Refresh MUST update untouched files, preserve local-only edits, and stop with staged upstream content under ignored `.kit/conflicts/` when local and embedded content both changed.
+9. **Provide a reusable layout migration.** `zharness migrate layout --to v2 [--dry-run]` MUST replay `.kit/changesets` into a temporary root DB, prove normalized state parity, atomically activate it, project root docs, and remove the tracked `.kit/harness.db` only after success. Existing changesets MUST remain append-only and unchanged.
+10. **Consolidate legacy markdown.** The current tracked planning/run/check/handoff history MUST be summarized in `docs/plans/completed/workflow-harness-history-2026-07.md`. After coverage and replay verification, obsolete `.kit/planning`, `.kit/plans`, `.kit/runs`, `.kit/reports`, `.kit/HANDOFF.md`, and `.kit/docs` working-tree copies MUST be removed with `trash`; raw detail remains in Git history and `docs/workflow-harness/` remains provenance.
+11. **Port the upstream mental model, not its optionality.** The docs MUST encode independent work-shape and human-judgment decisions, authority-before-edit, “configurable defaults are not authority,” “discovery does not expand authority,” behavior-appropriate evidence, honest missing-proof reporting, and durable decisions only when future work needs them independently.
+12. **Keep the default context small.** The managed AGENTS block plus `docs/WORKFLOW.md` MUST total no more than 1,000 words. Stage playbooks MUST contain stage-specific procedure only and MUST not duplicate global authority/work-shape rules.
+13. **Preserve bounded-work simplicity.** Bounded/simple work invokes preflight but creates no intake, story, run, trace, check, handoff, plan, report, or changeset. The Git diff and executable/observable proof remain its durable evidence.
+14. **Avoid speculative infrastructure.** This pass MUST NOT add changeset compaction, a generic events schema, CI workflow changes, a new service, a new workflow skill, a fake consumer runbook, or upstream’s Rust updater/three-way-merge system.
 
 ## Boundaries
 ### In Scope
-- `cli/internal/**` command additions (run create, check meta pointer), deletions (dead entities/commands), scoring removal
-- `cli/internal/infrastructure/migrations.go` schema change for dropped tables (+ schema_version bump)
-- `cli/docs/CONTRACT.md`, `SCHEMA.md` updates for changed/removed command shapes
-- Embedded playbooks (`cli/docs/embedded/playbooks/{work,check}.md`) rewrites; `.kit/docs/` re-scaffold
-- A playbook drift-check test
-- Tests for every new command; removal of tests for deleted surface
+- `cli/internal/{domain,application,infrastructure,interfaces}` command, schema, migration, replay, preflight, docs-hash, lifecycle-status, resume, validation, and scaffold behavior.
+- `cli/docs/embedded/` and projection/drift tests.
+- All eight active `skills/workflow/*/SKILL.md` adapters and required references.
+- Root `AGENTS.md`, `skills/workflow/README.md`, CLI contracts, root workflow docs, one-plan template, and repository-facing migration guidance.
+- Dogfood migration of this repository’s existing 43 changesets and tracked legacy artifacts.
+- Go unit/integration tests and real-binary smoke verification.
 
 ### Out of Scope
-- **Dropping SQLite / in-memory fold** (audit #7) — deferred; DB is kept as-is
-- **Memory unification** (audit #4) — deferred to a later initiative
-- **Playbook length reduction beyond what these changes naturally remove** (audit #5) — deferred
-- **Folding `interview` into `brainstorm`, `zharness next` front door** (audit #8, #9) — deferred
-- **Making scoring "real" by enriching the trace schema** — explicitly rejected (chose removal)
-- Any change to the changeset JSONL on-disk format or ULID/fence/replay mechanics
+- `.harness/` or any second database/state generation.
+- Changeset compaction or rewriting historical changesets.
+- Generic event-store schema conversion.
+- Full lifecycle state for read-only or bounded work.
+- New workflow skills, services, runtimes, API integrations, credentials, or MCP dependencies.
+- GitHub Actions/CI workflow modifications.
+- Application-specific product runbooks invented without consumer-owned commands.
 
 ## Constraints
-- Changesets are append-only and replayed from empty: the existing 10 committed changesets under `.kit/changesets/` MUST still replay byte-clean after the schema change (none reference dropped entities — verify).
-- `harness.db` is gitignored/rebuildable; the schema_version bump must not break `init` on a fresh clone or `import` on a legacy `.kit/`.
-- No behavior change to the lane×proof gate's pass/fail outcome (only the vestigial score output is removed).
-- Solo/local-first; no network, no new heavy dependencies.
+- Read before edit; changes must be surgical and preserve current public behavior outside the approved contract changes.
+- Every mutating CLI operation remains changeset-first and transactionally applied.
+- Existing 43 changesets must replay in ULID order without modification.
+- Migration failure must leave the old database and managed files active and unchanged.
+- Consumer-owned content outside the AGENTS managed block must be byte-preserved.
+- Root docs refresh must never overwrite locally changed files without explicit force.
+- Each implementation phase must leave a usable, testable harness if later phases never ship.
+- Legacy deletion uses `trash`, never `rm`.
 
 ## Acceptance Criteria
-- `zharness --help` no longer lists `decision`, `backlog`, `tool`, `propose`, `score-context`; `go build ./...` green; `go test ./...` green with dead-surface tests removed.
-- `grep` across `cli/docs/embedded/playbooks/**` and `.kit/docs/playbooks/**` finds **no** instruction to hand-author a `.changeset.jsonl` file (changeset literals appear only inside `db changeset apply` examples, not as author-this steps).
-- `zharness run create ...` creates the run row and sets `latest_run_id` atomically (verified by `query state --json` + a replay-from-scratch check).
-- `check record` sets `latest_check_id` with no separate hand-authored meta changeset.
-- `zharness audit --json` output no longer contains an `entropy_score` field; `check.md` no longer calls `score-trace`; a real `check` gate run still blocks on a missing required proof cell.
-- A test asserts `.kit/docs/playbooks/*` == embed byte-for-byte.
-- Replay of the existing committed changesets reproduces the same `resume --json` as before (no regression from the schema change).
+- `zharness preflight` returns deterministic ready/reduced/blocked routing for every active workflow stage and does not mutate state.
+- All eight active workflow skills call the common preflight contract; no active skill independently invents DB/docs readiness behavior.
+- A fresh `zharness init` creates one root `harness.db`, tracked-path-ready `.kit/changesets`, root managed docs, and no `.kit/harness.db` or `.harness/`.
+- Layout migration replays all existing changesets and preserves normalized resume/query state before removing the old tracked DB.
+- Managed-doc tests cover missing, untouched, already-current, local-only, and local+upstream-conflict states; no local edit is overwritten by default.
+- A full durable fixture produces one evolving plan and the complete DB lifecycle, ending with story status `done`.
+- A bounded fixture changes neither DB checksum nor changeset count and creates no workflow markdown artifact.
+- `resume`, `validate`, `watzup`, and `git` work without RUN/CHECK/HANDOFF files.
+- Current legacy files are represented in the completed history summary before their working-tree removal.
+- Root AGENTS managed block plus WORKFLOW stays within 1,000 words; every documented zharness command exists in the live Cobra tree; the five already-removed commands are absent from managed docs.
+- `cd cli && go test ./...` and real-binary lifecycle/migration smoke checks pass.
 
 ## Validation Expectations
-- **unit** (required): Go unit tests for `run create`, `check record` meta-pointer, migration/schema change, scoring removal.
-- **integration** (required): init → run create → replay-from-scratch produces identical state; import of a legacy `.kit/` still works after schema bump.
-- **command-output** (required): real `zharness` binary smoke test of the new/changed commands, captured verbatim.
-- **manual-check** (required, high-risk): review pass over the diff (Security/Arch/Quality), especially migration safety and playbook correctness.
-- **e2e** (optional): a full `work → check` dry pass on a scratch phase using the new commands.
+- **Unit required:** preflight matrix, managed-doc hash cases, marked-block merge, schema/status transitions, no-write bounded route, command parsing.
+- **Integration required:** fresh init, 43-changeset root-DB replay, layout migration rollback/parity, durable one-plan lifecycle, reduced-mode operation.
+- **Command output required:** live `zharness` help/preflight/init/migrate/resume/query/validate smoke evidence.
+- **Manual review required:** security, data migration, authority direction, deletion coverage, public command compatibility, and proof honesty.
+- **E2E optional:** clean scratch consumer run from init through one completed durable plan.
 
 ## Dependencies / Assumptions
-- `decision`/`backlog`/`tool`/`propose`/`score-context` are truly unconsumed — verified by grep this session; re-verify at plan time before deleting.
-- The proof matrix in `check.md` is self-sufficient as the verdict without any trace tier input — confirmed by reading `check.md` Step 4 (matrix FAIL is already the hard stop; score-trace only gates whether a trace "counts" as evidence, which the command-output/manual-check classes already cover).
-- goreleaser/install path unaffected (no release-format change in scope).
+- Go toolchain, Git, and the current `zharness` binary are available locally.
+- No external service, credential, account, API, or MCP server is required.
+- One evolving plan is sufficient for one durable initiative; independently owned workstreams become separate initiatives/plans rather than recreating a roadmap/phase-file hierarchy.
+- At 43 changesets, full replay remains acceptable; performance evidence, not anticipation, will trigger any future compaction design.
 
 ## Key Decisions
-- **Scope A (subtraction slice) + scoring removal**, not full core rework — chosen for low risk, no cross-dependencies, fastest leverage. Rejected: Option C (drop SQLite + unify memory + shrink playbooks) — high effort, touches replay, deferred to a later initiative.
-- **Keep SQLite, add write-commands** — chosen as the conservative boundary fix. Rejected: dropping the DB and folding the changeset log in memory (audit Option B) — larger blast radius on query/resume/audit, deferred.
-- **Remove scoring, keep the matrix** — the lane×proof matrix is the real, meaningful verdict; `score-trace`/`entropy_score` are deterministic-but-meaningless (measure string length / finding counts). Rejected: enriching the trace schema to make scoring valid — heavier, schema-touching, out of this slice.
+- **Chosen: root DB + `.kit/changesets` + root docs.** Rejected: replacing `.kit` with `.harness`; it discards the local namespace without adding value.
+- **Chosen: exactly one database.** Rejected: `.kit/core-state/harness.db`; local SCHEMA already scales upstream’s dual-generation mechanism down to one DB plus a replay fence.
+- **Chosen: CLI always, DB when durable.** Rejected: DB writes for every request because that recreates ceremony upstream intentionally removed; rejected fully optional CLI because it weakens the requested rail guard.
+- **Chosen: one evolving plan.** Rejected: SPEC/ROADMAP/CONTEXT/PLAN/RUN/CHECK/HANDOFF parallel records because current DB/report ID divergence proves the duplication is already failing.
+- **Chosen: retain typed lifecycle tables.** Rejected: generic events because it weakens query/validation and requires a larger migration with no demonstrated benefit.
+- **Chosen: managed-doc hashes in DB.** Rejected: another manifest file and force-overwrite refresh; the DB already exists for durable harness metadata and can detect conflicts without a second state form.
+- **Chosen: no compaction now.** Rejected: baseline snapshot machinery because 43 changesets do not justify another persistent state representation.
 
 ## Open Questions
-- Does `check record`'s meta-pointer become default behavior or an opt-in `--set-latest` flag? (Lean: default, since the playbook always wants it; confirm at plan time.)
-- Drop the dead tables in `migrations.go` (schema_version bump) vs leave the tables but remove the commands? (Lean: drop tables for a true subtraction; must prove replay safety. Decide in to-plan.)
+None. Layout, authority, CLI/DB boundary, artifact model, docs ownership, legacy migration, and schema direction were explicitly approved.
 
 ## Deferred Ideas
-- Drop SQLite / in-memory state fold (audit #7)
-- Unify the two memory systems into the `decisions` store (audit #4, #7)
-- Shrink playbooks to target lengths / DRY the version-gate boilerplate (audit #5, #10)
-- Fold `interview` into `brainstorm --grill`; add `zharness next` front door (audit #8, #9)
-- Push procedural stages to Sonnet (audit #12)
+- Changeset compaction after measured replay cost justifies it.
+- A release self-updater or automatic three-way merge if consumer update frequency proves the need.
+- Consumer-specific application runbooks once real start/readiness/cleanup commands exist.
+- CI enforcement changes in a separately approved initiative.
 
 ## Ambiguity Report
-- **Goal clarity**: high — three concrete, independent changes with a shared theme (subtraction).
-- **Scope clarity**: high — In/Out scope explicit; the two big deferrals (SQLite, memory) named.
-- **Constraints clarity**: high — replay-safety and no-gate-behavior-change are the hard constraints.
-- **Acceptance clarity**: high — each criterion is grep-able, test-able, or a captured command output. Two open questions (defaults) are plan-time details, not scope gaps.
+- Goal clarity: high — target layout, authority direction, and stage behavior are explicit.
+- Scope clarity: high — four independently mergeable implementation phases and exclusions are locked.
+- Constraint clarity: high — one DB, append-only replay, safe docs refresh, no CI changes, and no bounded-state writes are hard constraints.
+- Acceptance clarity: high — every requirement maps to a unit, integration, command-output, or migration-parity check.

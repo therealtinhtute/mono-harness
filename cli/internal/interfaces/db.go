@@ -10,8 +10,6 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-const changesetDir = ".kit/changesets"
-
 func newDBCmd() *cobra.Command {
 	db := &cobra.Command{
 		Use:   "db",

@@ -1,71 +1,80 @@
-# ROADMAP: Harness Subtraction Pass
+# ROADMAP: Harness Convergence Pass v3
 
 ## Planning Basis
 - source spec: `.kit/planning/SPEC.md`
 - planning mode: `full`
-- entry phase (recommended): **write-boundary**
-- execution mode: `work full` (high-risk lane — proof matrix requires unit + integration + command-output + manual-check)
-- sequencing: **linear** — phases 2 and 3 both edit `score.go`/`audit.go`/`check` playbook; phase 4 depends on the final playbook text. Linear order avoids same-file conflicts.
+- entry phase: **universal-preflight**
+- execution mode: `work full`
+- lane: high-risk
+- sequencing: linear; each phase is independently mergeable and leaves a usable harness
 
-## Phase 1: write-boundary
-**Status:** done — implemented + gated APPROVED 2026-07-21 (commit `32cb60c`, check report `.kit/reports/check/20260721-1044-write-boundary.md`). Bookkeeping only was stale (this ROADMAP + the phase PLAN/CONTEXT status fields, and the harness `stories.status` DB row, which the CLI has no command to transition — a confirmed gap, not yet fixed).
+## Phase 1: universal-preflight
+**Status:** ready
 
-**Goal:** The CLI owns 100% of harness writes — no playbook hand-authors changeset JSONL.
-
-**Deliverables:**
-- `zharness run create` command: creates the run row + sets `meta.latest_run_id` atomically (one changeset, one tx).
-- `check record` sets `meta.latest_check_id` itself (default behavior; no separate hand-authored meta changeset).
-- `work.md` + `check.md` embedded playbooks rewritten to call the new commands; hand-authored-JSONL steps deleted.
-
-**Dependencies:**
-- none (entry phase)
-
-**Risks / Watch-fors:**
-- `run create` must reproduce the exact two-line semantics (create run + meta pointer) the playbook did by hand, or replay/resume drifts.
-- Simple-mode must keep skipping DB registration (FK constraint on `runs.story_slug`) — `run create` is full-mode only.
-
-## Phase 2: dead-surface-removal
-**Goal:** Remove built-but-unused surface: `decision`, `backlog`, `tool`, `propose`, `score-context`.
+**Goal:** Every active workflow skill receives deterministic CLI routing from one read-only preflight contract while the current layout remains operational.
 
 **Deliverables:**
-- Cobra subcommands + interfaces + application code + entity rows/tables/columns for the five removed.
-- `migrations.go` schema change dropping unused tables + `schema_version` bump.
-- Their tests deleted; `go build`/`go test` green.
+- `zharness preflight <stage> [--mode] --json` with ready/reduced/blocked routing.
+- Table-driven stage/mode/DB/docs matrix and zero-write proof.
+- Eight workflow skill adapters use preflight; no stage invents readiness behavior.
 
 **Dependencies:**
-- write-boundary (settles the CLI command set first; sequencing only)
+- locked v3 SPEC only
 
 **Risks / Watch-fors:**
-- Schema change must not break replay of the existing committed changesets (none reference dropped entities — verify by grep before deleting) or `import` of a legacy `.kit/`.
-- `propose` lives in `audit.go`, `score-context` in `score.go` — the same files Phase 3 edits; do Phase 2 first to keep deletions cohesive.
+- preflight must not mutate files or DB, including when state is missing.
+- current skill UX and existing full lifecycle must remain usable before the layout migration.
 
-## Phase 3: scoring-removal
-**Goal:** Delete the meaningless "deterministic verdict" scoring; keep the lane×proof matrix as the real verdict.
+## Phase 2: root-layout
+**Status:** ready
+
+**Goal:** Move to one root database and root managed docs while preserving `.kit/changesets` and the current lifecycle artifact chain.
 
 **Deliverables:**
-- `ScoreTrace` tier logic + `score-trace` command + `entropy_score` field removed from `audit --json`.
-- `check.md` Step 4 no longer loops `score-trace`; the proof matrix remains the gate.
-- `CONTRACT.md` / `SCHEMA.md` updated for the changed `audit --json` shape.
+- root `harness.db` as the only DB; `.kit/changesets` unchanged.
+- root docs projection, marked AGENTS block, `managed_docs` hash guard.
+- `zharness migrate layout --to v2 [--dry-run]` with replay/parity/rollback behavior.
+- dogfood migration of this repository without deleting legacy lifecycle markdown yet.
 
 **Dependencies:**
-- dead-surface-removal (shares `score.go`/`audit.go`)
+- universal-preflight
 
 **Risks / Watch-fors:**
-- The lane×proof gate's pass/fail outcome MUST be unchanged — only the vestigial score output goes. Prove with a check-gate run that still FAILs on a missing required proof cell.
+- old DB stays active until temporary root DB replay and normalized parity pass.
+- root docs may be consumer-owned; conflicts must stop rather than overwrite.
 
-## Phase 4: single-source-playbooks
-**Goal:** `.kit/docs/playbooks/*` is a pure projection of the Go embed; drift is caught by a test.
+## Phase 3: one-plan-lifecycle
+**Status:** ready
+
+**Goal:** Replace parallel SPEC/ROADMAP/phase/RUN/CHECK/HANDOFF files with one evolving durable plan while retaining typed DB lifecycle guards.
 
 **Deliverables:**
-- `init` writes playbooks as a projection of `cli/docs/embedded/playbooks/`; documented that humans edit only the embed.
-- A test (or `zharness playbooks verify`) failing when a scaffolded copy diverges from the embed.
+- `docs/plans/active/{slug}.md` lifecycle and plan scaffold.
+- DB commands no longer require run/check/handoff markdown paths.
+- automatic story status transitions through `done`.
+- legacy history consolidated, verified, and obsolete artifact trees removed with `trash`.
 
 **Dependencies:**
-- write-boundary + scoring-removal (playbook text must be final before locking the projection)
+- root-layout
 
 **Risks / Watch-fors:**
-- The drift test must compare against the embed as the single source of truth, not freeze a stale `.kit/docs/` copy.
+- bounded work must remain zero-write.
+- resume/validate/watzup/git must work after report files disappear.
 
-## Next Steps
-- **All 4 phases are done** — write-boundary (`32cb60c`), dead-surface-removal, scoring-removal (`2d6e2fc`), single-source-playbooks (`7ee007f`) — each gated APPROVED and committed/pushed. The Harness Subtraction Pass is closed; no further phase is queued.
-- Bookkeeping gap (pre-existing, not yet fixed): `stories.status` in the DB still shows `planned` for all 4 phases and `zharness query state`'s `current_phase` still reads `write-boundary` — there is no CLI command to transition story status, so this drift is expected, not a sign of unfinished work.
+## Phase 4: docs-first-contract
+**Status:** ready
+
+**Goal:** Rewrite the managed entrypoint, workflow map, stage playbooks, and public contracts around upstream’s docs-first authority model plus the intentional local CLI guard.
+
+**Deliverables:**
+- AGENTS managed block + WORKFLOW combined ≤1,000 words.
+- concise stage playbooks with no duplicated global policy or dead commands.
+- updated CLI/state/schema/migration docs and workflow README.
+- final clean tree, full Go tests, live-binary smoke checks, and migration evidence.
+
+**Dependencies:**
+- one-plan-lifecycle
+
+**Risks / Watch-fors:**
+- docs must not claim harness rows prove product behavior.
+- no CI workflow, compaction, updater, extra DB, or invented consumer runbook may enter scope.

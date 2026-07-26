@@ -11,11 +11,8 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-// kitRoot is the .kit/-equivalent directory validate walks. Per
-// CONTRACT.md, `validate` takes no path argument — it always assumes
-// .kit/ relative to cwd, same convention as dbPath/changesetDir.
-const kitRoot = ".kit"
-
+// Validate keeps walking the current legacy artifact root until the
+// one-plan phase replaces its cross-link model.
 func newValidateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "validate",

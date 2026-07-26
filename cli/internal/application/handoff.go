@@ -15,7 +15,7 @@ import (
 // DB-lookup-dependent (only checked when the corresponding flag is given),
 // so they're enforced here rather than in domain.Handoff.Validate() — same
 // pattern as CreateTrace's optional --run-id.
-func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []string) (id, path string, err error) {
+func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []string, closePhase bool) (id, path string, err error) {
 	entity := domain.Handoff{
 		RunID:   optionalString(runID),
 		CheckID: optionalString(checkID),
@@ -44,6 +44,33 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []
 		}
 	}
 
+	var closingStoryID string
+	if closePhase {
+		if runID == "" || checkID == "" {
+			return "", "", &domain.ValidationError{Code: "missing_required_field", Message: "handoff record: --close-phase requires run_id and check_id"}
+		}
+		checkRunID, verdict, exists, err := checkForPhaseClose(db, checkID)
+		if err != nil {
+			return "", "", err
+		}
+		if !exists {
+			return "", "", &domain.ValidationError{Code: "unknown_check_id", Message: "handoff record: check_id " + checkID + " not found"}
+		}
+		if checkRunID != runID {
+			return "", "", &domain.ValidationError{Code: "check_run_mismatch", Message: "handoff record: check does not gate the supplied run"}
+		}
+		if verdict == domain.VerdictRequestChanges {
+			return "", "", &domain.ValidationError{Code: "check_not_clean", Message: "handoff record: cannot close a phase with REQUEST_CHANGES"}
+		}
+		closingStoryID, _, exists, err = storyForRun(db, runID)
+		if err != nil {
+			return "", "", err
+		}
+		if !exists {
+			return "", "", &domain.ValidationError{Code: "unknown_run_id", Message: "handoff record: run_id " + runID + " not found"}
+		}
+	}
+
 	at := time.Now().UTC().Format(time.RFC3339)
 	id = ulid.Make().String()
 	anchors := map[string]any{"open_items": openItems}
@@ -63,9 +90,11 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []
 	if checkID != "" {
 		fields["check_id"] = checkID
 	}
-	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
-		{Op: "create", Entity: "handoff", ID: id, Fields: fields, At: at},
-	})
+	lines := []infrastructure.ChangesetLine{{Op: "create", Entity: "handoff", ID: id, Fields: fields, At: at}}
+	if closePhase {
+		lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: closingStoryID, Fields: map[string]any{"status": domain.StoryDone}, At: at})
+	}
+	path, _, err = AppendAndApply(db, changesetDir, lines)
 	if err != nil {
 		return "", "", err
 	}

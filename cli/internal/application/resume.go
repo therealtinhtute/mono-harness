@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // Position mirrors CONTRACT.md's `resume --json` position sub-object: the
@@ -41,17 +40,6 @@ type ResumeView struct {
 	LatestHandoffID *string        `json:"latest_handoff_id"`
 	Drift           []DriftFinding `json:"drift"`
 	Readiness       string         `json:"readiness"`
-}
-
-func runArtifactPathByID(db *sql.DB, id string) (path string, exists bool, err error) {
-	err = db.QueryRow(`SELECT artifact_path FROM runs WHERE id = ?`, id).Scan(&path)
-	if err == sql.ErrNoRows {
-		return "", false, nil
-	}
-	if err != nil {
-		return "", false, fmt.Errorf("query run %q: %w", id, err)
-	}
-	return path, true, nil
 }
 
 func checkRunIDByID(db *sql.DB, id string) (runID string, exists bool, err error) {
@@ -117,20 +105,6 @@ func Resume(db *sql.DB, cliVersion string) (ResumeView, error) {
 		return view, fmt.Errorf("resume: %w", err)
 	} else if exists {
 		view.LatestHandoffID = &id
-	}
-
-	if state.LatestRunID != nil {
-		artifactPath, exists, err := runArtifactPathByID(db, *state.LatestRunID)
-		if err != nil {
-			return view, fmt.Errorf("resume: %w", err)
-		}
-		if exists && artifactPath != "" && !infrastructure.Exists(artifactPath) {
-			view.Drift = append(view.Drift, DriftFinding{
-				Type:     "missing_file",
-				Detail:   fmt.Sprintf("run %s artifact_path %q not found on disk", *state.LatestRunID, artifactPath),
-				Recovery: "re-run `work` for the current phase, or correct the run's artifact_path",
-			})
-		}
 	}
 
 	if state.LatestCheckID != nil {

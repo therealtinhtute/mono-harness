@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KYF6CPWHRYHF1EAAJMTRF10F","fields":{"created_at":"2026-07-26T12:28:56Z","run_id":"01KYF4Z95MQJG7PEZPF00JKC9H","summary":"Converted all eight workflow skills to common preflight and proved full-suite zero-write behavior","wave":3},"at":"2026-07-26T12:28:56Z"}
