@@ -3,7 +3,7 @@
 Invoke these skills proactively at the right moment — user does not need to type the slash command.
 
 ## Session Start
-- Session has uncommitted changes, `.kit/HANDOFF.md`, or in-progress `.kit/runs/` → invoke `watzup` before answering.
+- Session has uncommitted changes, or `zharness resume` reports `drifted`/`in-progress` → invoke `watzup` before answering.
 
 ## Diagnosing Problems
 - Error, crash, regression, or "it's not working" before any fix attempt → invoke `hunt`.
@@ -12,7 +12,7 @@ Invoke these skills proactively at the right moment — user does not need to ty
 - Intent is fuzzy or contradictory before planning → invoke `interview` to clarify first.
 - New feature, system, or architectural question with scope > 3 files → invoke `brainstorm`.
 - Architecture decision, "should we build X", "is this worth it" → invoke `think`.
-- `SPEC.md` locked or user says "make a plan" / "what are the steps" → invoke `to-plan`.
+- Plan locked in `docs/plans/active/{slug}.md` or user says "make a plan" / "what are the steps" → invoke `to-plan`.
 
 ## Implementation
 - Approved roadmap or spec exists and user says "let's go" / "implement" / "直接改" → invoke `work`.

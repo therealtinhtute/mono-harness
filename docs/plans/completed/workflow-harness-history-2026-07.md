@@ -280,6 +280,15 @@ Current untracked protected changesets:
 4. `.kit/changesets/01KYGRQGV0ZS281GCB82N3ETDT.changeset.jsonl`
 5. `.kit/changesets/01KYGWA9M8GCHBAD0EB9EFXWCS.changeset.jsonl`
 
+### Pre-implementation design docs — 2 removed during v3 Phase 4 `docs-first-contract`
+
+Two root `docs/` files predated the `zharness` CLI and one-plan model entirely and were superseded by the shipped implementation (`cli/`, embedded playbooks, `docs/plans/active/{slug}.md`). Neither is referenced by `docs/workflow-harness/`'s retained-provenance decision (#10 below), which scopes only to that subdirectory.
+
+1. `docs/SKILLS_HARNESS_ARCHITECTURE.md` (526 lines, dated 2026-05-11, `Status: draft`) — the original pre-CLI proposal defining workflow roles, canonical-vs-ephemeral artifacts, and refactor targets for six core skills around a hand-authored `.kit/planning|runs|reports` layout and `.kit/HANDOFF.md`. Its stated goal ("define the workflow roles... the refactor targets needed to make the skills harness-first") is fully achieved by the shipped `zharness` CLI, embedded playbooks under `cli/docs/embedded/playbooks/`, and the one-plan contract in `docs/plans/active/{slug}.md` — the design target became the implementation, and the draft's own artifact layout (`SPEC.md`/`ROADMAP.md`/per-phase `-CONTEXT.md`/`-PLAN.md`/`runs/`/`reports/`/`HANDOFF.md`) no longer exists in tracked `.kit/` (changesets-only, per Wave 4 above).
+2. `docs/workflow-state-dogfood.md` (166 lines) — a worked example of `.kit/workflow-state.yml` staying coherent across `to-plan → work → check → handoff → watzup`. `workflow-state.yml` was the hand-edited pointer file the harness replaced (see decision #4 above); the real, non-synthetic dogfood evidence for the actual `zharness`-backed chain lives in `docs/workflow-harness/pilot-evidence/2026-07-17-lab-skills-import.md` and the 2026-07-19 second-agent-pilot files, which supersede this synthetic scenario.
+
+Both were removed with `trash` (recoverable), summarized here per the same raw-provenance-in-Git-history principle applied to the `.kit/` legacy artifacts above.
+
 ### Retained `docs/workflow-harness/` provenance — not deletion targets
 
 1. `docs/workflow-harness/gap-matrix.md`

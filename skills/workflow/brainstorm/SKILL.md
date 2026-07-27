@@ -2,7 +2,7 @@
 name: brainstorm
 version: "4.2.0"
 model: opus
-description: "Explore options, evaluate trade-offs, and lock the result into `.kit/planning/SPEC.md` when ready. Use for ideation, architecture decisions, RFC/PRD-to-spec work, and refining an existing spec."
+description: "Explore options, evaluate trade-offs, and lock the result into `docs/plans/active/{slug}.md` when ready. Use for ideation, architecture decisions, RFC/PRD-to-spec work, and refining an existing plan."
 license: MIT
 argument-hint: "[idea, @file refs, or trade-off question]"
 compatibility: Designed for Claude Code

@@ -99,7 +99,7 @@ Search for related GitHub issues and add to PR body. See `commit-standards.md`.
 ```
 
 **For complex operations (PR, merge):**
-Save to: `.kit/reports/git/{YYYYMMDD-HHmm}-{operation}.md`
+Save to: `.kit/cache/reports/git/{YYYYMMDD-HHmm}-{operation}.md` (gitignored local scratch — `git` is a sidecar skill and does not own harness lifecycle artifacts)
 
 Frontmatter:
 ```yaml

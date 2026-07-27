@@ -2,7 +2,7 @@
 name: handoff
 version: "1.3.0"
 model: sonnet
-description: "Prospective: capture current session state into .kit/HANDOFF.md so the next session can resume without context loss."
+description: "Prospective: persist current session state into the active plan's Current State section and a DB handoff row so the next session can resume without context loss."
 argument-hint: "[context]"
 compatibility: Designed for Claude Code
 metadata:

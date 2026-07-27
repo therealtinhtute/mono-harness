@@ -1,0 +1,1 @@
+{"op":"create","entity":"trace","id":"01KYHRF9W06NQQ961HF57GH1RS","fields":{"created_at":"2026-07-27T12:23:24Z","run_id":"01KYHRD45HGXA9JMY7MJ9XT80X","summary":"Fixed stale entrypoint/global-trigger contract in rules/workflow-core.md; AGENTS.md and docs/WORKFLOW.md already clean","wave":1},"at":"2026-07-27T12:23:24Z"}

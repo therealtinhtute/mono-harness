@@ -74,8 +74,8 @@ watzup → work → check → git → handoff          (resume existing work)
 brainstorm → to-plan → work → check → git → handoff  (new work)
 ```
 - `watzup` — recap branch state, committed + uncommitted changes, handoff context, recommend next action (session start)
-- `brainstorm` — explore options and lock requirements into `.kit/planning/SPEC.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
-- `to-plan` — generate executable phase plans from the locked spec
+- `brainstorm` — explore options and lock requirements into `docs/plans/active/{slug}.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
+- `to-plan` — generate executable phase plans from the locked plan's requirements
 - `work` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
 - `check` — pre-commit gate and post-implementation review (also invoked per phase by `work`)
 - `git` / `handoff` — session close-out

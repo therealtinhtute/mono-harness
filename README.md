@@ -17,35 +17,25 @@ The repository has **14 skills** organized above a four-layer workflow runtime:
 
 ```text
 .kit/
-├── planning/
-│   ├── IDEA.md
-│   ├── SPEC.md
-│   ├── ROADMAP.md
-│   └── phases/{phase-slug}/
-│       ├── {phase-slug}-CONTEXT.md
-│       └── {phase-slug}-PLAN.md
-├── changesets/         (committed ULID-named JSONL — replay source)
-├── runs/work/          (execution logs)
-├── reports/            (brainstorm, check, and optional work evidence)
-├── HANDOFF.md          (latest continuity snapshot)
+├── changesets/         (committed ULID-named JSONL — replay source; the only tracked content)
+├── cache/               (gitignored local scratch, e.g. sidecar-skill reports)
 ├── docs/               (generated playbooks — gitignored)
 └── harness.db          (generated SQLite view — gitignored)
 ```
 
+Durable initiative markdown lives outside `.kit/`, as one evolving plan at `docs/plans/active/{slug}.md`, moved to `docs/plans/completed/{slug}.md` after final closure.
+
 #### What lives where
 
-- `planning/` locks the intent, roadmap, phase boundaries, and executable plans.
-- `changesets/` is the replayable source for harness entities and pointers.
-- `harness.db` is a local materialized view rebuilt from committed changesets.
+- `changesets/` is the only tracked content in `.kit/` — the replayable source for every harness entity and pointer.
+- `harness.db` is a local materialized view rebuilt from committed changesets (`zharness init` + replay).
 - `docs/` contains generated canonical playbooks scaffolded by `zharness init`.
-- `runs/work/` records execution; `reports/check/` records gate evidence and verdicts.
-- `HANDOFF.md` captures the latest session handoff while `zharness resume --json` derives continuity from durable state.
+- `docs/plans/active/{slug}.md` is the one durable plan per initiative: outcome, requirements, phases/waves/tasks, append-only Progress/Decisions/Validation, and Current State.
 
 #### Mental model
 
-- `.kit/planning/` answers **what is locked**.
-- `.kit/runs/` answers **what execution did**.
-- `.kit/reports/` answers **what evidence and review concluded**.
+- `docs/plans/active/{slug}.md` answers **what is locked, what execution did, and what evidence concluded** — one file, not three.
+- `.kit/changesets/` answers **how to rebuild the DB from scratch**.
 - `zharness resume --json` answers **where to continue and whether recovery is needed**.
 
 ## Machine Setup
@@ -109,13 +99,13 @@ bash scripts/setup-statusline.sh
 
 | Skill | When | What it does |
 | :--- | :--- | :--- |
-| [`/brainstorm`](skills/workflow/brainstorm/SKILL.md) | Project bootstrap, feature scoping, ideation, architecture decisions | Turn an idea, notes, or markdown files into a locked `.kit/planning/SPEC.md` — exploring options and trade-offs along the way. |
-| [`/to-plan`](skills/workflow/to-plan/SKILL.md) | After brainstorm, before implementation | Turn a locked `.kit/planning/SPEC.md` into a roadmap, per-phase context, and executable wave-based plans. |
+| [`/brainstorm`](skills/workflow/brainstorm/SKILL.md) | Project bootstrap, feature scoping, ideation, architecture decisions | Turn an idea, notes, or markdown files into a locked `docs/plans/active/{slug}.md` — exploring options and trade-offs along the way. |
+| [`/to-plan`](skills/workflow/to-plan/SKILL.md) | After brainstorm, before implementation | Turn a locked plan's requirements into an approach and executable wave-based phases inside the same file. |
 | [`/work`](skills/workflow/work/SKILL.md) | "Implement this plan", "build it end-to-end" | Execution orchestrator after `brainstorm` + `to-plan`. Routes to upstream skills if artifacts are missing; runs phase waves; verifies every task; gates via `/check`. |
 | [`/interview`](skills/workflow/interview/SKILL.md) | Validating plans before implementation | Interview about plans using AskUserQuestion. Explore technical decisions, UI/UX, concerns, tradeoffs. Write validated spec. |
 | [`/check`](skills/workflow/check/SKILL.md) | Before commit, PR, or merge; phase gate after `/work` | Gate (tests, lint, build) + code review (security, architecture, quality). |
 | [`/git`](skills/workflow/git/SKILL.md) | Staging, committing, pushing, PRs, merges | Git operations with conventional commits. Auto-splits commits by type/scope. Security scans for secrets. |
-| [`/handoff`](skills/workflow/handoff/SKILL.md) | Session end, context switches, milestones | Capture session state and write HANDOFF.md for seamless continuation. |
+| [`/handoff`](skills/workflow/handoff/SKILL.md) | Session end, context switches, milestones | Persist session state into the active plan's Current State section and a DB handoff row for seamless continuation. |
 | [`/watzup`](skills/workflow/watzup/SKILL.md) | Start of session, resuming work, quick status check | Recap branch state, committed + uncommitted changes, handoff context, and artifact chain — then recommend the next action. |
 
 ### Shipping — Build & ship code
@@ -170,21 +160,21 @@ zharness init --json
 /work
 ```
 
-1. `brainstorm` explores alternatives, writes `.kit/planning/SPEC.md`, and records the intake.
-2. `to-plan` writes the roadmap and phase context/plans, then records one story per phase.
-3. `work` executes the active phase wave-by-wave and records the run plus trace evidence.
-4. `check` gates each completed phase with tests, review, proof scoring, and a verdict.
-5. `git` commits or ships clean work; `handoff` records continuity when the session pauses or transfers.
+1. `brainstorm` explores alternatives, locks `docs/plans/active/{slug}.md`, and records the intake.
+2. `to-plan` writes the approach and phases/waves/checks into the same plan, then records one story per phase.
+3. `work` executes the active phase wave-by-wave, appends Progress to the plan, and records the run plus trace evidence.
+4. `check` gates each completed phase with tests, review, proof, and a verdict recorded in the same plan's Validation section.
+5. `git` commits or ships clean work; `handoff` updates the plan's Current State and records continuity when the session pauses or transfers.
 
 Use `/interview` before locking or planning when the intent needs structured clarification.
 
-| Skill | Human-readable artifact | Durable harness record |
+| Skill | Plan section owned | Durable harness record |
 | :--- | :--- | :--- |
-| `brainstorm` | `SPEC.md` | intake |
-| `to-plan` | `ROADMAP.md` + phase plans | story |
-| `work` | `runs/work/*.md` | run + traces |
-| `check` | `reports/check/*.md` | proof + verdict |
-| `handoff` | `HANDOFF.md` | handoff |
+| `brainstorm` | Outcome, Authority and Requirements, Non-goals | intake |
+| `to-plan` | Approach and Risks, Phases and Verification | story (one per phase) |
+| `work` | Progress, Decisions (append-only) | run + traces |
+| `check` | Validation (append-only) | check (verdict) |
+| `handoff` | Current State and Next Action | handoff |
 | `watzup` | console recap | resume snapshot |
 
 ### Small, bounded work

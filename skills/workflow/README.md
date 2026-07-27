@@ -14,19 +14,19 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 ## Lifecycle
 
 ### Intent → Intake — `brainstorm`
-A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) and locks the result into `.kit/planning/SPEC.md`. `zharness intake` records the classification; the intake ID is persisted in the SPEC frontmatter.
+A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections. `zharness intake` records the classification; the intake ID is persisted in the plan's frontmatter.
 
 ### Story/Plan — `to-plan`
-Once the spec is locked, `to-plan` derives `.kit/planning/ROADMAP.md` and per-phase `-CONTEXT.md`/`-PLAN.md` files. `zharness init` + `zharness story` run per phase and record phase pointers in the harness.
+Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files. `zharness story` records one story row per stable phase.
 
 ### Trace — `work`
-`work` executes the active phase wave-by-wave, verifying every task. Each wave emits `zharness trace add`, linked to the run so the execution trail is queryable after the fact.
+`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Progress/Decisions sections. Each wave emits `zharness trace add`, linked to the run so the execution trail is queryable after the fact.
 
 ### Proof — `check`
-`check` runs `zharness audit` + `zharness score-trace`, evaluates the proof matrix for the intake lane, and records a deterministic verdict with `zharness check record`. Missing required proof always fails, naming the missing evidence.
+`check` runs the automated gate, audits durable lifecycle links with `zharness audit`, evaluates the required-proof matrix for the intake's risk lane (tiny/normal/high-risk), and records a deterministic verdict with `zharness check record` appended to the plan's Validation section. Missing required proof always fails, naming the missing evidence.
 
 ### Handoff/Resume — `handoff`, `watzup`
-`handoff` records a handoff entity capturing session state. `watzup` renders `zharness resume` at the start of the next session: workflow position, latest run/check/handoff IDs, and a named recovery action for any drift.
+`handoff` records a handoff entity and updates the plan's Current State and Next Action; a final clean closure moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders `zharness resume` at the start of the next session: workflow position, latest run/check/handoff IDs, and a named recovery action for any drift.
 
 `git` and `interview` sit outside this spine — see mapping table below.
 
@@ -55,13 +55,13 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 
 ## Skill ↔ Command ↔ Entity Mapping
 
-| Skill | Harness artifact | `zharness` command group | Entity |
+| Skill | Plan section owned | `zharness` command group | Entity |
 | :--- | :--- | :--- | :--- |
-| `brainstorm` | `SPEC.md` (intake ID in frontmatter) | `intake` | intake |
-| `to-plan` | `ROADMAP.md` + phase `-CONTEXT.md`/`-PLAN.md` | `init`, `story` | story (phase) |
-| `work` | `.kit/runs/work/*.md` | `trace add` | trace (run) |
-| `check` | `.kit/reports/check/*.md` | `audit`, `score-trace`, `check record` | check (verdict) |
-| `handoff` | `.kit/HANDOFF.md` | `handoff record` | handoff |
+| `brainstorm` | Outcome, Authority and Requirements, Non-goals (intake ID in frontmatter) | `intake` | intake |
+| `to-plan` | Approach and Risks, Phases and Verification | `init`, `story` | story (phase) |
+| `work` | Progress, Decisions (append-only) | `run create`, `trace add` | run + trace |
+| `check` | Validation (append-only) | `audit`, `check record` | check (verdict) |
+| `handoff` | Current State and Next Action | `handoff record` | handoff |
 | `watzup` | console recap | `resume` | resume snapshot |
 | `git` | commit / PR | `preflight`, `query check --latest` | read-only: no dedicated harness entity |
 | `interview` | feeds `brainstorm` / `to-plan` output | `preflight` | read-only: no dedicated harness entity |
@@ -81,7 +81,7 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 - Any skill outside `skills/workflow/` (`craft/`, `shipping/` untouched)
 - Markdown fallback / CLI-optional compatibility mode — explicitly rejected; `zharness` is mandatory
 
-See `.kit/planning/archive/workflow-harness-2026-07-17/SPEC.md` (archived — this initiative's roadmap is complete) for the full requirement set, and `docs/workflow-harness/gap-matrix.md` for the current-state gap inventory.
+This initiative's own roadmap is complete; see `docs/plans/completed/workflow-harness-history-2026-07.md` for its consolidated history, and `docs/plans/active/harness-convergence-pass-v3.md` for the current one-plan/one-DB convergence work.
 
 ## Pilot Evidence & Go/No-Go
 

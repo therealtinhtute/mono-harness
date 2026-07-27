@@ -146,14 +146,52 @@ updated: 2026-07-27
 ### Phase 4: docs-first-contract
 - phase_slug: docs-first-contract
 - story_id: 01KYF4Y6BPVC5585GZ56GFTB6D
-- status: planned
+- status: checked
 - goal: Finalize concise docs-first authority and workflow contracts after one-plan lifecycle closure.
 - depends_on: one-plan-lifecycle
 - waves:
-  - wave: pending planning refresh after Phase 3 gate
+  - wave: 1
+    parallel: false
     tasks:
-      - task: rewrite managed entrypoint/workflow/public contracts and run final verification
+      - task: T1 fix stale entrypoint/global-trigger contract
+        touches: [rules/workflow-core.md]
+        verifies: [AGENTS.md, docs/WORKFLOW.md — confirmed already docs-first, no edit expected]
     checks:
+      - command: grep -rE '\.kit/(planning|runs|reports)/|HANDOFF\.md|workflow-state\.yml' rules/workflow-core.md
+        expected: no matches
+      - command: wc -w AGENTS.md docs/WORKFLOW.md
+        expected: combined word count stays within the 1,000-word R12 budget
+  - wave: 2
+    parallel: false
+    tasks:
+      - task: T2 fix stale spine-skill and git-sidecar contracts
+        touches: [skills/workflow/brainstorm/SKILL.md, skills/workflow/to-plan/SKILL.md, skills/workflow/handoff/SKILL.md, skills/workflow/git/SKILL.md]
+        avoids: [thin-trigger control flow, playbook bodies]
+    checks:
+      - command: grep -rE '\.kit/(planning|runs|reports)/|HANDOFF\.md' skills/workflow/{brainstorm,to-plan,handoff,git}/SKILL.md
+        expected: no matches
+      - command: wc -l skills/workflow/{watzup,brainstorm,to-plan,work,check,handoff}/SKILL.md
+        expected: each spine SKILL.md stays <=30 lines
+  - wave: 3
+    parallel: false
+    tasks:
+      - task: T3 rewrite public repo contracts to the one-plan/changesets-only model
+        touches: [README.md, CLAUDE.md, setup/CLAUDE.md, skills/workflow/README.md]
+    checks:
+      - command: grep -rE '\.kit/(planning|runs|reports)/|HANDOFF\.md|workflow-state\.yml' README.md CLAUDE.md setup/CLAUDE.md skills/workflow/README.md
+        expected: no matches
+      - command: diff README.md's `.kit/` tree section against `git ls-files '.kit/**'`
+        expected: diagram matches tracked reality (changesets only)
+  - wave: 4
+    parallel: false
+    tasks:
+      - task: T4 retire superseded historical docs and correct the legacy-migration contract
+        touches: [docs/workflow-harness/migration.md, docs/plans/completed/workflow-harness-history-2026-07.md]
+        removes: [docs/SKILLS_HARNESS_ARCHITECTURE.md, docs/workflow-state-dogfood.md, docs/workflow-harness/gap-matrix.md]
+        avoids: [scrubbing migration.md's legacy-import checklist, which legitimately describes a consumer project's own pre-harness files, not this repo's current state]
+    checks:
+      - command: git ls-files docs/SKILLS_HARNESS_ARCHITECTURE.md docs/workflow-state-dogfood.md docs/workflow-harness/gap-matrix.md
+        expected: no output (untracked/removed via trash)
       - command: go -C cli test ./...
         expected: all packages pass with live-command and word-budget proof
 
@@ -168,12 +206,20 @@ updated: 2026-07-27
 - 2026-07-27T04:24:00Z phase=one-plan-lifecycle wave=4 task=T4 task_status=DONE run_id=01KYGRQGV0ZS281GCB7ZP2EXXY trace_id=01KYGX2X47TV7ZTG252JXVNCSG verification=tracked `.kit` tree changesets-only; go -C cli test ./... -> pass result=legacy history consolidated; approved planning/plans/runs/reports/HANDOFF/docs projections moved to Trash; 74 changesets and five provenance docs preserved
 - 2026-07-27T05:21:09Z phase=one-plan-lifecycle wave=gate-remediation task=F1-F4 task_status=DONE run_id=01KYGRQGV0ZS281GCB7ZP2EXXY trace_id=01KYH0A4NJVETX0N7KYQHWVA6W changed_surfaces=active-plan routing, read-only inspection commands, lifecycle transition guards, strict ULID validation verification=targeted application/CLI/replay/migration suites and independent reviews -> pass result=all four findings from check 01KYGXK5BJ5YASGBRK8CGDNBX1 resolved; full Phase 3 re-gate pending
 - 2026-07-27T07:48:17Z phase=one-plan-lifecycle wave=gate-remediation-2 task=F5-F8 task_status=DONE run_id=01KYGRQGV0ZS281GCB7ZP2EXXY trace_id=01KYH8QHPCGK1VFPWB1EBH6MW2 changed_surfaces=audit fixtures, persisted enum integrity, WAL-safe shared readers, serialized mutations and tracked recovery verification=full Go suite, race tests, vet, Linux/Darwin builds, 76-change scratch replay parity, and independent reviews -> pass result=all remaining Phase 3 gate blockers resolved; durable final gate pending
+- 2026-07-27T08:20:00Z phase=docs-first-contract wave=1 task=T1 task_status=in-progress run_id=01KYHRD45HGXA9JMY7MJ9XT80X trace_id=none verification=pending result=phase started; wave 1 (entrypoint/global-trigger contract fix) selected as first incomplete wave
+- 2026-07-27T08:24:00Z phase=docs-first-contract wave=1 task=T1 task_status=DONE run_id=01KYHRD45HGXA9JMY7MJ9XT80X trace_id=01KYHRF9W06NQQ961HF57GH1RS changed_surfaces=rules/workflow-core.md verification=grep -rE '\.kit/(planning|runs|reports)/|HANDOFF\.md|workflow-state\.yml' rules/workflow-core.md -> no matches; wc -w AGENTS.md docs/WORKFLOW.md -> 308 words (within 1,000-word R12 budget) result=session-start trigger now keys off `zharness resume` drift/in-progress instead of deleted `.kit/HANDOFF.md`/`.kit/runs/`; to-plan trigger keys off `docs/plans/active/{slug}.md` instead of deleted `SPEC.md`; AGENTS.md and docs/WORKFLOW.md confirmed already clean, no edit needed
+- 2026-07-27T08:30:00Z phase=docs-first-contract wave=2 task=T2 task_status=DONE run_id=01KYHRD45HGXA9JMY7MJ9XT80X trace_id=01KYHRHWHGPKYGZQ7SKQV7FS8G changed_surfaces=skills/workflow/brainstorm/SKILL.md, skills/workflow/to-plan/SKILL.md, skills/workflow/handoff/SKILL.md, skills/workflow/git/SKILL.md verification=grep -rE '\.kit/(planning|runs|reports)/|HANDOFF\.md' skills/workflow/{brainstorm,to-plan,handoff,git}/SKILL.md -> no matches; wc -l six spine SKILL.md -> all <=22 lines result=brainstorm/to-plan descriptions now point at `docs/plans/active/{slug}.md` instead of deleted `SPEC.md`; handoff description points at Current State + DB handoff row instead of deleted `.kit/HANDOFF.md`; git sidecar report path redirected to gitignored `.kit/cache/reports/git/` since tracked `.kit` is changesets-only
+- 2026-07-27T08:38:00Z phase=docs-first-contract wave=3 task=T3 task_status=DONE run_id=01KYHRD45HGXA9JMY7MJ9XT80X trace_id=01KYHRQ9CWYQ0QZBQ5S19W3660 changed_surfaces=README.md, CLAUDE.md, skills/workflow/README.md verification=grep -rE '\.kit/(planning|runs|reports)/|HANDOFF\.md|workflow-state\.yml' README.md CLAUDE.md skills/workflow/README.md -> only legitimate historical/contrastive mentions (2026-07-17 legacy pilot record; "not a hand-edited workflow-state.yml" contrast) remain; `git ls-files '.kit/**'` -> .kit/changesets only, matches rewritten README tree diagram result=README's `.kit/` layout, pipeline table, full-work flow, and artifact table now describe changesets-only `.kit/` plus one plan at `docs/plans/active/{slug}.md`; CLAUDE.md brainstorm/to-plan bullets fixed; skills/workflow/README.md Lifecycle section, mapping table, and archived-SPEC pointer rewritten (score-trace removed — verified absent from current cli/docs/embedded/playbooks/check.md); `setup/CLAUDE.md` intentionally not touched (separate generic `.kit/plans`-based template unrelated to the zharness one-plan contract, already diverged from the user's live deployed global CLAUDE.md)
+- 2026-07-27T09:05:00Z phase=docs-first-contract wave=4 task=T4 task_status=DONE run_id=01KYHRD45HGXA9JMY7MJ9XT80X trace_id=01KYHS26KVDCBVXVWQS42CHFKB changed_surfaces=docs/plans/completed/workflow-harness-history-2026-07.md, docs/workflow-harness/migration.md verification=trash docs/SKILLS_HARNESS_ARCHITECTURE.md docs/workflow-state-dogfood.md -> both removed, confirmed via ls; go -C cli test ./... -> all packages pass result=trashed the 2 fully-superseded pre-CLI docs (`SKILLS_HARNESS_ARCHITECTURE.md` draft design proposal, `workflow-state-dogfood.md` old-manifest worked example) with a removal summary appended to the history doc; `docs/workflow-harness/gap-matrix.md` deliberately NOT trashed, deviating from the wave's original `removes:` list (see Decision below); fixed migration.md's legacy `.kit/` checklist step 4 from tracking `.kit/planning|runs|reports|HANDOFF.md` to the changesets-only contract plus `docs/plans/active/{slug}.md`
 
 ## Decisions
 - 2026-07-26T12:03:31Z phase_task=initiative/lock decision=Use one root DB, tracked `.kit/changesets`, root managed docs, and one evolving plan rationale=This preserves replay and repository legibility while removing duplicate lifecycle state.
 - 2026-07-26T13:10:34Z phase_task=root-layout/T3 decision=Keep legacy lifecycle markdown until Phase 3 DB-only validation and history coverage pass rationale=Early deletion would remove the current recovery/proof source before its replacement is demonstrated.
 - 2026-07-27T02:48:00Z phase_task=one-plan-lifecycle/T2 decision=Preserve public typed lifecycle commands and make artifact paths optional/deprecated rationale=Status transitions and queryability remain useful while dedicated markdown records are redundant.
 - 2026-07-27T03:08:39Z phase_task=one-plan-lifecycle/T3 decision=Limit Wave 3 to six stage procedures, mirrors, template, tests, and this bootstrap plan rationale=The global authority/work-shape rewrite belongs to Phase 4 and legacy removal belongs to Wave 4.
+- 2026-07-27T08:38:00Z phase_task=docs-first-contract/T3 decision=Exclude `setup/CLAUDE.md` from wave 3's touched-files list despite matching the original stale-reference grep rationale=Its `.kit/plans`, `.kit/reports`, `.kit/HANDOFF.md` mentions describe a separate generic non-harness fallback convention, not the zharness one-plan contract, and the file has already diverged from the user's live deployed global CLAUDE.md (which uses `tasks/todo.md`); rewriting it here would be scope creep beyond R11/R12's harness-authority scope.
+- 2026-07-27T08:15:00Z phase_task=docs-first-contract/waves decision=Detail Phase 4 into 4 waves (entrypoint/global-trigger fix, spine-skill/git-sidecar fix, public repo contracts rewrite, retire superseded historical docs) based on a repo-wide stale-reference audit rationale=AGENTS.md and docs/WORKFLOW.md were already docs-first after Phase 3; the remaining drift is 7 files still describing the pre-one-plan model (SPEC.md/ROADMAP.md/per-phase runs+reports/HANDOFF.md) plus 3 fully-superseded historical docs; orphaned pre-v3 backlog stories (agent-pilot, cli-release, thin-triggers, readme-workflow-refresh, etc., created 2026-07-18/21) are explicitly out of scope since no plan doc governs them and Phase 4's goal does not cover DB story cleanup.
+- 2026-07-27T09:05:00Z phase_task=docs-first-contract/T4 decision=Deviate from wave 4's literal `removes:` list by excluding `docs/workflow-harness/gap-matrix.md` from removal rationale=Reading `docs/plans/completed/workflow-harness-history-2026-07.md` in full during wave 4 execution surfaced Phase 3's own Durable Decision #10 and its explicit "Retained `docs/workflow-harness/` provenance — not deletion targets" list, which already keeps `gap-matrix.md` as raw import/migration/gap/pilot provenance; the wave's original task text listing it for `trash` was a planning error made before that history doc was re-read in full, not a considered decision — only `docs/SKILLS_HARNESS_ARCHITECTURE.md` and `docs/workflow-state-dogfood.md` (both outside `docs/workflow-harness/`, so not covered by the retention decision) were trashed.
 
 ## Validation
 - 2026-07-26T12:40:22Z phase=universal-preflight command=go -C cli test ./... result=pass output=all packages passed after routing fixes run_id=01KYF4Z95MQJG7PEZPF00JKC9H check_id=01KYF71N4RMWYGTSJTD4BWC740 verdict=APPROVED proof_gaps=none
@@ -185,15 +231,17 @@ updated: 2026-07-27
 - 2026-07-27T04:24:00Z phase=one-plan-lifecycle command=tracked-tree assertion plus go -C cli test ./... result=pass output=tracked `.kit` entries are changesets only; active/completed plans and five provenance docs retained; all Go packages passed after cleanup run_id=01KYGRQGV0ZS281GCB7ZP2EXXY check_id=none verdict=wave-complete proof_gaps=full Phase 3 gate and latest-run check remain
 - 2026-07-27T04:31:00Z phase=one-plan-lifecycle command=full Security/Performance/Architecture/Code Quality review result=fail output=four major findings: legacy planning routing, writable reader opens, non-monotonic/stale-run lifecycle closure, and incomplete strict ULID coverage run_id=01KYGRQGV0ZS281GCB7ZP2EXXY check_id=01KYGXK5BJ5YASGBRK8CGDNBX1 verdict=REQUEST_CHANGES proof_gaps=regression tests for active-plan routing, read-only journal behavior, lifecycle monotonic/latest-run guards, and retained-entity/plan-id ULIDs
 - 2026-07-27T07:52:31.148Z phase=one-plan-lifecycle command=full Go suite, race suite, vet, Linux/Darwin builds, diff checks, 78-change scratch replay/resume/validate/audit, and full Security/Performance/Architecture/Code Quality review result=pass output=all packages and race coverage passed; root and scratch lifecycle state clean with pending=0, valid=true, audit empty; tracked recovery identity blocker fixed and independently APPROVED run_id=01KYGRQGV0ZS281GCB7ZP2EXXY check_id=01KYH8Z9NCBWNNQ2WCJ9AXS8P3 verdict=APPROVED proof_gaps=none
+- 2026-07-27T09:05:00Z phase=docs-first-contract command=go -C cli test ./... result=pass output=all 6 packages pass after waves 1-4 (rules/skills/README/CLAUDE.md rewrites, 2 obsolete doc trashes, migration.md checklist fix) run_id=01KYHRD45HGXA9JMY7MJ9XT80X check_id=none verdict=phase-waves-complete proof_gaps=durable `check full` gate for the phase still pending
+- 2026-07-27T09:20:00Z phase=docs-first-contract command=full gate: go -C cli test ./... (pass, 6/6 packages); wave1-3 live grep/wc checks; wave4 `git ls-files` on the 3 removal targets; `zharness audit --json` result=pass output=all mechanical checks pass as specified except 2 known, already-documented deviations from the phase's literal wave text — `setup/CLAUDE.md` still matches the wave-3 grep (excluded from touched-files per the 2026-07-27T08:38:00Z Decision) and `docs/workflow-harness/gap-matrix.md` still tracked (retained per the 2026-07-27T09:05:00Z Decision); `git ls-files` also still lists the 2 legitimately-trashed docs since their removal is unstaged pending the `git` sidecar's commit, not a defect; audit shows zero contract_violations and zero unlinked_proofs, only the expected pre-check-record out_of_order drift run_id=01KYHRD45HGXA9JMY7MJ9XT80X check_id=01KYHS70ZN3THF4J0R98JSF4S0 verdict=APPROVED proof_gaps=none — unit (go test), integration (live repo-state grep/wc/git-ls-files checks), manual review (this full Security/Performance/Architecture/Code Quality pass), and command output are all satisfied for the high-risk lane
 
 ## Current State and Next Action
-- active_phase: one-plan-lifecycle
-- lifecycle_status: done
-- latest_run_id: 01KYGRQGV0ZS281GCB7ZP2EXXY
-- latest_trace_ids: [01KYGWA9M8GCHBAD0EB8XT0ZPQ, 01KYGX2X47TV7ZTG252JXVNCSG, 01KYH0A4NJVETX0N7KYQHWVA6W, 01KYH8QHPCGK1VFPWB1EBH6MW2]
-- latest_check_id: 01KYH8Z9NCBWNNQ2WCJ9AXS8P3
+- active_phase: docs-first-contract
+- lifecycle_status: in-progress
+- latest_run_id: 01KYHRD45HGXA9JMY7MJ9XT80X
+- latest_trace_ids: [01KYHRF9W06NQQ961HF57GH1RS, 01KYHRHWHGPKYGZQ7SKQV7FS8G, 01KYHRQ9CWYQ0QZBQ5S19W3660, 01KYHS26KVDCBVXVWQS42CHFKB]
+- latest_check_id: 01KYHS70ZN3THF4J0R98JSF4S0
 - latest_handoff_id: 01KYH91W0BE3D66PZYN7J4GW91
-- completed: Phase 1 universal-preflight, Phase 2 root-layout, and Phase 3 one-plan-lifecycle are done; Phase 3 closed with clean check `01KYH8Z9NCBWNNQ2WCJ9AXS8P3` and handoff `01KYH91W0BE3D66PZYN7J4GW91` after full replay, audit, concurrency, and deep-review proof.
+- completed: Phase 1 universal-preflight, Phase 2 root-layout, and Phase 3 one-plan-lifecycle are done; Phase 3 closed with clean check `01KYH8Z9NCBWNNQ2WCJ9AXS8P3` and handoff `01KYH91W0BE3D66PZYN7J4GW91` after full replay, audit, concurrency, and deep-review proof. Phase 4 (docs-first-contract) all 4 waves are DONE and the phase is now `checked` with clean full-gate verdict APPROVED, check `01KYHS70ZN3THF4J0R98JSF4S0`, traces `01KYHRF9W06NQQ961HF57GH1RS`, `01KYHRHWHGPKYGZQ7SKQV7FS8G`, `01KYHRQ9CWYQ0QZBQ5S19W3660`, `01KYHS26KVDCBVXVWQS42CHFKB`.
 - blockers: []
-- open_items: [Phase 4 docs-first-contract remains planned and has not started]
-- exact_next_action: Run `work full phase docs-first-contract` when Phase 4 execution is explicitly started; do not perform Phase 4 work as part of this Phase 3 closure.
+- open_items: [closing `handoff` to record Phase 4 completion; `git` commit/push of the docs-first-contract diff and its 5 new changesets]
+- exact_next_action: Route to `git` to commit the Phase 4 diff (13 modified/removed docs + 5 new `.kit/changesets/*.jsonl`), then `handoff` to record session continuity. Phase 4 is `checked`, not `done` — closing `handoff` owns that final transition, not this check.

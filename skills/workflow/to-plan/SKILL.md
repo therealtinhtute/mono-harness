@@ -2,7 +2,7 @@
 name: to-plan
 version: "1.2.0"
 model: opus
-description: Generate roadmap, phase context, and executable phase plans from a locked `.kit/planning/SPEC.md`. Use after `brainstorm` for artifact-first implementation planning.
+description: Generate the approach, phases, waves, and checks inside the locked `docs/plans/active/{slug}.md`. Use after `brainstorm` for artifact-first implementation planning.
 argument-hint: "[mode:full|phase] [phase-name?]"
 compatibility: Designed for Claude Code
 metadata:
