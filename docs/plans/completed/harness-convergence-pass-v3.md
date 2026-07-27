@@ -3,7 +3,7 @@ id: 01KYF4NZQ49M3SK6EF68CY1SEA
 type: plan
 intake_id: 01KYF4PHXC6GWRMBASYR06Q5B5
 lane: high-risk
-status: active
+status: completed
 created: 2026-07-26
 updated: 2026-07-27
 ---
@@ -146,7 +146,7 @@ updated: 2026-07-27
 ### Phase 4: docs-first-contract
 - phase_slug: docs-first-contract
 - story_id: 01KYF4Y6BPVC5585GZ56GFTB6D
-- status: checked
+- status: done
 - goal: Finalize concise docs-first authority and workflow contracts after one-plan lifecycle closure.
 - depends_on: one-plan-lifecycle
 - waves:
@@ -235,13 +235,13 @@ updated: 2026-07-27
 - 2026-07-27T09:20:00Z phase=docs-first-contract command=full gate: go -C cli test ./... (pass, 6/6 packages); wave1-3 live grep/wc checks; wave4 `git ls-files` on the 3 removal targets; `zharness audit --json` result=pass output=all mechanical checks pass as specified except 2 known, already-documented deviations from the phase's literal wave text — `setup/CLAUDE.md` still matches the wave-3 grep (excluded from touched-files per the 2026-07-27T08:38:00Z Decision) and `docs/workflow-harness/gap-matrix.md` still tracked (retained per the 2026-07-27T09:05:00Z Decision); `git ls-files` also still lists the 2 legitimately-trashed docs since their removal is unstaged pending the `git` sidecar's commit, not a defect; audit shows zero contract_violations and zero unlinked_proofs, only the expected pre-check-record out_of_order drift run_id=01KYHRD45HGXA9JMY7MJ9XT80X check_id=01KYHS70ZN3THF4J0R98JSF4S0 verdict=APPROVED proof_gaps=none — unit (go test), integration (live repo-state grep/wc/git-ls-files checks), manual review (this full Security/Performance/Architecture/Code Quality pass), and command output are all satisfied for the high-risk lane
 
 ## Current State and Next Action
-- active_phase: docs-first-contract
-- lifecycle_status: in-progress
+- active_phase: none
+- lifecycle_status: done
 - latest_run_id: 01KYHRD45HGXA9JMY7MJ9XT80X
 - latest_trace_ids: [01KYHRF9W06NQQ961HF57GH1RS, 01KYHRHWHGPKYGZQ7SKQV7FS8G, 01KYHRQ9CWYQ0QZBQ5S19W3660, 01KYHS26KVDCBVXVWQS42CHFKB]
 - latest_check_id: 01KYHS70ZN3THF4J0R98JSF4S0
-- latest_handoff_id: 01KYH91W0BE3D66PZYN7J4GW91
-- completed: Phase 1 universal-preflight, Phase 2 root-layout, and Phase 3 one-plan-lifecycle are done; Phase 3 closed with clean check `01KYH8Z9NCBWNNQ2WCJ9AXS8P3` and handoff `01KYH91W0BE3D66PZYN7J4GW91` after full replay, audit, concurrency, and deep-review proof. Phase 4 (docs-first-contract) all 4 waves are DONE and the phase is now `checked` with clean full-gate verdict APPROVED, check `01KYHS70ZN3THF4J0R98JSF4S0`, traces `01KYHRF9W06NQQ961HF57GH1RS`, `01KYHRHWHGPKYGZQ7SKQV7FS8G`, `01KYHRQ9CWYQ0QZBQ5S19W3660`, `01KYHS26KVDCBVXVWQS42CHFKB`.
-- blockers: []
-- open_items: [closing `handoff` to record Phase 4 completion; `git` commit/push of the docs-first-contract diff and its 5 new changesets]
-- exact_next_action: Route to `git` to commit the Phase 4 diff (13 modified/removed docs + 5 new `.kit/changesets/*.jsonl`), then `handoff` to record session continuity. Phase 4 is `checked`, not `done` — closing `handoff` owns that final transition, not this check.
+- latest_handoff_id: 01KYHSTD2HH9CEX3V3M5Z4MPAB
+- completed: All four phases are `done` in both DB and plan — universal-preflight, root-layout, one-plan-lifecycle (closed with check `01KYH8Z9NCBWNNQ2WCJ9AXS8P3`, handoff `01KYH91W0BE3D66PZYN7J4GW91`), and docs-first-contract (closed with check `01KYHS70ZN3THF4J0R98JSF4S0`, handoff `01KYHSTD2HH9CEX3V3M5Z4MPAB`, verdict APPROVED). Diff committed at `82d9873`. Initiative complete: one root DB, tracked changesets-only `.kit/`, one evolving plan model, and a docs-first public/skill contract are all live and proven.
+- blockers: none
+- open_items: none
+- exact_next_action: Initiative closed. Move this plan to `docs/plans/completed/harness-convergence-pass-v3.md`; no further action needed unless new work is scoped.
