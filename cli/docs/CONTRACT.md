@@ -18,6 +18,10 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ## Core (Phase 3 — cli-core)
 
+Repository coordination is cross-process and repository-root scoped. `preflight`, `query`, `next`, `resume`, `validate`, `audit`, and `db changeset status` hold a shared directory-inode lock for the complete read-only SQLite handle lifetime. `init`, `migrate`, `migrate layout` (including dry-run), `import`, `db changeset apply`, `intake`, `story`, `intervention`, `trace add`, `run create`, `check record`, and `handoff record` hold the exclusive lock from before DB probing/application validation through SQLite close. Lock acquisition creates no file, times out after five seconds with `repository_lock_timeout` (2), and reports unsupported platforms as `repository_lock_unsupported` (2); Linux and Darwin are supported.
+
+Append-producing mutations allocate canonical changeset filenames strictly above both `meta.last_applied_changeset` and every canonical existing filename. A pending earlier changeset blocks ordinary mutation with `changeset_recovery_required` (1) before any new file or DB change; recover by applying the named earliest file. Direct apply enforces the same earliest-first order. `init` replay remains sorted and exempt, and an apply failure leaves the file pending with its transaction and fence unchanged.
+
 ### `id`
 - Args: none — mints one fresh ULID without reading or mutating harness state; does not require `init` or a database
 - Human output: the ULID followed by a newline
@@ -25,11 +29,19 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 - Errors: standard Cobra argument error if positional arguments are supplied
 - Consumer: playbooks that author artifacts or changeset filenames directly (`work`, `check`, `to-plan`); mint a separate ID for each semantic object and each changeset filename
 
+### `scaffold <run|check|handoff|spec|plan>`
+- Args: one artifact kind plus required `--path {destination}`; creates parent directories, fills an absent or empty destination from the embedded skeleton, and refuses to overwrite a non-empty file
+- File-only: writes no database row or changeset; the corresponding lifecycle command owns durable registration
+- Human output: `scaffolded {kind} → {path}`
+- `--json`: `{"kind":"run|check|handoff|spec|plan","path":"...","bytes":N}`
+- Errors: `unknown_kind` (1), `missing_required_field` (1, no `--path`), `file_exists` (1, non-empty destination), `scaffold_failed` (2, template/directory/write failure)
+- Consumer: workflow playbooks that need an editable lifecycle or planning skeleton before filling its fields and sections
+
 ### `preflight <stage>`
 - Stages: `brainstorm|to-plan|work|check|handoff|watzup|git|interview`; optional `--mode` is validated per stage
 - Read-only: inspects DB/docs presence and docs-version compatibility without creating paths, enabling WAL, writing the database, or appending a changeset
 - `--json`: `{"stage":"...","mode":"reduced|durable","db":"ready|missing|unreadable","docs":"ready|missing|stale","playbook":"...","readiness":"ready|reduced|blocked","stop":{"code":"...","message":"...","recovery":"..."}}`; `stop` and `playbook` are omitted when not applicable
-- Reduced stages may continue when DB/docs are missing or stale; durable stages return a named stop and recovery. An unreadable existing DB blocks every stage. `work --mode auto` resolves to durable when the current planning SPEC exists and reduced otherwise. `playbook` is omitted unless the managed docs are ready, so reduced mode never points at a known-missing file.
+- Reduced stages may continue when DB/docs are missing or stale; durable stages return a named stop and recovery. An unreadable existing DB blocks every stage. `work --mode auto` resolves to durable when at least one non-empty `docs/plans/active/*.md` plan exists and reduced otherwise. `work --mode bounded` and `check --mode bounded` always resolve to reduced preflight and perform zero lifecycle, changeset, or markdown writes. `playbook` is omitted unless the managed docs are ready, so reduced mode never points at a known-missing file.
 - Errors: `invalid_stage` (1), `invalid_mode` (1), `preflight_failed` (2)
 - Consumer: every skill under `skills/workflow/`; stage-specific commands still own lifecycle mutation
 
@@ -60,7 +72,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 ### `db changeset apply <path>`
 - Args: path to a `.jsonl` changeset file; idempotent — re-applying an already-applied changeset is a no-op
 - `--json`: `{"applied": N, "skipped_already_applied": N}`
-- Errors: `changeset_malformed` (1), `changeset_out_of_order` (1, ULID predates the last-applied changeset — replay only, not a hard block, but flagged)
+- Errors: `changeset_malformed` (1), `changeset_out_of_order` (1, ULID predates the last-applied changeset — replay only, not a hard block, but flagged), `changeset_recovery_required` (1, an earlier canonical pending file must be applied first)
 - Consumer: `continuity` cross-machine resume (rebuild db from committed changesets on a fresh clone)
 
 ### `db changeset status`
@@ -72,9 +84,11 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 ### `query <view>`
 - Views: `state`, `phases`, `artifacts`, `check --latest`
 - Args: `state` (no args); `phases` (no args, lists all stories + status); `artifacts` (`--phase {slug}` optional filter); `check --latest` (`--latest` flag, returns most recent check verdict)
-- `--json` (`state`): `{"current_phase": "slug"|null, "entry_phase": "slug"|null, "schema_version": N, "latest_run_id": "ulid"|null, "latest_check_id": "ulid"|null}`
-- `--json` (`check --latest`): `{"id": "ulid", "verdict": "APPROVED"|"APPROVE_WITH_REQUESTS"|"REQUEST_CHANGES", "phase": "slug"}`
-- Errors: `unknown_view` (1), `db_unreadable` (2)
+- `--json` (`state`): `{"current_phase":"slug"|null,"entry_phase":"slug"|null,"schema_version":N,"latest_run_id":"ulid"|null,"latest_check_id":"ulid"|null}`
+- `--json` (`phases`): `[{"slug":"...","goal":"...","status":"planned|in-progress|checked|done","depends_on":"slug"|null,"created_at":"..."}, ...]`
+- `--json` (`artifacts`): `[{"id":"ulid","story_slug":"slug","artifact_path":"","created_at":"..."}, ...]`; `artifact_path` is optional/deprecated lifecycle metadata encoded as a string that may be empty and is never resolved on disk
+- `--json` (`check --latest`): `{"id":"ulid","verdict":"APPROVED"|"APPROVE_WITH_REQUESTS"|"REQUEST_CHANGES","phase":"slug"}`
+- Errors: `unknown_view` (1), `no_check_found` (1), `db_unreadable` (2)
 - Consumer: `to-plan` (phase status), `git` (`query check --latest`, warn-not-block on FAIL/missing), `continuity`
 
 ---
@@ -82,9 +96,9 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 ## Domain — 4 ported (Phase 4 — cli-domain)
 
 ### `intake`
-- Args: `--type {new-spec|spec-slice|change-request|new-initiative|maintenance|harness-improvement} --summary "..." --lane {tiny|normal|high-risk}`
+- Args: `--type {new-spec|spec-slice|change-request|new-initiative|maintenance|harness-improvement} --summary "..." --lane {tiny|normal|high-risk} [--plan-path docs/plans/active/{slug}.md]`; `--plan-path` is optional repository-relative metadata for the initiative's evolving plan
 - `--json`: `{"id": "ulid"}`
-- Errors: `invalid_lane` (1), `invalid_type` (1)
+- Errors: `invalid_lane` (1), `invalid_type` (1), `missing_required_field` (1)
 - Consumer: `brainstorm` (fires at SPEC lock; ULID written to SPEC frontmatter `intake_id`)
 
 ### `story`
@@ -108,45 +122,49 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 ## Domain — workflow additions (Phase 4 — cli-domain)
 
 ### `run create`
-- Args: `--slug {phase-slug} --artifact-path {run file path} [--plan-id {ulid}]` — full-mode only
+- Args: `--slug {phase-slug} [--artifact-path {legacy run file path}] [--plan-id {ulid}]` — full-mode only; only `--slug` is required, while `--artifact-path` is optional/deprecated metadata and may be omitted
 - `--json`: `{"id": "ulid"}`
-- Errors: `missing_required_field` (1, `--slug`/`--artifact-path`), `unknown_story` (1, `--slug` has no matching story)
-- Consumer: `work` (full mode only; mints the run row and points `meta.latest_run_id` at it atomically, one changeset/tx — simple mode still skips DB registration entirely, `runs.story_slug` has no row for it to reference)
+- Errors: `missing_required_field` (1, missing `--slug`), `invalid_plan_id` (1, non-empty `--plan-id` is not a strict ULID), `unknown_story` (1, `--slug` has no matching story), `story_not_runnable` (1, story is already `checked` or `done`), `db_unreadable` / `db_not_writable` (2)
+- Atomic side effects: for a `planned` or `in-progress` story, creates the run, leaves/moves the story at `in-progress`, points `meta.latest_run_id` at the new run, and points `meta.current_phase` at the story slug in one changeset/transaction
+- Consumer: `work` full mode; bounded/reduced work performs preflight only and skips run, story, pointer, changeset, and markdown writes
 
 ### `resume`
 - Args: none
-- `--json`: `{"position": {"current_phase": "...", "status": "..."}, "latest_run_id": "ulid"|null, "latest_check_id": "ulid"|null, "latest_handoff_id": "ulid"|null, "drift": [{"type": "missing_file"|"unknown_phase"|"out_of_order"|"stale_docs", "detail": "...", "recovery": "..."}], "readiness": "clean"|"in-progress"|"drifted"|"no-harness"}`
+- `--json`: `{"position":{"current_phase":"..."|null,"status":"..."|null},"latest_run_id":"ulid"|null,"latest_check_id":"ulid"|null,"latest_handoff_id":"ulid"|null,"drift":[{"type":"unknown_phase"|"out_of_order"|"stale_docs","detail":"...","recovery":"..."}],"readiness":"clean"|"in-progress"|"drifted"|"no-harness"}`
+- Lifecycle drift is derived from database stories, run/check links, meta pointers, and managed-docs version. Legacy lifecycle artifact paths are metadata only and are never resolved or existence-checked on disk.
 - Errors: `db_unreadable` (2, distinct from `readiness: no-harness` — that's a valid successful response, not an error)
 - Consumer: `watzup` (renders 1:1 from this snapshot, no independent prose re-derivation)
 
 ### `check record`
-- Args: `--verdict {APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES} --run-id {ulid} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}]'`
-- `--json`: `{"id": "ulid", "verdict": "..."}`
-- Errors: `unknown_run_id` (1), `invalid_verdict` (1), `empty_proof_links` (1, verdict other than REQUEST_CHANGES with zero proof links)
+- Args: `--verdict {APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES} --run-id {ulid} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}]'`; each proof link's `artifact_path` is optional/deprecated legacy metadata and is not a filesystem requirement
+- `--json`: `{"id":"ulid","verdict":"..."}`
+- Errors: `unknown_run_id` (1), `story_not_checkable` (1, story is not `in-progress`), `run_not_latest` (1, run is stale for its story), `invalid_verdict` (1), `invalid_proof_links` (1), `empty_proof_links` (1, verdict other than REQUEST_CHANGES with zero proof links), `missing_required_field` (1), `db_unreadable` / `db_not_writable` (2)
+- Atomic side effects: for the latest run of an `in-progress` story, records the check and points `meta.latest_check_id` at it; `APPROVED` and `APPROVE_WITH_REQUESTS` move the story to `checked`, while `REQUEST_CHANGES` leaves it `in-progress`
 - Consumer: `check` (deterministic — no free-text-only verdicts, R19)
-- Side effect: also points `meta.latest_check_id` at the new check row, atomically in the same changeset/tx (no separate manual pointer update needed)
 
 ### `handoff record`
-- Args: `--run-id {ulid} --check-id {ulid} --open-items '["...","..."]'` — `--run-id`/`--check-id` optional (anchors are nullable pointers), `--open-items` defaults `[]`
-- `--json`: `{"id": "ulid"}`
-- Errors: `invalid_open_items` (1, malformed JSON or an empty-string entry), `unknown_run_id` (1, `--run-id` given but not found), `unknown_check_id` (1, `--check-id` given but not found)
-- Consumer: `handoff` skill (close-out — writes both this entity and the human-readable `.kit/HANDOFF.md`); `resume`'s `latest_handoff_id` reads it back unchanged
+- Args: `[--run-id {ulid}] [--check-id {ulid}] [--open-items '["...","..."]'] [--close-phase]`; anchors are optional for a non-closing handoff and `--open-items` defaults to `[]`
+- `--close-phase` requires both anchors, requires `--run-id` to be the latest run for its story, requires `--check-id` to be the latest check for that run and to carry a clean verdict (`APPROVED` or `APPROVE_WITH_REQUESTS`), and requires the story to be `checked`; a successful close moves that story to `done` in the same changeset/transaction
+- `--json`: `{"id":"ulid"}`
+- Errors: `invalid_open_items` (1, malformed JSON or an empty-string entry), `unknown_run_id` (1), `unknown_check_id` (1), `missing_required_field` (1, closing without both anchors), `check_run_mismatch` (1), `check_not_clean` (1), `run_not_latest` (1), `check_not_latest` (1), `phase_not_checked` (1), `db_unreadable` / `db_not_writable` (2)
+- The CLI durably records DB anchors and open items only; it does not write `.kit/HANDOFF.md` or any other markdown artifact
+- Consumer: `handoff` skill; `resume`'s `latest_handoff_id` reads the latest durable record unchanged
 
 ### `validate`
-- Args: none — walks SPEC→PLAN→RUN→CHECK→HANDOFF by frontmatter ULID cross-links
-- `--json`: `{"valid": true|false, "findings": [{"link": "SPEC->PLAN", "issue": "missing_key"|"broken_link"|"stale_pointer"|"not_yet_implemented", "detail": "..."}]}`
-- Errors: exits 1 (`!valid`) when any finding's `issue` is not `not_yet_implemented` — a `not_yet_implemented`-only findings list is a passing (`valid: true`) response, not a violation
-- Consumer: `skill-adapters` T4 sample-chain proof, `pilot-migration` evidence bundle
-- **Known gap**: the `SPEC->PLAN` link cannot currently be validated — `phase-plan-template.md` was not in harness-contracts' Allowed Surfaces, so PLAN artifacts don't yet carry a `spec_id` field. `validate` skips that one link with a `not_yet_implemented` finding rather than a hard failure, until a later phase adds it (see `.kit/implementation-notes.md`).
-- **Mode-aware carve-out** (`harness-mode-parity`, GitHub #38): RUN and CHECK artifacts carry a `mode: full|simple` frontmatter field (`work.md`/`check.md`). `mode: simple` artifacts are phase-less, plan-less, and never DB-registered by design — `runs.story_slug` and `checks.run_id` are both `NOT NULL` FKs with no story/run to reference in simple mode, so `work`/`check` skip DB registration entirely rather than crash. `validate` reflects this: a `mode: simple` RUN is exempt from the `phase`-existence check and the `plan_id` ULID requirement; a `mode: simple` RUN or CHECK is exempt from its DB stale-pointer check. `id` remains a required, well-formed ULID unconditionally — the carve-out is about DB/phase/plan linkage, not artifact hygiene. Missing `mode` (artifacts predating this field) or `mode: full` keeps every check at full strictness, unchanged from before this phase.
+- Args: none — validates the durable lifecycle graph in the database: lifecycle entity ULIDs, story dependencies, story→run→check→handoff links, compatible handoff run/check anchors, and meta pointers
+- `--json`: `{"valid":true|false,"findings":[{"link":"...","issue":"missing_key"|"broken_link"|"stale_pointer","detail":"..."}]}`
+- A missing database returns the same envelope with `valid:false`, a `DB->LIFECYCLE` finding, and exit 1. An unreadable or unqueryable database returns `db_unreadable` (2).
+- RUN, CHECK, and HANDOFF markdown files are not required; legacy artifact paths and frontmatter chains are not read or existence-checked
+- Consumer: lifecycle integrity checks and `audit`'s `contract_violations` composition
 
 ---
 
 ## Research (Phase 6 — validation-gate)
 
 ### `audit`
-- Args: none
-- `--json`: `{"pointer_drift": [...], "contract_violations": [...], "unlinked_proofs": [...]}`, stable ordering (determinism requirement)
+- Args: none — composes the database-backed `resume` drift reader with `validate` lifecycle/link findings
+- `--json`: `{"pointer_drift":[...],"contract_violations":[...],"unlinked_proofs":[]}`, stable ordering; `unlinked_proofs` remains an always-empty compatibility field
+- Proof-link and check artifact paths are optional/deprecated metadata and are not existence-checked
 - Errors: `db_unreadable` (2)
 - Consumer: `check` (wired into gate flow)
 
@@ -156,15 +174,17 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 | Skill step | CLI action |
 |---|---|
-| brainstorm: SPEC lock | `intake --type … --summary … --lane … --json` |
+| brainstorm: SPEC lock | `intake --type … --summary … --lane … [--plan-path docs/plans/active/{slug}.md] --json` |
 | to-plan: roadmap init | `init` (if no db) |
 | to-plan: per-phase | `story --slug {phase} --goal … --json` |
 | to-plan: status render | `query state --json`, `query phases --json` |
-| work: run registration (full mode) | `run create --slug {phase} --artifact-path … [--plan-id …] --json` |
+| work: bounded execution | `preflight work --mode bounded --json`; no lifecycle entity, changeset, or markdown artifact is written |
+| work: run registration (full mode) | `run create --slug {phase} [--artifact-path …] [--plan-id …] --json` |
 | work: wave completion | `trace add --wave N --summary … --json` |
+| check: bounded review | `preflight check --mode bounded --json`; no lifecycle entity, changeset, or markdown artifact is written |
 | check: gate evaluation | `audit --json` → matrix → `check record --verdict … --json` |
 | check: human override | `intervention --verdict-id … --reason …` (manual, documented escalation only) |
 | watzup: recap render | `resume --json` (1:1, no fallback) |
-| handoff: close-out | `handoff record --run-id … --check-id … --open-items … --json` |
+| handoff: close phase | `handoff record --run-id … --check-id … --open-items … --close-phase --json` |
 | git: pre-commit/PR | `query check --latest --json` (warn-not-block on FAIL/missing) |
 | continuity: fresh-machine rebuild | `db changeset apply <path>` (per committed changeset, ULID order) |

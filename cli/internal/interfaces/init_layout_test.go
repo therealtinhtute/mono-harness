@@ -45,7 +45,7 @@ func TestInitReplaysExistingChangesetsBeforeDocsStamp(t *testing.T) {
 	if slug != "replayed" {
 		t.Fatalf("story slug = %q", slug)
 	}
-	pending, _, _, err := infrastructure.ChangesetStatus(db, changesetDir)
+	pending, _, _, err := infrastructure.ChangesetStatus(db.Raw(), changesetDir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus() error = %v", err)
 	}

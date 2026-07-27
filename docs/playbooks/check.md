@@ -2,300 +2,78 @@
 
 ## Purpose
 
-Pre-commit and pre-merge quality gate. Run tests, types, lint, build with real evidence, then review security, performance, architecture, and code quality. Acts as the phase gate after `work`. "It looks fine" is not a result — gate proves it works, review proves it matches the plan, stays in scope, and is well-written.
+Quality gate for a response-only review, a bounded diff, or a durable phase. Durable `gate` runs automated checks, audits lifecycle alignment, records the verdict in the DB, and synchronizes exact evidence and phase status in the active plan. `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review. `review` and bounded/simple modes return evidence in the response only.
 
-## Preconditions
+## Preconditions and Modes
 
-- **Version gate**: run `zharness --version` before anything else. A `dev` build always satisfies the gate. Otherwise, if the binary is missing or below `0.1.0` (`MIN_ZHARNESS_VERSION`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop.
+1. Run `zharness --version`. A `dev` build satisfies the gate; otherwise require version `0.1.0` or newer. If unavailable or stale, print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop.
+2. Preserve invocation intent:
+   - `gate` — durable automated phase gate for `docs/plans/active/{slug}.md`; it does not perform the complete manual review.
+   - `full` — durable gate plus the complete Security, Performance, Architecture, and Code Quality review.
+   - `review` — response-only review, even when an active plan exists.
+   - `bounded` (alias: `simple`) — response-only gate for a direct change with no durable initiative lifecycle.
+3. Run `zharness preflight check --mode {gate|full|review|bounded} --json` and follow its stop/recovery result exactly.
 
-## Modes
+**Zero-write rule:** review and bounded/simple modes create no lifecycle rows, plans, reports, changesets, or markdown artifacts. They do not call `zharness check record` and do not edit an active plan. Invocation intent wins: discovering an active plan never upgrades `review` or bounded/simple work into a durable gate.
 
-| Argument | Does |
-|----------|------|
-| `gate` | Automated checks only: tests, types, lint, build |
-| `review` | Gate → code analysis |
-| `full` (default) | Gate → artifact alignment → code analysis |
+## Owned Plan State
 
-## When to Use
+Only durable gate/full mode may:
 
-- Before committing, creating a PR, or merging
-- After implementing a feature or fix
-- As the per-phase quality gate after `work`
-- When reviewing a specific issue or change
+- append to `## Validation`
+- update the selected phase's lifecycle `status` field in `## Phases and Verification` to mirror the DB transition
+- update lifecycle status, latest check ID, blockers/open items, and exact next action in `## Current State and Next Action`
 
-`check` performs no file edits — it only reads (source, diffs, config) and proposes fixes for a human or a follow-up `work` invocation to apply.
+Preserve every phase/task definition; the phase lifecycle status is the only mutable field inside a planned phase. Append-only `## Progress` is the sole task execution-status source, so check reads task state there and never adds or updates task-definition status fields.
 
-## Steps
+Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, run ID, returned check ID, verdict, and proof gaps. Validation is append-only; never replace earlier failed evidence or verdicts.
 
-### Step 0 — Project Context
+## Review and Gate Steps
 
-Before reviewing: read the diff, skim only the needed repo docs/config, compress findings into verify command + protected/generated files + domain risks, detect whether harness artifacts exist, then apply the stricter rule.
+1. **Load scope without changing intent** — read the diff and repository verification instructions. For gate/full, also read the active plan and `zharness resume --json`, and require a latest run for the phase. Review may consult an active plan for context but remains response-only.
+2. **Classify depth and drift** — use quick/standard/deep based on blast radius, not only line count. Label scope on-target, drift, or incomplete before checks. A phase-boundary violation blocks a clean durable verdict.
+3. **Run the automated gate** — execute applicable tests, type checks, lint/static analysis, and build in repository-defined order. Capture actual output; never self-certify.
+4. **Review plan alignment when applicable** — compare the diff with accepted requirements, Non-goals, phase surfaces, task outputs, append-only Progress entries, and recorded Decisions. Read task execution status only from Progress. Missing planned proof is a finding even when local tests pass.
+5. **Apply mode-specific manual review** — `full` performs the complete Security, Performance, Architecture, and Code Quality review; for a class-of-bug fix, search for sibling instances and state whether coverage is complete. `gate` does not perform that complete manual review. `review` performs the requested response-only review, and bounded/simple performs only scope-appropriate review.
+6. **Evaluate required proof** — for `tiny`, require command output; for `normal`, require unit plus command output; for `high-risk`, require unit, integration, manual review, and command output. Name every missing class exactly. A gate does not silently substitute automated checks for required manual-review evidence.
+7. **Audit durable lifecycle links** — gate/full runs `zharness audit --json`. Treat pointer drift or contract violations touching the phase as findings; unlinked proof remains explicit context. Review and bounded/simple do not add lifecycle records merely to satisfy this step.
+8. **Choose the verdict** — any critical issue or material plan contradiction is `REQUEST_CHANGES`; major non-critical findings are at least `APPROVE_WITH_REQUESTS`; no blocking findings is `APPROVED`.
+9. **Record only a durable gate/full check** — run `zharness check record --verdict {verdict} --run-id {run-id} --proof-links '[{"command":"{exact command}","output_ref":"Validation entry {timestamp}: {result}"}, ...]' --json`. Do not pass or create an artifact path. Save the returned check ID.
+10. **Synchronize durable plan state**:
+    - For `APPROVED` or `APPROVE_WITH_REQUESTS`, immediately set the phase status and Current State lifecycle status to `checked`, record the returned check ID, append exact Validation evidence, and route to closing `handoff` or `git`.
+    - For `REQUEST_CHANGES`, append the returned check ID and exact failed evidence to Validation, keep the phase and Current State lifecycle status `in-progress` to match the DB, record the findings as blockers/open items, and route back to `work`.
+11. **Verify durable synchronization** — gate/full reruns `zharness query phases --json` and requires the plan phase status to match the DB. `check` never marks a phase `done`.
 
-**What to read** (only files relevant to the changed code):
+## Response-Only Review and Bounded Gate
 
-| File | Extract |
-|------|---------|
-| `README.md` | Framework, dev commands, test commands |
-| `AGENTS.md` / `CLAUDE.md` | Project-specific rules that override this playbook |
-| `package.json` / `Cargo.toml` / `pyproject.toml` / `go.mod` | Scripts, dependencies |
-| CI workflow files | Build, test, deploy commands |
-| `CHANGELOG.md` | Release conventions and version format |
-
-Compress into:
-```
-verify_cmd:       [e.g. go test ./... && go vet ./...]
-protected_files:  [e.g. dist/, generated/, CHANGELOG.md]
-domain_risk:      [e.g. auth middleware, payment flow]
-harness_mode:     full / partial / none
-release_format:   [e.g. semver tag + CHANGELOG section]
-```
-
-**Conflict rule**: when project context and this playbook overlap, apply the stricter rule. If `AGENTS.md` or `CLAUDE.md` defines a verification command, use that instead of auto-detection. If project docs say never auto-commit, skip any autofix that would commit. If `.kit/planning/` and `.kit/runs/work/` are present, treat artifact alignment as part of the gate, not an optional note.
-
-Skip context extraction when the diff is under 30 lines and does not touch config, auth, or CI, or when running `gate` mode only.
-
-**Harness detection**: classify the repo before review — `full` (`.kit/planning/SPEC.md` plus roadmap/phase artifacts exist and `work` run logs are used), `partial` (some planning artifacts exist but run logs or phase artifacts are incomplete), `none` (no harness artifacts present). When harness artifacts exist, read `.kit/planning/` and the latest `.kit/runs/work/*.md` as the fast index, verify the pointed phase/run files, then persist a gate report at `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md`.
-
-### Step 1 — Scope Classification (all modes)
-
-Measure the diff: `git diff --stat HEAD` or `git diff main...HEAD --stat`.
-
-| Depth | Criteria |
-|-------|----------|
-| Quick | <100 lines, 1–5 files |
-| Standard | 100–500 lines, 6–10 files |
-| Deep | 500+ lines, 10+ files, or touches auth / payments / data |
-
-State depth before proceeding.
-
-### Step 2 — Scope Drift (all modes)
-
-Label: **on target** / **drift** / **incomplete**. Drift = any changed file with no connection to the stated goal. Flag drift before running checks — do not silently continue.
-
-### Step 3 — Artifact Alignment
-
-When `.kit/planning/` artifacts are present, inspect `.kit/planning/SPEC.md`, `.kit/planning/ROADMAP.md`, the active phase `-CONTEXT.md` / `-PLAN.md`, and the latest matching `.kit/runs/work/*.md` if `work` was used. If the repo is not using the full harness flow, say so explicitly and skip artifact alignment instead of pretending it passed. Label alignment as **aligned** / **drift** / **skipped**.
-
-**Alignment questions**:
-1. **Spec Alignment** — does the diff implement behavior that maps to the spec requirements? Did it quietly add behavior outside spec scope? Are there requirement-shaped gaps the diff does not cover?
-2. **Phase Boundary Alignment** — do changed files stay inside `Allowed Surfaces` and task `touches`? Did the work cross into `Forbidden Surfaces` or task `avoid` paths? Did the diff spread across subsystems the phase plan didn't expect?
-3. **Execution Proof Alignment** — did each materially changed behavior have a matching verification command in the phase plan, and does the work run log show it actually ran? Did the diff add behavior with no proof trail? When `zharness` applies: does gathered proof satisfy every `required` cell in the Validation Matrix below for the resolved lane? A required cell with no matching evidence is a proof gap here too — name it the same way (missing evidence class).
-4. **Decision / Context Alignment** — did implementation contradict locked decisions in the phase context? Were rejected options reintroduced? Were new assumptions added without being surfaced?
-
-**Verdict mapping**:
-
-| Finding | Severity | Merge impact |
-|--------|----------|--------------|
-| Code contradicts spec requirement | 🔴 Critical | Block |
-| Changed files exceed phase boundary | 🟠 Major | Request changes |
-| Missing or weak verification evidence | 🟠 Major | Request changes |
-| Small context drift, documented and harmless | 🟡 Minor | Approve with note |
-| Artifact missing because harness not used | 💡 Suggestion | Note only |
-
-### Step 4 — Harness Gate Flow (when the version gate passes and `.kit/planning/` artifacts exist)
-
-CLI-first and deterministic — the matrix replaces judgment on whether gathered proof is sufficient. Skip this step entirely for non-harness repos or when the version gate already stopped the playbook.
-
-The **RUN artifact** is the latest matching `.kit/runs/work/{YYYYMMDD-HHmm}-{slug}.md` for the phase under review (already located in Step 0/Step 3 above). Its frontmatter carries `id` (that run's own ULID — pass this as `--run-id` below) and `trace_ids` (a list of trace ULIDs recorded once per completed wave). Read both fields directly from that file's frontmatter; no CLI query resolves them.
-
-1. Read the lane (`tiny`/`normal`/`high-risk`) from `.kit/planning/SPEC.md`'s frontmatter `lane:` field — there is no live CLI query for it, SPEC.md is the source of truth.
-2. Run `zharness audit --json`. Any non-empty `pointer_drift` or `contract_violations` touching the artifacts under review is a finding — rate it with the Severity table below (🟠 Major at minimum), it is not a separate pass/fail axis. `unlinked_proofs` is informational context for the sign-off.
-3. Evaluate the Validation Matrix below for the resolved lane against proof actually gathered this session: verification command output → `command-output`; a real test run → `unit`/`integration`/`e2e`; the Phase 2 review pass itself → `manual-check`. A `required` cell with no matching evidence ⇒ **gate FAIL**, name the exact missing evidence class, and stop — identical discipline to a failing test in Phase 1 (do not proceed to Phase 2, no judgment override).
-4. Once Phase 1 (including this step) and Phase 2 both complete, translate this playbook's verdict label to the CLI's enum (`APPROVED`, `APPROVE with requests` → `APPROVE_WITH_REQUESTS`, `REQUEST CHANGES` → `REQUEST_CHANGES`).
-   - **If the gated RUN's `mode` is `full`** (or the RUN artifact predates the `mode` field): run
-     `zharness check record --verdict {verdict} --run-id {run id from the RUN artifact's frontmatter} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}, ...]' --json`
-     List one `proof_links` entry per verification command actually run this session — the same commands cited in the sign-off's `verification:` line. `check record` sets `meta.latest_check_id` to the new check id itself, atomically, in the same changeset/tx as the check row — no separate meta changeset to author.
-   - **If the gated RUN's `mode` is `simple`**: skip `zharness check record` entirely. The RUN was never registered in the `runs` table (`work.md` Step 2, simple-mode branch), so `check record`'s `--run-id` would always fail with `unknown_run_id` — there is no row to link `checks.run_id` against. Write the persisted report with `mode: simple` and note the skip in its `## Next Action` section. `validate` treats `mode: simple` CHECK artifacts as exempt from the DB-registration check by design (see `CONTRACT.md`).
-5. A missing required proof or a FAIL verdict is never overridden by this playbook. If a human judges the gap acceptable to ship anyway, they record that decision themselves: `zharness intervention --verdict-id {check id} --reason "..."`.
-
-**Validation Matrix** (harness-aware gate) — when a `zharness` binary passes the version gate and `.kit/planning/` artifacts exist, the automated gate evaluates this lane × proof-class matrix instead of (not in addition to) the generic pass/fail table. Lane comes from `.kit/planning/SPEC.md`'s frontmatter `lane:` field (set by `intake --lane` at brainstorm time). Every cell is `required` (must have matching evidence or the gate is FAIL), `optional` (nice to have, absence never fails the gate), or `n-a` (not expected for this lane, never requested):
-
-| Lane \ Proof class | unit | integration | e2e | manual-check | command-output |
-|---|---|---|---|---|---|
-| tiny | optional | n-a | n-a | optional | required |
-| normal | required | optional | n-a | optional | required |
-| high-risk | required | required | optional | required | required |
-
-Proof-class meaning:
-- `unit` — a unit test run covering the changed behavior (`go test ./... -run ...`, `npm test`, etc.)
-- `integration` — a test that crosses a real boundary (DB, filesystem, another package's public API) rather than mocking it
-- `e2e` — a full user-facing flow exercised end-to-end (browser automation, CLI smoke test against a real binary, etc.)
-- `manual-check` — the Phase 2 code-review pass itself (Security/Performance/Architecture/Code Quality below) counts as this class's evidence; a clean review with no 🔴/🟠 findings satisfies it, a 🔴 finding never satisfies it regardless of lane
-- `command-output` — any verification command's actual captured output (build, lint, a one-off script) — the floor every lane always requires, since it's the cheapest proof and the core "no unverified claims" hard stop already demands it
-
-A `required` cell with no matching proof link ⇒ gate FAIL naming that exact missing evidence class. This is a hard rule, not a suggestion — the playbook does not use judgment to wave through a missing required proof; a human overrides via `zharness intervention` if the missing proof is genuinely acceptable to skip.
-
-**Conditional reorder rules** (apply before running checks): auth/data change → secrets scan first, then tests. Time-critical → tests only, skip lint/polish. API change → backward-compat check before lint.
-
-### Phase 1 — Gate (`gate`, `review`, `full`)
-
-Run in order: tests, types, lint, build. Cite actual output — never self-certify. When harness artifacts apply, Step 4's matrix evaluation is part of this phase — a matrix FAIL stops the gate exactly like a failing test. If gate fails: stop, report which check failed with actual output, and do not proceed to review.
-
-**Per-stack commands**:
-
-Node.js / TypeScript:
-```bash
-npm test                      # or: yarn test / pnpm test
-npx tsc --noEmit              # type check
-npx eslint . --max-warnings 0
-npm run build
-```
-
-Python:
-```bash
-pytest                        # or: python -m pytest
-mypy .                        # type check
-ruff check .                  # or: flake8
-```
-
-Go:
-```bash
-go test ./...
-go vet ./...
-staticcheck ./...
-go build ./...
-```
-
-Rust:
-```bash
-cargo test
-cargo clippy -- -D warnings
-cargo build
-```
-
-Secrets scan (run first for auth/data changes):
-```bash
-git diff HEAD | grep -iE "(password|secret|token|api_key|private_key)" | grep "^\+"
-```
-
-Backward-compat check (API changes):
-```bash
-grep -r "functionName|ClassName|endpoint" . --include="*.ts" -l
-```
-
-Fallback when no known stack: check `package.json` → `scripts.test`/`scripts.build`; check `Makefile` → `make test`/`make build`; check `README.md` for a "Running tests" section; if nothing found, document as `verification: none — no command detected`. Never claim pass without running a real command.
-
-**Harness add-on**: read the active phase plan and collect expected verification commands, compare against the latest matching `.kit/runs/work/*.md`. If code changed but the proof trail is missing, label `artifact_alignment: ❌ drift` even if local tests pass. If the diff exceeds allowed surfaces, stop before normal review and route back to `to-plan phase {slug}` or `work`.
-
-**Gate outcome**:
-
-| Result | Decision |
-|--------|----------|
-| All pass + on target + artifact aligned (when harness applies) | ✅ APPROVED — ready to commit |
-| Minor issues remain | ⚠️ FIX — return to implementation |
-| Major gaps | ❌ NEEDS_WORK — re-scope with `to-plan` or re-run `work` |
-
-### Phase 2 — Review (`review`, `full`)
-
-Scale depth to scope. In `full` mode, artifact drift findings come before normal code-quality commentary. Priority order: Security, Performance, Architecture, Code Quality.
-
-**1. Security (always first)**
-- Input & validation: SQL/command/path injection at every entry point; XSS vectors in rendered output; missing or bypassable input validation; file upload without type/size constraints
-- Auth & access: missing authentication on protected routes; authorization bypass (horizontal + vertical privilege); insecure direct object references (IDOR); session token exposure in logs or responses
-- Data exposure: PII or credentials in logs, errors, or API responses; hardcoded secrets, tokens, or keys in code; overly permissive CORS or CSP headers; sensitive data in URLs (query params, path segments)
-
-**2. Performance**
-- N+1 query patterns in loops; missing database indexes on filtered/sorted columns; unbounded queries without pagination or limits; memory leaks (event listeners not cleaned up, growing caches); blocking I/O in hot paths or request handlers; unnecessary recomputation (results not cached)
-
-**3. Architecture**
-- YAGNI — is this abstraction actually needed now? KISS — can this be simpler without losing correctness? DRY — is logic duplicated where a single source of truth exists? API contract correctness — does the interface match callers? Backward-compat — does this break existing consumers? Separation of concerns — is business logic mixed with I/O? Harness alignment — does the implementation still match the locked spec, phase context, and phase boundaries?
-
-**4. Code Quality**
-- Naming clarity — does the name say what it does without a comment? Error handling at system boundaries (external APIs, DB, file I/O). Type safety — are nulls and undefined cases handled? Test coverage — does new behavior have a test? Dead code — unreachable branches, unused imports, stale comments. Proof trail quality — can the claimed verification be traced to actual commands or run artifacts?
-
-**Severity**:
-
-| Level | Meaning | Blocks merge? |
-|-------|---------|---------------|
-| 🔴 Critical | Security / data integrity risk | **YES** |
-| 🟠 Major | Bug, perf regression, wrong design | No — flagged |
-| 🟡 Minor | Code quality, readability | No |
-| 💡 Suggestion | Nice-to-have | No |
-
-**Merge Gate**:
-- Any 🔴 → **REQUEST CHANGES** — do not merge
-- Any artifact-alignment drift that exceeds phase boundaries or contradicts the spec → at least **APPROVE with requests**, and escalate to **REQUEST CHANGES** when behavior is materially wrong
-- Only 🟠 and below → **APPROVE with requests**
-- Only 🟡 / 💡 → **APPROVE**
-
-### Autofix Routing
-
-| Class | Definition | Action |
-|-------|------------|--------|
-| `safe_auto` | Typos, missing imports, style inconsistencies | Propose in sign-off as ready-to-apply |
-| `gated_auto` | Null checks, error handling additions | Propose in sign-off, batched, pending user confirmation |
-| `manual` | Architecture, behavior, security tradeoffs | Present in sign-off |
-| `advisory` | Informational only | Note in sign-off |
-
-`check` never edits files. List every `safe_auto` and `gated_auto` fix in the sign-off; a human applies them directly or via a follow-up `work` invocation. Batch `gated_auto` into one confirmation block — never ask separately about each one.
-
-### Pattern-Fix Completeness
-
-When the diff fixes one instance of a class-of-bug (missing validation, wrong selector, off-by-one, missing lock), the same shape often lives elsewhere. Extract the pattern signature, `grep -rn` it across the repo (exclude generated dirs), and confirm sibling instances were also handled. List any unswept sibling: flag as a hard stop when it carries the same risk, advisory when lower-risk.
-
-### Hard Stops
-
-Flag before merging. Use judgment — list is not exhaustive.
-- **No unverified claims**: do not write "I verified X", "I ran Y", "tests pass" unless the command output is in this session's transcript. If reasoning without running, say "based on reading the code" instead of "I verified". Every verification claim in the sign-off must point to a command that actually ran in this session.
-- **Unknown identifiers**: any function, var, or type in the diff that does not exist in the codebase — grep before approving: `grep -r "name" .`
-- **Hardcoded credentials**: secrets, tokens, or API keys in code, logs, or docs
-- **Version skew**: version fields across manifests, changelogs, and tags out of sync
-- **Generated artifact drift**: source changed but generated outputs not regenerated
-- **Injection / validation gap**: SQL, command, or path injection at system entry points
-- **Safety sinks**: destructive file operations (delete/move/overwrite user files, caches, history), shell/AppleScript/SQL/path construction from user input, cwd/symlink/path-traversal guard changes, sandbox/approval boundary changes, signing/notarization/appcast flows. Review validation and rollback for each.
-- **Spec contradiction**: implemented behavior conflicts with a locked requirement
-- **Phase boundary violation**: changed files exceed allowed surfaces without an approved plan refresh
-- **Missing proof trail**: planned verification commands absent from the work run artifact or gate evidence
-
-### Knowledge Sync
-
-After reviewing the diff, check whether it introduces invariants not yet captured in project docs:
-- New safety gate or path-guard rule → `AGENTS.md` or `CLAUDE.md`
-- New UI constraint (layout rule, animation, overlay registration) → project rules docs
-- New deploy/release step or artifact → `AGENTS.md` or `docs/`
-- New cross-file sync requirement (enum ↔ HTML anchors, keys ↔ translations) → `AGENTS.md`
-
-If found, apply the doc update as `safe_auto` (when the invariant is clear from the diff) or flag in sign-off as `doc debt`. When no new invariants exist, sign-off says `doc debt: none`.
-
-## Artifacts
-
-### Persisted Report — `.kit/reports/check/{YYYYMMDD-HHmm}-{slug}.md`
-
-Write this when harness artifacts are present or a persisted report is requested. Emit the skeleton with `zharness scaffold check --path {report path} --json`, then fill it — the CLI carries the full template so it no longer lives in this playbook. Frontmatter: `type: check`, `phase`, `lane`, `mode`, `run_id` (the RUN this check gates), `proof_links` (each `{command, output_ref, artifact_path}`), `created`/`updated`. Body: Gate Evidence (tests/types/lint/build → pass|fail|none), Artifact Alignment (status + notes), Findings (Critical/Major/Minor), Next Action.
-
-Rules: create one file per check run; do not overwrite older results from the same day unless the exact timestamp path is reused intentionally. `run_id` links to the RUN this check gates; each `proof_links` entry is `{command, output_ref, artifact_path}` — `command` is the exact verification command run, `output_ref` is where its output is recorded (inline in the report or a path), `artifact_path` is the file the command verified. `mode` is inherited verbatim from the gated RUN artifact's own `mode` field — it decides whether Step 4 below calls `check record` or skips it.
-
-## Output Format
-
-Always end with this sign-off block:
-
-```
-scope:              on target / drift: [what]
-depth:              quick / standard / deep
-artifact_alignment: ✅ aligned / ❌ drift / skipped: [why]
-gate:               ✅ pass / ❌ fail: [checks]
-review:             APPROVED / APPROVE with requests / REQUEST CHANGES
-blockers:           N critical, N major
-autofix:            N safe_auto proposed, N gated_auto awaiting confirmation
-verification:       [command] → pass / fail / none
-harness_verdict:    zharness check record id / not recorded: [why]
-```
+Run the narrowest checks that prove the requested change, perform the requested or scope-appropriate review, and return the same evidence/verdict fields in the response. `review` is always response-only: it never calls `zharness check record` and never updates the plan, even if an active plan exists. Bounded/simple follows the same zero-write rule because it has no run row.
 
 ## Command Reference
 
-- `zharness --version` — version gate
-- `zharness scaffold check --path {report path} --json` — emit the check report skeleton to fill
-- `zharness audit --json` — pointer drift / contract violations
-- `zharness check record --verdict {...} --run-id {...} --proof-links '[...]' --json` — records the verdict and sets `meta.latest_check_id` atomically
-- `zharness intervention --verdict-id {id} --reason "..."` — human override of a missing-proof gate FAIL
+- `zharness --version`
+- `zharness preflight check --mode {gate|full|review|bounded} --json`
+- `zharness resume --json`
+- `zharness audit --json`
+- `zharness query phases --json`
+- `zharness check record --verdict {verdict} --run-id {run-id} --proof-links '[...]' --json`
 
-## Exit / Handoff Conditions
+## Output Format
 
-Complete only when: gate ran with real command output for every applicable check; artifact alignment was evaluated when harness artifacts exist; review covered Security → Performance → Architecture → Code Quality at the scope-appropriate depth; the sign-off block is printed; when harness applies and the gated RUN is `mode: full`, `zharness check record` ran and its meta changeset was applied — for `mode: simple`, the deliberate skip (Step 4) satisfies this instead. On a clean or approve-with-requests verdict, `git` or `handoff` are natural next steps — never run them automatically.
+End the response with:
 
-## Anti-Patterns
+```text
+scope: on target | drift | incomplete
+depth: quick | standard | deep
+gate: pass | fail
+review: APPROVED | APPROVE_WITH_REQUESTS | REQUEST_CHANGES
+blockers: N critical, N major
+verification: exact command -> pass | fail | not-run
+check_id: ULID | not-recorded
+proof_gaps: none | exact missing classes
+```
 
-- Self-certifying "tests pass" without running them — the core gate anti-pattern; cite actual command output
-- Approving because code "looks correct" without grepping unknown identifiers — hallucinated familiarity
-- Skipping scope drift check on small diffs — small diffs drift too; every changed line must trace to the request
-- Rating severity based on code volume instead of blast radius — 1 line touching auth can be 🔴 Critical
+## Exit Conditions
+
+- Gate: automated checks, plan alignment, required-proof evaluation, and lifecycle audit ran; the DB check row was recorded; exact evidence and verdict were appended to Validation; and plan/DB phase statuses match (`checked` for a clean verdict, `in-progress` for `REQUEST_CHANGES`). The complete manual review is not part of gate.
+- Full: every gate condition holds and the complete Security, Performance, Architecture, and Code Quality review ran.
+- Review or bounded/simple: the response contains honest proof and verdict with zero DB, changeset, plan, report, or markdown writes.

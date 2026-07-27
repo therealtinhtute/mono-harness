@@ -15,6 +15,10 @@ var checkVerdicts = map[string]bool{
 	VerdictRequestChanges:      true,
 }
 
+func IsValidCheckVerdict(verdict string) bool {
+	return checkVerdicts[verdict]
+}
+
 // ProofLink is one entry of a Check's proof_links JSON array.
 type ProofLink struct {
 	Command      string `json:"command"`
@@ -36,7 +40,7 @@ func (c Check) Validate() error {
 	if c.RunID == "" {
 		return &ValidationError{Code: "missing_required_field", Message: "check: run_id is required"}
 	}
-	if !checkVerdicts[c.Verdict] {
+	if !IsValidCheckVerdict(c.Verdict) {
 		return &ValidationError{Code: "invalid_verdict", Message: fmt.Sprintf("check: invalid verdict %q", c.Verdict)}
 	}
 	if c.Verdict != VerdictRequestChanges && len(c.ProofLinks) == 0 {

@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/oklog/ulid/v2"
+
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
 // ChangesetLine is one line of a `{ulid}.changeset.jsonl` file
@@ -75,6 +77,31 @@ func validateFieldNames(table string, allowed map[string]bool, keys []string) er
 	return nil
 }
 
+func validateFieldValues(table string, fields map[string]any) error {
+	switch table {
+	case "stories":
+		if value, ok := fields["status"]; ok {
+			return validateEnumValue(table, "status", value, domain.IsValidStoryStatus)
+		}
+	case "checks":
+		if value, ok := fields["verdict"]; ok {
+			return validateEnumValue(table, "verdict", value, domain.IsValidCheckVerdict)
+		}
+	}
+	return nil
+}
+
+func validateEnumValue(table, column string, value any, valid func(string) bool) error {
+	if text, ok := value.(string); ok && valid(text) {
+		return nil
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		encoded = []byte(fmt.Sprintf("%q", fmt.Sprint(value)))
+	}
+	return fmt.Errorf("changeset_malformed: invalid %s.%s value %s", table, column, encoded)
+}
+
 // ErrOutOfOrder is returned when a changeset's ULID predates the fence —
 // not a hard block (the file is still safely skipped), but flagged per
 // CONTRACT.md's `changeset_out_of_order`.
@@ -87,17 +114,75 @@ func (e *ErrOutOfOrder) Error() string {
 	return fmt.Sprintf("changeset %s predates last-applied %s", e.ULID, e.Fence)
 }
 
-// WriteChangeset mints a new ULID-named file under dir and writes lines
-// as JSONL. Changesets are append-only: never edit or compact an
-// existing file.
+type ChangesetIDOverflowError struct {
+	Floor string
+}
+
+func (e *ChangesetIDOverflowError) Error() string {
+	return fmt.Sprintf("changeset ULID overflow above %s", e.Floor)
+}
+
+// WriteChangeset mints a new ULID-named file above every canonical filename
+// already in dir. Call WriteChangesetAbove when a database fence is available.
 func WriteChangeset(dir string, lines []ChangesetLine) (path string, err error) {
+	return WriteChangesetAbove(dir, "", lines)
+}
+
+// WriteChangesetAbove writes an append-only changeset whose filename is
+// strictly greater than both fence and the greatest canonical existing name.
+func WriteChangesetAbove(dir, fence string, lines []ChangesetLine) (path string, err error) {
+	id, err := NextChangesetID(dir, fence)
+	if err != nil {
+		return "", err
+	}
+	return WriteChangesetWithID(dir, id, lines)
+}
+
+func NextChangesetID(dir, fence string) (string, error) {
+	var floor ulid.ULID
+	hasFloor := false
+	if fence != "" {
+		parsed, err := ulid.ParseStrict(fence)
+		if err != nil || parsed.String() != fence {
+			return "", fmt.Errorf("changeset fence is not a canonical ULID: %q", fence)
+		}
+		floor = parsed
+		hasFloor = true
+	}
+
+	names, err := ListChangesets(dir)
+	if err != nil {
+		return "", err
+	}
+	for _, name := range names {
+		id, ok := canonicalChangesetID(name)
+		if ok && (!hasFloor || id.Compare(floor) > 0) {
+			floor = id
+			hasFloor = true
+		}
+	}
+
+	candidate := ulid.Make()
+	if !hasFloor || candidate.Compare(floor) > 0 {
+		return candidate.String(), nil
+	}
+	next, ok := incrementULID(floor)
+	if !ok {
+		return "", &ChangesetIDOverflowError{Floor: floor.String()}
+	}
+	return next.String(), nil
+}
+
+func WriteChangesetWithID(dir, id string, lines []ChangesetLine) (path string, err error) {
+	parsed, err := ulid.ParseStrict(id)
+	if err != nil || parsed.String() != id {
+		return "", fmt.Errorf("changeset id is not a canonical ULID: %q", id)
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("changeset dir: %w", err)
 	}
 
-	name := ulid.Make().String() + ".changeset.jsonl"
-	path = filepath.Join(dir, name)
-
+	path = filepath.Join(dir, id+".changeset.jsonl")
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 	if err != nil {
 		return "", fmt.Errorf("create changeset file: %w", err)
@@ -111,6 +196,18 @@ func WriteChangeset(dir string, lines []ChangesetLine) (path string, err error) 
 		}
 	}
 	return path, nil
+}
+
+func incrementULID(id ulid.ULID) (ulid.ULID, bool) {
+	next := id
+	for i := len(next) - 1; i >= 0; i-- {
+		if next[i] != 0xff {
+			next[i]++
+			return next, true
+		}
+		next[i] = 0
+	}
+	return ulid.ULID{}, false
 }
 
 // ReadChangeset parses a `.changeset.jsonl` file into its lines.
@@ -158,29 +255,48 @@ func changesetULID(path string) string {
 	return strings.TrimSuffix(filepath.Base(path), ".changeset.jsonl")
 }
 
+func canonicalChangesetID(name string) (ulid.ULID, bool) {
+	idText := changesetULID(name)
+	if idText == filepath.Base(name) {
+		return ulid.ULID{}, false
+	}
+	id, err := ulid.ParseStrict(idText)
+	return id, err == nil && id.String() == idText
+}
+
+func PendingCanonicalChangesets(db *sql.DB, dir string) (pending []string, fence string, err error) {
+	fence, err = readFence(db)
+	if err != nil {
+		return nil, "", err
+	}
+	names, err := ListChangesets(dir)
+	if err != nil {
+		return nil, "", err
+	}
+	for _, name := range names {
+		id, ok := canonicalChangesetID(name)
+		if ok && (fence == "" || id.String() > fence) {
+			pending = append(pending, name)
+		}
+	}
+	return pending, fence, nil
+}
+
 // ApplyChangeset applies a single changeset file to db, honoring the
 // file-level idempotency fence (`meta.last_applied_changeset`). A file
 // whose ULID is <= the fence is skipped entirely; one strictly less than
 // the fence additionally returns *ErrOutOfOrder (flagged, not fatal —
 // the file is still safely skipped).
 func ApplyChangeset(db *sql.DB, path string) (applied int, skippedAlreadyApplied int, err error) {
-	id := changesetULID(path)
+	parsedID, ok := canonicalChangesetID(filepath.Base(path))
+	if !ok {
+		return 0, 0, fmt.Errorf("changeset_malformed: filename must be a canonical ULID changeset: %s", filepath.Base(path))
+	}
+	id := parsedID.String()
 
 	lines, err := ReadChangeset(path)
 	if err != nil {
 		return 0, 0, err
-	}
-
-	fence, err := readFence(db)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	if fence != "" && id <= fence {
-		if id < fence {
-			return 0, len(lines), &ErrOutOfOrder{ULID: id, Fence: fence}
-		}
-		return 0, len(lines), nil
 	}
 
 	tx, err := db.Begin()
@@ -188,6 +304,23 @@ func ApplyChangeset(db *sql.DB, path string) (applied int, skippedAlreadyApplied
 		return 0, 0, fmt.Errorf("begin apply tx: %w", err)
 	}
 	defer tx.Rollback()
+
+	// Acquire SQLite's write reservation before reading the fence. Public
+	// callers also hold the repository lock, but this prevents bypass callers
+	// from making skip/order decisions from the same pre-transaction fence.
+	if _, err := tx.Exec(`UPDATE meta SET last_applied_changeset = last_applied_changeset`); err != nil {
+		return 0, 0, fmt.Errorf("lock apply tx: %w", err)
+	}
+	fence, err := readFence(tx)
+	if err != nil {
+		return 0, 0, err
+	}
+	if fence != "" && id <= fence {
+		if id < fence {
+			return 0, len(lines), &ErrOutOfOrder{ULID: id, Fence: fence}
+		}
+		return 0, len(lines), nil
+	}
 
 	for _, line := range lines {
 		if err := applyLine(tx, line); err != nil {
@@ -248,7 +381,11 @@ func ChangesetStatus(db *sql.DB, dir string) (pending []string, appliedCount int
 	return pending, appliedCount, fence, nil
 }
 
-func readFence(db *sql.DB) (string, error) {
+type queryRower interface {
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+func readFence(db queryRower) (string, error) {
 	var fence sql.NullString
 	err := db.QueryRow(`SELECT last_applied_changeset FROM meta LIMIT 1`).Scan(&fence)
 	if err == sql.ErrNoRows {
@@ -299,6 +436,9 @@ func applyCreate(tx *sql.Tx, table string, line ChangesetLine) error {
 	if err := validateFieldNames(table, entityColumns[table], keys); err != nil {
 		return err
 	}
+	if err := validateFieldValues(table, line.Fields); err != nil {
+		return err
+	}
 
 	cols := []string{"id"}
 	vals := []any{line.ID}
@@ -326,6 +466,9 @@ func applyUpdate(tx *sql.Tx, table string, line ChangesetLine) error {
 		return nil
 	}
 	if err := validateFieldNames(table, entityColumns[table], keys); err != nil {
+		return err
+	}
+	if err := validateFieldValues(table, line.Fields); err != nil {
 		return err
 	}
 

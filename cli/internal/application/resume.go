@@ -65,14 +65,11 @@ func latestHandoffID(db *sql.DB) (id string, exists bool, err error) {
 }
 
 // Resume derives CONTRACT.md's `resume` snapshot from the current meta
-// pointers plus lightweight cross-checks against stories/runs/checks. It
-// only reads `meta`'s pointer columns — nothing here creates or updates
-// them (see cli-domain's implementation-notes.md entry on the
-// meta-pointer-maintenance gap: no command in this phase's 19-command
-// surface writes latest_run_id/latest_check_id going forward, only the
-// existing `import`). cliVersion is the running binary's own version
-// (`"dev"` for unreleased builds) — compared against meta.docs_version to
-// detect stale_docs drift; resume never writes it back.
+// pointers plus lightweight cross-checks against stories/runs/checks. It only
+// reads pointer state; run create, check record, and legacy import own pointer
+// writes. cliVersion is the running binary's own version (`"dev"` for
+// unreleased builds) — compared against meta.docs_version to detect stale_docs
+// drift; resume never writes it back.
 func Resume(db *sql.DB, cliVersion string) (ResumeView, error) {
 	view := ResumeView{Drift: []DriftFinding{}}
 
@@ -98,6 +95,13 @@ func Resume(db *sql.DB, cliVersion string) (ResumeView, error) {
 		} else {
 			s := status
 			view.Position.Status = &s
+			if !domain.IsValidStoryStatus(status) {
+				view.Drift = append(view.Drift, DriftFinding{
+					Type:     "invalid_status",
+					Detail:   fmt.Sprintf("current_phase %q has invalid story status %q", *state.CurrentPhase, status),
+					Recovery: "repair the story status to planned, in-progress, checked, or done",
+				})
+			}
 		}
 	}
 

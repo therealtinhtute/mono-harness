@@ -13,7 +13,7 @@ import (
 func newAuditCmd(version string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "audit",
-		Short: "Report pointer drift, contract violations, and unlinked proofs",
+		Short: "Report pointer drift and lifecycle contract violations",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAudit(cmd, version)
@@ -22,16 +22,16 @@ func newAuditCmd(version string) *cobra.Command {
 }
 
 func runAudit(cmd *cobra.Command, version string) error {
-	if !infrastructure.Exists(dbPath) {
+	db, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
 		return newSystemError("db_unreadable", "audit: no db at "+dbPath+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
 	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("audit: %v", err))
+		return mapReadOnlyOpenError("audit", err)
 	}
 	defer db.Close()
 
-	report, err := application.Audit(db, kitRoot, version)
+	report, err := application.Audit(db.Raw(), version)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("audit: %v", err))
 	}

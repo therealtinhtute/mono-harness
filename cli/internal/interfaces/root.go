@@ -52,6 +52,7 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newHandoffCmd())
 	root.AddCommand(newValidateCmd())
 	root.AddCommand(newAuditCmd(version))
+	wrapExclusiveMutationCommands(root)
 
 	return root
 }

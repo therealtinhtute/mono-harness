@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/therealtinhtute/skills/cli/internal/application"
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/embedded"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
@@ -73,6 +74,10 @@ func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version str
 
 	scaffold, err := application.ScaffoldDocs(db, changesetDir, ".", kitDir, embedded.FS, version, refreshDocs, forceDocs)
 	if err != nil {
+		var validation *domain.ValidationError
+		if errors.As(err, &validation) {
+			return mapValidationError(validation)
+		}
 		var conflict *application.ManagedDocsConflictError
 		if errors.As(err, &conflict) {
 			return newUserError("docs_conflict", fmt.Sprintf("init: %v; inspect %s", conflict, conflictDir))

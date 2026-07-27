@@ -2,11 +2,7 @@ package application
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
-
-	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // AuditFinding is one entry in audit's contract_violations or
@@ -17,19 +13,17 @@ type AuditFinding struct {
 	Detail string `json:"detail"`
 }
 
-// AuditReport mirrors CONTRACT.md's locked `audit --json` shape.
+// AuditReport preserves the public `audit --json` shape.
 type AuditReport struct {
 	PointerDrift       []DriftFinding `json:"pointer_drift"`
 	ContractViolations []AuditFinding `json:"contract_violations"`
 	UnlinkedProofs     []AuditFinding `json:"unlinked_proofs"`
 }
 
-// Audit composes Resume (pointer_drift) and Validate (contract_violations)
-// unchanged — per validation-gate-PLAN.md's T2 "avoid: duplicating
-// validate logic — audit composes it and adds scoring" — and adds one
-// genuinely new check: unlinked_proofs, a sweep of every recorded check's
-// proof_links for artifact_path entries that no longer resolve on disk.
-func Audit(db *sql.DB, root, cliVersion string) (AuditReport, error) {
+// Audit composes the DB-backed Resume and Validate readers. UnlinkedProofs is
+// retained as an empty compatibility field: proof-link artifact paths are
+// optional legacy metadata, not lifecycle integrity requirements.
+func Audit(db *sql.DB, cliVersion string) (AuditReport, error) {
 	report := AuditReport{
 		PointerDrift:       []DriftFinding{},
 		ContractViolations: []AuditFinding{},
@@ -42,78 +36,15 @@ func Audit(db *sql.DB, root, cliVersion string) (AuditReport, error) {
 	}
 	report.PointerDrift = resumeView.Drift
 
-	validateResult, err := Validate(db, root)
+	validateResult, err := Validate(db)
 	if err != nil {
 		return report, fmt.Errorf("audit: %w", err)
 	}
-	for _, f := range validateResult.Findings {
-		report.ContractViolations = append(report.ContractViolations, AuditFinding{Link: f.Link, Issue: f.Issue, Detail: f.Detail})
+	for _, finding := range validateResult.Findings {
+		report.ContractViolations = append(report.ContractViolations, AuditFinding{
+			Link: finding.Link, Issue: finding.Issue, Detail: finding.Detail,
+		})
 	}
-
-	unlinked, err := unlinkedProofs(db)
-	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
-	}
-	report.UnlinkedProofs = unlinked
 
 	return report, nil
-}
-
-// unlinkedProofs sweeps every recorded check's proof_links for entries
-// whose artifact_path is empty or no longer resolves on disk. Ordered by
-// check id (ULID-sortable, so chronological) for determinism.
-func unlinkedProofs(db *sql.DB) ([]AuditFinding, error) {
-	findings := []AuditFinding{}
-	if db == nil {
-		return findings, nil
-	}
-
-	rows, err := db.Query(`SELECT id, proof_links FROM checks ORDER BY id`)
-	if err != nil {
-		return nil, fmt.Errorf("query checks: %w", err)
-	}
-	defer rows.Close()
-
-	type checkRow struct{ id, proofLinksRaw string }
-	var checkRows []checkRow
-	for rows.Next() {
-		var cr checkRow
-		if err := rows.Scan(&cr.id, &cr.proofLinksRaw); err != nil {
-			return nil, fmt.Errorf("scan check: %w", err)
-		}
-		checkRows = append(checkRows, cr)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate checks: %w", err)
-	}
-
-	for _, cr := range checkRows {
-		var links []domain.ProofLink
-		if err := json.Unmarshal([]byte(cr.proofLinksRaw), &links); err != nil {
-			findings = append(findings, AuditFinding{
-				Link:   "check",
-				Issue:  "invalid_proof_links",
-				Detail: fmt.Sprintf("check %s proof_links is not valid JSON: %v", cr.id, err),
-			})
-			continue
-		}
-		for _, l := range links {
-			if l.ArtifactPath == "" {
-				findings = append(findings, AuditFinding{
-					Link:   "check",
-					Issue:  "unlinked_proof",
-					Detail: fmt.Sprintf("check %s proof link (command=%q) has no artifact_path", cr.id, l.Command),
-				})
-				continue
-			}
-			if !infrastructure.Exists(l.ArtifactPath) {
-				findings = append(findings, AuditFinding{
-					Link:   "check",
-					Issue:  "unlinked_proof",
-					Detail: fmt.Sprintf("check %s proof link artifact_path %q not found on disk", cr.id, l.ArtifactPath),
-				})
-			}
-		}
-	}
-	return findings, nil
 }

@@ -2,10 +2,12 @@ package interfaces
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
+	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // cliError is a command failure carrying CONTRACT.md's stable
@@ -26,6 +28,27 @@ func newUserError(code, message string) *cliError {
 // newSystemError builds a system error (exit 2).
 func newSystemError(code, message string) *cliError {
 	return &cliError{Code: code, Message: message, Exit: 2}
+}
+
+func mapRepositoryLockError(prefix string, err error) *cliError {
+	var timeout *infrastructure.RepositoryLockTimeoutError
+	if errors.As(err, &timeout) {
+		return newSystemError("repository_lock_timeout", fmt.Sprintf("%s: %v", prefix, timeout))
+	}
+	var unsupported *infrastructure.RepositoryLockUnsupportedError
+	if errors.As(err, &unsupported) {
+		return newSystemError("repository_lock_unsupported", fmt.Sprintf("%s: %v", prefix, unsupported))
+	}
+	return newSystemError("repository_lock_failed", fmt.Sprintf("%s: %v", prefix, err))
+}
+
+func mapReadOnlyOpenError(prefix string, err error) *cliError {
+	var timeout *infrastructure.RepositoryLockTimeoutError
+	var unsupported *infrastructure.RepositoryLockUnsupportedError
+	if errors.As(err, &timeout) || errors.As(err, &unsupported) {
+		return mapRepositoryLockError(prefix, err)
+	}
+	return newSystemError("db_unreadable", fmt.Sprintf("%s: %v", prefix, err))
 }
 
 // mapValidationError converts a domain/application validation failure into

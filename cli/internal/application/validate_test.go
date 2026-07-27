@@ -1,253 +1,248 @@
 package application
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+	"database/sql"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
+
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
-func TestValidateChainValidFixture(t *testing.T) {
-	result, err := Validate(nil, filepath.Join("..", "..", "testdata", "chain-valid"))
-	if err != nil {
-		t.Fatalf("Validate: %v", err)
-	}
-	if !result.Valid {
-		t.Fatalf("valid = false (findings=%v), want true", result.Findings)
-	}
-	if len(result.Findings) != 1 || result.Findings[0].Issue != "not_yet_implemented" {
-		t.Fatalf("findings = %v, want exactly one not_yet_implemented finding", result.Findings)
-	}
-}
-
-func TestValidateChainBrokenFixture(t *testing.T) {
-	result, err := Validate(nil, filepath.Join("..", "..", "testdata", "chain-broken"))
-	if err != nil {
-		t.Fatalf("Validate: %v", err)
-	}
-	if result.Valid {
-		t.Fatalf("valid = true, want false (chain-broken has one broken cross-link)")
-	}
-	found := false
-	for _, f := range result.Findings {
-		if f.Link == "RUN->CHECK" && f.Issue == "broken_link" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("findings = %v, want a RUN->CHECK broken_link finding naming the break", result.Findings)
-	}
-}
-
-func TestValidateMissingSpec(t *testing.T) {
-	result, err := Validate(nil, t.TempDir())
-	if err != nil {
-		t.Fatalf("Validate: %v", err)
-	}
-	if result.Valid {
-		t.Fatalf("valid = true, want false (no SPEC.md at all)")
-	}
-	if len(result.Findings) != 1 || result.Findings[0].Link != "SPEC->PLAN" || result.Findings[0].Issue != "missing_key" {
-		t.Fatalf("findings = %v, want a single SPEC->PLAN missing_key finding", result.Findings)
-	}
-}
-
-// TestValidateMalformedULID exercises the "ULID formats" leg from
-// cli-domain-CONTEXT.md's Locked Decisions: a present-but-malformed id
-// value is reported (as missing_key, since CONTRACT.md's issue enum has
-// no dedicated slot for it) rather than silently accepted.
-func TestValidateMalformedULID(t *testing.T) {
-	root := t.TempDir()
-	runDir := filepath.Join(root, "runs", "work")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatalf("mkdir run dir: %v", err)
-	}
-	content := "---\nid: not-a-real-ulid\ntype: run\nphase: sample-phase\nlane: normal\nplan_id: 01KXQKT39GV8YK5QBBDCJ33A32\ntrace_ids: []\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# COOK RUN\n"
-	if err := os.WriteFile(filepath.Join(runDir, "20260101-1200-sample-phase.md"), []byte(content), 0o644); err != nil {
-		t.Fatalf("write run: %v", err)
-	}
-
-	result, err := Validate(nil, root)
-	if err != nil {
-		t.Fatalf("Validate: %v", err)
-	}
-	if result.Valid {
-		t.Fatalf("valid = true, want false (malformed RUN id)")
-	}
-	found := false
-	for _, f := range result.Findings {
-		if f.Link == "PLAN->RUN" && f.Issue == "missing_key" && strings.Contains(f.Detail, "not a valid ULID") {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("findings = %v, want a PLAN->RUN missing_key finding naming the malformed ULID", result.Findings)
-	}
-}
-
-// TestValidateStalePointerAgainstDB exercises the "freshness vs DB" leg:
-// a RUN file whose id has no matching row in a live db's runs table.
-func TestValidateStalePointerAgainstDB(t *testing.T) {
-	db, _ := freshDB(t)
-	root := t.TempDir()
-
-	planDir := filepath.Join(root, "planning", "phases", "sample-phase")
-	if err := os.MkdirAll(planDir, 0o755); err != nil {
-		t.Fatalf("mkdir plan dir: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(planDir, "sample-phase-PLAN.md"), []byte("# Plan: sample-phase\n"), 0o644); err != nil {
-		t.Fatalf("write plan: %v", err)
-	}
-
-	runDir := filepath.Join(root, "runs", "work")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatalf("mkdir run dir: %v", err)
-	}
-	runID := ulid.Make().String()
-	content := fmt.Sprintf("---\nid: %s\ntype: run\nphase: sample-phase\nlane: normal\nplan_id: %s\ntrace_ids: []\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# COOK RUN\n", runID, ulid.Make().String())
-	if err := os.WriteFile(filepath.Join(runDir, "20260101-1200-sample-phase.md"), []byte(content), 0o644); err != nil {
-		t.Fatalf("write run: %v", err)
-	}
-
-	result, err := Validate(db, root)
-	if err != nil {
-		t.Fatalf("Validate: %v", err)
-	}
-	if result.Valid {
-		t.Fatalf("valid = true, want false (run id has no matching db row)")
-	}
-	found := false
-	for _, f := range result.Findings {
-		if f.Link == "PLAN->RUN" && f.Issue == "stale_pointer" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("findings = %v, want a PLAN->RUN stale_pointer finding", result.Findings)
-	}
-}
-
-// writeMinimalSpec writes a valid-shape planning/SPEC.md (real ULID id) so
-// the SPEC->PLAN leg reports the expected not_yet_implemented finding
-// instead of a blocking missing_key for "no SPEC at all" — isolating the
-// RUN/CHECK-side assertions these mode-aware tests actually care about.
-func writeMinimalSpec(t *testing.T, root string) {
+func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string) map[string]string {
 	t.Helper()
-	planningDir := filepath.Join(root, "planning")
-	if err := os.MkdirAll(planningDir, 0o755); err != nil {
-		t.Fatalf("mkdir planning dir: %v", err)
-	}
-	content := fmt.Sprintf("---\nid: %s\ntype: spec\nphase: none\nlane: tiny\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# SPEC: fixture\n", ulid.Make().String())
-	if err := os.WriteFile(filepath.Join(planningDir, "SPEC.md"), []byte(content), 0o644); err != nil {
-		t.Fatalf("write spec: %v", err)
-	}
-}
 
-// TestValidateChainSimpleModeFixture exercises harness-mode-parity's whole
-// point: a simple-mode-produced chain (phase-less, plan-less RUN; an
-// unregistered CHECK) must validate clean, matching the shape #38's pilot
-// chain actually produced.
-func TestValidateChainSimpleModeFixture(t *testing.T) {
-	result, err := Validate(nil, filepath.Join("..", "..", "testdata", "chain-simple-mode"))
+	intakeID, _, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "")
 	if err != nil {
-		t.Fatalf("Validate: %v", err)
+		t.Fatalf("CreateIntake: %v", err)
 	}
-	if !result.Valid {
-		t.Fatalf("valid = false (findings=%v), want true", result.Findings)
-	}
-	if len(result.Findings) != 1 || result.Findings[0].Issue != "not_yet_implemented" {
-		t.Fatalf("findings = %v, want exactly one not_yet_implemented finding", result.Findings)
-	}
-}
-
-// TestValidateSimpleModeRunSkipsDBAndPhaseChecks: a RUN with mode: simple,
-// phase: none, plan_id: none, and no matching runs-table row must not
-// trigger broken_link/missing_key/stale_pointer — those are expected
-// simple-mode shape, not defects (harness-mode-parity CONTEXT: Locked
-// Decisions).
-func TestValidateSimpleModeRunSkipsDBAndPhaseChecks(t *testing.T) {
-	db, _ := freshDB(t)
-	root := t.TempDir()
-	writeMinimalSpec(t, root)
-
-	runDir := filepath.Join(root, "runs", "work")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatalf("mkdir run dir: %v", err)
-	}
-	runID := ulid.Make().String()
-	content := fmt.Sprintf("---\nid: %s\ntype: run\nphase: none\nlane: tiny\nmode: simple\nplan_id: none\ntrace_ids: []\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# COOK RUN\n", runID)
-	if err := os.WriteFile(filepath.Join(runDir, "20260101-1200-sample-task.md"), []byte(content), 0o644); err != nil {
-		t.Fatalf("write run: %v", err)
-	}
-
-	result, err := Validate(db, root)
+	storyID, _, err := CreateStory(db, changesetDir, "retained-entity-ids", "validate retained entity IDs", "")
 	if err != nil {
-		t.Fatalf("Validate: %v", err)
+		t.Fatalf("CreateStory: %v", err)
 	}
-	if !result.Valid {
-		t.Fatalf("valid = false (findings=%v), want true (simple mode has no story/plan/db row by design)", result.Findings)
-	}
-}
-
-// TestValidateSimpleModeCheckSkipsDBStalePointer: a CHECK with mode:
-// simple pointing at a real RUN file (doc-to-doc link, unaffected by mode)
-// but with no matching checks-table row must not trigger stale_pointer.
-func TestValidateSimpleModeCheckSkipsDBStalePointer(t *testing.T) {
-	db, _ := freshDB(t)
-	root := t.TempDir()
-	writeMinimalSpec(t, root)
-
-	runDir := filepath.Join(root, "runs", "work")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatalf("mkdir run dir: %v", err)
-	}
-	runID := ulid.Make().String()
-	runContent := fmt.Sprintf("---\nid: %s\ntype: run\nphase: none\nlane: tiny\nmode: simple\nplan_id: none\ntrace_ids: []\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# COOK RUN\n", runID)
-	if err := os.WriteFile(filepath.Join(runDir, "20260101-1200-sample-task.md"), []byte(runContent), 0o644); err != nil {
-		t.Fatalf("write run: %v", err)
-	}
-
-	checkDir := filepath.Join(root, "reports", "check")
-	if err := os.MkdirAll(checkDir, 0o755); err != nil {
-		t.Fatalf("mkdir check dir: %v", err)
-	}
-	checkContent := fmt.Sprintf("---\nid: %s\ntype: check\nphase: none\nlane: tiny\nmode: simple\nrun_id: %s\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# CHECK REPORT\n", ulid.Make().String(), runID)
-	if err := os.WriteFile(filepath.Join(checkDir, "20260101-1300-sample-task.md"), []byte(checkContent), 0o644); err != nil {
-		t.Fatalf("write check: %v", err)
-	}
-
-	result, err := Validate(db, root)
+	runID, _, err := CreateRun(db, changesetDir, "retained-entity-ids", ".kit/runs/work/legacy.md", "")
 	if err != nil {
-		t.Fatalf("Validate: %v", err)
+		t.Fatalf("CreateRun: %v", err)
 	}
-	if !result.Valid {
-		t.Fatalf("valid = false (findings=%v), want true (simple-mode check has no checks-table row by design)", result.Findings)
+	traceID, _, err := CreateTrace(db, changesetDir, 1, "validate retained entity IDs", runID)
+	if err != nil {
+		t.Fatalf("CreateTrace: %v", err)
+	}
+	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{
+		{Command: "go test ./...", OutputRef: "PASS"},
+	})
+	if err != nil {
+		t.Fatalf("RecordCheck: %v", err)
+	}
+	interventionID, _, err := CreateIntervention(db, changesetDir, checkID, "validate retained entity IDs")
+	if err != nil {
+		t.Fatalf("CreateIntervention: %v", err)
+	}
+	handoffID, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, false)
+	if err != nil {
+		t.Fatalf("RecordHandoff: %v", err)
+	}
+
+	return map[string]string{
+		"story":        storyID,
+		"run":          runID,
+		"check":        checkID,
+		"handoff":      handoffID,
+		"intake":       intakeID,
+		"trace":        traceID,
+		"intervention": interventionID,
 	}
 }
 
-// TestValidateSimpleModeStillRequiresValidID: mode: simple exempts
-// phase/plan/DB checks, but a RUN's own id must still be a well-formed
-// ULID — artifact hygiene stays universal (harness-mode-parity CONTEXT:
-// Locked Decisions).
-func TestValidateSimpleModeStillRequiresValidID(t *testing.T) {
-	root := t.TempDir()
-	runDir := filepath.Join(root, "runs", "work")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatalf("mkdir run dir: %v", err)
-	}
-	content := "---\nid: not-a-real-ulid\ntype: run\nphase: none\nlane: tiny\nmode: simple\nplan_id: none\ntrace_ids: []\ncreated: 2026-01-01\nupdated: 2026-01-01\n---\n\n# COOK RUN\n"
-	if err := os.WriteFile(filepath.Join(runDir, "20260101-1200-sample-task.md"), []byte(content), 0o644); err != nil {
-		t.Fatalf("write run: %v", err)
-	}
-
-	result, err := Validate(nil, root)
+func TestValidateWithoutDatabaseIsInvalid(t *testing.T) {
+	result, err := Validate(nil)
 	if err != nil {
 		t.Fatalf("Validate: %v", err)
 	}
 	if result.Valid {
-		t.Fatalf("valid = true, want false (malformed RUN id, even in simple mode)")
+		t.Fatal("valid = true, want false when no database is available")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "DB->LIFECYCLE" {
+		t.Fatalf("findings = %v, want one DB->LIFECYCLE finding", result.Findings)
+	}
+}
+
+func TestValidateReportsOverflowLifecycleID(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	storyID, _, err := CreateStory(db, changesetDir, "overflow-id", "reject an overflowing ULID", "")
+	if err != nil {
+		t.Fatalf("CreateStory: %v", err)
+	}
+	const overflowID = "ZZZZZZZZZZZZZZZZZZZZZZZZZZ"
+	if _, err := db.Exec(`UPDATE stories SET id = ? WHERE id = ?`, overflowID, storyID); err != nil {
+		t.Fatalf("update story id: %v", err)
+	}
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	want := ValidateFinding{
+		Link:   "DB->STORY",
+		Issue:  "missing_key",
+		Detail: `story id "ZZZZZZZZZZZZZZZZZZZZZZZZZZ" is not a valid ULID`,
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false for an overflowing lifecycle ULID")
+	}
+	if len(result.Findings) != 1 || result.Findings[0] != want {
+		t.Fatalf("findings = %v, want [%+v]", result.Findings, want)
+	}
+}
+
+func TestValidateReportsInvalidIDsForRetainedTables(t *testing.T) {
+	invalidIDs := []struct {
+		name string
+		id   string
+	}{
+		{name: "malformed", id: "not-a-ulid"},
+		{name: "overflow", id: "ZZZZZZZZZZZZZZZZZZZZZZZZZZ"},
+	}
+	entities := []struct {
+		name  string
+		table string
+		link  string
+	}{
+		{name: "intake", table: "intakes", link: "DB->INTAKE"},
+		{name: "trace", table: "traces", link: "DB->TRACE"},
+		{name: "intervention", table: "interventions", link: "DB->INTERVENTION"},
+	}
+
+	for _, invalid := range invalidIDs {
+		for _, entity := range entities {
+			t.Run(invalid.name+"/"+entity.name, func(t *testing.T) {
+				db, changesetDir := freshDB(t)
+				ids := createValidRetainedLifecycle(t, db, changesetDir)
+				if _, err := db.Exec("UPDATE "+entity.table+" SET id = ? WHERE id = ?", invalid.id, ids[entity.name]); err != nil {
+					t.Fatalf("update %s id: %v", entity.name, err)
+				}
+
+				result, err := Validate(db)
+				if err != nil {
+					t.Fatalf("Validate: %v", err)
+				}
+				want := ValidateFinding{
+					Link:   entity.link,
+					Issue:  "missing_key",
+					Detail: entity.name + " id \"" + invalid.id + "\" is not a valid ULID",
+				}
+				if result.Valid {
+					t.Fatalf("valid = true, want false for %s %s ID", invalid.name, entity.name)
+				}
+				if len(result.Findings) != 1 || result.Findings[0] != want {
+					t.Fatalf("findings = %v, want [%+v]", result.Findings, want)
+				}
+			})
+		}
+	}
+}
+
+func TestValidateReportsInvalidLifecycleEnums(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	ids := createValidRetainedLifecycle(t, db, changesetDir)
+	if _, err := db.Exec(`UPDATE stories SET status = 'bogus' WHERE id = ?`, ids["story"]); err != nil {
+		t.Fatalf("corrupt story status: %v", err)
+	}
+	if _, err := db.Exec(`UPDATE checks SET verdict = 'bogus' WHERE id = ?`, ids["check"]); err != nil {
+		t.Fatalf("corrupt check verdict: %v", err)
+	}
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	want := []ValidateFinding{
+		{Link: "DB->STORY", Issue: "invalid_value", Detail: `story "retained-entity-ids" has invalid status "bogus"`},
+		{Link: "DB->CHECK", Issue: "invalid_value", Detail: "check " + ids["check"] + ` has invalid verdict "bogus"`},
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false for invalid persisted enums")
+	}
+	if len(result.Findings) != len(want) {
+		t.Fatalf("findings = %v, want %v", result.Findings, want)
+	}
+	for i := range want {
+		if result.Findings[i] != want[i] {
+			t.Fatalf("finding[%d] = %+v, want %+v", i, result.Findings[i], want[i])
+		}
+	}
+}
+
+func TestValidateCleanDatabaseIgnoresLegacyArtifactPaths(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	createValidRetainedLifecycle(t, db, changesetDir)
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if !result.Valid || len(result.Findings) != 0 {
+		t.Fatalf("result = %+v, want valid lifecycle with no findings", result)
+	}
+}
+
+func TestValidateReportsBrokenDatabaseLink(t *testing.T) {
+	db, _ := freshDB(t)
+	db.SetMaxOpenConns(1)
+	if _, err := db.Exec(`PRAGMA foreign_keys=OFF`); err != nil {
+		t.Fatalf("disable foreign keys: %v", err)
+	}
+	runID := ulid.Make().String()
+	if _, err := db.Exec(`
+		INSERT INTO runs (id, story_slug, trace_ids, artifact_path, created_at)
+		VALUES (?, 'missing-story', '[]', '', '2026-07-27T12:00:00Z')
+	`, runID); err != nil {
+		t.Fatalf("insert broken run: %v", err)
+	}
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false for a broken run-to-story link")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "STORY->RUN" || result.Findings[0].Issue != "broken_link" {
+		t.Fatalf("findings = %v, want one STORY->RUN broken_link", result.Findings)
+	}
+}
+
+func TestValidateReportsHandoffRunCheckMismatch(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	checkRunID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	checkID, _, err := RecordCheck(db, changesetDir, checkRunID, domain.VerdictApproved, []domain.ProofLink{{Command: "go test ./..."}})
+	if err != nil {
+		t.Fatalf("RecordCheck: %v", err)
+	}
+
+	handoffRunID := ulid.Make().String()
+	if _, err := db.Exec(`
+		INSERT INTO runs (id, story_slug, trace_ids, artifact_path, created_at)
+		VALUES (?, 'cli-domain', '[]', '', '2026-07-27T12:01:00Z')
+	`, handoffRunID); err != nil {
+		t.Fatalf("insert second run: %v", err)
+	}
+	handoffID := ulid.Make().String()
+	if _, err := db.Exec(`
+		INSERT INTO handoffs (id, run_id, check_id, anchors, created_at)
+		VALUES (?, ?, ?, '{}', '2026-07-27T12:02:00Z')
+	`, handoffID, handoffRunID, checkID); err != nil {
+		t.Fatalf("insert mismatched handoff: %v", err)
+	}
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false for a handoff whose check gates another run")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "CHECK->HANDOFF" || result.Findings[0].Issue != "broken_link" {
+		t.Fatalf("findings = %v, want one CHECK->HANDOFF broken_link", result.Findings)
 	}
 }

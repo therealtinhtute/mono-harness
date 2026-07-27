@@ -17,6 +17,10 @@ var storyStatuses = map[string]bool{
 	StoryDone:       true,
 }
 
+func IsValidStoryStatus(status string) bool {
+	return storyStatuses[status]
+}
+
 // Story carries phase semantics — see SCHEMA.md's table-count note (no
 // separate `phases` table; story slug = phase slug).
 type Story struct {
@@ -35,7 +39,7 @@ func (s Story) Validate() error {
 	if s.Goal == "" {
 		return &ValidationError{Code: "missing_required_field", Message: "story: goal is required"}
 	}
-	if !storyStatuses[s.Status] {
+	if !IsValidStoryStatus(s.Status) {
 		// Not a CONTRACT.md-documented `story` error: status is always set
 		// internally (creation always starts "planned"), never a direct
 		// user-supplied argument, so this guards an internal invariant only.

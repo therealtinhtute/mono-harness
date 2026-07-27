@@ -7,6 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/therealtinhtute/skills/cli/internal/application"
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
@@ -54,8 +56,11 @@ func runDBChangesetApply(cmd *cobra.Command, path string) error {
 	}
 	defer db.Close()
 
-	applied, skipped, err := infrastructure.ApplyChangeset(db, path)
+	applied, skipped, err := application.ApplyChangesetForRecovery(db, changesetDir, path)
 	if err != nil {
+		if ve, ok := err.(*domain.ValidationError); ok {
+			return mapValidationError(ve)
+		}
 		var outOfOrder *infrastructure.ErrOutOfOrder
 		if errors.As(err, &outOfOrder) {
 			return newUserError("changeset_out_of_order", fmt.Sprintf("db changeset apply: %v", outOfOrder))
@@ -74,17 +79,16 @@ func runDBChangesetApply(cmd *cobra.Command, path string) error {
 }
 
 func runDBChangesetStatus(cmd *cobra.Command) error {
-	if !infrastructure.Exists(dbPath) {
+	db, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
 		return newSystemError("db_unreadable", "db changeset status: no db at "+dbPath+"; run `zharness init` first")
 	}
-
-	db, err := infrastructure.Open(dbPath)
 	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("db changeset status: %v", err))
+		return mapReadOnlyOpenError("db changeset status", err)
 	}
 	defer db.Close()
 
-	pending, appliedCount, lastApplied, err := infrastructure.ChangesetStatus(db, changesetDir)
+	pending, appliedCount, lastApplied, err := infrastructure.ChangesetStatus(db.Raw(), changesetDir)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("db changeset status: %v", err))
 	}

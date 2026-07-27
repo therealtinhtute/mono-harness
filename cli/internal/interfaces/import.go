@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/therealtinhtute/skills/cli/internal/application"
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
@@ -39,6 +40,10 @@ func runImport(cmd *cobra.Command, legacyDir string) error {
 
 	result, err := application.Import(db, legacyDir, changesetDir)
 	if err != nil {
+		var validation *domain.ValidationError
+		if errors.As(err, &validation) {
+			return mapValidationError(validation)
+		}
 		var unmapped *application.ErrLegacyFieldUnmapped
 		if errors.As(err, &unmapped) {
 			return newUserError("legacy_field_unmapped", fmt.Sprintf("import: %v", unmapped))

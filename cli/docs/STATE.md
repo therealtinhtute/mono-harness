@@ -1,57 +1,59 @@
 # State Contract v1
 
-Defines how `zharness` represents workflow position and status, replacing the legacy `.kit/workflow-state.yml` pointer file with DB-backed state plus a generated human view.
+Defines how `zharness` represents workflow position and status in the harness database. The legacy `.kit/workflow-state.yml` file is import input only; it is not live state.
 
 ## State Model
 
-- `schema_version` — integer, bumped on any breaking table/entity change; stored in a single-row `meta` table
-- `docs_version` — the embedded-docs version stamped by `init`/`init --refresh-docs`; the CLI's own version string for release builds, `"dev"` for unreleased builds. `"dev"` never triggers staleness (staleness detection is `cli-stale-drift`'s concern, not defined here). Stored in the same single-row `meta` table.
-- `current_phase` — story slug of the phase actively being executed or resumed (`none` if no phase started)
-- `entry_phase` — story slug recommended as the next phase when execution has not started yet
-- `phase.status` enum: `planned | in-progress | checked | done`
-  - `planned` — story exists, no run recorded yet
-  - `in-progress` — at least one `run` recorded, no clean `check` yet
-  - `checked` — latest `check` for the phase has verdict `APPROVED` or `APPROVE_WITH_REQUESTS`
-  - `done` — phase explicitly closed (handoff recorded against it, or superseded by roadmap advance)
-- Artifact pointers are **by ULID**, not by path — `zharness query state --json` resolves ULIDs to their current file path at read time, so a path rename never orphans a pointer the way the legacy yml did
-- Every mutating entity (`run`, `check`, `handoff`, `story`) carries its own ULID; `current` pointers in `meta` reference the latest ULID per entity type per phase
+- `schema_version` — integer stored in the single-row `meta` table and bumped for breaking table or entity changes.
+- `docs_version` — embedded-docs version stamped by `init` or `init --refresh-docs`; release builds use the CLI version and unreleased builds use `"dev"`. `"dev"` never triggers staleness.
+- `current_phase` — story slug of the phase currently being executed or resumed; null when no phase has started.
+- `entry_phase` — story slug recommended as the next phase before execution starts.
+- `latest_run_id` and `latest_check_id` — database IDs stored in `meta`; readers return the IDs directly.
+- `latest_handoff_id` — derived by `resume` from the newest handoff row by `created_at`, then ID. It is not a `meta` pointer.
+- Story status enum: `planned | in-progress | checked | done`.
+  - `planned` — `story` created the phase and no run has started it.
+  - `in-progress` — `run create` registered a run for the phase.
+  - `checked` — `check record` recorded `APPROVED` or `APPROVE_WITH_REQUESTS` for the run.
+  - `done` — `handoff record --close-phase` closed the run's story using a clean check for that same run.
+- Artifact paths on runs, checks, and proof links are optional, deprecated legacy metadata. They are never pointer targets, are never resolved by state readers, and do not participate in drift or lifecycle validity checks.
 
 ## Writer / Reader Ownership
 
-| Command / Skill | Writes | Reads |
+| Command | Writes | Reads |
 |---|---|---|
-| `to-plan` (`story`, `init`) | `story` rows (phase creation) | `spec`, prior `story` rows |
-| `work` (`trace add`, run completion) | `run` rows, phase status → `in-progress` | `story`, `latest run/check` |
-| `check` (`check record`) | `check` rows, phase status → `checked` | `run`, `story` |
-| `handoff` (`handoff record`) | `handoff` rows, phase status → `done` (when the handoff closes a phase) | `run`, `check`, `story` |
-| `watzup` (`resume`) | nothing | everything — read-only snapshot |
-| `git` (`query check --latest`) | nothing | `check` (latest only) |
+| `story` | Story row with status `planned` | Optional dependency story |
+| `run create` | Run row; story status → `in-progress`; `meta.current_phase`; `meta.latest_run_id` | Target story |
+| `trace add` | Trace row and optional run linkage | Optional target run |
+| `check record` | Check row; `meta.latest_check_id`; story status → `checked` for a clean verdict | Gated run and story |
+| `handoff record` | Handoff row; with `--close-phase`, story status → `done` | Optional run/check; closing requires a clean check for the supplied run |
+| `resume`, `query state`, `query phases`, `query artifacts`, `query check --latest`, `validate`, `audit` | Nothing | DB lifecycle state |
 
-No command outside this table writes phase/status/pointer state. Skills that only read (`watzup`, `git`) never call a mutating command for state purposes.
+Only `run create`, `check record`, and closing `handoff record` advance an existing phase's durable status or current/latest pointers. Read-only skills and commands do not mutate state.
 
-## Stale-Pointer Rules
+## Drift and Error Rules
 
-| Condition | Detection | Recovery action |
+| Condition | Detection | Result and recovery |
 |---|---|---|
-| Missing file | ULID resolves to a path that doesn't exist on disk | `resume` reports `drift: missing_file` with the last-known path; recovery = `to-plan phase {slug}` to regenerate, or `git checkout` if it was tracked and deleted accidentally |
-| Unknown phase slug | `current_phase` references a story slug not in the `story` table | `drift: unknown_phase`; recovery = `to-plan phase {slug}` to create the missing story, or correct `current_phase` via `to-plan` if it was a typo |
-| Out-of-order run/check IDs | A `check` row's `created_at` (ULID-ordered) predates the `run` it claims to gate | `drift: out_of_order`; recovery = re-run `check full` against the latest `run` — the stale `check` is left in place (append-only), superseded by the new one |
-| DB unreadable / absent | `zharness resume` cannot open `harness.db` | readiness state `no-harness`; recovery = `zharness init` (new project) or `zharness import` (legacy `.kit/` present) |
-| Docs stale | `meta.docs_version` is set and differs from the running CLI's own version, and neither side is `dev` | `drift: stale_docs`, detail names both versions; recovery = `zharness init --refresh-docs` (the exact string is defined once as `application.StaleDocsRecovery` in Go — this row quotes it, not a parallel copy, per the #24 lesson). A project with no `docs_version` stamped yet (imported legacy, or pre-embed) is `unversioned`, not drifted — never blocks old projects. `dev` on either side never fires, so dogfooding a local build never spams drift. |
+| Unknown phase slug | `meta.current_phase` has no matching story row | `resume` reports `drift: unknown_phase`; create the story or correct the DB pointer through the owning workflow command. Normal CLI writes are protected by foreign keys. |
+| Latest check gates a different run | `meta.latest_check_id` resolves to a check whose `run_id` differs from `meta.latest_run_id` | `resume` reports `drift: out_of_order`; record a check for the latest run or correct the latest run/check pointers. This check compares the linked IDs, not timestamps or artifact paths. |
+| Stale DB pointer | A populated `meta` phase/run/check pointer has no referenced DB row | `validate` reports `stale_pointer`; repair the referenced lifecycle row or pointer. |
+| Harness DB absent | No root `harness.db` exists | `resume` returns readiness `no-harness` with no drift findings; run `zharness init` for a new project or `zharness import` for legacy state. |
+| Harness DB unreadable | The DB exists but cannot be opened or queried | Command fails with the `db_unreadable` system error; no readiness state is fabricated. |
+| Docs stale | `meta.docs_version` and the running CLI version differ, both are non-empty, and neither is `dev` | `resume` reports `drift: stale_docs`; recover with `zharness init --refresh-docs`. Missing versions are unversioned, not drifted. |
 
 ## Legacy Field Mapping (`workflow-state.yml` → DB)
 
-| Legacy field | DB representation |
+| Legacy field | DB disposition |
 |---|---|
-| `current_phase` | `meta.current_phase` (story slug, FK to `story.slug`) |
-| `entry_phase` | `meta.entry_phase` (story slug) |
-| `spec` | dropped — `spec` path is fixed at `.kit/planning/SPEC.md` by convention, no longer a pointer that can drift |
-| `roadmap` | dropped — same reasoning, fixed at `.kit/planning/ROADMAP.md` |
-| `active_context` | derived, not stored — `query state` resolves to `.kit/planning/phases/{current_phase}/{current_phase}-CONTEXT.md` from `current_phase` directly |
-| `active_plan` | derived, not stored — same derivation pattern for `-PLAN.md` |
-| `latest_cook_run` | `meta.latest_run_id` (ULID, FK to `run.id`) — resolved to path via `run.artifact_path` at read time |
-| `latest_check_report` | `meta.latest_check_id` (ULID, FK to `check.id`) — resolved via `check.artifact_path` |
-| `handoff` | dropped as a fixed pointer — `handoff` is now a queryable entity list (`query handoff --latest`); the human `HANDOFF.md` path stays fixed at `.kit/HANDOFF.md` by convention like `spec`/`roadmap` |
-| `last_updated` | dropped as a manual field — every entity carries its own ULID-derived timestamp; `resume` reports the most recent write across all entities instead of one hand-maintained field |
+| `current_phase` | `meta.current_phase` story slug |
+| `entry_phase` | `meta.entry_phase` story slug |
+| `spec` | Not stored; planning files are not state pointers |
+| `roadmap` | Not stored; import may read it only to recover story goals |
+| `active_context` | Not stored; context paths are not state pointers |
+| `active_plan` | Not stored; plan paths are not state pointers |
+| `latest_cook_run` | Imported as a run row plus `meta.latest_run_id` when the legacy filename can identify the phase and timestamp. The old path may be retained only as deprecated `run.artifact_path` metadata; readers return the DB ID without path resolution. |
+| `latest_check_report` | Maps semantically to `meta.latest_check_id`. Legacy import does not synthesize a check from a path without a verdict, so the pointer remains unset until a check row exists; readers return the DB ID without path resolution. |
+| `handoff` | Legacy single-file pointer is not stored. Handoffs are DB rows, and `resume` derives the latest row's ID. |
+| `last_updated` | Not stored; lifecycle rows carry their own timestamps. |
 
-No legacy field is silently lost: five fields map 1:1 to DB columns, four become derived/convention paths (still resolvable, just no longer separately stored and thus no longer able to drift from reality), one (`handoff` as a single pointer) is superseded by a queryable list which is strictly more capable.
+Import rejects unknown legacy keys. Known path-only fields have the explicit non-pointer dispositions above and never become live drift targets.

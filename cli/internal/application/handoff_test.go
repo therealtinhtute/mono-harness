@@ -28,7 +28,7 @@ func TestHandoffRecord(t *testing.T) {
 
 func TestHandoffRecordClosesCleanPhase(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{{Command: "go test ./...", OutputRef: "pass"}})
 	if err != nil {
 		t.Fatalf("RecordCheck() error = %v", err)
@@ -44,17 +44,19 @@ func TestHandoffRecordClosesCleanPhase(t *testing.T) {
 
 func TestHandoffRecordRejectsDirtyPhaseClose(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
 	if err != nil {
 		t.Fatalf("RecordCheck() error = %v", err)
 	}
 
-	_, _, err = RecordHandoff(db, changesetDir, runID, checkID, nil, true)
-	ve, ok := err.(*domain.ValidationError)
-	if !ok || ve.Code != "check_not_clean" {
-		t.Fatalf("error = %v, want check_not_clean", err)
+	before := takeLifecycleSnapshot(t, db, changesetDir, "cli-domain")
+	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true)
+	assertLifecycleValidationError(t, err, "check_not_clean", "handoff record: cannot close a phase with REQUEST_CHANGES")
+	if id != "" || path != "" {
+		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
 	}
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, "cli-domain"))
 }
 
 func TestHandoffRecordNoAnchors(t *testing.T) {

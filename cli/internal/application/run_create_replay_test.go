@@ -8,8 +8,8 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-// TestRunCreateReplaySafety proves run create's two-line changeset (run
-// row + meta.latest_run_id pointer) replays identically: build state
+// TestRunCreateReplaySafety proves run create's three-line changeset (run
+// row + story status + meta.latest_run_id pointer) replays identically: build state
 // incrementally against db1 as the commands are issued, then rebuild db2
 // purely by replaying the changeset directory from empty, and assert
 // Resume sees the same position/pointers either way.
@@ -46,8 +46,8 @@ func TestRunCreateReplaySafety(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Replay: %v", err)
 	}
-	if totalApplied != 3 { // story create + run create + meta update
-		t.Fatalf("Replay totalApplied = %d, want 3", totalApplied)
+	if totalApplied != 4 { // story create + run create + story status update + meta update
+		t.Fatalf("Replay totalApplied = %d, want 4", totalApplied)
 	}
 
 	view1, err := Resume(db1, "dev")

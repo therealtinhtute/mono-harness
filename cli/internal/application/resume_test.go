@@ -59,6 +59,29 @@ func TestResumeInProgress(t *testing.T) {
 	}
 }
 
+func TestResumeInvalidCurrentStoryStatusDrift(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	seedRun(t, db, changesetDir)
+	setMeta(t, db, changesetDir, map[string]any{"current_phase": "cli-domain"})
+	if _, err := db.Exec(`UPDATE stories SET status = 'bogus' WHERE slug = 'cli-domain'`); err != nil {
+		t.Fatalf("corrupt story status: %v", err)
+	}
+
+	view, err := Resume(db, "dev")
+	if err != nil {
+		t.Fatalf("Resume: %v", err)
+	}
+	if view.Readiness != "drifted" {
+		t.Fatalf("readiness = %q, want drifted", view.Readiness)
+	}
+	if view.Position.Status == nil || *view.Position.Status != "bogus" {
+		t.Fatalf("position status = %v, want bogus", view.Position.Status)
+	}
+	if len(view.Drift) != 1 || view.Drift[0].Type != "invalid_status" || view.Drift[0].Recovery == "" {
+		t.Fatalf("drift = %v, want one recoverable invalid_status finding", view.Drift)
+	}
+}
+
 // TestResumeUnknownPhaseDrift exercises Resume's defensive unknown_phase
 // branch. meta.current_phase carries its own FK to stories(slug), so the
 // CLI's own changeset-first writes can never produce this state (there's no
@@ -90,29 +113,27 @@ func TestResumeUnknownPhaseDrift(t *testing.T) {
 	}
 }
 
-func TestResumeMissingRunArtifactDrift(t *testing.T) {
+func TestResumeIgnoresMissingLegacyRunArtifact(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir) // seedRun's artifact_path (.kit/runs/work/x.md) never exists on disk
+	runID := seedRun(t, db, changesetDir) // seedRun's legacy artifact_path (.kit/runs/work/x.md) never exists on disk
 	setMeta(t, db, changesetDir, map[string]any{"latest_run_id": runID})
 
 	view, err := Resume(db, "dev")
 	if err != nil {
 		t.Fatalf("Resume: %v", err)
 	}
-	if view.Readiness != "drifted" {
-		t.Fatalf("readiness = %q, want drifted", view.Readiness)
+	if view.Readiness != "clean" {
+		t.Fatalf("readiness = %q, want clean", view.Readiness)
 	}
-	if len(view.Drift) != 1 || view.Drift[0].Type != "missing_file" {
-		t.Fatalf("drift = %v, want one missing_file finding", view.Drift)
+	if len(view.Drift) != 0 {
+		t.Fatalf("drift = %v, want none", view.Drift)
 	}
 }
 
 // TestResumeOutOfOrderStaledPointer is the staled-pointer fixture named by
 // cli-domain-PLAN.md's T3 verification step: meta.latest_check_id points at
 // a check belonging to an older run than meta.latest_run_id, asserting a
-// non-empty `recovery` per finding. seedRun's fixed (fake) artifact_path
-// also trips the missing_file drift on the new run, so this asserts
-// out_of_order is present rather than requiring it be the only finding.
+// non-empty `recovery` per finding and that out_of_order is present.
 func TestResumeOutOfOrderStaledPointer(t *testing.T) {
 	db, changesetDir := freshDB(t)
 

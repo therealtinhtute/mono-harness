@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,8 +16,8 @@ import (
 )
 
 const (
-	preflightDocsPath = "docs"
-	preflightSpecPath = ".kit/planning/SPEC.md"
+	preflightDocsPath       = "docs"
+	preflightActivePlanGlob = "docs/plans/active/*.md"
 )
 
 var preflightPlaybooks = map[string]string{
@@ -65,7 +67,7 @@ func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) erro
 func resolvePreflightRequestedMode(stage, requestedMode string) string {
 	requestedMode = strings.ToLower(strings.TrimSpace(requestedMode))
 	if stage == "work" && (requestedMode == "" || requestedMode == "auto") {
-		if infrastructure.Exists(preflightSpecPath) {
+		if hasNonEmptyActivePlan() {
 			return "full"
 		}
 		return "simple"
@@ -73,16 +75,29 @@ func resolvePreflightRequestedMode(stage, requestedMode string) string {
 	return requestedMode
 }
 
+func hasNonEmptyActivePlan() bool {
+	matches, err := filepath.Glob(preflightActivePlanGlob)
+	if err != nil {
+		return false
+	}
+	for _, path := range matches {
+		data, err := os.ReadFile(path)
+		if err == nil && strings.TrimSpace(string(data)) != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func observePreflightState(version string) (dbStatus, docsStatus string) {
 	docsStatus = application.PreflightDocsReady
 	if !infrastructure.Exists(preflightDocsPath) {
 		docsStatus = application.PreflightDocsMissing
 	}
-	if !infrastructure.Exists(dbPath) {
+	db, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
 		return application.PreflightDBMissing, docsStatus
 	}
-
-	db, err := infrastructure.OpenReadOnly(dbPath)
 	if err != nil {
 		return application.PreflightDBUnreadable, docsStatus
 	}

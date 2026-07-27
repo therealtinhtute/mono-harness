@@ -27,33 +27,33 @@ func newQueryCmd() *cobra.Command {
 }
 
 func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool) error {
-	if !infrastructure.Exists(dbPath) {
+	db, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
 		return newSystemError("db_unreadable", "query: no db at "+dbPath+"; run `zharness init` first")
 	}
-
-	db, err := infrastructure.Open(dbPath)
 	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("query: %v", err))
+		return mapReadOnlyOpenError("query", err)
 	}
 	defer db.Close()
+	raw := db.Raw()
 
 	switch view {
 	case "state":
-		v, err := application.QueryState(db)
+		v, err := application.QueryState(raw)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query state: %v", err))
 		}
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 
 	case "phases":
-		v, err := application.QueryPhases(db)
+		v, err := application.QueryPhases(raw)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query phases: %v", err))
 		}
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 
 	case "artifacts":
-		v, err := application.QueryArtifacts(db, phaseFilter)
+		v, err := application.QueryArtifacts(raw, phaseFilter)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query artifacts: %v", err))
 		}
@@ -63,7 +63,7 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool) error {
 		if !latest {
 			return newUserError("unknown_view", "query check: only --latest is supported")
 		}
-		v, ok, err := application.QueryLatestCheck(db)
+		v, ok, err := application.QueryLatestCheck(raw)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query check --latest: %v", err))
 		}

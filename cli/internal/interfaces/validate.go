@@ -11,12 +11,10 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
-// Validate keeps walking the current legacy artifact root until the
-// one-plan phase replaces its cross-link model.
 func newValidateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "validate",
-		Short: "Walk SPEC->PLAN->RUN->CHECK->HANDOFF cross-links and report findings",
+		Short: "Validate the durable lifecycle graph",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runValidate(cmd)
@@ -24,21 +22,19 @@ func newValidateCmd() *cobra.Command {
 	}
 }
 
-// runValidate implements CONTRACT.md's `validate`: a missing db only
-// skips the freshness-vs-DB checks (mirrors resume's "no db is a valid
-// state"), it never blocks the doc-to-doc cross-link walk.
 func runValidate(cmd *cobra.Command) error {
-	var db *sql.DB
-	if infrastructure.Exists(dbPath) {
-		var err error
-		db, err = infrastructure.Open(dbPath)
-		if err != nil {
-			return newSystemError("db_unreadable", fmt.Sprintf("validate: %v", err))
-		}
+	var raw *sql.DB
+	db, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
+		db = nil
+	} else if err != nil {
+		return mapReadOnlyOpenError("validate", err)
+	} else {
 		defer db.Close()
+		raw = db.Raw()
 	}
 
-	result, err := application.Validate(db, kitRoot)
+	result, err := application.Validate(raw)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("validate: %v", err))
 	}
@@ -54,9 +50,6 @@ func runValidate(cmd *cobra.Command) error {
 		}
 	}
 
-	// CONTRACT.md: "exits 1 with non-empty findings on any violation" —
-	// the body above is the actual response, so a plain cliError (which
-	// would print a second {"error": ...} envelope) doesn't fit here.
 	if !result.Valid {
 		return newSilentExit(1)
 	}

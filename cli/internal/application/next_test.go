@@ -2,8 +2,10 @@ package application
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -30,19 +32,16 @@ func writeFile(t *testing.T, path, content string) {
 	}
 }
 
-func writeRoadmap(t *testing.T, slugs ...string) {
+func writeActivePlan(t *testing.T, name string, slugs ...string) string {
 	t.Helper()
-	content := ""
-	for i, s := range slugs {
-		content += "## Phase " + string(rune('1'+i)) + ": " + s + "\n\ngoal\n\n"
+	var content strings.Builder
+	content.WriteString("# Active plan\n\n## Phases and Verification\n")
+	for i, slug := range slugs {
+		fmt.Fprintf(&content, "### Phase %d: %s\n- phase_slug: %s\n- goal: goal\n\n", i+1, slug, slug)
 	}
-	writeFile(t, nextRoadmapPath, content)
-}
-
-func writePhaseArtifacts(t *testing.T, slug, planBody string) {
-	t.Helper()
-	writeFile(t, phasePlanPath(slug), planBody)
-	writeFile(t, phaseContextPath(slug), "# context\n")
+	path := filepath.Join("docs", "plans", "active", name+".md")
+	writeFile(t, path, content.String())
+	return path
 }
 
 // seedStory writes a story row with an explicit slug + status, since seedRun
@@ -78,7 +77,7 @@ func TestNextSimpleMode(t *testing.T) {
 	}
 }
 
-func TestNextAutoResolvesSimpleWhenNoSpec(t *testing.T) {
+func TestNextAutoResolvesSimpleWithoutActivePlan(t *testing.T) {
 	chdirFixture(t)
 	view, err := Next(nil, "")
 	if err != nil {
@@ -89,35 +88,64 @@ func TestNextAutoResolvesSimpleWhenNoSpec(t *testing.T) {
 	}
 }
 
-func TestNextAutoAmbiguousWhenSpecAndBrainstorm(t *testing.T) {
+func TestNextAutoIgnoresEmptyActivePlan(t *testing.T) {
 	chdirFixture(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeFile(t, ".kit/reports/brainstorm/20260722-x.md", "# brainstorm\n")
+	writeFile(t, filepath.Join("docs", "plans", "active", "empty.md"), " \n\t")
 
 	view, err := Next(nil, "auto")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
 	}
-	if view.Stop == nil || view.Stop.Code != "ambiguous" {
-		t.Fatalf("view = %+v, want stop.code=ambiguous", view)
+	if view.Mode != "simple" || view.Stop != nil {
+		t.Fatalf("view = %+v, want empty markdown ignored", view)
 	}
 }
 
-func TestNextFullNoSpec(t *testing.T) {
-	chdirFixture(t)
-	view, err := Next(nil, "full")
-	if err != nil {
-		t.Fatalf("Next: %v", err)
-	}
-	if view.Stop == nil || view.Stop.Code != "no-spec" {
-		t.Fatalf("view = %+v, want stop.code=no-spec", view)
+func TestNextActivePlanOnlyAutoAndFullReady(t *testing.T) {
+	for _, argument := range []string{"auto", "full"} {
+		t.Run(argument, func(t *testing.T) {
+			chdirFixture(t)
+			writeActivePlan(t, "initiative", "alpha")
+
+			view, err := Next(nil, argument)
+			if err != nil {
+				t.Fatalf("Next: %v", err)
+			}
+			if view.Mode != "full" || view.Stop != nil {
+				t.Fatalf("view = %+v, want full and ready", view)
+			}
+			if view.ActivePhase == nil || *view.ActivePhase != "alpha" {
+				t.Fatalf("active_phase = %v, want alpha", view.ActivePhase)
+			}
+		})
 	}
 }
 
-func TestNextFullNoPlan(t *testing.T) {
-	chdirFixture(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
+func TestNextMultipleActivePlansAreAmbiguous(t *testing.T) {
+	for _, argument := range []string{"auto", "full"} {
+		t.Run(argument, func(t *testing.T) {
+			chdirFixture(t)
+			writeActivePlan(t, "beta", "beta-phase")
+			writeActivePlan(t, "alpha", "alpha-phase")
 
+			view, err := Next(nil, argument)
+			if err != nil {
+				t.Fatalf("Next: %v", err)
+			}
+			if view.Stop == nil || view.Stop.Code != "ambiguous" {
+				t.Fatalf("view = %+v, want stop.code=ambiguous", view)
+			}
+			alpha := strings.Index(view.Stop.Message, "alpha.md")
+			beta := strings.Index(view.Stop.Message, "beta.md")
+			if alpha < 0 || beta < 0 || alpha > beta {
+				t.Fatalf("message = %q, want deterministic path order", view.Stop.Message)
+			}
+		})
+	}
+}
+
+func TestNextFullWithoutActivePlanStopsNoPlan(t *testing.T) {
+	chdirFixture(t)
 	view, err := Next(nil, "full")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
@@ -125,88 +153,84 @@ func TestNextFullNoPlan(t *testing.T) {
 	if view.Stop == nil || view.Stop.Code != "no-plan" {
 		t.Fatalf("view = %+v, want stop.code=no-plan", view)
 	}
+	if !strings.Contains(view.Stop.Recovery, "brainstorm lock") {
+		t.Fatalf("recovery = %q, want brainstorm lock", view.Stop.Recovery)
+	}
 }
 
-func TestNextFullNoPhase(t *testing.T) {
+func TestNextFullStopsNoPhaseWhenActivePlanHasNoPhaseDefinitions(t *testing.T) {
 	chdirFixture(t)
-	db, changesetDir := freshDB(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha")
-	seedStory(t, db, changesetDir, "alpha", domain.StoryPlanned)
-	// deliberately no phase PLAN.md/CONTEXT.md for "alpha"
+	writeActivePlan(t, "initiative")
 
-	view, err := Next(db, "full")
+	view, err := Next(nil, "full")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
 	}
-	if view.Stop == nil || view.Stop.Code != "no-phase" {
-		t.Fatalf("view = %+v, want stop.code=no-phase", view)
-	}
-	if view.ActivePhase == nil || *view.ActivePhase != "alpha" {
-		t.Fatalf("active_phase = %v, want alpha", view.ActivePhase)
+	if view.Stop == nil || view.Stop.Code != "no-phase" || view.Stop.Recovery != "to-plan" {
+		t.Fatalf("view = %+v, want no-phase routed to to-plan", view)
 	}
 }
 
-func TestNextFullPlaceholderPlan(t *testing.T) {
+func TestNextFullStopsNoPhaseForExplicitMissingSlug(t *testing.T) {
 	chdirFixture(t)
-	db, changesetDir := freshDB(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha")
-	seedStory(t, db, changesetDir, "alpha", domain.StoryPlanned)
-	writePhaseArtifacts(t, "alpha", "# plan\nTBD: fill this in\n")
+	writeActivePlan(t, "initiative", "alpha", "beta")
 
-	view, err := Next(db, "full")
+	view, err := Next(nil, "full phase gamma")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
 	}
-	if view.Stop == nil || view.Stop.Code != "placeholder-plan" {
-		t.Fatalf("view = %+v, want stop.code=placeholder-plan", view)
+	if view.Stop == nil || view.Stop.Code != "no-phase" || view.Stop.Recovery != "to-plan" {
+		t.Fatalf("view = %+v, want no-phase routed to to-plan", view)
+	}
+	if view.ActivePhase == nil || *view.ActivePhase != "gamma" {
+		t.Fatalf("active_phase = %v, want gamma", view.ActivePhase)
 	}
 }
 
-func TestNextFullReady(t *testing.T) {
+func TestNextFullStopsForPlaceholderInActivePlan(t *testing.T) {
+	chdirFixture(t)
+	path := writeActivePlan(t, "initiative", "alpha")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile(%s): %v", path, err)
+	}
+	writeFile(t, path, string(data)+"- task: TODO fill this in\n")
+
+	view, err := Next(nil, "full")
+	if err != nil {
+		t.Fatalf("Next: %v", err)
+	}
+	if view.Stop == nil || view.Stop.Code != "placeholder-plan" || view.Stop.Recovery != "to-plan" {
+		t.Fatalf("view = %+v, want placeholder-plan routed to to-plan", view)
+	}
+}
+
+func TestNextSelectsFirstIncompletePhaseInPlanOrder(t *testing.T) {
 	chdirFixture(t)
 	db, changesetDir := freshDB(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha")
-	seedStory(t, db, changesetDir, "alpha", domain.StoryPlanned)
-	writePhaseArtifacts(t, "alpha", "# plan\nreal steps, no placeholders\n")
+	writeActivePlan(t, "initiative", "alpha", "beta", "gamma")
+	seedStory(t, db, changesetDir, "alpha", domain.StoryDone)
+	seedStory(t, db, changesetDir, "beta", domain.StoryPlanned)
+	seedStory(t, db, changesetDir, "gamma", domain.StoryPlanned)
 
 	view, err := Next(db, "full")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
 	}
 	if view.Stop != nil {
-		t.Fatalf("view = %+v, want no stop", view)
+		t.Fatalf("view = %+v, want first incomplete phase without ambiguity", view)
 	}
-	if view.ActivePhase == nil || *view.ActivePhase != "alpha" {
-		t.Fatalf("active_phase = %v, want alpha", view.ActivePhase)
-	}
-}
-
-func TestNextFullMultipleIncomplete(t *testing.T) {
-	chdirFixture(t)
-	db, changesetDir := freshDB(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha", "beta")
-	seedStory(t, db, changesetDir, "alpha", domain.StoryPlanned)
-	seedStory(t, db, changesetDir, "beta", domain.StoryPlanned)
-
-	view, err := Next(db, "full")
-	if err != nil {
-		t.Fatalf("Next: %v", err)
-	}
-	if view.Stop == nil || view.Stop.Code != "multiple-incomplete" {
-		t.Fatalf("view = %+v, want stop.code=multiple-incomplete", view)
+	if view.ActivePhase == nil || *view.ActivePhase != "beta" {
+		t.Fatalf("active_phase = %v, want beta", view.ActivePhase)
 	}
 }
 
 func TestNextFullAllPhasesDone(t *testing.T) {
 	chdirFixture(t)
 	db, changesetDir := freshDB(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha")
+	writeActivePlan(t, "initiative", "alpha", "beta")
 	seedStory(t, db, changesetDir, "alpha", domain.StoryDone)
+	seedStory(t, db, changesetDir, "beta", domain.StoryDone)
 
 	view, err := Next(db, "full")
 	if err != nil {
@@ -217,39 +241,35 @@ func TestNextFullAllPhasesDone(t *testing.T) {
 	}
 }
 
-func TestNextFullExplicitPhaseBypassesSelection(t *testing.T) {
+func TestNextExplicitPhaseBypassesDoneSelection(t *testing.T) {
 	chdirFixture(t)
 	db, changesetDir := freshDB(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha", "beta")
+	writeActivePlan(t, "initiative", "alpha", "beta")
 	seedStory(t, db, changesetDir, "alpha", domain.StoryDone)
 	seedStory(t, db, changesetDir, "beta", domain.StoryDone)
-	writePhaseArtifacts(t, "beta", "# plan\nreal steps\n")
 
 	view, err := Next(db, "phase beta")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
 	}
 	if view.Stop != nil {
-		t.Fatalf("view = %+v, want no stop (explicit phase bypasses done-ness check)", view)
+		t.Fatalf("view = %+v, want explicit phase to bypass done selection", view)
 	}
 	if view.ActivePhase == nil || *view.ActivePhase != "beta" {
 		t.Fatalf("active_phase = %v, want beta", view.ActivePhase)
 	}
 }
 
-func TestNextFullPhaseSelectionWithoutDB(t *testing.T) {
+func TestNextNilDBSelectsFirstPlanPhase(t *testing.T) {
 	chdirFixture(t)
-	writeFile(t, nextSpecPath, "# spec\nlocked\n")
-	writeRoadmap(t, "alpha")
-	writePhaseArtifacts(t, "alpha", "# plan\nreal steps\n")
+	writeActivePlan(t, "initiative", "alpha", "beta")
 
 	view, err := Next(nil, "full")
 	if err != nil {
 		t.Fatalf("Next: %v", err)
 	}
 	if view.Stop != nil {
-		t.Fatalf("view = %+v, want no stop (nil db treats phase as incomplete-but-selectable)", view)
+		t.Fatalf("view = %+v, want no stop", view)
 	}
 	if view.ActivePhase == nil || *view.ActivePhase != "alpha" {
 		t.Fatalf("active_phase = %v, want alpha", view.ActivePhase)

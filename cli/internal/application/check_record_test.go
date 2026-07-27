@@ -8,7 +8,7 @@ import (
 
 func TestCheckRecord(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
 	id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{
 		{Command: "go test ./...", OutputRef: "ok", ArtifactPath: ".kit/runs/work/x.md"},
@@ -45,9 +45,18 @@ func TestCheckRecord(t *testing.T) {
 
 func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	if _, _, err := CreateStory(db, changesetDir, "cli-domain", "ported domain commands work", ""); err != nil {
+		t.Fatalf("CreateStory: %v", err)
+	}
+	runID, _, err := CreateRun(db, changesetDir, "cli-domain", "", "")
+	if err != nil {
+		t.Fatalf("CreateRun: %v", err)
+	}
+	if got := queryStoryStatus(t, db, "cli-domain"); got != domain.StoryInProgress {
+		t.Fatalf("pre-check story status = %q, want in-progress", got)
+	}
 
-	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
+	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}

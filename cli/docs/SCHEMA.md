@@ -1,6 +1,6 @@
 # DB + Changeset Schema v1
 
-SQLite schema for `harness.db` and the changeset line/file format that reproduces it. Every mutating command in `CONTRACT.md` writes one changeset before touching the DB (R7); replaying all changesets from empty yields identical state.
+SQLite schema for `harness.db` and the changeset line/file format that reproduces it. Every database-mutating command in `CONTRACT.md` writes one changeset before touching the DB (R7); replaying all changesets from empty yields identical state. File-only `scaffold` is outside this database mutation contract.
 
 > **Table-count note**: SPEC R13 and this phase's own PLAN.md list `phases` as a table separate from `stories`. `harness-contracts-CONTEXT.md`'s Locked Decisions resolve SPEC's Open Question 1 explicitly: "one `zharness` story per `to-plan` phase, story slug = phase slug... no longer an open assumption." A separate `phases` table would duplicate that mapping and require keeping two rows in sync on every phase transition — the opposite of what R13's own idempotency intent wants. This schema defines **one** `stories` table carrying phase status; there is no `phases` table. Flagged in `.kit/implementation-notes.md`, not a new open question — applying an already-locked decision, not creating a deviation.
 
@@ -34,9 +34,9 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 |---|---|---|
 | `id` | TEXT PK | ULID |
 | `story_slug` | TEXT | FK `stories.slug` |
-| `plan_id` | TEXT, nullable | frontmatter PLAN→SPEC cross-link; **known gap** — `phase-plan-template.md` doesn't carry `spec_id` yet (see CONTRACT.md `validate`), so this column exists but stays unpopulated until that template is updated |
-| `trace_ids` | TEXT | JSON array of trace ULIDs, appended per `trace add` call |
-| `artifact_path` | TEXT | `.kit/runs/work/{...}.md` |
+| `plan_id` | TEXT, nullable | Optional phase PLAN ULID supplied by `run create --plan-id`; not a foreign key and not part of current DB lifecycle-link validation |
+| `trace_ids` | TEXT | Legacy JSON array column, currently stored as `[]`; `trace add` persists links in `traces.run_id` instead of updating this field |
+| `artifact_path` | TEXT NOT NULL | Optional/deprecated legacy metadata; absence is encoded as `""` for additive compatibility with migration `0001_init`. No filesystem path or artifact existence is required. |
 | `created_at` | TEXT | |
 
 #### `checks`
@@ -45,8 +45,8 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `id` | TEXT PK | ULID |
 | `run_id` | TEXT | FK `runs.id` |
 | `verdict` | TEXT | enum `APPROVED\|APPROVE_WITH_REQUESTS\|REQUEST_CHANGES` |
-| `proof_links` | TEXT | JSON array of `{command, output_ref, artifact_path}` |
-| `artifact_path` | TEXT, nullable | `.kit/reports/check/{...}.md`, when persisted |
+| `proof_links` | TEXT | JSON array of `{command, output_ref, artifact_path}`; each `artifact_path` is optional/deprecated legacy metadata and is not a filesystem requirement |
+| `artifact_path` | TEXT, nullable | Optional/deprecated legacy check-artifact metadata; not a filesystem requirement |
 | `created_at` | TEXT | |
 
 #### `handoffs`
@@ -55,8 +55,10 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `id` | TEXT PK | ULID |
 | `run_id` | TEXT, nullable | FK `runs.id` |
 | `check_id` | TEXT, nullable | FK `checks.id` |
-| `anchors` | TEXT | JSON `{latest_run_id, latest_check_id, open_items}` |
-| `created_at` | TEXT | human `.kit/HANDOFF.md` path is fixed by convention (STATE.md), not stored here |
+| `anchors` | TEXT | Durable JSON `{latest_run_id, latest_check_id, open_items}`; run/check keys are present when their anchors are supplied |
+| `created_at` | TEXT | |
+
+Handoff anchors and open items are durable database state. There is no fixed `.kit/HANDOFF.md` convention or required handoff markdown path in the schema.
 
 ### Ported entities
 
@@ -67,6 +69,7 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `type` | TEXT | enum `new-spec\|spec-slice\|change-request\|new-initiative\|maintenance\|harness-improvement` |
 | `summary` | TEXT | |
 | `lane` | TEXT | enum `tiny\|normal\|high-risk` |
+| `plan_path` | TEXT, nullable | Optional repository-relative path to the initiative's evolving plan; added by migration `0005_intake_plan_path` |
 | `created_at` | TEXT | |
 
 #### `interventions`
@@ -106,16 +109,16 @@ Every table maps to exactly one changeset `entity` string (the value in `{op, en
 | Table | Entity string | Producing command(s) |
 |---|---|---|
 | `meta` | `meta` | side-effect of any command that updates `current_phase`/`latest_run_id`/etc. — never created directly |
-| `stories` | `story` | `story`, plus `status` updates from `work`/`check`/`handoff` (STATE.md Writer/Reader Ownership) |
-| `runs` | `run` | `trace add` (run completion), `work` |
+| `stories` | `story` | `story`; `run create` updates status to `in-progress`, clean `check record` updates it to `checked`, and closing `handoff record --close-phase` updates it to `done` |
+| `runs` | `run` | `run create` |
 | `checks` | `check` | `check record` |
-| `handoffs` | `handoff` | **none yet** — SPEC R13 mandates this table, but no command among R6's 19 produces it (R6/R18 gap, see `CONTRACT.md`'s escalation note); table exists now so the schema doesn't need a breaking migration once the command lands |
+| `handoffs` | `handoff` | `handoff record` |
 | `intakes` | `intake` | `intake` |
 | `interventions` | `intervention` | `intervention` |
 | `traces` | `trace` | `trace add` |
 | `managed_docs` | `managed_doc` | `init`, `init --refresh-docs`, layout migration |
 
-Cross-check against CONTRACT.md: every mutating command listed there (`intake, story, intervention, trace, check record, handoff record`, plus `init`/`import`/`migrate` which write `meta` only) names exactly one entity string from this table. `resume`, `query`, `validate`, `audit` are read-only — they write no changeset.
+Cross-check against CONTRACT.md: database-mutating commands include `intake`, `story`, `intervention`, `trace add`, `run create`, `check record`, and `handoff record`, plus infrastructure mutations from `init`/`import`/`migrate`. Lifecycle commands may write multiple entity lines atomically for status and meta-pointer transitions while each created row uses the singular entity string above. `resume`, `query`, `validate`, `audit`, and `preflight` are read-only and write no changeset; `scaffold` is file-only and writes no database entity or changeset.
 
 ## Changeset Format
 

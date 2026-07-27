@@ -2,7 +2,6 @@ package application
 
 import (
 	"database/sql"
-	"time"
 
 	"github.com/oklog/ulid/v2"
 
@@ -23,29 +22,38 @@ func CreateRun(db *sql.DB, changesetDir, storySlug, artifactPath, planID string)
 	if err := entity.Validate(); err != nil {
 		return "", "", err
 	}
+	if planID != "" {
+		if _, err := ulid.ParseStrict(planID); err != nil {
+			return "", "", &domain.ValidationError{Code: "invalid_plan_id", Message: "run create: plan_id must be a valid ULID"}
+		}
+	}
 
-	storyID, _, exists, err := storyByExactSlug(db, storySlug)
+	storyID, storyStatus, exists, err := storyByExactSlug(db, storySlug)
 	if err != nil {
 		return "", "", err
 	}
 	if !exists {
 		return "", "", &domain.ValidationError{Code: "unknown_story", Message: "run create: story slug " + storySlug + " not found"}
 	}
+	if storyStatus != domain.StoryPlanned && storyStatus != domain.StoryInProgress {
+		return "", "", &domain.ValidationError{Code: "story_not_runnable", Message: "run create: story must be planned or in-progress"}
+	}
 
-	at := time.Now().UTC().Format(time.RFC3339)
-	id = ulid.Make().String()
-	fields := map[string]any{
-		"story_slug":    storySlug,
-		"artifact_path": artifactPath,
-		"created_at":    at,
-	}
-	if planID != "" {
-		fields["plan_id"] = planID
-	}
-	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
-		{Op: "create", Entity: "run", ID: id, Fields: fields, At: at},
-		{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryInProgress}, At: at},
-		{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_run_id": id, "current_phase": storySlug}, At: at},
+	id, path, _, err = AppendNewEntityAndApply(db, changesetDir, func(id string) []infrastructure.ChangesetLine {
+		at := orderedChangesetTime(id)
+		fields := map[string]any{
+			"story_slug":    storySlug,
+			"artifact_path": artifactPath,
+			"created_at":    at,
+		}
+		if planID != "" {
+			fields["plan_id"] = planID
+		}
+		return []infrastructure.ChangesetLine{
+			{Op: "create", Entity: "run", ID: id, Fields: fields, At: at},
+			{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryInProgress}, At: at},
+			{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_run_id": id, "current_phase": storySlug}, At: at},
+		}
 	})
 	if err != nil {
 		return "", "", err

@@ -3,15 +3,15 @@ package application
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
 	"strings"
+
+	"github.com/oklog/ulid/v2"
+
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
-// ValidateFinding and ValidateResult mirror CONTRACT.md's `validate`
-// --json shape exactly: {"valid": bool, "findings": [{"link", "issue",
-// "detail"}]}.
+// ValidateFinding and ValidateResult preserve the public `validate --json`
+// shape: {"valid": bool, "findings": [{"link", "issue", "detail"}]}.
 type ValidateFinding struct {
 	Link   string `json:"link"`
 	Issue  string `json:"issue"`
@@ -23,319 +23,389 @@ type ValidateResult struct {
 	Findings []ValidateFinding `json:"findings"`
 }
 
-type runRef struct {
-	id, phase string
+// Validate checks the durable lifecycle graph stored in the harness database.
+// Legacy artifact paths are metadata only and are not part of lifecycle
+// validity. A nil database produces a deterministic invalid result rather than
+// claiming that an unchecked lifecycle is valid.
+func Validate(db *sql.DB) (ValidateResult, error) {
+	findings := []ValidateFinding{}
+	if db == nil {
+		findings = append(findings, ValidateFinding{
+			Link:   "DB->LIFECYCLE",
+			Issue:  "missing_key",
+			Detail: "harness database is unavailable; lifecycle links cannot be validated",
+		})
+		return ValidateResult{Valid: false, Findings: findings}, nil
+	}
+
+	if err := validateEntityIDs(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateEntityEnums(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateStoryLinks(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateRunLinks(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateCheckLinks(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateHandoffLinks(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateMetaLinks(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+
+	return ValidateResult{Valid: len(findings) == 0, Findings: findings}, nil
 }
 
-type checkRef struct {
-	id, runID string
-}
-
-// Validate walks SPEC->PLAN->RUN->CHECK->HANDOFF by frontmatter
-// cross-links under root (the .kit/-equivalent directory). db is
-// optional: nil skips the freshness-vs-DB checks, since cross-checking
-// the documents against each other doesn't require a live harness (same
-// "no db is a valid state" precedent as Resume).
-func Validate(db *sql.DB, root string) (ValidateResult, error) {
-	var findings []ValidateFinding
-
-	specFields, specExists, err := parseFrontmatter(filepath.Join(root, "planning", "SPEC.md"))
+func validateEntityIDs(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`
+		SELECT entity, id FROM (
+			SELECT 'STORY' AS entity, id FROM stories
+			UNION ALL SELECT 'RUN', id FROM runs
+			UNION ALL SELECT 'CHECK', id FROM checks
+			UNION ALL SELECT 'HANDOFF', id FROM handoffs
+			UNION ALL SELECT 'INTAKE', id FROM intakes
+			UNION ALL SELECT 'TRACE', id FROM traces
+			UNION ALL SELECT 'INTERVENTION', id FROM interventions
+		)
+		ORDER BY entity, id
+	`)
 	if err != nil {
-		return ValidateResult{}, err
+		return fmt.Errorf("validate entity ids: %w", err)
 	}
-	switch {
-	case !specExists:
-		findings = append(findings, ValidateFinding{
-			Link: "SPEC->PLAN", Issue: "missing_key",
-			Detail: "planning/SPEC.md not found",
-		})
-	case specFields["id"] == "":
-		findings = append(findings, ValidateFinding{
-			Link: "SPEC->PLAN", Issue: "missing_key",
-			Detail: "planning/SPEC.md missing required key \"id\"",
-		})
-	case !looksLikeULID(specFields["id"]):
-		findings = append(findings, ValidateFinding{
-			Link: "SPEC->PLAN", Issue: "missing_key",
-			Detail: fmt.Sprintf("planning/SPEC.md key \"id\" value %q is not a valid ULID", specFields["id"]),
-		})
-	default:
-		// Known gap (CONTRACT.md): PLAN artifacts carry no spec_id field
-		// yet, so SPEC->PLAN can never be checked by ID-equality — report
-		// it as not-yet-implemented rather than a hard failure.
-		findings = append(findings, ValidateFinding{
-			Link: "SPEC->PLAN", Issue: "not_yet_implemented",
-			Detail: "PLAN artifacts don't carry a spec_id field yet; SPEC->PLAN cannot be cross-checked",
-		})
-	}
+	defer rows.Close()
 
-	runFiles, err := globMD(filepath.Join(root, "runs", "work"))
-	if err != nil {
-		return ValidateResult{}, err
-	}
-	sort.Strings(runFiles)
-
-	var runs []runRef
-	for _, rf := range runFiles {
-		fields, _, err := parseFrontmatter(rf)
-		if err != nil {
-			return ValidateResult{}, err
+	for rows.Next() {
+		var entity, id string
+		if err := rows.Scan(&entity, &id); err != nil {
+			return fmt.Errorf("validate entity ids: %w", err)
 		}
-		ctx := fmt.Sprintf("RUN %s", rf)
-		simple := fields["mode"] == "simple"
-
-		id, idOK := requireULID(&findings, "PLAN->RUN", fields, "id", ctx)
-		phase, phaseOK := requireKey(&findings, "PLAN->RUN", fields, "phase", ctx)
-		if !simple {
-			requireULID(&findings, "PLAN->RUN", fields, "plan_id", ctx)
-		}
-
-		// Simple-mode runs are phase-less and plan-less by design (no
-		// story exists to satisfy the DB's runs.story_slug FK, so
-		// work.md never registers them) — phase-existence, plan_id
-		// shape, and DB-row checks below don't apply to them. Missing
-		// or non-"simple" mode keeps full strictness (mode was absent
-		// on every artifact before this carve-out existed).
-		if phaseOK && !simple {
-			planPath := filepath.Join(root, "planning", "phases", phase, phase+"-PLAN.md")
-			if _, statErr := os.Stat(planPath); statErr != nil {
-				findings = append(findings, ValidateFinding{
-					Link: "PLAN->RUN", Issue: "broken_link",
-					Detail: fmt.Sprintf("%s references phase %q but %s does not exist", ctx, phase, planPath),
-				})
-			}
-		}
-		if idOK {
-			if db != nil && !simple {
-				exists, err := rowExists(db, "runs", id)
-				if err != nil {
-					return ValidateResult{}, err
-				}
-				if !exists {
-					findings = append(findings, ValidateFinding{
-						Link: "PLAN->RUN", Issue: "stale_pointer",
-						Detail: fmt.Sprintf("%s id %q has no matching row in the runs table", ctx, id),
-					})
-				}
-			}
-			runs = append(runs, runRef{id: id, phase: phase})
-		}
-	}
-
-	checkFiles, err := globMD(filepath.Join(root, "reports", "check"))
-	if err != nil {
-		return ValidateResult{}, err
-	}
-	sort.Strings(checkFiles)
-
-	var checks []checkRef
-	for _, cf := range checkFiles {
-		fields, _, err := parseFrontmatter(cf)
-		if err != nil {
-			return ValidateResult{}, err
-		}
-		ctx := fmt.Sprintf("CHECK %s", cf)
-		simple := fields["mode"] == "simple"
-
-		id, idOK := requireULID(&findings, "RUN->CHECK", fields, "id", ctx)
-		runID, runIDOK := requireULID(&findings, "RUN->CHECK", fields, "run_id", ctx)
-
-		if runIDOK && !containsRunID(runs, runID) {
-			findings = append(findings, ValidateFinding{
-				Link: "RUN->CHECK", Issue: "broken_link",
-				Detail: fmt.Sprintf("%s run_id %q does not match any known RUN", ctx, runID),
-			})
-		}
-		if idOK {
-			// Simple-mode checks are never registered via `check
-			// record` (the run they gate has no runs-table row to
-			// satisfy checks.run_id's FK against), so a DB row is
-			// never expected here either.
-			if db != nil && !simple {
-				exists, err := rowExists(db, "checks", id)
-				if err != nil {
-					return ValidateResult{}, err
-				}
-				if !exists {
-					findings = append(findings, ValidateFinding{
-						Link: "RUN->CHECK", Issue: "stale_pointer",
-						Detail: fmt.Sprintf("%s id %q has no matching row in the checks table", ctx, id),
-					})
-				}
-			}
-			checks = append(checks, checkRef{id: id, runID: runID})
-		}
-	}
-
-	handoffFields, handoffExists, err := parseFrontmatter(filepath.Join(root, "HANDOFF.md"))
-	if err != nil {
-		return ValidateResult{}, err
-	}
-	if handoffExists {
-		ctx := "HANDOFF.md"
-		requireULID(&findings, "CHECK->HANDOFF", handoffFields, "id", ctx)
-		runID, runIDOK := requireULID(&findings, "CHECK->HANDOFF", handoffFields, "run_id", ctx)
-		checkID, checkIDOK := requireULID(&findings, "CHECK->HANDOFF", handoffFields, "check_id", ctx)
-
-		if runIDOK && !containsRunID(runs, runID) {
-			findings = append(findings, ValidateFinding{
-				Link: "CHECK->HANDOFF", Issue: "broken_link",
-				Detail: fmt.Sprintf("%s run_id %q does not match any known RUN", ctx, runID),
-			})
-		}
-		if checkIDOK && !containsCheckID(checks, checkID) {
-			findings = append(findings, ValidateFinding{
-				Link: "CHECK->HANDOFF", Issue: "broken_link",
-				Detail: fmt.Sprintf("%s check_id %q does not match any known CHECK", ctx, checkID),
+		if !looksLikeULID(id) {
+			*findings = append(*findings, ValidateFinding{
+				Link:   "DB->" + entity,
+				Issue:  "missing_key",
+				Detail: fmt.Sprintf("%s id %q is not a valid ULID", strings.ToLower(entity), id),
 			})
 		}
 	}
-
-	valid := true
-	for _, f := range findings {
-		if f.Issue != "not_yet_implemented" {
-			valid = false
-			break
-		}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate entity ids: %w", err)
 	}
-	if findings == nil {
-		findings = []ValidateFinding{}
-	}
-	return ValidateResult{Valid: valid, Findings: findings}, nil
+	return nil
 }
 
-// requireKey appends a missing_key finding when fields[key] is absent or
-// empty, returning ok=false so callers can skip link checks that need it.
-func requireKey(findings *[]ValidateFinding, link string, fields map[string]string, key, context string) (string, bool) {
-	v, ok := fields[key]
-	if !ok || v == "" {
+func validateEntityEnums(db *sql.DB, findings *[]ValidateFinding) error {
+	if err := validateStoryStatuses(db, findings); err != nil {
+		return err
+	}
+	return validateCheckVerdicts(db, findings)
+}
+
+func validateStoryStatuses(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`SELECT slug, status FROM stories ORDER BY created_at, id`)
+	if err != nil {
+		return fmt.Errorf("validate story statuses: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var slug, status string
+		if err := rows.Scan(&slug, &status); err != nil {
+			return fmt.Errorf("validate story statuses: %w", err)
+		}
+		if !domain.IsValidStoryStatus(status) {
+			*findings = append(*findings, ValidateFinding{
+				Link:   "DB->STORY",
+				Issue:  "invalid_value",
+				Detail: fmt.Sprintf("story %q has invalid status %q", slug, status),
+			})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate story statuses: %w", err)
+	}
+	return nil
+}
+
+func validateCheckVerdicts(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`SELECT id, verdict FROM checks ORDER BY created_at, id`)
+	if err != nil {
+		return fmt.Errorf("validate check verdicts: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, verdict string
+		if err := rows.Scan(&id, &verdict); err != nil {
+			return fmt.Errorf("validate check verdicts: %w", err)
+		}
+		if !domain.IsValidCheckVerdict(verdict) {
+			*findings = append(*findings, ValidateFinding{
+				Link:   "DB->CHECK",
+				Issue:  "invalid_value",
+				Detail: fmt.Sprintf("check %s has invalid verdict %q", id, verdict),
+			})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate check verdicts: %w", err)
+	}
+	return nil
+}
+
+func validateStoryLinks(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`
+		SELECT story.slug, story.depends_on
+		FROM stories AS story
+		LEFT JOIN stories AS dependency ON dependency.slug = story.depends_on
+		WHERE story.depends_on IS NOT NULL AND dependency.slug IS NULL
+		ORDER BY story.created_at, story.slug
+	`)
+	if err != nil {
+		return fmt.Errorf("validate story links: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var slug, dependency string
+		if err := rows.Scan(&slug, &dependency); err != nil {
+			return fmt.Errorf("validate story links: %w", err)
+		}
 		*findings = append(*findings, ValidateFinding{
-			Link: link, Issue: "missing_key",
-			Detail: fmt.Sprintf("%s missing required key %q", context, key),
+			Link:   "STORY->STORY",
+			Issue:  "broken_link",
+			Detail: fmt.Sprintf("story %q depends_on %q, but that story does not exist", slug, dependency),
 		})
-		return "", false
 	}
-	return v, true
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate story links: %w", err)
+	}
+	return nil
 }
 
-// requireULID is requireKey plus a ULID-shape check on the value, per
-// cli-domain-CONTEXT.md's Locked Decision that validate checks "required
-// keys, link targets exist, ULID formats, pointer freshness vs DB state".
-// CONTRACT.md's issue enum has no dedicated slot for a malformed-but-present
-// value, so a bad format is reported as missing_key too — from a
-// chain-walking consumer's perspective a garbage string is exactly as
-// unusable as an absent one.
-func requireULID(findings *[]ValidateFinding, link string, fields map[string]string, key, context string) (string, bool) {
-	v, ok := requireKey(findings, link, fields, key, context)
-	if !ok {
-		return "", false
+func validateRunLinks(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`
+		SELECT runs.id, runs.story_slug
+		FROM runs
+		LEFT JOIN stories ON stories.slug = runs.story_slug
+		WHERE stories.slug IS NULL
+		ORDER BY runs.created_at, runs.id
+	`)
+	if err != nil {
+		return fmt.Errorf("validate run links: %w", err)
 	}
-	if !looksLikeULID(v) {
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, storySlug string
+		if err := rows.Scan(&id, &storySlug); err != nil {
+			return fmt.Errorf("validate run links: %w", err)
+		}
 		*findings = append(*findings, ValidateFinding{
-			Link: link, Issue: "missing_key",
-			Detail: fmt.Sprintf("%s key %q value %q is not a valid ULID", context, key, v),
+			Link:   "STORY->RUN",
+			Issue:  "broken_link",
+			Detail: fmt.Sprintf("run %s references story %q, but that story does not exist", id, storySlug),
 		})
-		return "", false
 	}
-	return v, true
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate run links: %w", err)
+	}
+	return nil
 }
 
-// looksLikeULID reports whether s has a ULID's shape: 26 characters, all
-// drawn from Crockford's base32 alphabet.
+func validateCheckLinks(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`
+		SELECT checks.id, checks.run_id
+		FROM checks
+		LEFT JOIN runs ON runs.id = checks.run_id
+		WHERE runs.id IS NULL
+		ORDER BY checks.created_at, checks.id
+	`)
+	if err != nil {
+		return fmt.Errorf("validate check links: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, runID string
+		if err := rows.Scan(&id, &runID); err != nil {
+			return fmt.Errorf("validate check links: %w", err)
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:   "RUN->CHECK",
+			Issue:  "broken_link",
+			Detail: fmt.Sprintf("check %s references run %s, but that run does not exist", id, runID),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate check links: %w", err)
+	}
+	return nil
+}
+
+func validateHandoffLinks(db *sql.DB, findings *[]ValidateFinding) error {
+	rows, err := db.Query(`
+		SELECT handoffs.id, handoffs.run_id
+		FROM handoffs
+		LEFT JOIN runs ON runs.id = handoffs.run_id
+		WHERE handoffs.run_id IS NOT NULL AND runs.id IS NULL
+		ORDER BY handoffs.created_at, handoffs.id
+	`)
+	if err != nil {
+		return fmt.Errorf("validate handoff run links: %w", err)
+	}
+	for rows.Next() {
+		var id, runID string
+		if err := rows.Scan(&id, &runID); err != nil {
+			rows.Close()
+			return fmt.Errorf("validate handoff run links: %w", err)
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:   "RUN->HANDOFF",
+			Issue:  "broken_link",
+			Detail: fmt.Sprintf("handoff %s references run %s, but that run does not exist", id, runID),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("validate handoff run links: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("validate handoff run links: %w", err)
+	}
+
+	rows, err = db.Query(`
+		SELECT handoffs.id, handoffs.check_id
+		FROM handoffs
+		LEFT JOIN checks ON checks.id = handoffs.check_id
+		WHERE handoffs.check_id IS NOT NULL AND checks.id IS NULL
+		ORDER BY handoffs.created_at, handoffs.id
+	`)
+	if err != nil {
+		return fmt.Errorf("validate handoff check links: %w", err)
+	}
+	for rows.Next() {
+		var id, checkID string
+		if err := rows.Scan(&id, &checkID); err != nil {
+			rows.Close()
+			return fmt.Errorf("validate handoff check links: %w", err)
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:   "CHECK->HANDOFF",
+			Issue:  "broken_link",
+			Detail: fmt.Sprintf("handoff %s references check %s, but that check does not exist", id, checkID),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("validate handoff check links: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("validate handoff check links: %w", err)
+	}
+
+	rows, err = db.Query(`
+		SELECT handoffs.id, handoffs.run_id, handoffs.check_id, checks.run_id
+		FROM handoffs
+		JOIN runs ON runs.id = handoffs.run_id
+		JOIN checks ON checks.id = handoffs.check_id
+		WHERE checks.run_id != handoffs.run_id
+		ORDER BY handoffs.created_at, handoffs.id
+	`)
+	if err != nil {
+		return fmt.Errorf("validate handoff lifecycle: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id, handoffRunID, checkID, checkRunID string
+		if err := rows.Scan(&id, &handoffRunID, &checkID, &checkRunID); err != nil {
+			return fmt.Errorf("validate handoff lifecycle: %w", err)
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:   "CHECK->HANDOFF",
+			Issue:  "broken_link",
+			Detail: fmt.Sprintf("handoff %s anchors run %s, but check %s belongs to run %s", id, handoffRunID, checkID, checkRunID),
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("validate handoff lifecycle: %w", err)
+	}
+	return nil
+}
+
+func validateMetaLinks(db *sql.DB, findings *[]ValidateFinding) error {
+	var count int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM meta`).Scan(&count); err != nil {
+		return fmt.Errorf("validate meta: %w", err)
+	}
+	if count != 1 {
+		issue := "broken_link"
+		if count == 0 {
+			issue = "missing_key"
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:   "DB->META",
+			Issue:  issue,
+			Detail: fmt.Sprintf("meta contains %d rows; expected exactly one", count),
+		})
+		if count == 0 {
+			return nil
+		}
+	}
+
+	links := []struct {
+		column string
+		table  string
+		key    string
+		link   string
+	}{
+		{column: "current_phase", table: "stories", key: "slug", link: "META->STORY"},
+		{column: "entry_phase", table: "stories", key: "slug", link: "META->STORY"},
+		{column: "latest_run_id", table: "runs", key: "id", link: "META->RUN"},
+		{column: "latest_check_id", table: "checks", key: "id", link: "META->CHECK"},
+	}
+	for _, link := range links {
+		query := fmt.Sprintf(`
+			SELECT meta.%s
+			FROM meta
+			LEFT JOIN %s ON %s.%s = meta.%s
+			WHERE meta.%s IS NOT NULL AND %s.%s IS NULL
+			ORDER BY meta.%s
+		`, link.column, link.table, link.table, link.key, link.column, link.column, link.table, link.key, link.column)
+		rows, err := db.Query(query)
+		if err != nil {
+			return fmt.Errorf("validate meta %s: %w", link.column, err)
+		}
+		for rows.Next() {
+			var value string
+			if err := rows.Scan(&value); err != nil {
+				rows.Close()
+				return fmt.Errorf("validate meta %s: %w", link.column, err)
+			}
+			*findings = append(*findings, ValidateFinding{
+				Link:   link.link,
+				Issue:  "stale_pointer",
+				Detail: fmt.Sprintf("meta.%s references %q, but that row does not exist", link.column, value),
+			})
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return fmt.Errorf("validate meta %s: %w", link.column, err)
+		}
+		if err := rows.Close(); err != nil {
+			return fmt.Errorf("validate meta %s: %w", link.column, err)
+		}
+	}
+	return nil
+}
+
 func looksLikeULID(s string) bool {
-	if len(s) != 26 {
-		return false
-	}
-	for _, c := range s {
-		if !strings.ContainsRune("0123456789ABCDEFGHJKMNPQRSTVWXYZ", c) {
-			return false
-		}
-	}
-	return true
-}
-
-func containsRunID(runs []runRef, id string) bool {
-	for _, r := range runs {
-		if r.id == id {
-			return true
-		}
-	}
-	return false
-}
-
-func containsCheckID(checks []checkRef, id string) bool {
-	for _, c := range checks {
-		if c.id == id {
-			return true
-		}
-	}
-	return false
-}
-
-func rowExists(db *sql.DB, table, id string) (bool, error) {
-	var found string
-	err := db.QueryRow(fmt.Sprintf(`SELECT id FROM %s WHERE id = ?`, table), id).Scan(&found)
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
-	if err != nil {
-		return false, fmt.Errorf("query %s %q: %w", table, id, err)
-	}
-	return true, nil
-}
-
-// globMD lists *.md files directly under dir, sorted by caller. A missing
-// dir is not an error — it just yields no files (e.g. no runs recorded yet).
-func globMD(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("read dir %s: %w", dir, err)
-	}
-	var files []string
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
-			files = append(files, filepath.Join(dir, e.Name()))
-		}
-	}
-	return files, nil
-}
-
-// parseFrontmatter extracts the flat `key: value` block between the
-// leading `---` fences of an artifact file. Following legacy.go's
-// parseFlatYAML precedent: no nesting/lists needed here (only scalar
-// id/phase/*_id fields are read), so a full YAML parser isn't warranted.
-// exists=false only when the file itself is absent; a file with no
-// frontmatter block (e.g. PLAN.md, which has none) returns an empty map
-// with exists=true.
-func parseFrontmatter(path string) (fields map[string]string, exists bool, err error) {
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, fmt.Errorf("read %s: %w", path, err)
-	}
-
-	fields = map[string]string{}
-	lines := strings.Split(string(data), "\n")
-	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
-		return fields, true, nil
-	}
-	for _, line := range lines[1:] {
-		trimmed := strings.TrimRight(line, "\r")
-		if strings.TrimSpace(trimmed) == "---" {
-			break
-		}
-		idx := strings.Index(trimmed, ":")
-		if idx < 0 {
-			continue
-		}
-		key := strings.TrimSpace(trimmed[:idx])
-		val := strings.TrimSpace(trimmed[idx+1:])
-		fields[key] = val
-	}
-	return fields, true, nil
+	_, err := ulid.ParseStrict(s)
+	return err == nil
 }

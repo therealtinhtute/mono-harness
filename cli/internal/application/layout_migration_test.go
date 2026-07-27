@@ -64,7 +64,7 @@ func TestMigrateLayoutDryRunThenApply(t *testing.T) {
 		t.Fatalf("OpenReadOnly(root db) error = %v", err)
 	}
 	defer db.Close()
-	state, err := QueryState(db)
+	state, err := QueryState(db.Raw())
 	if err != nil {
 		t.Fatalf("QueryState() error = %v", err)
 	}

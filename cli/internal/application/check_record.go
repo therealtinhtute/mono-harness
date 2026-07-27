@@ -2,9 +2,6 @@ package application
 
 import (
 	"database/sql"
-	"time"
-
-	"github.com/oklog/ulid/v2"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
@@ -23,16 +20,33 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []d
 		return "", "", err
 	}
 
-	storyID, _, exists, err := storyForRun(db, runID)
+	var storyID, storyStatus, latestRunID string
+	err = db.QueryRow(`
+		SELECT stories.id, stories.status,
+			(
+				SELECT latest.id
+				FROM runs AS latest
+				WHERE latest.story_slug = stories.slug
+				ORDER BY latest.created_at DESC, latest.id DESC
+				LIMIT 1
+			)
+		FROM runs
+		JOIN stories ON stories.slug = runs.story_slug
+		WHERE runs.id = ?
+	`, runID).Scan(&storyID, &storyStatus, &latestRunID)
+	if err == sql.ErrNoRows {
+		return "", "", &domain.ValidationError{Code: "unknown_run_id", Message: "check record: run_id " + runID + " not found"}
+	}
 	if err != nil {
 		return "", "", err
 	}
-	if !exists {
-		return "", "", &domain.ValidationError{Code: "unknown_run_id", Message: "check record: run_id " + runID + " not found"}
+	if storyStatus != domain.StoryInProgress {
+		return "", "", &domain.ValidationError{Code: "story_not_checkable", Message: "check record: story must be in-progress"}
+	}
+	if latestRunID != runID {
+		return "", "", &domain.ValidationError{Code: "run_not_latest", Message: "check record: run_id is not the latest run for its story"}
 	}
 
-	at := time.Now().UTC().Format(time.RFC3339)
-	id = ulid.Make().String()
 	proofLinksAny := make([]any, len(proofLinks))
 	for i, pl := range proofLinks {
 		proofLinksAny[i] = map[string]any{
@@ -41,25 +55,27 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []d
 			"artifact_path": pl.ArtifactPath,
 		}
 	}
-	lines := []infrastructure.ChangesetLine{
-		{
-			Op:     "create",
-			Entity: "check",
-			ID:     id,
-			Fields: map[string]any{
-				"run_id":      runID,
-				"verdict":     verdict,
-				"proof_links": proofLinksAny,
-				"created_at":  at,
+	id, path, _, err = AppendNewEntityAndApply(db, changesetDir, func(id string) []infrastructure.ChangesetLine {
+		at := orderedChangesetTime(id)
+		lines := []infrastructure.ChangesetLine{
+			{
+				Op:     "create",
+				Entity: "check",
+				ID:     id,
+				Fields: map[string]any{
+					"run_id":      runID,
+					"verdict":     verdict,
+					"proof_links": proofLinksAny,
+					"created_at":  at,
+				},
+				At: at,
 			},
-			At: at,
-		},
-	}
-	if verdict != domain.VerdictRequestChanges {
-		lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryChecked}, At: at})
-	}
-	lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at})
-	path, _, err = AppendAndApply(db, changesetDir, lines)
+		}
+		if verdict != domain.VerdictRequestChanges {
+			lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryChecked}, At: at})
+		}
+		return append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at})
+	})
 	if err != nil {
 		return "", "", err
 	}

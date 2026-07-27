@@ -10,81 +10,77 @@ import (
 
 func TestAuditCleanState(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	root := t.TempDir()
-	seedRun(t, db, changesetDir) // no meta pointer set, so Resume's drift checks have nothing to cross-check
+	seedRun(t, db, changesetDir)
 
-	report, err := Audit(db, root, "dev")
+	report, err := Audit(db, "dev")
 	if err != nil {
 		t.Fatalf("Audit: %v", err)
 	}
-	if len(report.PointerDrift) != 0 {
-		t.Fatalf("pointer_drift = %v, want none", report.PointerDrift)
+	if len(report.PointerDrift) != 0 || len(report.ContractViolations) != 0 || len(report.UnlinkedProofs) != 0 {
+		t.Fatalf("report = %+v, want no findings", report)
+	}
+}
+
+func TestAuditSurfacesInvalidLifecycleEnums(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	ids := createValidRetainedLifecycle(t, db, changesetDir)
+	if _, err := db.Exec(`UPDATE stories SET status = 'bogus' WHERE id = ?`, ids["story"]); err != nil {
+		t.Fatalf("corrupt story status: %v", err)
+	}
+	if _, err := db.Exec(`UPDATE checks SET verdict = 'bogus' WHERE id = ?`, ids["check"]); err != nil {
+		t.Fatalf("corrupt check verdict: %v", err)
+	}
+
+	report, err := Audit(db, "dev")
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if len(report.ContractViolations) != 2 {
+		t.Fatalf("contract_violations = %v, want story status and check verdict findings", report.ContractViolations)
+	}
+	if report.ContractViolations[0].Link != "DB->STORY" || report.ContractViolations[1].Link != "DB->CHECK" {
+		t.Fatalf("contract_violations = %v, want deterministic story then check findings", report.ContractViolations)
+	}
+	if len(report.PointerDrift) != 1 || report.PointerDrift[0].Type != "invalid_status" {
+		t.Fatalf("pointer_drift = %v, want one invalid_status finding", report.PointerDrift)
+	}
+}
+
+func TestAuditIgnoresLegacyProofArtifactPaths(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	proofLinks := []domain.ProofLink{
+		{Command: "go test ./...", OutputRef: "PASS"},
+		{Command: "go vet ./...", OutputRef: "PASS", ArtifactPath: filepath.Join(t.TempDir(), "missing-report.md")},
+	}
+	if _, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, proofLinks); err != nil {
+		t.Fatalf("RecordCheck: %v", err)
+	}
+
+	report, err := Audit(db, "dev")
+	if err != nil {
+		t.Fatalf("Audit: %v", err)
+	}
+	if len(report.ContractViolations) != 0 {
+		t.Fatalf("contract_violations = %v, want none", report.ContractViolations)
 	}
 	if len(report.UnlinkedProofs) != 0 {
-		t.Fatalf("unlinked_proofs = %v, want none (no checks recorded)", report.UnlinkedProofs)
-	}
-	// root is an empty temp dir with no SPEC.md, so Validate's own doc-walk
-	// still reports its one baseline missing_key finding (see
-	// TestValidateMissingSpec) — composed here unchanged, not duplicated.
-	if len(report.ContractViolations) != 1 || report.ContractViolations[0].Issue != "missing_key" {
-		t.Fatalf("contract_violations = %v, want exactly one missing_key (composed from Validate)", report.ContractViolations)
+		t.Fatalf("unlinked_proofs = %v, want none for optional legacy artifact paths", report.UnlinkedProofs)
 	}
 }
 
-// TestAuditUnlinkedProofFixture proves audit's own new check (unlinked
-// proof links) fires and lists the finding, per T2's verification:
-// "staled-pointer fixture ... lists the finding."
-func TestAuditUnlinkedProofFixture(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	root := t.TempDir()
-
-	baseline, err := Audit(db, root, "dev")
-	if err != nil {
-		t.Fatalf("Audit (baseline): %v", err)
-	}
-	// root is an empty temp dir with no SPEC.md, so Validate's own doc-walk
-	// always reports its one baseline missing_key finding (see
-	// TestValidateMissingSpec) — that's the floor, not zero.
-	if len(baseline.UnlinkedProofs) != 0 {
-		t.Fatalf("baseline = %+v, want zero unlinked_proofs", baseline)
-	}
-
-	runID := seedRun(t, db, changesetDir)
-	proofLinks := []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "PASS", ArtifactPath: filepath.Join(root, "missing-report.md")},
-	}
-	if _, _, err := RecordCheck(db, changesetDir, runID, "APPROVED", proofLinks); err != nil {
-		t.Fatalf("RecordCheck: %v", err)
-	}
-
-	after, err := Audit(db, root, "dev")
-	if err != nil {
-		t.Fatalf("Audit (after): %v", err)
-	}
-	if len(after.UnlinkedProofs) != 1 {
-		t.Fatalf("unlinked_proofs = %v, want exactly one (missing artifact_path)", after.UnlinkedProofs)
-	}
-}
-
-// TestAuditDeterministic proves identical input produces byte-identical
-// JSON across repeated calls (T4's determinism requirement, checked here
-// at the audit-composition level ahead of the full gate-flow fixture).
 func TestAuditDeterministic(t *testing.T) {
 	db, changesetDir := freshDB(t)
-	root := t.TempDir()
-	runID := seedRun(t, db, changesetDir)
-	proofLinks := []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "PASS", ArtifactPath: filepath.Join(root, "missing-report.md")},
-	}
-	if _, _, err := RecordCheck(db, changesetDir, runID, "APPROVED", proofLinks); err != nil {
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	if _, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{{Command: "go test ./..."}}); err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 
-	first, err := Audit(db, root, "dev")
+	first, err := Audit(db, "dev")
 	if err != nil {
 		t.Fatalf("Audit (first): %v", err)
 	}
-	second, err := Audit(db, root, "dev")
+	second, err := Audit(db, "dev")
 	if err != nil {
 		t.Fatalf("Audit (second): %v", err)
 	}

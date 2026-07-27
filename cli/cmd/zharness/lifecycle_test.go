@@ -3,21 +3,16 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"testing"
-	"time"
-
-	"github.com/oklog/ulid/v2"
 )
 
 // buildLifecycleTestBinary compiles the real zharness binary once per test
-// run into a temp file, so the lifecycle test below drives the actual CLI
-// surface (flag parsing, JSON encoding, exit codes) rather than internal
-// Go calls — the shape cli-stale-drift-PLAN.md's T4 risk note asks for
-// ("keep it runnable against an installed binary, not only go test"), and
-// what cli-release can reuse as its own smoke test.
+// run, so the lifecycle fixture drives public flags, JSON, and exit codes.
 func buildLifecycleTestBinary(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "zharness")
@@ -30,10 +25,6 @@ func buildLifecycleTestBinary(t *testing.T) string {
 	return bin
 }
 
-// runZ runs bin with args in dir, failing the test on a non-zero exit
-// unless allowExitCode says otherwise (validate legitimately exits 1 on
-// any real finding, which this scratch fixture is built to avoid — but
-// callers that expect a specific finding pass it explicitly).
 func runZ(t *testing.T, bin, dir string, allowExitCode int, args ...string) []byte {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
@@ -54,47 +45,21 @@ func runZ(t *testing.T, bin, dir string, allowExitCode int, args ...string) []by
 	return stdout.Bytes()
 }
 
-func writeFile(t *testing.T, path, content string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("MkdirAll %s: %v", filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("WriteFile %s: %v", path, err)
-	}
+type lifecyclePhase struct {
+	Slug      string  `json:"slug"`
+	Status    string  `json:"status"`
+	DependsOn *string `json:"depends_on"`
 }
 
-// TestLifecycle_ScratchDirFullChain drives init->intake->story->run
-// registration->trace add->check record->handoff record->resume/validate/
-// audit through the real built binary on a scratch dir, per
-// cli-stale-drift-PLAN.md's T4.
-//
-// Known, deliberate scope limit (user-confirmed at gate time, see
-// .kit/runs/work/20260718-1718-cli-stale-drift.md): no command in the
-// current CLI surface ever writes meta.current_phase or transitions
-// story.status past "planned" — STATE.md's Writer/Reader Ownership table
-// documents `to-plan`/`work`/`check record` moving these pointers, but no
-// production code does it (only story creation and legacy import ever
-// write status; run registration, even work's own documented two-line
-// changeset, never touches current_phase). Since resume's readiness only
-// reads Position.Status, and Position.Status only populates when
-// current_phase is set, readiness stays "clean" through this entire
-// lifecycle — it never reaches PLAN.md's literal "in-progress" or
-// "checked" through the CLI as it stands today. Tracked as backlog item
-// 01KXTBG4JZYTW528Y5XZQK8FEH, not this phase's fix — this test asserts
-// the real, current behavior rather than the aspirational one.
 func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	bin := buildLifecycleTestBinary(t)
 	root := t.TempDir()
 
-	// --- init ---
 	initOut := runZ(t, bin, root, 0, "init", "--json")
 	var initResp struct {
 		Status string `json:"status"`
 	}
-	if err := json.Unmarshal(initOut, &initResp); err != nil {
-		t.Fatalf("unmarshal init: %v (%s)", err, initOut)
-	}
+	mustUnmarshal(t, initOut, &initResp)
 	if initResp.Status != "created" {
 		t.Fatalf("init status = %q, want created", initResp.Status)
 	}
@@ -105,120 +70,325 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 		Drift     []any  `json:"drift"`
 	}
 	mustUnmarshal(t, resumeOut, &resume0)
-	if resume0.Readiness != "clean" {
-		t.Fatalf("readiness after init = %q, want clean (no phase started yet)", resume0.Readiness)
-	}
-	if len(resume0.Drift) != 0 {
-		t.Fatalf("drift after init = %v, want none", resume0.Drift)
+	if resume0.Readiness != "clean" || len(resume0.Drift) != 0 {
+		t.Fatalf("resume after init = %+v, want clean with no drift", resume0)
 	}
 
-	// --- intake ---
-	runZ(t, bin, root, 0, "intake", "--type", "new-spec", "--summary", "lifecycle smoke test", "--lane", "tiny", "--json")
-
-	// --- SPEC.md fixture (a valid id makes validate report only the
-	// already-known not_yet_implemented SPEC->PLAN gap, not missing_key) ---
-	specID := ulid.Make().String()
-	writeFile(t, filepath.Join(root, ".kit", "planning", "SPEC.md"), "---\nid: "+specID+"\ntype: spec\nstatus: locked\n---\n\n# SPEC\n")
-
-	// --- story ---
-	storyOut := runZ(t, bin, root, 0, "story", "--slug", "lifecycle-smoke", "--goal", "prove full CLI lifecycle", "--json")
-	var storyResp struct {
-		Status string `json:"status"`
-	}
-	mustUnmarshal(t, storyOut, &storyResp)
-	if storyResp.Status != "planned" {
-		t.Fatalf("story status = %q, want planned (creation is the only status this CLI surface ever writes)", storyResp.Status)
-	}
-	writeFile(t, filepath.Join(root, ".kit", "planning", "phases", "lifecycle-smoke", "lifecycle-smoke-PLAN.md"), "# Plan: lifecycle-smoke\n")
-
-	// --- run registration (same two-line changeset mechanism `work` uses —
-	// no dedicated "run create" command exists) ---
-	runID := ulid.Make().String()
-	planID := ulid.Make().String()
-	runArtifact := filepath.Join(root, ".kit", "runs", "work", "lifecycle-smoke.md")
-	writeFile(t, runArtifact, "---\nid: "+runID+"\ntype: run\nphase: lifecycle-smoke\nplan_id: "+planID+"\n---\n\n# COOK RUN\n")
-
-	now := time.Now().UTC().Format(time.RFC3339)
-	runChangeset := filepath.Join(root, ".kit", "changesets", ulid.Make().String()+".changeset.jsonl")
-	writeFile(t, runChangeset,
-		`{"op":"create","entity":"run","id":"`+runID+`","fields":{"story_slug":"lifecycle-smoke","plan_id":"`+planID+`","artifact_path":".kit/runs/work/lifecycle-smoke.md","created_at":"`+now+`"},"at":"`+now+`"}`+"\n"+
-			`{"op":"update","entity":"meta","id":"meta","fields":{"latest_run_id":"`+runID+`"},"at":"`+now+`"}`+"\n")
-	runZ(t, bin, root, 0, "db", "changeset", "apply", runChangeset, "--json")
-
-	resumeOut = runZ(t, bin, root, 0, "resume", "--json")
-	var resume1 struct {
+	preflightOut := runZ(t, bin, root, 0, "preflight", "handoff", "--json")
+	var handoffPreflight struct {
+		Stage     string `json:"stage"`
+		Mode      string `json:"mode"`
 		Readiness string `json:"readiness"`
-		Drift     []any  `json:"drift"`
+		Stop      any    `json:"stop"`
 	}
-	mustUnmarshal(t, resumeOut, &resume1)
-	if resume1.Readiness != "clean" {
-		t.Fatalf("readiness after run registration = %q, want clean (readiness only reads Position.Status, which only populates when meta.current_phase is set — and nothing in the documented run-registration changeset, work's own included, ever sets it; see backlog 01KXTBG4JZYTW528Y5XZQK8FEH)", resume1.Readiness)
-	}
-	if len(resume1.Drift) != 0 {
-		t.Fatalf("drift after run registration = %v, want none", resume1.Drift)
+	mustUnmarshal(t, preflightOut, &handoffPreflight)
+	if handoffPreflight.Stage != "handoff" || handoffPreflight.Mode != "durable" || handoffPreflight.Readiness != "ready" || handoffPreflight.Stop != nil {
+		t.Fatalf("handoff preflight = %+v, want accepted durable/ready invocation", handoffPreflight)
 	}
 
-	// --- trace add ---
-	traceOut := runZ(t, bin, root, 0, "trace", "add", "--wave", "1", "--summary", "lifecycle smoke wave 1", "--run-id", runID, "--json")
-	var traceResp struct {
+	planPathRel := "docs/plans/active/lifecycle-smoke.md"
+	planPath := filepath.Join(root, filepath.FromSlash(planPathRel))
+	runZ(t, bin, root, 0, "scaffold", "plan", "--path", planPathRel, "--json")
+
+	planIDOut := runZ(t, bin, root, 0, "id", "--json")
+	var planIDResp struct {
 		ID string `json:"id"`
 	}
-	mustUnmarshal(t, traceOut, &traceResp)
-	if traceResp.ID == "" {
-		t.Fatalf("trace add returned empty id")
+	mustUnmarshal(t, planIDOut, &planIDResp)
+	if planIDResp.ID == "" {
+		t.Fatal("id returned empty plan id")
 	}
 
-	// --- check record ---
-	proofLinks := `[{"command":"go test ./...","output_ref":"pass","artifact_path":"` + runArtifact + `"}]`
-	checkOut := runZ(t, bin, root, 0, "check", "record", "--verdict", "APPROVED", "--run-id", runID, "--proof-links", proofLinks, "--json")
-	var checkResp struct {
-		ID      string `json:"id"`
-		Verdict string `json:"verdict"`
-	}
-	mustUnmarshal(t, checkOut, &checkResp)
-	if checkResp.Verdict != "APPROVED" {
-		t.Fatalf("check record verdict = %q, want APPROVED", checkResp.Verdict)
-	}
-	// No live command sets latest_check_id (only legacy import) — same
-	// pointer-maintenance mechanism check/work already use.
-	checkChangeset := filepath.Join(root, ".kit", "changesets", ulid.Make().String()+".changeset.jsonl")
-	writeFile(t, checkChangeset, `{"op":"update","entity":"meta","id":"meta","fields":{"latest_check_id":"`+checkResp.ID+`"},"at":"`+now+`"}`+"\n")
-	runZ(t, bin, root, 0, "db", "changeset", "apply", checkChangeset, "--json")
-	writeFile(t, filepath.Join(root, ".kit", "reports", "check", "lifecycle-smoke.md"),
-		"---\nid: "+checkResp.ID+"\ntype: check\nrun_id: "+runID+"\n---\n\n# CHECK REPORT\n")
-
-	// --- handoff record ---
-	handoffOut := runZ(t, bin, root, 0, "handoff", "record", "--run-id", runID, "--check-id", checkResp.ID, "--open-items", "[]", "--json")
-	var handoffResp struct {
+	intakeOut := runZ(t, bin, root, 0, "intake", "--type", "new-spec", "--summary", "two-phase lifecycle smoke test", "--lane", "tiny", "--plan-path", planPathRel, "--json")
+	var intakeResp struct {
 		ID string `json:"id"`
 	}
-	mustUnmarshal(t, handoffOut, &handoffResp)
-	if handoffResp.ID == "" {
-		t.Fatalf("handoff record returned empty id")
+	mustUnmarshal(t, intakeOut, &intakeResp)
+	if intakeResp.ID == "" {
+		t.Fatal("intake returned empty id")
 	}
 
-	// --- final resume: latest_handoff_id surfaces, still zero unexpected
-	// drift, readiness still clean (same current_phase gap — not a bug this
-	// test should paper over) ---
-	resumeOut = runZ(t, bin, root, 0, "resume", "--json")
-	var resumeFinal struct {
-		Readiness       string `json:"readiness"`
-		Drift           []any  `json:"drift"`
-		LatestHandoffID string `json:"latest_handoff_id"`
+	for _, replacement := range []struct {
+		old string
+		new string
+	}{
+		{"{PLAN_ULID}", planIDResp.ID},
+		{"{INTAKE_ULID}", intakeResp.ID},
+		{"lane: {tiny|normal|high-risk}", "lane: tiny"},
+		{"status: {active|completed}", "status: active"},
+		{"{YYYY-MM-DD}", "2026-07-27"},
+		{"{initiative title}", "Two-phase lifecycle smoke"},
+		{"{observable initiative outcome}", "one plan stays synchronized through two dependent phases"},
+		{"{checkable success signal}", "phase-a closes before phase-b starts and the final plan moves once"},
+		{"{repository source, approved decision, or owner instruction}", "real-binary lifecycle fixture"},
+		{"{falsifiable requirement}", "public commands advance both phases through planned, in-progress, checked, and done"},
+		{"{authority}", "real-binary lifecycle fixture"},
+		{"{explicitly excluded scope}", "legacy lifecycle markdown"},
+	} {
+		replacePlanAll(t, planPath, replacement.old, replacement.new)
 	}
-	mustUnmarshal(t, resumeOut, &resumeFinal)
-	if resumeFinal.LatestHandoffID != handoffResp.ID {
-		t.Fatalf("latest_handoff_id = %q, want %q", resumeFinal.LatestHandoffID, handoffResp.ID)
+	assertPlanContains(t, planPath,
+		"id: "+planIDResp.ID,
+		"intake_id: "+intakeResp.ID,
+		"approach: not-planned",
+		"planning_status: not-planned",
+		"phases: none",
+		"lifecycle_status: not-planned",
+		"exact_next_action: to-plan",
+	)
+	assertPlanNotContains(t, planPath, "{", "}")
+
+	activePlans, err := filepath.Glob(filepath.Join(root, "docs", "plans", "active", "*.md"))
+	if err != nil {
+		t.Fatalf("glob active plans: %v", err)
 	}
-	if len(resumeFinal.Drift) != 0 {
-		t.Fatalf("final drift = %v, want none", resumeFinal.Drift)
-	}
-	if resumeFinal.Readiness != "clean" {
-		t.Fatalf("final readiness = %q, want clean (current_phase/story.status transition gap, backlog 01KXTBG4JZYTW528Y5XZQK8FEH — readiness never reflects \"in-progress\" or \"checked\" through the CLI as it stands today)", resumeFinal.Readiness)
+	if len(activePlans) != 1 || activePlans[0] != planPath {
+		t.Fatalf("active plans = %v, want exactly %s", activePlans, planPath)
 	}
 
-	// --- validate: the fixture is built to be genuinely clean modulo the
-	// one already-known, already-accepted not_yet_implemented gap ---
+	storyA := createLifecycleStory(t, bin, root, "phase-a", "prove non-final phase closure")
+	storyB := createLifecycleStoryWithDependency(t, bin, root, "phase-b", "prove dependent final closure", "phase-a")
+
+	replacePlan(t, planPath, `## Approach and Risks
+- approach: not-planned
+- constraints:
+  - none
+- risks:
+  - none`, `## Approach and Risks
+- approach: execute two dependent phases through public lifecycle commands
+- constraints:
+  - keep one plan active until the final phase closes
+- risks:
+  - phase status drift | mitigation: assert DB and plan after every transition`)
+	phasePlan := fmt.Sprintf(`## Phases and Verification
+<!-- Phase and task definitions are immutable. Only phase lifecycle status changes to mirror DB transitions. Append-only Progress is the sole task execution-status source; task definitions contain no status fields. -->
+### Phase 1: phase-a
+- phase_slug: phase-a
+- story_id: %s
+- status: planned
+- goal: prove non-final phase closure
+- depends_on: none
+- waves:
+  - wave: 1
+    parallel: false
+    tasks:
+      - task: T1 execute phase-a
+        touches: [fixture]
+        avoids: [legacy lifecycle markdown]
+    checks:
+      - command: go test ./...
+        expected: pass
+
+### Phase 2: phase-b
+- phase_slug: phase-b
+- story_id: %s
+- status: planned
+- goal: prove dependent final closure
+- depends_on: phase-a
+- waves:
+  - wave: 1
+    parallel: false
+    tasks:
+      - task: T1 execute phase-b
+        touches: [fixture]
+        avoids: [legacy lifecycle markdown]
+    checks:
+      - command: go test ./...
+        expected: pass`, storyA.ID, storyB.ID)
+	replacePlan(t, planPath, `## Phases and Verification
+<!-- Phase and task definitions are immutable after to-plan. Do not add task status fields. Append-only Progress is the sole task execution-status source. Only each phase lifecycle status changes to mirror DB transitions: to-plan=planned; work after run create=in-progress; clean durable check=checked; closing handoff=done. Each planned phase records phase_slug, story_id, status, goal, depends_on, waves, tasks, and checks. -->
+- planning_status: not-planned
+- phases: none`, phasePlan)
+	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "planned")
+	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "planned")
+	phases := queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "planned", "")
+	assertLifecyclePhase(t, phases, "phase-b", "planned", "phase-a")
+
+	beforeDB := mustReadFile(t, filepath.Join(root, "harness.db"))
+	beforePlan := mustReadFile(t, planPath)
+	beforeChangesets := listLifecycleChangesets(t, root)
+	for _, mode := range []string{"review", "bounded"} {
+		out := runZ(t, bin, root, 0, "preflight", "check", "--mode", mode, "--json")
+		var view struct {
+			Stage     string `json:"stage"`
+			Mode      string `json:"mode"`
+			Readiness string `json:"readiness"`
+			Stop      any    `json:"stop"`
+		}
+		mustUnmarshal(t, out, &view)
+		if view.Stage != "check" || view.Mode != "reduced" || view.Readiness != "ready" || view.Stop != nil {
+			t.Fatalf("check %s preflight = %+v, want reduced/ready response-only route", mode, view)
+		}
+	}
+	if afterDB := mustReadFile(t, filepath.Join(root, "harness.db")); !bytes.Equal(afterDB, beforeDB) {
+		t.Fatal("check review/bounded preflight mutated harness.db")
+	}
+	if afterPlan := mustReadFile(t, planPath); !bytes.Equal(afterPlan, beforePlan) {
+		t.Fatal("check review/bounded preflight mutated the active plan")
+	}
+	if afterChangesets := listLifecycleChangesets(t, root); !slices.Equal(afterChangesets, beforeChangesets) {
+		t.Fatalf("check review/bounded changesets = %v, want %v", afterChangesets, beforeChangesets)
+	}
+
+	runA := createLifecycleRun(t, bin, root, "phase-a", planIDResp.ID)
+	replacePlan(t, planPath, "- story_id: "+storyA.ID+"\n- status: planned", "- story_id: "+storyA.ID+"\n- status: in-progress")
+	progressA := "- 2026-07-27T04:00:00Z phase=phase-a wave=1 task=T1 task_status=DONE run_id=" + runA.ID + " trace_id=none verification=go test ./... -> pass result=phase-a implemented"
+	replacePlan(t, planPath, `## Progress
+<!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
+- none`, "## Progress\n<!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->\n"+progressA)
+	replacePlan(t, planPath, `## Current State and Next Action
+- active_phase: none
+- lifecycle_status: not-planned
+- latest_run_id: none
+- latest_trace_ids: []
+- latest_check_id: none
+- latest_handoff_id: none
+- blockers: none
+- open_items: [to-plan must define stable phases, stories, waves, tasks, and checks]
+- exact_next_action: to-plan`, "## Current State and Next Action\n- active_phase: phase-a\n- lifecycle_status: in-progress\n- latest_run_id: "+runA.ID+"\n- latest_trace_ids: []\n- latest_check_id: none\n- latest_handoff_id: none\n- blockers: none\n- open_items: [check phase-a]\n- exact_next_action: check full phase phase-a")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "in-progress", "")
+	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "in-progress")
+
+	traceA := createLifecycleTrace(t, bin, root, runA.ID, "phase-a wave complete")
+	replacePlan(t, planPath, "phase=phase-a wave=1 task=T1 task_status=DONE run_id="+runA.ID+" trace_id=none", "phase=phase-a wave=1 task=T1 task_status=DONE run_id="+runA.ID+" trace_id="+traceA.ID)
+	replacePlan(t, planPath, "- latest_trace_ids: []", "- latest_trace_ids: ["+traceA.ID+"]")
+	progressA = "- 2026-07-27T04:00:00Z phase=phase-a wave=1 task=T1 task_status=DONE run_id=" + runA.ID + " trace_id=" + traceA.ID + " verification=go test ./... -> pass result=phase-a implemented"
+	assertPlanContains(t, planPath, "run_id="+runA.ID, "trace_id="+traceA.ID)
+
+	requestA := createLifecycleCheck(t, bin, root, runA.ID, "REQUEST_CHANGES", "phase-a finding")
+	validationRequestA := "- 2026-07-27T04:01:00Z phase=phase-a command=go test ./... result=fail output=phase-a finding run_id=" + runA.ID + " check_id=" + requestA.ID + " verdict=REQUEST_CHANGES proof_gaps=none"
+	replacePlan(t, planPath, `## Validation
+<!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
+- none`, "## Validation\n<!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->\n"+validationRequestA)
+	replacePlan(t, planPath, "- latest_check_id: none", "- latest_check_id: "+requestA.ID)
+	replacePlan(t, planPath, "- blockers: none", "- blockers: [phase-a changes requested]")
+	replacePlan(t, planPath, "- open_items: [check phase-a]", "- open_items: [resolve phase-a findings]")
+	replacePlan(t, planPath, "- exact_next_action: check full phase phase-a", "- exact_next_action: work full phase phase-a")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "in-progress", "")
+	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "in-progress")
+	assertPlanContains(t, planPath, "check_id="+requestA.ID+" verdict=REQUEST_CHANGES", "lifecycle_status: in-progress")
+
+	checkA := createLifecycleCheck(t, bin, root, runA.ID, "APPROVED", "phase-a pass")
+	validationApprovedA := "- 2026-07-27T04:02:00Z phase=phase-a command=go test ./... result=pass output=phase-a pass run_id=" + runA.ID + " check_id=" + checkA.ID + " verdict=APPROVED proof_gaps=none"
+	replacePlan(t, planPath, validationRequestA, validationRequestA+"\n"+validationApprovedA)
+	replacePlan(t, planPath, "- story_id: "+storyA.ID+"\n- status: in-progress", "- story_id: "+storyA.ID+"\n- status: checked")
+	replacePlan(t, planPath, "- lifecycle_status: in-progress", "- lifecycle_status: checked")
+	replacePlan(t, planPath, "- latest_check_id: "+requestA.ID, "- latest_check_id: "+checkA.ID)
+	replacePlan(t, planPath, "- blockers: [phase-a changes requested]", "- blockers: none")
+	replacePlan(t, planPath, "- open_items: [resolve phase-a findings]", "- open_items: [close phase-a and start phase-b]")
+	replacePlan(t, planPath, "- exact_next_action: work full phase phase-a", "- exact_next_action: handoff")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "checked", "")
+	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "checked")
+	assertPlanContains(t, planPath, "check_id="+checkA.ID+" verdict=APPROVED", "latest_check_id: "+checkA.ID)
+
+	handoffA := createLifecycleHandoff(t, bin, root, runA.ID, checkA.ID)
+	replacePlan(t, planPath, "- story_id: "+storyA.ID+"\n- status: checked", "- story_id: "+storyA.ID+"\n- status: done")
+	replacePlan(t, planPath, "- lifecycle_status: checked", "- lifecycle_status: done")
+	replacePlan(t, planPath, "- latest_handoff_id: none", "- latest_handoff_id: "+handoffA.ID)
+	replacePlan(t, planPath, "- open_items: [close phase-a and start phase-b]", "- open_items: [start phase-b]")
+	replacePlan(t, planPath, "- exact_next_action: handoff", "- exact_next_action: work full phase phase-b")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "done", "")
+	assertLifecyclePhase(t, phases, "phase-b", "planned", "phase-a")
+	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "done")
+	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "planned")
+	assertPlanContains(t, planPath, "status: active", "latest_handoff_id: "+handoffA.ID, "exact_next_action: work full phase phase-b")
+	completedPlan := filepath.Join(root, "docs", "plans", "completed", "lifecycle-smoke.md")
+	if _, err := os.Stat(completedPlan); !os.IsNotExist(err) {
+		t.Fatalf("plan completed before final phase: %v", err)
+	}
+
+	runB := createLifecycleRun(t, bin, root, "phase-b", planIDResp.ID)
+	replacePlan(t, planPath, "- story_id: "+storyB.ID+"\n- status: planned", "- story_id: "+storyB.ID+"\n- status: in-progress")
+	progressB := "- 2026-07-27T04:03:00Z phase=phase-b wave=1 task=T1 task_status=DONE run_id=" + runB.ID + " trace_id=none verification=go test ./... -> pass result=phase-b implemented"
+	replacePlan(t, planPath, progressA, progressA+"\n"+progressB)
+	replacePlan(t, planPath, "- active_phase: phase-a", "- active_phase: phase-b")
+	replacePlan(t, planPath, "- lifecycle_status: done", "- lifecycle_status: in-progress")
+	replacePlan(t, planPath, "- latest_run_id: "+runA.ID, "- latest_run_id: "+runB.ID)
+	replacePlan(t, planPath, "- latest_trace_ids: ["+traceA.ID+"]", "- latest_trace_ids: []")
+	replacePlan(t, planPath, "- latest_check_id: "+checkA.ID, "- latest_check_id: none")
+	replacePlan(t, planPath, "- open_items: [start phase-b]", "- open_items: [check phase-b]")
+	replacePlan(t, planPath, "- exact_next_action: work full phase phase-b", "- exact_next_action: check full phase phase-b")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "done", "")
+	assertLifecyclePhase(t, phases, "phase-b", "in-progress", "phase-a")
+	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "in-progress")
+
+	traceB := createLifecycleTrace(t, bin, root, runB.ID, "phase-b wave complete")
+	replacePlan(t, planPath, "phase=phase-b wave=1 task=T1 task_status=DONE run_id="+runB.ID+" trace_id=none", "phase=phase-b wave=1 task=T1 task_status=DONE run_id="+runB.ID+" trace_id="+traceB.ID)
+	replacePlan(t, planPath, "- latest_trace_ids: []", "- latest_trace_ids: ["+traceB.ID+"]")
+	assertPlanContains(t, planPath, "run_id="+runB.ID, "trace_id="+traceB.ID)
+
+	checkB := createLifecycleCheck(t, bin, root, runB.ID, "APPROVED", "phase-b pass")
+	validationApprovedB := "- 2026-07-27T04:04:00Z phase=phase-b command=go test ./... result=pass output=phase-b pass run_id=" + runB.ID + " check_id=" + checkB.ID + " verdict=APPROVED proof_gaps=none"
+	replacePlan(t, planPath, validationApprovedA, validationApprovedA+"\n"+validationApprovedB)
+	replacePlan(t, planPath, "- story_id: "+storyB.ID+"\n- status: in-progress", "- story_id: "+storyB.ID+"\n- status: checked")
+	replacePlan(t, planPath, "- lifecycle_status: in-progress", "- lifecycle_status: checked")
+	replacePlan(t, planPath, "- latest_check_id: none", "- latest_check_id: "+checkB.ID)
+	replacePlan(t, planPath, "- open_items: [check phase-b]", "- open_items: [close phase-b]")
+	replacePlan(t, planPath, "- exact_next_action: check full phase phase-b", "- exact_next_action: handoff")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "done", "")
+	assertLifecyclePhase(t, phases, "phase-b", "checked", "phase-a")
+	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "checked")
+	assertPlanContains(t, planPath, "check_id="+checkB.ID+" verdict=APPROVED", "latest_check_id: "+checkB.ID)
+
+	handoffB := createLifecycleHandoff(t, bin, root, runB.ID, checkB.ID)
+	replacePlan(t, planPath, "- story_id: "+storyB.ID+"\n- status: checked", "- story_id: "+storyB.ID+"\n- status: done")
+	replacePlan(t, planPath, "- active_phase: phase-b", "- active_phase: none")
+	replacePlan(t, planPath, "- lifecycle_status: checked", "- lifecycle_status: done")
+	replacePlan(t, planPath, "- latest_handoff_id: "+handoffA.ID, "- latest_handoff_id: "+handoffB.ID)
+	replacePlan(t, planPath, "- open_items: [close phase-b]", "- open_items: none")
+	replacePlan(t, planPath, "- exact_next_action: handoff", "- exact_next_action: initiative complete")
+	phases = queryLifecyclePhases(t, bin, root)
+	assertLifecyclePhase(t, phases, "phase-a", "done", "")
+	assertLifecyclePhase(t, phases, "phase-b", "done", "phase-a")
+	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "done")
+	assertPlanContains(t, planPath, "latest_handoff_id: "+handoffB.ID, "lifecycle_status: done")
+
+	replacePlan(t, planPath, "status: active", "status: completed")
+	closedPlan := mustReadFile(t, planPath)
+	if err := os.MkdirAll(filepath.Dir(completedPlan), 0o755); err != nil {
+		t.Fatalf("create completed plans dir: %v", err)
+	}
+	if err := os.Rename(planPath, completedPlan); err != nil {
+		t.Fatalf("move active plan to completed: %v", err)
+	}
+	movedPlan := mustReadFile(t, completedPlan)
+	if !bytes.Equal(movedPlan, closedPlan) {
+		t.Fatal("completed plan differs from the active plan that was moved")
+	}
+	assertPlanContains(t, completedPlan,
+		"id: "+planIDResp.ID,
+		"status: completed",
+		"latest_handoff_id: "+handoffB.ID,
+		"Append-only Progress is the sole task execution-status source",
+		"task_status=DONE",
+	)
+	assertPlanNotContains(t, completedPlan,
+		"\n        status:",
+		"\n        status: pending",
+		"\n        status: in-progress",
+	)
+
+	activePlans, err = filepath.Glob(filepath.Join(root, "docs", "plans", "active", "*.md"))
+	if err != nil {
+		t.Fatalf("glob active plans after closure: %v", err)
+	}
+	completedPlans, err := filepath.Glob(filepath.Join(root, "docs", "plans", "completed", "*.md"))
+	if err != nil {
+		t.Fatalf("glob completed plans: %v", err)
+	}
+	if len(activePlans) != 0 || len(completedPlans) != 1 || completedPlans[0] != completedPlan {
+		t.Fatalf("plans after closure: active=%v completed=%v", activePlans, completedPlans)
+	}
+
+	assertNoLegacyLifecycleMarkdown(t, root)
+
 	validateOut := runZ(t, bin, root, 0, "validate", "--json")
 	var validateResp struct {
 		Valid    bool `json:"valid"`
@@ -228,15 +398,10 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 		} `json:"findings"`
 	}
 	mustUnmarshal(t, validateOut, &validateResp)
-	if !validateResp.Valid {
-		t.Fatalf("validate valid = false, findings = %+v, want true", validateResp.Findings)
-	}
-	if len(validateResp.Findings) != 1 || validateResp.Findings[0].Issue != "not_yet_implemented" {
-		t.Fatalf("validate findings = %+v, want exactly one not_yet_implemented (SPEC->PLAN, the known gap)", validateResp.Findings)
+	if !validateResp.Valid || len(validateResp.Findings) != 0 {
+		t.Fatalf("validate = %+v, want valid with no findings", validateResp)
 	}
 
-	// --- audit: pointer_drift empty, contract_violations only the same
-	// known not_yet_implemented gap, entropy reflects exactly that ---
 	auditOut := runZ(t, bin, root, 0, "audit", "--json")
 	var auditResp struct {
 		PointerDrift       []any `json:"pointer_drift"`
@@ -246,14 +411,232 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 		UnlinkedProofs []any `json:"unlinked_proofs"`
 	}
 	mustUnmarshal(t, auditOut, &auditResp)
-	if len(auditResp.PointerDrift) != 0 {
-		t.Fatalf("audit pointer_drift = %v, want none", auditResp.PointerDrift)
+	if len(auditResp.PointerDrift) != 0 || len(auditResp.ContractViolations) != 0 || len(auditResp.UnlinkedProofs) != 0 {
+		t.Fatalf("audit = %+v, want no drift, violations, or unlinked proofs", auditResp)
 	}
-	if len(auditResp.UnlinkedProofs) != 0 {
-		t.Fatalf("audit unlinked_proofs = %v, want none (proof link points at a real, existing file)", auditResp.UnlinkedProofs)
+}
+
+func createLifecycleStory(t *testing.T, bin, root, slug, goal string) struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+} {
+	t.Helper()
+	out := runZ(t, bin, root, 0, "story", "--slug", slug, "--goal", goal, "--json")
+	var response struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
 	}
-	if len(auditResp.ContractViolations) != 1 || auditResp.ContractViolations[0].Issue != "not_yet_implemented" {
-		t.Fatalf("audit contract_violations = %+v, want exactly one not_yet_implemented", auditResp.ContractViolations)
+	mustUnmarshal(t, out, &response)
+	if response.ID == "" || response.Status != "planned" {
+		t.Fatalf("story %s = %+v, want non-empty planned story", slug, response)
+	}
+	return response
+}
+
+func createLifecycleStoryWithDependency(t *testing.T, bin, root, slug, goal, dependsOn string) struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+} {
+	t.Helper()
+	out := runZ(t, bin, root, 0, "story", "--slug", slug, "--goal", goal, "--depends-on", dependsOn, "--json")
+	var response struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+	mustUnmarshal(t, out, &response)
+	if response.ID == "" || response.Status != "planned" {
+		t.Fatalf("story %s = %+v, want non-empty planned story", slug, response)
+	}
+	return response
+}
+
+func createLifecycleRun(t *testing.T, bin, root, slug, planID string) struct {
+	ID string `json:"id"`
+} {
+	t.Helper()
+	out := runZ(t, bin, root, 0, "run", "create", "--slug", slug, "--plan-id", planID, "--json")
+	var response struct {
+		ID string `json:"id"`
+	}
+	mustUnmarshal(t, out, &response)
+	if response.ID == "" {
+		t.Fatalf("run create for %s returned empty id", slug)
+	}
+	return response
+}
+
+func createLifecycleTrace(t *testing.T, bin, root, runID, summary string) struct {
+	ID string `json:"id"`
+} {
+	t.Helper()
+	out := runZ(t, bin, root, 0, "trace", "add", "--wave", "1", "--summary", summary, "--run-id", runID, "--json")
+	var response struct {
+		ID string `json:"id"`
+	}
+	mustUnmarshal(t, out, &response)
+	if response.ID == "" {
+		t.Fatal("trace add returned empty id")
+	}
+	return response
+}
+
+func createLifecycleCheck(t *testing.T, bin, root, runID, verdict, outputRef string) struct {
+	ID      string `json:"id"`
+	Verdict string `json:"verdict"`
+} {
+	t.Helper()
+	proofLinks := fmt.Sprintf(`[{"command":"go test ./...","output_ref":%q}]`, outputRef)
+	out := runZ(t, bin, root, 0, "check", "record", "--verdict", verdict, "--run-id", runID, "--proof-links", proofLinks, "--json")
+	var response struct {
+		ID      string `json:"id"`
+		Verdict string `json:"verdict"`
+	}
+	mustUnmarshal(t, out, &response)
+	if response.ID == "" || response.Verdict != verdict {
+		t.Fatalf("check record = %+v, want non-empty %s check", response, verdict)
+	}
+	return response
+}
+
+func createLifecycleHandoff(t *testing.T, bin, root, runID, checkID string) struct {
+	ID string `json:"id"`
+} {
+	t.Helper()
+	out := runZ(t, bin, root, 0, "handoff", "record", "--run-id", runID, "--check-id", checkID, "--open-items", "[]", "--close-phase", "--json")
+	var response struct {
+		ID string `json:"id"`
+	}
+	mustUnmarshal(t, out, &response)
+	if response.ID == "" {
+		t.Fatal("handoff record returned empty id")
+	}
+	return response
+}
+
+func queryLifecyclePhases(t *testing.T, bin, root string) []lifecyclePhase {
+	t.Helper()
+	out := runZ(t, bin, root, 0, "query", "phases", "--json")
+	var phases []lifecyclePhase
+	mustUnmarshal(t, out, &phases)
+	return phases
+}
+
+func assertLifecyclePhase(t *testing.T, phases []lifecyclePhase, slug, status, dependsOn string) {
+	t.Helper()
+	for _, phase := range phases {
+		if phase.Slug != slug {
+			continue
+		}
+		if phase.Status != status {
+			t.Fatalf("phase %s status = %q, want %q", slug, phase.Status, status)
+		}
+		if dependsOn == "" {
+			if phase.DependsOn != nil {
+				t.Fatalf("phase %s depends_on = %v, want nil", slug, phase.DependsOn)
+			}
+		} else if phase.DependsOn == nil || *phase.DependsOn != dependsOn {
+			t.Fatalf("phase %s depends_on = %v, want %q", slug, phase.DependsOn, dependsOn)
+		}
+		return
+	}
+	t.Fatalf("phase %s not found in %+v", slug, phases)
+}
+
+func assertPlanPhaseStatus(t *testing.T, path string, number int, slug, storyID, status string) {
+	t.Helper()
+	needle := fmt.Sprintf("### Phase %d: %s\n- phase_slug: %s\n- story_id: %s\n- status: %s", number, slug, slug, storyID, status)
+	assertPlanContains(t, path, needle)
+}
+
+func replacePlan(t *testing.T, path, old, new string) {
+	t.Helper()
+	data := mustReadFile(t, path)
+	if count := bytes.Count(data, []byte(old)); count != 1 {
+		t.Fatalf("replace %q in %s: found %d occurrences, want 1", old, path, count)
+	}
+	data = bytes.Replace(data, []byte(old), []byte(new), 1)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write plan %s: %v", path, err)
+	}
+}
+
+func replacePlanAll(t *testing.T, path, old, new string) {
+	t.Helper()
+	data := mustReadFile(t, path)
+	if !bytes.Contains(data, []byte(old)) {
+		t.Fatalf("replace %q in %s: no occurrences", old, path)
+	}
+	data = bytes.ReplaceAll(data, []byte(old), []byte(new))
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write plan %s: %v", path, err)
+	}
+}
+
+func assertPlanContains(t *testing.T, path string, phrases ...string) {
+	t.Helper()
+	data := mustReadFile(t, path)
+	for _, phrase := range phrases {
+		if !bytes.Contains(data, []byte(phrase)) {
+			t.Fatalf("plan %s missing %q\n%s", path, phrase, data)
+		}
+	}
+}
+
+func assertPlanNotContains(t *testing.T, path string, phrases ...string) {
+	t.Helper()
+	data := mustReadFile(t, path)
+	for _, phrase := range phrases {
+		if bytes.Contains(data, []byte(phrase)) {
+			t.Fatalf("plan %s unexpectedly contains %q\n%s", path, phrase, data)
+		}
+	}
+}
+
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return data
+}
+
+func listLifecycleChangesets(t *testing.T, root string) []string {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(root, ".kit", "changesets", "*.jsonl"))
+	if err != nil {
+		t.Fatalf("glob changesets: %v", err)
+	}
+	slices.Sort(matches)
+	return matches
+}
+
+func assertNoLegacyLifecycleMarkdown(t *testing.T, root string) {
+	t.Helper()
+	for _, legacyPath := range []string{
+		".kit/planning",
+		".kit/plans",
+		".kit/runs",
+		".kit/reports",
+		".kit/HANDOFF.md",
+		".kit/docs",
+	} {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(legacyPath))); err == nil {
+			t.Errorf("legacy lifecycle path exists: %s", legacyPath)
+		} else if !os.IsNotExist(err) {
+			t.Errorf("stat legacy lifecycle path %s: %v", legacyPath, err)
+		}
+	}
+	if err := filepath.Walk(filepath.Join(root, ".kit"), func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !info.IsDir() && filepath.Ext(path) == ".md" {
+			t.Errorf("unexpected lifecycle markdown under .kit: %s", path)
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("walk .kit: %v", err)
 	}
 }
 

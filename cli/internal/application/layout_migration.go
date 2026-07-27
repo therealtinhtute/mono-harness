@@ -62,11 +62,11 @@ func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, do
 		return result, fmt.Errorf("layout migration: legacy database not found at %s", legacyPath)
 	}
 
-	legacyDB, err := infrastructure.OpenReadOnly(legacyPath)
+	legacyDB, err := infrastructure.OpenReadOnlyUnderExistingLock(legacyPath)
 	if err != nil {
 		return result, err
 	}
-	before, err := captureLayoutSnapshot(legacyDB, version)
+	before, err := captureLayoutSnapshot(legacyDB.Raw(), version)
 	if err != nil {
 		legacyDB.Close()
 		return result, err
@@ -134,7 +134,7 @@ func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, do
 	after.State.SchemaVersion = 0
 	parityErr := compareLayoutSnapshots(before, after)
 	if parityErr != nil {
-		backfill, backfillErr := layoutBackfillLines(legacyDB)
+		backfill, backfillErr := layoutBackfillLines(legacyDB.Raw())
 		if backfillErr != nil {
 			tempDB.Close()
 			legacyDB.Close()

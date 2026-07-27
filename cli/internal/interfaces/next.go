@@ -27,7 +27,8 @@ func newNextCmd() *cobra.Command {
 // harness that hasn't been initialized yet just means every roadmap phase
 // counts as not-yet-done, not a db_unreadable error.
 func runNext(cmd *cobra.Command, argument string) error {
-	if !infrastructure.Exists(dbPath) {
+	conn, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
 		view, err := application.Next(nil, argument)
 		if err != nil {
 			if ve, ok := err.(*domain.ValidationError); ok {
@@ -37,14 +38,12 @@ func runNext(cmd *cobra.Command, argument string) error {
 		}
 		return emitNext(cmd, view)
 	}
-
-	conn, err := infrastructure.Open(dbPath)
 	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("next: %v", err))
+		return mapReadOnlyOpenError("next", err)
 	}
 	defer conn.Close()
 
-	view, err := application.Next(conn, argument)
+	view, err := application.Next(conn.Raw(), argument)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

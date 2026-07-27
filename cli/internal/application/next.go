@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // NextView mirrors `zharness next`'s shape: the resolved execution mode,
@@ -30,22 +30,16 @@ type StopInfo struct {
 	Recovery string `json:"recovery"`
 }
 
-const (
-	nextSpecPath    = ".kit/planning/SPEC.md"
-	nextRoadmapPath = ".kit/planning/ROADMAP.md"
-)
-
-func phaseContextPath(slug string) string {
-	return filepath.Join(".kit", "planning", "phases", slug, slug+"-CONTEXT.md")
-}
-
-func phasePlanPath(slug string) string {
-	return filepath.Join(".kit", "planning", "phases", slug, slug+"-PLAN.md")
-}
+const nextActivePlansGlob = "docs/plans/active/*.md"
 
 var placeholderMarkers = []string{"TBD", "TODO", "similar to", "implement later"}
 
-var roadmapPhaseHeader = regexp.MustCompile(`(?m)^## Phase \d+:\s*(\S+)`)
+var activePlanPhaseSlug = regexp.MustCompile(`(?m)^[ \t]*-[ \t]+phase_slug:[ \t]*([^ \t\r\n]+)[ \t]*$`)
+
+type activePlan struct {
+	path    string
+	content string
+}
 
 // Next resolves work.md's former Mode-Resolution + Full-Mode-Detection
 // tables in Go. Two rows are deliberately NOT encoded here and stay
@@ -54,10 +48,10 @@ var roadmapPhaseHeader = regexp.MustCompile(`(?m)^## Phase \d+:\s*(\S+)`)
 //   - contract-drift: needs a working-tree diff against the phase's
 //     Allowed/Forbidden Surfaces — this CLI has no git access, the same
 //     constraint `resume`'s git/WIP block already carries.
-//   - stale-plan (file/symbol no longer exists): a PLAN.md legitimately
-//     references files it will create by being executed, which don't
-//     exist yet — a naive existence check false-positives on almost
-//     every real plan. Left to the manual-check review pass instead.
+//   - stale-plan (file/symbol no longer exists): an active plan legitimately
+//     references files it will create by being executed, which don't exist
+//     yet — a naive existence check false-positives on almost every real plan.
+//     Left to the manual-check review pass instead.
 func Next(db *sql.DB, argument string) (NextView, error) {
 	mode, explicitPhase, ok := parseNextArgument(argument)
 	if !ok {
@@ -67,31 +61,37 @@ func Next(db *sql.DB, argument string) (NextView, error) {
 		}
 	}
 
-	if mode == "auto" {
-		hasSpec := !fileMissingOrEmpty(nextSpecPath)
-		hasBrainstorm, err := anyBrainstormReports()
-		if err != nil {
-			return NextView{}, err
-		}
-		switch {
-		case hasSpec && hasBrainstorm:
-			return NextView{Mode: "auto", Stop: &StopInfo{
-				Code:     "ambiguous",
-				Message:  "Both a SPEC.md and a brainstorm report exist — unclear which should drive this invocation.",
-				Recovery: "ask the user: continue the locked SPEC via `work full`, or `brainstorm refine` if the brainstorm file supersedes it",
-			}}, nil
-		case hasSpec:
-			mode = "full"
-		default:
-			mode = "simple"
-		}
-	}
-
 	if mode == "simple" {
 		return NextView{Mode: "simple"}, nil
 	}
 
-	return resolveFullMode(db, explicitPhase)
+	plans, err := findActivePlans()
+	if err != nil {
+		return NextView{}, err
+	}
+	if len(plans) > 1 {
+		paths := make([]string, 0, len(plans))
+		for _, plan := range plans {
+			paths = append(paths, plan.path)
+		}
+		return NextView{Mode: mode, Stop: &StopInfo{
+			Code:     "ambiguous",
+			Message:  fmt.Sprintf("More than one active initiative plan exists: %s.", strings.Join(paths, ", ")),
+			Recovery: "ask the user to select the initiative before continuing",
+		}}, nil
+	}
+	if len(plans) == 0 {
+		if mode == "auto" {
+			return NextView{Mode: "simple"}, nil
+		}
+		return NextView{Mode: "full", Stop: &StopInfo{
+			Code:     "no-plan",
+			Message:  "No non-empty active initiative plan exists under docs/plans/active/.",
+			Recovery: "run `brainstorm lock` to create docs/plans/active/{slug}.md",
+		}}, nil
+	}
+
+	return resolveFullMode(db, plans[0], explicitPhase)
 }
 
 func parseNextArgument(argument string) (mode, explicitPhase string, ok bool) {
@@ -125,147 +125,114 @@ func parseNextArgument(argument string) (mode, explicitPhase string, ok bool) {
 	}
 }
 
-func resolveFullMode(db *sql.DB, explicitPhase string) (NextView, error) {
-	if fileMissingOrEmpty(nextSpecPath) {
-		return NextView{Mode: "full", Stop: &StopInfo{
-			Code:     "no-spec",
-			Message:  "No .kit/planning/SPEC.md found (or it is empty). Lock the problem first.",
-			Recovery: "brainstorm",
-		}}, nil
+func findActivePlans() ([]activePlan, error) {
+	matches, err := filepath.Glob(nextActivePlansGlob)
+	if err != nil {
+		return nil, fmt.Errorf("next: glob active plans: %w", err)
 	}
-	if !infrastructure.Exists(nextRoadmapPath) {
+	sort.Strings(matches)
+
+	plans := make([]activePlan, 0, len(matches))
+	for _, path := range matches {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("next: read %s: %w", path, err)
+		}
+		content := string(data)
+		if strings.TrimSpace(content) == "" {
+			continue
+		}
+		plans = append(plans, activePlan{path: path, content: content})
+	}
+	return plans, nil
+}
+
+func resolveFullMode(db *sql.DB, plan activePlan, explicitPhase string) (NextView, error) {
+	slugs := parseActivePlanPhaseOrder(plan.content)
+	if len(slugs) == 0 {
 		return NextView{Mode: "full", Stop: &StopInfo{
-			Code:     "no-plan",
-			Message:  "SPEC exists, no plan. Generate the roadmap first.",
-			Recovery: "to-plan full",
+			Code:     "no-phase",
+			Message:  fmt.Sprintf("Active plan %s defines no phase_slug entries.", plan.path),
+			Recovery: "to-plan",
 		}}, nil
 	}
 
 	slug := explicitPhase
+	if slug != "" && !containsSlug(slugs, slug) {
+		return NextView{Mode: "full", ActivePhase: &slug, Stop: &StopInfo{
+			Code:     "no-phase",
+			Message:  fmt.Sprintf("Phase %q is not defined in active plan %s.", slug, plan.path),
+			Recovery: "to-plan",
+		}}, nil
+	}
 	if slug == "" {
-		candidate, multiple, err := selectActivePhase(db)
+		candidate, err := selectActivePhase(db, slugs)
 		if err != nil {
 			return NextView{}, err
-		}
-		if multiple {
-			return NextView{Mode: "full", Stop: &StopInfo{
-				Code:     "multiple-incomplete",
-				Message:  "More than one roadmap phase has incomplete work.",
-				Recovery: "ask the user which phase to run (recommend the first incomplete phase by roadmap order)",
-			}}, nil
 		}
 		if candidate == "" {
 			return NextView{Mode: "full", Stop: &StopInfo{
 				Code:     "all-phases-done",
-				Message:  "Every roadmap phase is done.",
-				Recovery: "run `handoff`, or `brainstorm` a new initiative",
+				Message:  fmt.Sprintf("Every phase in active plan %s is done.", plan.path),
+				Recovery: "run `handoff`, or `brainstorm lock` a new initiative",
 			}}, nil
 		}
 		slug = candidate
 	}
 
-	var missing []string
-	if !infrastructure.Exists(phasePlanPath(slug)) {
-		missing = append(missing, phasePlanPath(slug))
-	}
-	if !infrastructure.Exists(phaseContextPath(slug)) {
-		missing = append(missing, phaseContextPath(slug))
-	}
-	if len(missing) > 0 {
-		return NextView{Mode: "full", ActivePhase: &slug, Stop: &StopInfo{
-			Code:     "no-phase",
-			Message:  fmt.Sprintf("Phase artifacts missing for %q: %s", slug, strings.Join(missing, ", ")),
-			Recovery: fmt.Sprintf("to-plan phase %s", slug),
-		}}, nil
-	}
-
-	planBytes, err := os.ReadFile(phasePlanPath(slug))
-	if err != nil {
-		return NextView{}, fmt.Errorf("next: read %s: %w", phasePlanPath(slug), err)
-	}
-	if marker, found := findPlaceholder(string(planBytes)); found {
+	if marker, found := findPlaceholder(plan.content); found {
 		return NextView{Mode: "full", ActivePhase: &slug, Stop: &StopInfo{
 			Code:     "placeholder-plan",
-			Message:  fmt.Sprintf("Phase plan %s still contains a placeholder marker: %q", phasePlanPath(slug), marker),
-			Recovery: fmt.Sprintf("to-plan phase %s", slug),
+			Message:  fmt.Sprintf("Active plan %s still contains a placeholder marker: %q", plan.path, marker),
+			Recovery: "to-plan",
 		}}, nil
 	}
 
 	return NextView{Mode: "full", ActivePhase: &slug}, nil
 }
 
-// selectActivePhase parses ROADMAP.md for its ordered phase list and
-// cross-references each slug's story status in the DB. A phase with no
-// story row yet, or a story not yet `done`, counts as incomplete — this
-// reads the harness's own authoritative completion field rather than
-// scanning PLAN.md prose for ad-hoc "all waves complete" markers.
-func selectActivePhase(db *sql.DB) (slug string, multipleIncomplete bool, err error) {
-	slugs, err := parseRoadmapPhaseOrder(nextRoadmapPath)
-	if err != nil {
-		return "", false, err
+// selectActivePhase returns the first plan-ordered phase whose story is not
+// done. A phase with no story row yet counts as incomplete. Without a DB, the
+// first plan phase is the only deterministic candidate.
+func selectActivePhase(db *sql.DB, slugs []string) (string, error) {
+	if db == nil {
+		return slugs[0], nil
 	}
-
-	var incomplete []string
-	for _, s := range slugs {
-		if db == nil {
-			// No harness.db yet (matches resume's "no-harness" state) — every
-			// phase counts as not-yet-done since nothing has been recorded.
-			incomplete = append(incomplete, s)
-			continue
-		}
-		_, status, exists, err := storyByExactSlug(db, s)
+	for _, slug := range slugs {
+		_, status, exists, err := storyByExactSlug(db, slug)
 		if err != nil {
-			return "", false, err
+			return "", err
 		}
 		if !exists || status != domain.StoryDone {
-			incomplete = append(incomplete, s)
+			return slug, nil
 		}
 	}
-
-	switch len(incomplete) {
-	case 0:
-		return "", false, nil
-	case 1:
-		return incomplete[0], false, nil
-	default:
-		return "", true, nil
-	}
+	return "", nil
 }
 
-func parseRoadmapPhaseOrder(path string) ([]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("next: read %s: %w", path, err)
-	}
-	matches := roadmapPhaseHeader.FindAllStringSubmatch(string(data), -1)
+func parseActivePlanPhaseOrder(content string) []string {
+	matches := activePlanPhaseSlug.FindAllStringSubmatch(content, -1)
 	slugs := make([]string, 0, len(matches))
-	for _, m := range matches {
-		slugs = append(slugs, m[1])
+	for _, match := range matches {
+		slugs = append(slugs, match[1])
 	}
-	return slugs, nil
+	return slugs
+}
+
+func containsSlug(slugs []string, target string) bool {
+	for _, slug := range slugs {
+		if slug == target {
+			return true
+		}
+	}
+	return false
 }
 
 func findPlaceholder(plan string) (marker string, found bool) {
-	for _, m := range placeholderMarkers {
-		if strings.Contains(plan, m) {
-			return m, true
+	for _, marker := range placeholderMarkers {
+		if strings.Contains(plan, marker) {
+			return marker, true
 		}
 	}
 	return "", false
-}
-
-func anyBrainstormReports() (bool, error) {
-	matches, err := filepath.Glob(".kit/reports/brainstorm/*.md")
-	if err != nil {
-		return false, fmt.Errorf("next: glob brainstorm reports: %w", err)
-	}
-	return len(matches) > 0, nil
-}
-
-func fileMissingOrEmpty(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		return true
-	}
-	return info.Size() == 0
 }
