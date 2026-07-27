@@ -1,2 +1,0 @@
-{"op":"create","entity":"run","id":"01KY41Q3D4FCZMY2SS8AH6PD9R","fields":{"artifact_path":".kit/runs/work/20260722-1135-dead-surface-removal.md","created_at":"2026-07-22T04:35:34Z","story_slug":"dead-surface-removal"},"at":"2026-07-22T04:35:34Z"}
-{"op":"update","entity":"meta","id":"meta","fields":{"latest_run_id":"01KY41Q3D4FCZMY2SS8AH6PD9R"},"at":"2026-07-22T04:35:34Z"}

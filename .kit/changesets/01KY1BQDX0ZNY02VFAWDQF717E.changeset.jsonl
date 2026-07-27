@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KY1BQDX0ZNY02VFAW9TJPW8H","fields":{"created_at":"2026-07-21T03:32:48Z","run_id":"01KY1BD7D5P2PQTCRYDP5KJKPC","summary":"work.md/check.md embeds rewritten to call run create / check record; .kit/docs re-scaffolded","wave":2},"at":"2026-07-21T03:32:48Z"}

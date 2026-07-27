@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KYFACVFSJHSANYWKGR4PPQT7","fields":{"created_at":"2026-07-26T13:38:55Z","run_id":"01KYF9TECM63NSPBEKNTNYFJXE","summary":"Added evolving-plan scaffold and intake plan-path schema without destructive table rebuild","wave":1},"at":"2026-07-26T13:38:55Z"}

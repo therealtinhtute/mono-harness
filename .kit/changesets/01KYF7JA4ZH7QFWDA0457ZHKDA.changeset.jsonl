@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KYF7JA4ZH7QFWDA0429GG9FX","fields":{"created_at":"2026-07-26T12:49:28Z","run_id":"01KYF75AMDJ8VB806YXW2H8ZPQ","summary":"Centralized root paths, added managed-doc schema, and proved all repository changesets replay from empty","wave":1},"at":"2026-07-26T12:49:28Z"}

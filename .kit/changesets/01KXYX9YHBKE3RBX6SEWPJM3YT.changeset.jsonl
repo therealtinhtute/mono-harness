@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KXYX9YHBKE3RBX6SERTVQA3J","fields":{"created_at":"2026-07-20T04:42:17Z","run_id":"01KXYWD4EMEZQJCF5WK1NPBJ2Z","summary":"Updated README for four-layer/14-skill zharness usage and corrected migration init behavior; links, stale-term scans, formatting, and Go tests passed","wave":2},"at":"2026-07-20T04:42:17Z"}

@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KYGP9S4X3QSBWHXN12VPDTD4","fields":{"created_at":"2026-07-27T02:26:11Z","run_id":"01KYF9TECM63NSPBEKNTNYFJXE","summary":"DB lifecycle readers no longer require report markdown; lifecycle transitions, bounded zero-write proof, and public contracts are verified","wave":2},"at":"2026-07-27T02:26:11Z"}

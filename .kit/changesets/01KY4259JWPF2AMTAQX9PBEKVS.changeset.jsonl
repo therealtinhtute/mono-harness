@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KY4259JWPF2AMTAQX665FC9G","fields":{"created_at":"2026-07-22T04:43:20Z","run_id":"01KY41Q3D4FCZMY2SS8AH6PD9R","summary":"T2 done: dropped decision/backlog/tool from changeset engine + tables (migration v3, schema_version 3); go build + go test -run Migrat pass","wave":2},"at":"2026-07-22T04:43:20Z"}

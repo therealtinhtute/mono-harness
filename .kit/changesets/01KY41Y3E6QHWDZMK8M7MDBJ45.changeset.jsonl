@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KY41Y3E6QHWDZMK8M647440G","fields":{"created_at":"2026-07-22T04:39:24Z","run_id":"01KY41Q3D4FCZMY2SS8AH6PD9R","summary":"T1 DONE: removed decision/backlog/tool/propose/score-context commands+app+domain logic, go build clean, --help confirms all 5 gone","wave":1},"at":"2026-07-22T04:39:24Z"}

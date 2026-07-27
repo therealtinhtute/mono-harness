@@ -1,1 +1,0 @@
-{"op":"create","entity":"story","id":"01KY1AJ7MGMA1GF2WN7CFHJM4X","fields":{"created_at":"2026-07-21T03:12:29Z","goal":"Add zharness run create + check record meta-pointer so no playbook hand-authors changeset JSONL","slug":"write-boundary","status":"planned"},"at":"2026-07-21T03:12:29Z"}

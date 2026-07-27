@@ -1,1 +1,0 @@
-{"op":"create","entity":"story","id":"01KY1AJ7N38RKPZTZ863MWY2F7","fields":{"created_at":"2026-07-21T03:12:29Z","depends_on":"scoring-removal","goal":"Make .kit/docs/playbooks a pure projection of the Go embed + drift-check test","slug":"single-source-playbooks","status":"planned"},"at":"2026-07-21T03:12:29Z"}

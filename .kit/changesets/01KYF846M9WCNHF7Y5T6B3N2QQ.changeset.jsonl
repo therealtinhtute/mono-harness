@@ -1,1 +1,0 @@
-{"op":"create","entity":"trace","id":"01KYF846M9WCNHF7Y5T2WKGBBB","fields":{"created_at":"2026-07-26T12:59:14Z","run_id":"01KYF75AMDJ8VB806YXW2H8ZPQ","summary":"Implemented root managed docs with DB hashes, marked AGENTS block, and conflict-safe refresh","wave":2},"at":"2026-07-26T12:59:14Z"}
