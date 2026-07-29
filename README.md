@@ -8,27 +8,29 @@ The repository has **14 skills** organized above a four-layer workflow runtime:
 
 | Layer | Responsibility |
 | :--- | :--- |
-| **Harness** | Durable state: committed ULID changesets plus a rebuildable local SQLite database. |
+| **Harness** | Durable state: local ULID changesets (gitignored) plus a rebuildable local SQLite database. |
 | **Workflows** | Tool-independent lifecycle: intent → intake → plan → trace → proof → handoff/resume. |
 | **Skills** | User-facing triggers, including the 8 workflow skills and 6 shipping/craft skills. |
 | **CLI** | `zharness`, which scaffolds playbooks and reads or mutates harness state deterministically. |
 
-### Harness artifact layout: `.kit/`
+### Harness artifact layout
 
 ```text
-.kit/
-├── changesets/         (committed ULID-named JSONL — replay source; the only tracked content)
-├── cache/               (gitignored local scratch, e.g. sidecar-skill reports)
-├── docs/               (generated playbooks — gitignored)
-└── harness.db          (generated SQLite view — gitignored)
+.kit/                    (entirely gitignored — local, per-machine state)
+├── changesets/         (ULID-named JSONL — replay source)
+├── cache/               (local scratch, e.g. sidecar-skill reports)
+└── conflicts/           (doc-sync conflict staging)
+
+docs/                    (generated playbooks — tracked in git)
+harness.db               (generated SQLite view — gitignored, repo root)
 ```
 
 Durable initiative markdown lives outside `.kit/`, as one evolving plan at `docs/plans/active/{slug}.md`, moved to `docs/plans/completed/{slug}.md` after final closure.
 
 #### What lives where
 
-- `changesets/` is the only tracked content in `.kit/` — the replayable source for every harness entity and pointer.
-- `harness.db` is a local materialized view rebuilt from committed changesets (`zharness init` + replay).
+- `.kit/changesets/` is local, gitignored, per-machine state — the replayable source for every harness entity and pointer, rebuilt via `zharness init`, not committed to git.
+- `harness.db` is a local materialized view rebuilt from changesets (`zharness init` + replay).
 - `docs/` contains generated canonical playbooks scaffolded by `zharness init`.
 - `docs/plans/active/{slug}.md` is the one durable plan per initiative: outcome, requirements, phases/waves/tasks, append-only Progress/Decisions/Validation, and Current State.
 
@@ -150,7 +152,7 @@ cd /path/to/project
 zharness init --json
 ```
 
-`init` creates `.kit/` when needed, initializes the local database, scaffolds missing `.kit/docs/` playbooks, and adds the generated harness paths to `.gitignore` as applicable. Playbooks are edited in `cli/docs/embedded/playbooks/` only — `.kit/docs/playbooks/` is a generated projection, guarded by a test that fails on any divergence.
+`init` creates `.kit/` when needed, initializes the local database, scaffolds missing `docs/` playbooks, and adds the generated harness paths to `.gitignore` as applicable. Playbooks are edited in `cli/docs/embedded/playbooks/` only — `docs/playbooks/` is a generated projection, guarded by a test that fails on any divergence.
 
 ### Full work: lock, plan, execute, prove
 
@@ -209,7 +211,7 @@ Do not use `import` for a new project. Full migration and rollback guidance: [`d
 
 ### Harness implementation model
 
-The six spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) are thin triggers. They version-gate on `zharness`, ensure generated docs exist, then follow the matching canonical playbook under `.kit/docs/playbooks/`. `interview` and `git` remain sidecars rather than harness entity owners.
+The six spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) are thin triggers. They version-gate on `zharness`, call `zharness preflight <stage> --json`, and follow the playbook path it returns under `docs/playbooks/`. `interview` and `git` remain sidecars rather than harness entity owners.
 
 See [`skills/workflow/README.md`](skills/workflow/README.md) for the four-layer concept and [`docs/workflow-harness/`](docs/workflow-harness/) for migration notes and pilot evidence.
 

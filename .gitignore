@@ -4,3 +4,6 @@ cli/dist/
 harness.db
 harness.db-wal
 harness.db-shm
+.kit/harness.db
+.kit/cache/
+.kit/conflicts/

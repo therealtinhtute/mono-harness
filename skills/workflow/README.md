@@ -6,7 +6,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 
 ## 4-Layer Model
 
-- **harness** — the durable state layer. SQLite (`harness.db`, gitignored) materialized by replaying committed, ULID-named JSONL changesets under `.kit/changesets/`. This is the source of truth for intake, story/phase, trace, and check history — not the markdown.
+- **harness** — the durable state layer. SQLite (`harness.db`, gitignored, repo root) materialized by replaying local, ULID-named JSONL changesets under `.kit/changesets/` (also gitignored — per-machine state, not committed). This is the source of truth for intake, story/phase, trace, and check history — not the markdown.
 - **workflows** — the lifecycle contract itself: `Intent → Intake → Story/Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
 - **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. Every skill version-gates and calls `zharness preflight` for one shared readiness/rail-guard decision. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) then follow the playbook path returned by preflight; operating logic lives in those playbooks, not in the trigger.
 - **cli** — `zharness`, the Go binary (cobra command tree, `modernc.org/sqlite`, CGO disabled) that routes every workflow stage and reads/writes the harness layer. `preflight` is read-only; every mutating command appends a changeset before touching the database.
