@@ -95,7 +95,7 @@ func TestLifecycleValidationRunsInsideExclusiveMutationBoundary(t *testing.T) {
 
 	jsonOutput = false
 	resumeFacts = ""
-	checkCmd, _ := newRepositoryLockCommand("check", "record", "--verdict", "APPROVED", "--run-id", runResponse.ID, "--proof-links", `[{"command":"go test ./...","output_ref":"pass"}]`)
+	checkCmd, _ := newRepositoryLockCommand("check", "record", "--verdict", "APPROVED", "--run-id", runResponse.ID, "--judge", "independent", "--judge-model", "test-model", "--proof-links", `[{"command":"go test ./...","output_ref":"pass"}]`)
 	runCmd, _ := newRepositoryLockCommand("run", "create", "--slug", "serialized")
 	checkDone := make(chan error, 1)
 	go func() { checkDone <- checkCmd.Execute() }()
@@ -177,8 +177,8 @@ func TestSerializedPublicRunsAndChecksMatchULIDReplayOrder(t *testing.T) {
 	runA := executeIDCommand(t, "run", "create", "--slug", "replay-order", "--json")
 	runB := executeIDCommand(t, "run", "create", "--slug", "replay-order", "--json")
 	proof := `[{"command":"go test ./...","output_ref":"same-time proof"}]`
-	checkA := executeIDCommand(t, "check", "record", "--verdict", "REQUEST_CHANGES", "--run-id", runB, "--proof-links", proof, "--json")
-	checkB := executeIDCommand(t, "check", "record", "--verdict", "REQUEST_CHANGES", "--run-id", runB, "--proof-links", proof, "--json")
+	checkA := executeIDCommand(t, "check", "record", "--verdict", "REQUEST_CHANGES", "--run-id", runB, "--judge", "independent", "--judge-model", "test-model", "--proof-links", proof, "--json")
+	checkB := executeIDCommand(t, "check", "record", "--verdict", "REQUEST_CHANGES", "--run-id", runB, "--judge", "independent", "--judge-model", "test-model", "--proof-links", proof, "--json")
 	if runB <= runA || checkB <= checkA {
 		t.Fatalf("ordered entity IDs = runs(%s,%s) checks(%s,%s), want command order", runA, runB, checkA, checkB)
 	}

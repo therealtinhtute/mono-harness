@@ -24,19 +24,23 @@ func newCheckCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			verdict, _ := cmd.Flags().GetString("verdict")
 			runID, _ := cmd.Flags().GetString("run-id")
+			judge, _ := cmd.Flags().GetString("judge")
+			judgeModel, _ := cmd.Flags().GetString("judge-model")
 			proofLinksRaw, _ := cmd.Flags().GetString("proof-links")
-			return runCheckRecord(cmd, verdict, runID, proofLinksRaw)
+			return runCheckRecord(cmd, verdict, runID, judge, judgeModel, proofLinksRaw)
 		},
 	}
 	record.Flags().String("verdict", "", "APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES")
 	record.Flags().String("run-id", "", "ulid of the run being gated")
+	record.Flags().String("judge", "", "independent|same-session")
+	record.Flags().String("judge-model", "", "identifier of the model that produced the verdict")
 	record.Flags().String("proof-links", "[]", `JSON array: [{"command":"...","output_ref":"...","artifact_path":"..."}]`)
 
 	check.AddCommand(record)
 	return check
 }
 
-func runCheckRecord(cmd *cobra.Command, verdict, runID, proofLinksRaw string) error {
+func runCheckRecord(cmd *cobra.Command, verdict, runID, judge, judgeModel, proofLinksRaw string) error {
 	var proofLinks []domain.ProofLink
 	if err := json.Unmarshal([]byte(proofLinksRaw), &proofLinks); err != nil {
 		return newUserError("invalid_proof_links", fmt.Sprintf("check record: --proof-links is not valid JSON: %v", err))
@@ -51,7 +55,7 @@ func runCheckRecord(cmd *cobra.Command, verdict, runID, proofLinksRaw string) er
 	}
 	defer db.Close()
 
-	id, _, err := application.RecordCheck(db, changesetDir, runID, verdict, proofLinks)
+	id, _, err := application.RecordCheck(db, changesetDir, runID, verdict, judge, judgeModel, proofLinks)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

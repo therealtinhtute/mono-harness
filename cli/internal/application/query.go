@@ -96,11 +96,14 @@ func QueryArtifacts(db *sql.DB, phase string) ([]ArtifactView, error) {
 
 // CheckView mirrors CONTRACT.md's locked `query check --latest --json`
 // shape: the most recent check's verdict and the phase (story slug) its
-// run belongs to.
+// run belongs to. Judge and JudgeModel are nullable — checks recorded
+// before migration 0006 carry neither.
 type CheckView struct {
-	ID      string `json:"id"`
-	Verdict string `json:"verdict"`
-	Phase   string `json:"phase"`
+	ID         string  `json:"id"`
+	Verdict    string  `json:"verdict"`
+	Phase      string  `json:"phase"`
+	Judge      *string `json:"judge"`
+	JudgeModel *string `json:"judge_model"`
 }
 
 // QueryLatestCheck reads the most recently created check row, joined to
@@ -109,19 +112,22 @@ type CheckView struct {
 // is visible here.
 func QueryLatestCheck(db *sql.DB) (CheckView, bool, error) {
 	var v CheckView
+	var judge, judgeModel sql.NullString
 	err := db.QueryRow(`
-		SELECT checks.id, checks.verdict, runs.story_slug
+		SELECT checks.id, checks.verdict, runs.story_slug, checks.judge, checks.judge_model
 		FROM checks
 		JOIN runs ON runs.id = checks.run_id
 		ORDER BY checks.created_at DESC, checks.id DESC
 		LIMIT 1
-	`).Scan(&v.ID, &v.Verdict, &v.Phase)
+	`).Scan(&v.ID, &v.Verdict, &v.Phase, &judge, &judgeModel)
 	if err == sql.ErrNoRows {
 		return v, false, nil
 	}
 	if err != nil {
 		return v, false, fmt.Errorf("query latest check: %w", err)
 	}
+	v.Judge = nullableString(judge)
+	v.JudgeModel = nullableString(judgeModel)
 	return v, true, nil
 }
 

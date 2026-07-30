@@ -10,7 +10,7 @@ func TestCheckRecord(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
-	id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{
+	id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "go test ./...", OutputRef: "ok", ArtifactPath: ".kit/runs/work/x.md"},
 	})
 	if err != nil {
@@ -56,7 +56,7 @@ func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
 		t.Fatalf("pre-check story status = %q, want in-progress", got)
 	}
 
-	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
+	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", nil)
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestCheckRecordEmptyProofLinks(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	runID := seedRun(t, db, changesetDir)
 
-	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, nil)
+	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", nil)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "empty_proof_links" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: empty_proof_links}", err)
@@ -80,7 +80,7 @@ func TestCheckRecordInvalidVerdict(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	runID := seedRun(t, db, changesetDir)
 
-	_, _, err := RecordCheck(db, changesetDir, runID, "MAYBE", []domain.ProofLink{{Command: "x"}})
+	_, _, err := RecordCheck(db, changesetDir, runID, "MAYBE", domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_verdict" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_verdict}", err)
@@ -90,7 +90,7 @@ func TestCheckRecordInvalidVerdict(t *testing.T) {
 func TestCheckRecordUnknownRunID(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordCheck(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", domain.VerdictApproved, []domain.ProofLink{{Command: "x"}})
+	_, _, err := RecordCheck(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_run_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)

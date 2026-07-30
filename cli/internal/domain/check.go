@@ -1,6 +1,9 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Check verdict enum (CONTRACT.md `check record`).
 const (
@@ -19,6 +22,23 @@ func IsValidCheckVerdict(verdict string) bool {
 	return checkVerdicts[verdict]
 }
 
+// Check judge enum (CONTRACT.md `check record`, eval-layer initiative):
+// declares whether the verdict was produced by an independent judge or by
+// the same session that authored the diff under review.
+const (
+	JudgeIndependent = "independent"
+	JudgeSameSession = "same-session"
+)
+
+var checkJudges = map[string]bool{
+	JudgeIndependent: true,
+	JudgeSameSession: true,
+}
+
+func IsValidJudge(judge string) bool {
+	return checkJudges[judge]
+}
+
 // ProofLink is one entry of a Check's proof_links JSON array.
 type ProofLink struct {
 	Command      string `json:"command"`
@@ -31,6 +51,8 @@ type Check struct {
 	ID           string
 	RunID        string
 	Verdict      string
+	Judge        string
+	JudgeModel   string
 	ProofLinks   []ProofLink
 	ArtifactPath *string
 	CreatedAt    string
@@ -45,6 +67,12 @@ func (c Check) Validate() error {
 	}
 	if c.Verdict != VerdictRequestChanges && len(c.ProofLinks) == 0 {
 		return &ValidationError{Code: "empty_proof_links", Message: fmt.Sprintf("check: proof_links required for verdict %q", c.Verdict)}
+	}
+	if !IsValidJudge(c.Judge) {
+		return &ValidationError{Code: "invalid_judge", Message: fmt.Sprintf("check: invalid judge %q", c.Judge)}
+	}
+	if strings.TrimSpace(c.JudgeModel) == "" {
+		return &ValidationError{Code: "missing_required_field", Message: "check: judge_model is required"}
 	}
 	return nil
 }

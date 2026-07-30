@@ -38,7 +38,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 6. **Evaluate required proof** — for `tiny`, require command output; for `normal`, require unit plus command output; for `high-risk`, require unit, integration, manual review, and command output. Name every missing class exactly. A gate does not silently substitute automated checks for required manual-review evidence.
 7. **Audit durable lifecycle links** — gate/full runs `zharness audit --json`. Treat pointer drift or contract violations touching the phase as findings; unlinked proof remains explicit context. Review and bounded/simple do not add lifecycle records merely to satisfy this step.
 8. **Choose the verdict** — any critical issue or material plan contradiction is `REQUEST_CHANGES`; major non-critical findings are at least `APPROVE_WITH_REQUESTS`; no blocking findings is `APPROVED`. Declare the judge: `same-session` when the reviewing agent also authored the diff under review, `independent` otherwise, alongside the reviewing model's identifier. When the judge is `same-session`, an `APPROVED` or `APPROVE_WITH_REQUESTS` verdict must name at least one aspect that was not independently verified.
-9. **Record only a durable gate/full check** — run `zharness check record --verdict {verdict} --run-id {run-id} --proof-links '[{"command":"{exact command}","output_ref":"Validation entry {timestamp}: {result}"}, ...]' --json`. Do not pass or create an artifact path. Save the returned check ID.
+9. **Record only a durable gate/full check** — run `zharness check record --verdict {verdict} --run-id {run-id} --judge {independent|same-session} --judge-model {model identifier} --proof-links '[{"command":"{exact command}","output_ref":"Validation entry {timestamp}: {result}"}, ...]' --json`. `--judge` and `--judge-model` are required flags — the CLI rejects a missing or invalid value with `invalid_judge` or `missing_required_field` before recording anything. Do not pass or create an artifact path. Save the returned check ID.
 10. **Synchronize durable plan state**:
     - For `APPROVED` or `APPROVE_WITH_REQUESTS`, immediately set the phase status and Current State lifecycle status to `checked`, record the returned check ID, append exact Validation evidence, and route to closing `handoff` or `git`.
     - For `REQUEST_CHANGES`, append the returned check ID and exact failed evidence to Validation, keep the phase and Current State lifecycle status `in-progress` to match the DB, record the findings as blockers/open items, and route back to `work`. When `docs/evals/failures.md` exists, also append one ledger row per finding — durable gate/full only, so `review` and bounded/simple keep the zero-write rule above.
@@ -55,7 +55,7 @@ Run the narrowest checks that prove the requested change, perform the requested 
 - `zharness resume --json`
 - `zharness audit --json`
 - `zharness query phases --json`
-- `zharness check record --verdict {verdict} --run-id {run-id} --proof-links '[...]' --json`
+- `zharness check record --verdict {verdict} --run-id {run-id} --judge {independent|same-session} --judge-model {model} --proof-links '[...]' --json`
 
 ## Output Format
 

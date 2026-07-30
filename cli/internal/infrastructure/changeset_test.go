@@ -123,6 +123,8 @@ func TestChangesetRejectsInvalidLifecycleEnumsWithoutMutation(t *testing.T) {
 		{name: "story update", entity: "story", table: "stories", op: "update", column: "status"},
 		{name: "check create", entity: "check", table: "checks", op: "create", column: "verdict"},
 		{name: "check update", entity: "check", table: "checks", op: "update", column: "verdict"},
+		{name: "check create judge", entity: "check", table: "checks", op: "create", column: "judge"},
+		{name: "check update judge", entity: "check", table: "checks", op: "update", column: "judge"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			db := freshDB(t)
@@ -142,7 +144,10 @@ func TestChangesetRejectsInvalidLifecycleEnumsWithoutMutation(t *testing.T) {
 				}
 			case "check":
 				line.ID = checkID
-				line.Fields = map[string]any{"verdict": "bogus"}
+				line.Fields = map[string]any{tc.column: "bogus"}
+				if tc.column != "verdict" {
+					line.Fields["verdict"] = domain.VerdictApproved
+				}
 				if tc.op == "create" {
 					line.ID = ulid.Make().String()
 					line.Fields["run_id"] = runID
@@ -197,6 +202,7 @@ func TestChangesetAcceptsLifecycleEnums(t *testing.T) {
 	at := "2026-07-28T01:00:00Z"
 	statuses := []string{domain.StoryPlanned, domain.StoryInProgress, domain.StoryChecked, domain.StoryDone}
 	verdicts := []string{domain.VerdictApproved, domain.VerdictApproveWithRequests, domain.VerdictRequestChanges}
+	judges := []string{domain.JudgeIndependent, domain.JudgeSameSession}
 
 	storyIDs := make([]string, len(statuses))
 	createLines := make([]ChangesetLine, 0, len(statuses)+len(verdicts)+1)
@@ -214,7 +220,7 @@ func TestChangesetAcceptsLifecycleEnums(t *testing.T) {
 	for i, verdict := range verdicts {
 		checkIDs[i] = ulid.Make().String()
 		createLines = append(createLines, ChangesetLine{Op: "create", Entity: "check", ID: checkIDs[i], Fields: map[string]any{
-			"run_id": runID, "verdict": verdict, "proof_links": []any{}, "created_at": at,
+			"run_id": runID, "verdict": verdict, "judge": judges[i%len(judges)], "judge_model": "test-model", "proof_links": []any{}, "created_at": at,
 		}, At: at})
 	}
 
@@ -233,6 +239,9 @@ func TestChangesetAcceptsLifecycleEnums(t *testing.T) {
 	for _, verdict := range verdicts {
 		updateLines = append(updateLines, ChangesetLine{Op: "update", Entity: "check", ID: checkIDs[0], Fields: map[string]any{"verdict": verdict}, At: at})
 	}
+	for _, judge := range judges {
+		updateLines = append(updateLines, ChangesetLine{Op: "update", Entity: "check", ID: checkIDs[0], Fields: map[string]any{"judge": judge}, At: at})
+	}
 	updatePath, err := WriteChangeset(dir, updateLines)
 	if err != nil {
 		t.Fatalf("WriteChangeset(update enums): %v", err)
@@ -241,15 +250,15 @@ func TestChangesetAcceptsLifecycleEnums(t *testing.T) {
 		t.Fatalf("ApplyChangeset(update enums) = (applied=%d, err=%v), want (%d, nil)", applied, err, len(updateLines))
 	}
 
-	var status, verdict string
+	var status, verdict, judge string
 	if err := db.QueryRow(`SELECT status FROM stories WHERE id = ?`, storyIDs[0]).Scan(&status); err != nil {
 		t.Fatalf("query final story status: %v", err)
 	}
-	if err := db.QueryRow(`SELECT verdict FROM checks WHERE id = ?`, checkIDs[0]).Scan(&verdict); err != nil {
+	if err := db.QueryRow(`SELECT verdict, judge FROM checks WHERE id = ?`, checkIDs[0]).Scan(&verdict, &judge); err != nil {
 		t.Fatalf("query final check verdict: %v", err)
 	}
-	if status != domain.StoryDone || verdict != domain.VerdictRequestChanges {
-		t.Fatalf("final enums = (%q, %q), want (%q, %q)", status, verdict, domain.StoryDone, domain.VerdictRequestChanges)
+	if status != domain.StoryDone || verdict != domain.VerdictRequestChanges || judge != domain.JudgeSameSession {
+		t.Fatalf("final enums = (%q, %q, %q), want (%q, %q, %q)", status, verdict, judge, domain.StoryDone, domain.VerdictRequestChanges, domain.JudgeSameSession)
 	}
 }
 

@@ -29,7 +29,7 @@ func TestHandoffRecord(t *testing.T) {
 func TestHandoffRecordClosesCleanPhase(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
-	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, []domain.ProofLink{{Command: "go test ./...", OutputRef: "pass"}})
+	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "pass"}})
 	if err != nil {
 		t.Fatalf("RecordCheck() error = %v", err)
 	}
@@ -45,7 +45,7 @@ func TestHandoffRecordClosesCleanPhase(t *testing.T) {
 func TestHandoffRecordRejectsDirtyPhaseClose(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
-	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, nil)
+	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", nil)
 	if err != nil {
 		t.Fatalf("RecordCheck() error = %v", err)
 	}

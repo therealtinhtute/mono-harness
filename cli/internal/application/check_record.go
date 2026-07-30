@@ -12,10 +12,10 @@ import (
 // meta.latest_check_id at it in the same changeset/tx — the hand-authored
 // meta changeset check.md's playbook previously required is now owned by
 // the CLI. unknown_run_id is DB-lookup-dependent, so it's enforced here
-// rather than in domain.Check.Validate() (invalid_verdict and
-// empty_proof_links are already covered there).
-func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []domain.ProofLink) (id, path string, err error) {
-	entity := domain.Check{RunID: runID, Verdict: verdict, ProofLinks: proofLinks}
+// rather than in domain.Check.Validate() (invalid_verdict, invalid_judge,
+// and empty_proof_links are already covered there).
+func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink) (id, path string, err error) {
+	entity := domain.Check{RunID: runID, Verdict: verdict, Judge: judge, JudgeModel: judgeModel, ProofLinks: proofLinks}
 	if err := entity.Validate(); err != nil {
 		return "", "", err
 	}
@@ -65,6 +65,8 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict string, proofLinks []d
 				Fields: map[string]any{
 					"run_id":      runID,
 					"verdict":     verdict,
+					"judge":       judge,
+					"judge_model": judgeModel,
 					"proof_links": proofLinksAny,
 					"created_at":  at,
 				},

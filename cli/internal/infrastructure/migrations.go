@@ -142,6 +142,14 @@ CREATE TABLE managed_docs (
 		Name:    "0005_intake_plan_path",
 		SQL:     `ALTER TABLE intakes ADD COLUMN plan_path TEXT;`,
 	},
+	{
+		Version: 6,
+		Name:    "0006_check_judge",
+		SQL: `
+ALTER TABLE checks ADD COLUMN judge TEXT;
+ALTER TABLE checks ADD COLUMN judge_model TEXT;
+`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

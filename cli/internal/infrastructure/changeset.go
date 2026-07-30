@@ -46,7 +46,7 @@ var entityTables = map[string]string{
 var entityColumns = map[string]map[string]bool{
 	"stories":       {"slug": true, "goal": true, "status": true, "depends_on": true, "created_at": true},
 	"runs":          {"story_slug": true, "plan_id": true, "trace_ids": true, "artifact_path": true, "created_at": true},
-	"checks":        {"run_id": true, "verdict": true, "proof_links": true, "artifact_path": true, "created_at": true},
+	"checks":        {"run_id": true, "verdict": true, "judge": true, "judge_model": true, "proof_links": true, "artifact_path": true, "created_at": true},
 	"handoffs":      {"run_id": true, "check_id": true, "anchors": true, "created_at": true},
 	"intakes":       {"type": true, "summary": true, "lane": true, "plan_path": true, "created_at": true},
 	"interventions": {"verdict_id": true, "reason": true, "created_at": true},
@@ -85,7 +85,12 @@ func validateFieldValues(table string, fields map[string]any) error {
 		}
 	case "checks":
 		if value, ok := fields["verdict"]; ok {
-			return validateEnumValue(table, "verdict", value, domain.IsValidCheckVerdict)
+			if err := validateEnumValue(table, "verdict", value, domain.IsValidCheckVerdict); err != nil {
+				return err
+			}
+		}
+		if value, ok := fields["judge"]; ok {
+			return validateEnumValue(table, "judge", value, domain.IsValidJudge)
 		}
 	}
 	return nil

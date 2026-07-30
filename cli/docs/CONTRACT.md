@@ -87,7 +87,7 @@ Append-producing mutations allocate canonical changeset filenames strictly above
 - `--json` (`state`): `{"current_phase":"slug"|null,"entry_phase":"slug"|null,"schema_version":N,"latest_run_id":"ulid"|null,"latest_check_id":"ulid"|null}`
 - `--json` (`phases`): `[{"slug":"...","goal":"...","status":"planned|in-progress|checked|done","depends_on":"slug"|null,"created_at":"..."}, ...]`
 - `--json` (`artifacts`): `[{"id":"ulid","story_slug":"slug","artifact_path":"","created_at":"..."}, ...]`; `artifact_path` is optional/deprecated lifecycle metadata encoded as a string that may be empty and is never resolved on disk
-- `--json` (`check --latest`): `{"id":"ulid","verdict":"APPROVED"|"APPROVE_WITH_REQUESTS"|"REQUEST_CHANGES","phase":"slug"}`
+- `--json` (`check --latest`): `{"id":"ulid","verdict":"APPROVED"|"APPROVE_WITH_REQUESTS"|"REQUEST_CHANGES","phase":"slug","judge":"independent"|"same-session"|null,"judge_model":"..."|null}`; `judge`/`judge_model` are `null` for a check recorded before the eval-layer initiative
 - Errors: `unknown_view` (1), `no_check_found` (1), `db_unreadable` (2)
 - Consumer: `to-plan` (phase status), `git` (`query check --latest`, warn-not-block on FAIL/missing), `continuity`
 
@@ -136,9 +136,10 @@ Append-producing mutations allocate canonical changeset filenames strictly above
 - Consumer: `watzup` (renders 1:1 from this snapshot, no independent prose re-derivation)
 
 ### `check record`
-- Args: `--verdict {APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES} --run-id {ulid} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}]'`; each proof link's `artifact_path` is optional/deprecated legacy metadata and is not a filesystem requirement
+- Args: `--verdict {APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES} --run-id {ulid} --judge {independent|same-session} --judge-model {model identifier} --proof-links '[{"command":"...","output_ref":"...","artifact_path":"..."}]'`; each proof link's `artifact_path` is optional/deprecated legacy metadata and is not a filesystem requirement
+- `--judge` and `--judge-model` are required for every verdict, including `REQUEST_CHANGES` — declares whether the verdict was produced by an independent judge or by the same session that authored the diff under review, and which model produced it (eval-layer initiative)
 - `--json`: `{"id":"ulid","verdict":"..."}`
-- Errors: `unknown_run_id` (1), `story_not_checkable` (1, story is not `in-progress`), `run_not_latest` (1, run is stale for its story), `invalid_verdict` (1), `invalid_proof_links` (1), `empty_proof_links` (1, verdict other than REQUEST_CHANGES with zero proof links), `missing_required_field` (1), `db_unreadable` / `db_not_writable` (2)
+- Errors: `unknown_run_id` (1), `story_not_checkable` (1, story is not `in-progress`), `run_not_latest` (1, run is stale for its story), `invalid_verdict` (1), `invalid_judge` (1, `--judge` is not `independent`/`same-session`), `invalid_proof_links` (1), `empty_proof_links` (1, verdict other than REQUEST_CHANGES with zero proof links), `missing_required_field` (1, empty `--run-id` or `--judge-model`), `db_unreadable` / `db_not_writable` (2)
 - Atomic side effects: for the latest run of an `in-progress` story, records the check and points `meta.latest_check_id` at it; `APPROVED` and `APPROVE_WITH_REQUESTS` move the story to `checked`, while `REQUEST_CHANGES` leaves it `in-progress`
 - Consumer: `check` (deterministic — no free-text-only verdicts, R19)
 

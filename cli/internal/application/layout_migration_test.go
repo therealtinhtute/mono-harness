@@ -144,7 +144,7 @@ func seedLegacyLayout(t *testing.T, root string) (runID, checkID string) {
 		db.Close()
 		t.Fatalf("CreateRun() error = %v", err)
 	}
-	checkID, _, err = RecordCheck(db, changesets, runID, domain.VerdictApproved, []domain.ProofLink{{Command: "go test ./...", ArtifactPath: artifactPath}})
+	checkID, _, err = RecordCheck(db, changesets, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", ArtifactPath: artifactPath}})
 	if err != nil {
 		db.Close()
 		t.Fatalf("RecordCheck() error = %v", err)

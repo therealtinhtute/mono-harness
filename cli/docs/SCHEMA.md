@@ -45,6 +45,8 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `id` | TEXT PK | ULID |
 | `run_id` | TEXT | FK `runs.id` |
 | `verdict` | TEXT | enum `APPROVED\|APPROVE_WITH_REQUESTS\|REQUEST_CHANGES` |
+| `judge` | TEXT, nullable | added in migration `0006_check_judge`; enum `independent\|same-session`; `NULL` for a check recorded before this migration |
+| `judge_model` | TEXT, nullable | added in migration `0006_check_judge`; free-text model identifier that produced the verdict; `NULL` for a check recorded before this migration |
 | `proof_links` | TEXT | JSON array of `{command, output_ref, artifact_path}`; each `artifact_path` is optional/deprecated legacy metadata and is not a filesystem requirement |
 | `artifact_path` | TEXT, nullable | Optional/deprecated legacy check-artifact metadata; not a filesystem requirement |
 | `created_at` | TEXT | |

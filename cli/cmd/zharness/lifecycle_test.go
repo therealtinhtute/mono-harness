@@ -486,7 +486,7 @@ func createLifecycleCheck(t *testing.T, bin, root, runID, verdict, outputRef str
 } {
 	t.Helper()
 	proofLinks := fmt.Sprintf(`[{"command":"go test ./...","output_ref":%q}]`, outputRef)
-	out := runZ(t, bin, root, 0, "check", "record", "--verdict", verdict, "--run-id", runID, "--proof-links", proofLinks, "--json")
+	out := runZ(t, bin, root, 0, "check", "record", "--verdict", verdict, "--run-id", runID, "--judge", "independent", "--judge-model", "test-model", "--proof-links", proofLinks, "--json")
 	var response struct {
 		ID      string `json:"id"`
 		Verdict string `json:"verdict"`
