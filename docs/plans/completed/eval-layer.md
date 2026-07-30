@@ -2,7 +2,7 @@
 id: 01KYS4ERXT5SANHBG7W0XBNR1J
 intake_id: 01KYS4ERXWYXQ7K2M2E2NQYT7M
 slug: eval-layer
-status: active
+status: completed
 lane: normal
 created: 2026-07-30
 updated: 2026-07-30
@@ -103,7 +103,7 @@ This plan assumes stale and broken cross-references are a recurring cost in this
 ### Phase 1 — `link-integrity`
 
 - **Story ID**: `01KYS4F41SPGQSP5HZKP1S8XT6`
-- **Status**: `checked`
+- **Status**: `done`
 - **Depends on**: none
 - **Goal**: A deterministic gate fails on broken repo-relative doc cross-references, with an explicit ignore convention; all 11 known instances repaired.
 - **Touched surfaces**: `scripts/verify-doc-links.sh` (new), `.claimignore` (new), `CLAUDE.md` (Development Commands section), the 8 doc files holding the 11 broken references.
@@ -134,7 +134,7 @@ This plan assumes stale and broken cross-references are a recurring cost in this
 ### Phase 2 — `judge-hygiene`
 
 - **Story ID**: `01KYS4F4209JX12J99XGTNXVE7`
-- **Status**: `checked`
+- **Status**: `done`
 - **Depends on**: none
 - **Goal**: Every check verdict discloses judge independence and judge model version.
 - **Touched surfaces**: `cli/docs/embedded/playbooks/check.md`, `docs/playbooks/check.md` (projection only, via refresh).
@@ -165,7 +165,7 @@ This plan assumes stale and broken cross-references are a recurring cost in this
 ### Phase 3 — `regression-ledger`
 
 - **Story ID**: `01KYS4F428R9GE4TGWHJYHDWH6`
-- **Status**: `checked`
+- **Status**: `done`
 - **Depends on**: `judge-hygiene` (both phases edit `cli/docs/embedded/playbooks/check.md`; sequencing avoids a conflicting edit on the same file)
 - **Goal**: A failure recorded once is read on every later gate, and a failure recorded twice is forced to become a deterministic check.
 - **Touched surfaces**: `docs/evals/failures.md` (new), `cli/docs/embedded/playbooks/check.md`, `docs/playbooks/check.md` (projection only).
@@ -285,15 +285,18 @@ This plan assumes stale and broken cross-references are a recurring cost in this
 
 ## Current State and Next Action
 
-- **Active phase**: `regression-ledger`
-- **Lifecycle status**: `checked`
+- **Active phase**: none — initiative complete
+- **Lifecycle status**: `done` (all three phases `done` in DB and plan)
 - **Latest run ID**: `01KYS7VW1D8GQA4X5CEMHM3TFM`
 - **Latest check ID**: `01KYS860JK6Z53EH14Q27XYJBM` (phase `regression-ledger`, APPROVED)
 - **Latest trace ID**: `01KYS84CTE8X9VE749N7PN7WG5` (phase `regression-ledger`, wave 3)
+- **Closing handoff IDs**: `01KYS8T401SBMZEDKR0J1FNKM8` (`link-integrity`), `01KYS8TA39QZYZSEVTMFH7DVTG` (`judge-hygiene`), `01KYS8TEWRG64FFNDAME1YQPKR` (`regression-ledger`)
 - **Blockers**: none
-- **Open items**:
+- **Open items**: none — nothing blocks closure.
+- **Completed work**: all three Done-when conditions in Outcome are met. (1) A broken repo-relative cross-reference fails `bash scripts/verify-doc-links.sh` before commit, with `.claimignore` carrying justified exceptions and all 11 known breaks repaired. (2) Every `check` verdict now carries `judge` and `judge_model`, and a `same-session` clean verdict must name what it did not independently verify. (3) `docs/evals/failures.md` is read on every durable gate, appended to on `REQUEST_CHANGES`, and a class recorded twice must graduate into a deterministic check. Shipped as `41d8278`, `9303835`, `c3282d4`, `769ce21`, `313d1d4` on `master`.
+- **Carried forward** (observations that outlive this initiative; none blocked closure, each names its own owner):
   - **O1 — the link gate's path regex requires a `/`, so sibling-file references are not covered.** Nine of the eleven repairs dropped the wrong `references/` prefix, which moved those links out of gate coverage; they were verified by hand in phase 1, but a future rename would not be caught. Spec-conformant (T1.1 defines that regex), non-blocking, and a candidate for the phase 3 ledger as a first-recorded failure class.
   - **O2 — the installed `zharness 0.6.0` carries a stale embedded `check.md` until the next release.** Running `zharness init --refresh-docs` with it would revert this phase's projection. `TestProjectionDrift_RootDocsMatchEmbed` catches that loudly, so it is a nuisance rather than a silent regression. See decision D2.
   - **O3 — the ledger will keep colliding with the link gate as it accumulates historical paths.** D3 solved this instance by rewording prose, which does not scale: every future row describing a path that has since moved reopens the same conflict. The categorical fix is to exclude `docs/evals/**` from the link gate the way D1 excludes `docs/plans/**` — both hold historical rather than live references. That edit belongs to `scripts/verify-doc-links.sh`, an avoided surface for this phase, so it is deferred to whatever initiative next owns `scripts/`.
   - **O4 — the two-clean-runs premise is now decided.** The plan predicted that if the two gate runs after phase 1 found zero new link failures, phase 1 was a cleanup rather than a gate. Both runs (`judge-hygiene`, `regression-ledger`) came back clean. The honest reading is the weaker one: the gate has not yet caught a failure it did not itself create the baseline for, so its value is still prospective — it prevents reintroduction rather than having proven detection. That is the correct expectation for a regression gate and not a reason to remove it, but it should not be claimed as evidence the gate works until it fails on a diff written without it in mind.
-- **Next action**: `git` to commit phase `regression-ledger`, then `handoff` to close the initiative.
+- **Next action**: none for this initiative — it is closed. The first future initiative that owns `scripts/` should resolve **O1** (extend the link-gate regex to sibling-file references) and **O3** (exclude `docs/evals/**` categorically, mirroring D1) together, since both are one edit to `scripts/verify-doc-links.sh`. **O2** clears itself on the next `zharness` release.
