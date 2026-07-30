@@ -37,7 +37,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 5. **Apply mode-specific manual review** — `full` performs the complete Security, Performance, Architecture, and Code Quality review; for a class-of-bug fix, search for sibling instances and state whether coverage is complete. `gate` does not perform that complete manual review. `review` performs the requested response-only review, and bounded/simple performs only scope-appropriate review.
 6. **Evaluate required proof** — for `tiny`, require command output; for `normal`, require unit plus command output; for `high-risk`, require unit, integration, manual review, and command output. Name every missing class exactly. A gate does not silently substitute automated checks for required manual-review evidence.
 7. **Audit durable lifecycle links** — gate/full runs `zharness audit --json`. Treat pointer drift or contract violations touching the phase as findings; unlinked proof remains explicit context. Review and bounded/simple do not add lifecycle records merely to satisfy this step.
-8. **Choose the verdict** — any critical issue or material plan contradiction is `REQUEST_CHANGES`; major non-critical findings are at least `APPROVE_WITH_REQUESTS`; no blocking findings is `APPROVED`.
+8. **Choose the verdict** — any critical issue or material plan contradiction is `REQUEST_CHANGES`; major non-critical findings are at least `APPROVE_WITH_REQUESTS`; no blocking findings is `APPROVED`. Declare the judge: `same-session` when the reviewing agent also authored the diff under review, `independent` otherwise, alongside the reviewing model's identifier. When the judge is `same-session`, an `APPROVED` or `APPROVE_WITH_REQUESTS` verdict must name at least one aspect that was not independently verified.
 9. **Record only a durable gate/full check** — run `zharness check record --verdict {verdict} --run-id {run-id} --proof-links '[{"command":"{exact command}","output_ref":"Validation entry {timestamp}: {result}"}, ...]' --json`. Do not pass or create an artifact path. Save the returned check ID.
 10. **Synchronize durable plan state**:
     - For `APPROVED` or `APPROVE_WITH_REQUESTS`, immediately set the phase status and Current State lifecycle status to `checked`, record the returned check ID, append exact Validation evidence, and route to closing `handoff` or `git`.
@@ -66,6 +66,8 @@ scope: on target | drift | incomplete
 depth: quick | standard | deep
 gate: pass | fail
 review: APPROVED | APPROVE_WITH_REQUESTS | REQUEST_CHANGES
+judge: independent | same-session
+judge_model: {model identifier}
 blockers: N critical, N major
 verification: exact command -> pass | fail | not-run
 check_id: ULID | not-recorded
@@ -74,6 +76,6 @@ proof_gaps: none | exact missing classes
 
 ## Exit Conditions
 
-- Gate: automated checks, plan alignment, required-proof evaluation, and lifecycle audit ran; the DB check row was recorded; exact evidence and verdict were appended to Validation; and plan/DB phase statuses match (`checked` for a clean verdict, `in-progress` for `REQUEST_CHANGES`). The complete manual review is not part of gate.
+- Gate: automated checks, plan alignment, required-proof evaluation, and lifecycle audit ran; `judge` and `judge_model` are both present in the output block, and a `same-session` judge named what it did not independently verify; the DB check row was recorded; exact evidence and verdict were appended to Validation; and plan/DB phase statuses match (`checked` for a clean verdict, `in-progress` for `REQUEST_CHANGES`). The complete manual review is not part of gate.
 - Full: every gate condition holds and the complete Security, Performance, Architecture, and Code Quality review ran.
 - Review or bounded/simple: the response contains honest proof and verdict with zero DB, changeset, plan, report, or markdown writes.
