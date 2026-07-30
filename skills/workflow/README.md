@@ -81,7 +81,7 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 - Any skill outside `skills/workflow/` (`craft/`, `shipping/` untouched)
 - Markdown fallback / CLI-optional compatibility mode — explicitly rejected; `zharness` is mandatory
 
-This initiative's own roadmap is complete; see `docs/plans/completed/workflow-harness-history-2026-07.md` for its consolidated history, and `docs/plans/active/harness-convergence-pass-v3.md` for the current one-plan/one-DB convergence work.
+This initiative's own roadmap is complete; see `docs/plans/completed/workflow-harness-history-2026-07.md` for its consolidated history, and `docs/plans/completed/harness-convergence-pass-v3.md` for the one-plan/one-DB convergence work that followed it.
 
 ## Pilot Evidence & Go/No-Go
 

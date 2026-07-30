@@ -30,6 +30,6 @@ Implicit (no naming, but should still trigger):
 ## How to use
 
 1. Run each query through the agent with `write` installed.
-2. Observe whether the agent loads `skills/write/SKILL.md`.
+2. Observe whether the agent loads `skills/craft/write/SKILL.md`.
 3. A should-trigger query passes if loaded ≥50% of runs; should-not-trigger passes if loaded <50%.
 4. If trigger rate is off, edit the `description` field in `SKILL.md` and re-run a fresh batch (do not reuse the same queries used for tuning).

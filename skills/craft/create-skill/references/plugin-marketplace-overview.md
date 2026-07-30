@@ -75,10 +75,10 @@ claude plugin validate .
 
 ## Related References
 
-- **Schema:** `references/plugin-marketplace-schema.md`
-- **Sources:** `references/plugin-marketplace-sources.md`
-- **Hosting:** `references/plugin-marketplace-hosting.md`
-- **Troubleshooting:** `references/plugin-marketplace-troubleshooting.md`
+- **Schema:** `plugin-marketplace-schema.md`
+- **Sources:** `plugin-marketplace-sources.md`
+- **Hosting:** `plugin-marketplace-hosting.md`
+- **Troubleshooting:** `plugin-marketplace-troubleshooting.md`
 
 ## Official Documentation
 

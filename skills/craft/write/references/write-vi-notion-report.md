@@ -42,7 +42,7 @@ Mode này dành cho:
 
 ## Khi có ảnh minh hoạ
 Nếu bài Notion cần thêm sơ đồ / visual so sánh / ảnh minh hoạ để scan nhanh hơn, load thêm:
-- `references/write-vi-notion-illustrations.md`
+- `write-vi-notion-illustrations.md`
 
 Ảnh trong mode này không phải để trang trí; nó phải giúp người đọc hiểu nhanh hơn text.
 

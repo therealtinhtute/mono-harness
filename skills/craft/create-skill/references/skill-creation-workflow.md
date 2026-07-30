@@ -74,7 +74,7 @@ Answer these in SKILL.md:
 - **Explicit terminology** — Standard terms matching concept-accuracy scorer
 - **Reference linking** — `references/` files for detailed knowledge
 
-See `references/benchmark-optimization-guide.md` for detailed patterns.
+See `benchmark-optimization-guide.md` for detailed patterns.
 
 ## Step 6: Package & Validate
 

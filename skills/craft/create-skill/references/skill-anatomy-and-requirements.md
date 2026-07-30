@@ -34,7 +34,7 @@ version: Optional
 ---
 ```
 
-**Metadata quality** determines auto-activation. See `references/metadata-quality-criteria.md`.
+**Metadata quality** determines auto-activation. See `metadata-quality-criteria.md`.
 
 ## Scripts (`scripts/`)
 
@@ -45,7 +45,7 @@ version: Optional
 - **Env hierarchy:** `process.env` > skill `.env` > shared `.env` > global `.env`
 - Token-efficient: executed without loading into context
 
-See `references/script-quality-criteria.md` for full criteria.
+See `script-quality-criteria.md` for full criteria.
 
 ## References (`references/`)
 

@@ -112,5 +112,5 @@ When the turbo-mono-platform skill loads, it should check at runtime:
 
 Use result to:
 - If `shadcn` found → defer component work to it
-- If not found → use `references/shadcn-rules.md` as fallback, suggest install
+- If not found → use `shadcn-rules.md` as fallback, suggest install
 - If `turborepo` found → defer turbo config questions to it
