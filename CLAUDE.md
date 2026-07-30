@@ -66,6 +66,19 @@ npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
 bash scripts/sync-from-kit.sh
 ```
 
+## Gate Commands
+
+`check` runs these in this order. Both must pass before any commit.
+
+```bash
+# Doc link integrity — fails on broken repo-relative cross-references.
+# Exceptions live in .claimignore and each one requires a `# reason`.
+bash scripts/verify-doc-links.sh
+
+# Go CLI test suite, including the embedded-docs projection-drift test.
+cd cli && go test ./...
+```
+
 ## Skill Pipeline
 
 Two entry points:

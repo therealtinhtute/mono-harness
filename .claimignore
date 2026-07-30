@@ -1,0 +1,10 @@
+# Justified exceptions for scripts/verify-doc-links.sh.
+# Format: <substring>  # <reason>
+# Every non-comment line MUST carry a `# reason`, or the gate exits 2.
+# Do not add an entry to silence a real broken link - fix the link.
+
+references/api-endpoints-auth.md      # illustrative example in create-skill/references/token-efficiency-criteria.md, not a file in this repo
+references/api-endpoints-payments.md  # illustrative example in create-skill/references/token-efficiency-criteria.md, not a file in this repo
+references/api-endpoints-users.md     # illustrative example in create-skill/references/token-efficiency-criteria.md, not a file in this repo
+references/api-patterns.md            # illustrative example in create-skill/references/writing-effective-instructions.md, not a file in this repo
+references/ffmpeg-encoding.md         # illustrative example in create-skill/SKILL.md showing a hypothetical skill layout
