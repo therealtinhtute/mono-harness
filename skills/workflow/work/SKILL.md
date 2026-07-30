@@ -1,6 +1,6 @@
 ---
 name: work
-model: opus
+model: sonnet
 version: "1.3.0"
 description: "Execution orchestrator after `brainstorm` and `to-plan`. Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, or `handoff`."
 license: MIT
