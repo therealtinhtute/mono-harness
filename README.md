@@ -217,18 +217,12 @@ See [`skills/workflow/README.md`](skills/workflow/README.md) for the four-layer 
 
 ## Local Development
 
-This repo is the stable release. The incubator workspace is a local clone at a path of your choice.
+This repo is the stable, standalone release — edit skills here directly.
 
 To iterate quickly on a skill before publishing, point Claude Code at your local skill directory:
 
 ```bash
 claude-code add-dir /path/to/your/local/skill
-```
-
-To sync changes from an incubator to this repo:
-
-```bash
-bash scripts/sync-from-kit.sh
 ```
 
 ## License

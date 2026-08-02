@@ -38,7 +38,6 @@ This is the personal skills repository for `therealtinhtute` — a `skills.sh`-c
 ├── docs/                   # Repo-wide reference docs
 │   └── prompt-engineering-principles.md  # Prompting principles for writing skills/rules
 ├── scripts/                # Repo utility scripts
-│   ├── sync-from-kit.sh       # Incubator → repo sync
 │   ├── setup-statusline.sh    # Statusline installer
 │   ├── generate-dashboard.sh  # Dashboard generation
 │   ├── validate-skill.sh      # Skill validation
@@ -61,9 +60,6 @@ npx skills add git@github.com:therealtinhtute/skills.git --list
 
 # Install all skills globally for Claude Code
 npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
-
-# Sync changes from local incubator
-bash scripts/sync-from-kit.sh
 ```
 
 ## Gate Commands
@@ -103,7 +99,7 @@ When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent inst
 
 ## Architecture Notes
 
-- **Stable vs. incubator:** This repo is the stable release. The incubator is at `/home/tinhpt/Lab/orkit-tui/kit/skills/` (local) or the equivalent on macOS.
+- **Stable release:** This repo is the stable, standalone release of the skills. The former `orkit-tui` incubator has been archived — this repo is no longer synced from it; edit skills here directly.
 - **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, optional `references/` and `scripts/` directories.
 - **rules/ directory:** Source-of-truth for rules installed to `~/.claude/rules/`. Keep in sync with installed versions.
 - **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/skills.git`) as long as local SSH keys are configured.
