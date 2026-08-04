@@ -17,7 +17,7 @@ fi
 # Write the statusline script
 cat > "$DEST" << 'STATUSLINE_EOF'
 #!/bin/sh
-# slim.sh — model-first layout: ✦ model  ▰▱ N%  ϟ tpm  ⌥ branch
+# slim.sh — model-first layout: ✦ model  effort  ▰▱ N%  ϟ tpm  ⌥ branch
 
 TPM_STATE_PREFIX="claude-code-statusline-tpm"
 TPM_WINDOW_MS=300000
@@ -32,12 +32,13 @@ eval "$(echo "$input" | jq -r '
   "transcript_path=\(.transcript_path // "" | @sh)",
   "used=\(.context_window.used_percentage // 0 | floor | @sh)",
   "model=\(.model.display_name // "unknown" | @sh)",
+  "effort=\(.effort.level // "" | @sh)",
   "total_in=\(.context_window.total_input_tokens // 0 | floor | @sh)",
   "total_out=\(.context_window.total_output_tokens // 0 | floor | @sh)",
   "duration_ms=\(.cost.total_duration_ms // 0 | floor | @sh)"
 ')"
 
-used=${used:-0}; model=${model:-unknown}
+used=${used:-0}; model=${model:-unknown}; effort=${effort:-}
 total_in=${total_in:-0}; total_out=${total_out:-0}; duration_ms=${duration_ms:-0}
 
 safe_id=$(printf '%s' "$session_id" | tr -dc 'a-zA-Z0-9_-')
@@ -99,6 +100,7 @@ fi
 
 # Output
 printf "\033[38;5;208m✦ %s${reset}" "$model"
+[ -n "$effort" ] && printf "${sep}\033[35m%s${reset}" "$effort"
 printf "${sep}${ctx_color}%s %s%%${reset}" "$bar" "$used"
 if [ "$tpm" -gt 0 ]; then
   if [ "$tpm" -ge 10000 ]; then
