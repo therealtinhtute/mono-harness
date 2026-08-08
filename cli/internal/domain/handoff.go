@@ -1,10 +1,14 @@
 package domain
 
-// HandoffAnchors is a Handoff's anchors JSON payload.
+// HandoffAnchors is a Handoff's anchors JSON payload. NextAction persists
+// the plan's Current State `exact_next_action` field into the durable
+// index (docs/audit/workflow-harness-ceremony-audit.md, D1) — no migration
+// needed, since anchors is already a free-form JSON column.
 type HandoffAnchors struct {
 	LatestRunID   *string  `json:"latest_run_id"`
 	LatestCheckID *string  `json:"latest_check_id"`
 	OpenItems     []string `json:"open_items"`
+	NextAction    *string  `json:"exact_next_action,omitempty"`
 }
 
 // Handoff is a close-out record (CONTRACT.md `handoff record`, added

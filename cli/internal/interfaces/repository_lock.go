@@ -23,6 +23,7 @@ var exclusiveMutationCommandPaths = map[string]struct{}{
 	"story":              {},
 	"intervention":       {},
 	"trace add":          {},
+	"decision add":       {},
 	"run create":         {},
 	"check record":       {},
 	"handoff record":     {},

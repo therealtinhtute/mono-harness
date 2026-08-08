@@ -12,7 +12,7 @@ import (
 func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string) map[string]string {
 	t.Helper()
 
-	intakeID, _, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "")
+	intakeID, _, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "", "")
 	if err != nil {
 		t.Fatalf("CreateIntake: %v", err)
 	}
@@ -24,7 +24,7 @@ func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string)
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
-	traceID, _, err := CreateTrace(db, changesetDir, 1, "validate retained entity IDs", runID)
+	traceID, _, err := CreateTrace(db, changesetDir, 1, "validate retained entity IDs", runID, "", "")
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
@@ -38,7 +38,7 @@ func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string)
 	if err != nil {
 		t.Fatalf("CreateIntervention: %v", err)
 	}
-	handoffID, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, false)
+	handoffID, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}

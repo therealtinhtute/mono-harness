@@ -42,6 +42,7 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 		{name: "query state", args: []string{"query", "state", "--json"}, wantFragment: `"current_phase":"beta"`},
 		{name: "query phases", args: []string{"query", "phases", "--json"}, wantFragment: `"slug":"beta"`},
 		{name: "query traces", args: []string{"query", "traces", "--json"}, wantFragment: `"summary":"wave one done"`},
+		{name: "query decisions", args: []string{"query", "decisions", "--json"}, wantFragment: `"decision":"used the beta phase"`},
 		{name: "resume", args: []string{"resume", "--json"}, wantFragment: `"current_phase":"beta"`},
 		{name: "validate", args: []string{"validate", "--json"}, wantFragment: `"valid":true`},
 		{name: "audit", args: []string{"audit", "--json"}, wantFragment: `"contract_violations":[]`},
@@ -72,6 +73,11 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 				if _, err := db.Exec(`INSERT INTO traces (id, run_id, wave, summary, created_at)
 					VALUES (?, ?, 1, 'wave one done', '2026-07-27T00:00:01Z')`, ulid.Make().String(), runID); err != nil {
 					t.Fatalf("seed trace: %v", err)
+				}
+				if _, err := db.Exec(`INSERT INTO decisions (id, run_id, phase, decision, rationale, created_at)
+					VALUES (?, ?, 'beta', 'used the beta phase', 'seeded for read-only inspection test', '2026-07-27T00:00:02Z')`,
+					ulid.Make().String(), runID); err != nil {
+					t.Fatalf("seed decision: %v", err)
 				}
 			})
 

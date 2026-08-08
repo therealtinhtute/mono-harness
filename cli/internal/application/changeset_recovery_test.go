@@ -42,7 +42,7 @@ func TestPendingChangesetBlocksOrdinaryMutationUntilRecovery(t *testing.T) {
 		t.Fatalf("ListChangesets before blocked mutation: %v", err)
 	}
 	before := recoverySnapshotForTest(t, db, storyID)
-	_, _, err = CreateIntake(db, dir, "maintenance", "blocked while recovery is pending", "tiny", "")
+	_, _, err = CreateIntake(db, dir, "maintenance", "blocked while recovery is pending", "tiny", "", "")
 	validation, ok := err.(*domain.ValidationError)
 	if !ok || validation.Code != "changeset_recovery_required" || validation.Message == "" {
 		t.Fatalf("CreateIntake error = %T %v, want changeset_recovery_required", err, err)
@@ -61,7 +61,7 @@ func TestPendingChangesetBlocksOrdinaryMutationUntilRecovery(t *testing.T) {
 	if _, _, err := ApplyChangesetForRecovery(db, dir, pendingPath); err != nil {
 		t.Fatalf("apply earliest pending changeset: %v", err)
 	}
-	if _, _, err := CreateIntake(db, dir, "maintenance", "continues after recovery", "tiny", ""); err != nil {
+	if _, _, err := CreateIntake(db, dir, "maintenance", "continues after recovery", "tiny", "", ""); err != nil {
 		t.Fatalf("CreateIntake after recovery: %v", err)
 	}
 	live := recoverySnapshotForTest(t, db, storyID)

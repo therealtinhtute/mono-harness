@@ -660,3 +660,136 @@ func pathForID(t *testing.T, dir, id string) string {
 	t.Helper()
 	return filepath.Join(dir, id+".changeset.jsonl")
 }
+
+// TestChangesetFromSchema6ReplaysCleanlyThroughCurrentSchema is the plan's hard
+// invariant (R7, docs/plans/active/harness-memory-ceremony-convergence.md,
+// risk R-E: migrations are forward-only, so a mistake here is fixed by a
+// new migration, never a rollback). A changeset written against a database
+// genuinely frozen at schema 6 — predating the decisions table added by
+// migration 0007 — must replay cleanly from empty against the current
+// (schema 7) migration set. This is what db rebuild depends on for every
+// changeset committed before this initiative.
+func TestChangesetFromSchema6ReplaysCleanlyThroughCurrentSchema(t *testing.T) {
+	dir := t.TempDir()
+	changesetDir := filepath.Join(dir, "changesets")
+
+	dbV6, err := Open(filepath.Join(dir, "v6.db"))
+	if err != nil {
+		t.Fatalf("Open v6 db: %v", err)
+	}
+	defer dbV6.Close()
+	applyMigrationsThrough(t, dbV6, 6)
+	assertNoTable(t, dbV6, "decisions")
+
+	storyID, runID, checkID, traceID, handoffID, intakeID :=
+		ulid.Make().String(), ulid.Make().String(), ulid.Make().String(),
+		ulid.Make().String(), ulid.Make().String(), ulid.Make().String()
+
+	lines := []ChangesetLine{
+		{Op: "create", Entity: "intake", ID: intakeID, Fields: map[string]any{
+			"type": "change-request", "summary": "pre-0007 intake", "lane": "tiny", "created_at": "2026-08-01T00:00:00Z",
+		}, At: "2026-08-01T00:00:00Z"},
+		{Op: "create", Entity: "story", ID: storyID, Fields: map[string]any{
+			"slug": "pre-0007", "goal": "goal", "status": domain.StoryPlanned, "created_at": "2026-08-01T00:00:01Z",
+		}, At: "2026-08-01T00:00:01Z"},
+		{Op: "create", Entity: "run", ID: runID, Fields: map[string]any{
+			"story_slug": "pre-0007", "artifact_path": "", "created_at": "2026-08-01T00:00:02Z",
+		}, At: "2026-08-01T00:00:02Z"},
+		{Op: "create", Entity: "trace", ID: traceID, Fields: map[string]any{
+			"run_id": runID, "wave": 1, "summary": "wave one", "created_at": "2026-08-01T00:00:03Z",
+		}, At: "2026-08-01T00:00:03Z"},
+		{Op: "create", Entity: "check", ID: checkID, Fields: map[string]any{
+			"run_id": runID, "verdict": domain.VerdictApproved, "judge": domain.JudgeIndependent,
+			"judge_model": "test", "created_at": "2026-08-01T00:00:04Z",
+		}, At: "2026-08-01T00:00:04Z"},
+		{Op: "create", Entity: "handoff", ID: handoffID, Fields: map[string]any{
+			"run_id": runID, "check_id": checkID, "anchors": map[string]any{}, "created_at": "2026-08-01T00:00:05Z",
+		}, At: "2026-08-01T00:00:05Z"},
+	}
+	path, err := WriteChangeset(changesetDir, lines)
+	if err != nil {
+		t.Fatalf("WriteChangeset: %v", err)
+	}
+	if _, _, err := ApplyChangeset(dbV6, path); err != nil {
+		t.Fatalf("ApplyChangeset against genuinely-v6 db: %v", err)
+	}
+
+	// Replay the SAME changeset directory from empty against a database
+	// migrated to the current schema (v7, decisions table present).
+	dbV7, err := Open(filepath.Join(dir, "v7.db"))
+	if err != nil {
+		t.Fatalf("Open v7 db: %v", err)
+	}
+	defer dbV7.Close()
+	if _, schemaVersion, err := Migrate(dbV7); err != nil {
+		t.Fatalf("Migrate v7 db: %v", err)
+	} else if schemaVersion != CurrentSchemaVersion() {
+		t.Fatalf("schemaVersion = %d, want current %d", schemaVersion, CurrentSchemaVersion())
+	}
+
+	totalApplied, err := Replay(dbV7, changesetDir)
+	if err != nil {
+		t.Fatalf("Replay pre-0007 changeset through schema 7: %v", err)
+	}
+	if totalApplied != len(lines) {
+		t.Fatalf("Replay applied = %d, want %d", totalApplied, len(lines))
+	}
+
+	var gotSlug string
+	if err := dbV7.QueryRow(`SELECT slug FROM stories WHERE id = ?`, storyID).Scan(&gotSlug); err != nil {
+		t.Fatalf("query replayed story: %v", err)
+	}
+	if gotSlug != "pre-0007" {
+		t.Fatalf("story slug = %q, want pre-0007", gotSlug)
+	}
+	if n := countRows(t, dbV7, "checks"); n != 1 {
+		t.Fatalf("checks rows = %d, want 1", n)
+	}
+	if n := countRows(t, dbV7, "handoffs"); n != 1 {
+		t.Fatalf("handoffs rows = %d, want 1", n)
+	}
+	// The new table coexists cleanly: present on the v7 db, untouched by
+	// this pre-0007 changeset.
+	if n := countRows(t, dbV7, "decisions"); n != 0 {
+		t.Fatalf("decisions rows = %d, want 0 (this changeset predates the entity)", n)
+	}
+}
+
+// applyMigrationsThrough applies migrations up to and including version,
+// bypassing Migrate (which always advances to the latest) — the only way
+// to construct a database genuinely frozen at a past schema version for
+// this test.
+func applyMigrationsThrough(t *testing.T, db *sql.DB, version int) {
+	t.Helper()
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	for _, m := range migrations {
+		if m.Version > version {
+			continue
+		}
+		if _, err := tx.Exec(m.SQL); err != nil {
+			tx.Rollback()
+			t.Fatalf("migration %s: %v", m.Name, err)
+		}
+	}
+	if err := upsertSchemaVersion(tx, version); err != nil {
+		tx.Rollback()
+		t.Fatalf("set schema_version: %v", err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+}
+
+func assertNoTable(t *testing.T, db *sql.DB, table string) {
+	t.Helper()
+	var n int
+	if err := db.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?`, table).Scan(&n); err != nil {
+		t.Fatalf("check table %s: %v", table, err)
+	}
+	if n != 0 {
+		t.Fatalf("table %s exists, want absent at this schema version", table)
+	}
+}

@@ -3,6 +3,8 @@ package application
 import (
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
@@ -97,5 +99,93 @@ func TestCheckRecordUnknownRunID(t *testing.T) {
 	}
 	if got := countRows(t, db, "checks"); got != 0 {
 		t.Fatalf("checks rows = %d, want 0", got)
+	}
+}
+
+// TestCheckRecordRequiresIndependentJudgeForHighRiskLane is the round trip
+// for G2 (docs/audit/workflow-harness-ceremony-audit.md/V2): a check whose
+// run resolves, via runs.plan_id -> intakes.plan_id, to a high-risk lane
+// must be judged independent — same-session is rejected, but the identical
+// run still checks out cleanly once the judge is independent.
+func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	planID := ulid.Make().String()
+	if _, _, err := CreateIntake(db, changesetDir, domain.IntakeHarnessImprovement, "high risk change", domain.LaneHighRisk, "", planID); err != nil {
+		t.Fatalf("CreateIntake: %v", err)
+	}
+	if _, _, err := CreateStory(db, changesetDir, "hr-phase", "goal", ""); err != nil {
+		t.Fatalf("CreateStory: %v", err)
+	}
+	runID, _, err := CreateRun(db, changesetDir, "hr-phase", "", planID)
+	if err != nil {
+		t.Fatalf("CreateRun: %v", err)
+	}
+
+	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
+		{Command: "go test ./...", OutputRef: "ok"},
+	})
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "independent_judge_required" {
+		t.Fatalf("err = %v, want *domain.ValidationError{Code: independent_judge_required}", err)
+	}
+	if got := countRows(t, db, "checks"); got != 0 {
+		t.Fatalf("checks rows = %d, want 0 (rejected check must not be written)", got)
+	}
+
+	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+		{Command: "go test ./...", OutputRef: "ok"},
+	})
+	if err != nil {
+		t.Fatalf("RecordCheck with independent judge: %v", err)
+	}
+	if id == "" {
+		t.Fatal("RecordCheck returned empty id")
+	}
+}
+
+// TestCheckRecordAllowsSameSessionJudgeWhenLaneUnresolvable proves the gate
+// is additive: a run with no plan_id trail (the ordinary case until
+// playbooks start passing --plan-id) behaves exactly as before this
+// feature existed — same-session is accepted.
+func TestCheckRecordAllowsSameSessionJudgeWhenLaneUnresolvable(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := createLifecycleRun(t, db, changesetDir, "no-plan-id-trail")
+
+	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
+		{Command: "go test ./...", OutputRef: "ok"},
+	})
+	if err != nil {
+		t.Fatalf("RecordCheck: %v", err)
+	}
+	if id == "" {
+		t.Fatal("RecordCheck returned empty id")
+	}
+}
+
+// TestCheckRecordAllowsSameSessionJudgeForNonHighRiskLane proves the gate
+// is lane-specific: a resolvable but non-high-risk lane does not restrict
+// the judge.
+func TestCheckRecordAllowsSameSessionJudgeForNonHighRiskLane(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	planID := ulid.Make().String()
+	if _, _, err := CreateIntake(db, changesetDir, domain.IntakeMaintenance, "tiny change", domain.LaneTiny, "", planID); err != nil {
+		t.Fatalf("CreateIntake: %v", err)
+	}
+	if _, _, err := CreateStory(db, changesetDir, "tiny-phase", "goal", ""); err != nil {
+		t.Fatalf("CreateStory: %v", err)
+	}
+	runID, _, err := CreateRun(db, changesetDir, "tiny-phase", "", planID)
+	if err != nil {
+		t.Fatalf("CreateRun: %v", err)
+	}
+
+	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
+		{Command: "go test ./...", OutputRef: "ok"},
+	})
+	if err != nil {
+		t.Fatalf("RecordCheck: %v", err)
+	}
+	if id == "" {
+		t.Fatal("RecordCheck returned empty id")
 	}
 }

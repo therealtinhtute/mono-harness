@@ -12,11 +12,11 @@ import (
 // DB-lookup-dependent (only checked when the corresponding flag is given),
 // so they're enforced here rather than in domain.Handoff.Validate() — same
 // pattern as CreateTrace's optional --run-id.
-func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []string, closePhase bool) (id, path string, err error) {
+func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, openItems []string, closePhase bool) (id, path string, err error) {
 	entity := domain.Handoff{
 		RunID:   optionalString(runID),
 		CheckID: optionalString(checkID),
-		Anchors: domain.HandoffAnchors{OpenItems: openItems},
+		Anchors: domain.HandoffAnchors{OpenItems: openItems, NextAction: optionalString(nextAction)},
 	}
 	if err := entity.Validate(); err != nil {
 		return "", "", err
@@ -114,6 +114,9 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []
 		}
 		if checkID != "" {
 			anchors["latest_check_id"] = checkID
+		}
+		if nextAction != "" {
+			anchors["exact_next_action"] = nextAction
 		}
 		fields := map[string]any{
 			"anchors":    anchors,

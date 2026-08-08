@@ -13,7 +13,7 @@ import (
 func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query <view>",
-		Short: "Read-only views: state, phases, artifacts, check, traces",
+		Short: "Read-only views: state, phases, artifacts, check, traces, decisions, handoff",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			phaseFilter, _ := cmd.Flags().GetString("phase")
@@ -23,10 +23,10 @@ func newQueryCmd() *cobra.Command {
 			return runQuery(cmd, args[0], phaseFilter, latest, runID, tail)
 		},
 	}
-	cmd.Flags().String("phase", "", "filter the artifacts view by phase slug")
+	cmd.Flags().String("phase", "", "filter the artifacts/decisions view by phase slug")
 	cmd.Flags().Bool("latest", false, "return the most recent verdict (check view)")
 	cmd.Flags().String("run-id", "", "filter the traces view to one run")
-	cmd.Flags().Int("tail", 0, "limit the traces view to the N most recent entries (0 = unbounded)")
+	cmd.Flags().Int("tail", 0, "limit the traces/decisions view to the N most recent entries (0 = unbounded)")
 	return cmd
 }
 
@@ -80,6 +80,26 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 		v, err := application.QueryTraces(raw, runID, tail)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query traces: %v", err))
+		}
+		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
+
+	case "decisions":
+		v, err := application.QueryDecisions(raw, phaseFilter, tail)
+		if err != nil {
+			return newSystemError("db_unreadable", fmt.Sprintf("query decisions: %v", err))
+		}
+		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
+
+	case "handoff":
+		if !latest {
+			return newUserError("unknown_view", "query handoff: only --latest is supported")
+		}
+		v, ok, err := application.QueryLatestHandoff(raw)
+		if err != nil {
+			return newSystemError("db_unreadable", fmt.Sprintf("query handoff --latest: %v", err))
+		}
+		if !ok {
+			return newUserError("no_handoff_found", "query handoff --latest: no handoff rows found")
 		}
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 

@@ -42,7 +42,7 @@ func TestQueryTracesChronologicalOrderAndFilters(t *testing.T) {
 	runID := seedRun(t, db, changesetDir)
 
 	for i, at := range []string{"2026-07-27T12:00:00Z", "2026-07-27T12:01:00Z", "2026-07-27T12:02:00Z"} {
-		id, _, err := CreateTrace(db, changesetDir, i+1, "wave summary", runID)
+		id, _, err := CreateTrace(db, changesetDir, i+1, "wave summary", runID, "", "")
 		if err != nil {
 			t.Fatalf("CreateTrace(%d): %v", i, err)
 		}

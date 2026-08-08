@@ -378,6 +378,43 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   positive control), `cli/internal/interfaces/read_only_commands_test.go`. Verification:
   `cd cli && go build ./...`, `go vet ./...`, `go test ./...` (all packages ok) and
   `bash scripts/verify-doc-links.sh` (0 findings) both green. No blocker.
+- 2026-08-08, phase `p2-complete-the-index`, both waves, task_status=DONE, run_id=none,
+  trace_id=none (same environment constraint as P1 — no live zharness binary in this
+  session; verified via `cd cli && go test ./...` and `bash scripts/verify-doc-links.sh`).
+  Three migrations landed, each its own focused change per the repo's one-change-per-
+  migration convention (`0007_decisions` alone matches the plan's own phase name; two
+  more followed within this same phase — see D10). `0007_decisions` re-creates
+  `decisions`, dropped by `0003_drop_dead_surface`. `0008_trace_task_granularity` adds
+  `traces.task`/`traces.task_status`, addressing G1. `0009_intake_plan_id` adds
+  `intakes.plan_id`, the join `check record` needs for G2. Schema version is now 9, not
+  7 — see D10. Wave 1: `decision add`/`query decisions`
+  (`cli/internal/domain/decision.go`, `cli/internal/application/decision.go`,
+  `cli/internal/interfaces/decision.go`) — a JSON-array batch call mirroring
+  `check record --proof-links`'s existing precedent rather than the plan's literal
+  "repeatable --decision flag" wording (see D11), so one call can record several
+  decisions each with its own rationale/phase/task, not a shared one. Wave 2:
+  `trace add --task/--task-status` (task-level granularity, G1); `check record`'s new
+  `resolveLaneForRun` gates `--judge` to `independent` when a run resolves via
+  `runs.plan_id` -> `intakes.plan_id` to a `high-risk` lane, additive and non-breaking
+  (unresolvable or non-high-risk lanes are unaffected — see D12); `handoff record
+  --next-action` persists into `anchors.exact_next_action` with no migration, readable
+  back via the new `query handoff --latest` view added to close the round trip
+  (`resume`'s own locked shape is untouched — see D13). R7's hard gate
+  (`TestChangesetFromSchema6ReplaysCleanlyThroughCurrentSchema`, renamed from
+  `...ThroughSchema7` since current is now 9) stayed green through all three migrations.
+  Changed surfaces: `cli/internal/infrastructure/migrations.go`,
+  `cli/internal/infrastructure/changeset.go` (entity registration plus `task_status`
+  enum validation), `cli/internal/domain/{decision,trace,intake,handoff}.go`,
+  `cli/internal/application/{decision,query,trace,intake,check_record,handoff}.go`,
+  `cli/internal/interfaces/{decision,trace,intake,handoff,query,repository_lock,root}.go`,
+  `cli/docs/CONTRACT.md`, `cli/docs/SCHEMA.md`. New/updated tests across all four
+  layers, including `TestRecordDecisionsBatchIsAtomicOnValidationFailure`,
+  `TestCreateTraceTaskGranularity`, `TestCheckRecordRequiresIndependentJudgeForHighRiskLane`
+  (plus its unresolvable-lane and non-high-risk-lane controls), and
+  `TestHandoffRecordNextActionRoundTripsThroughResumeAndQuery` (both application- and
+  CLI-level). Verification: `cd cli && go build ./...`, `go vet ./...`, `go test ./...`
+  (all packages ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green.
+  No blocker.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -412,6 +449,34 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   Rationale: it was the audit's largest static outlier (1,349-token trigger, 9,423 tokens
   latent, 58% of the chain's latent surface) and fell out of the plan only because it is
   a bloat problem rather than a memory problem — which is not a reason to drop it.
+- D10 (2026-08-08, implementation): P2 lands three migrations (0007-0009), one per
+  focused change, rather than folding trace-granularity and intake-plan-id into 0007.
+  Rationale: every existing migration in this codebase does exactly one thing
+  (`0002_meta_docs_version`, `0003_drop_dead_surface`, etc.) — bundling unrelated schema
+  changes into one migration would be the first violation of that convention. The plan's
+  phase name ("schema 6 to 7") describes wave 1 accurately; it does not constrain wave 2
+  to reuse the same version number. R7's replay test uses `CurrentSchemaVersion()`
+  dynamically, so it required no changes to keep covering the invariant through 0008/0009.
+- D11 (2026-08-08, implementation): `decision add` takes `--decisions` as a JSON array of
+  complete `{decision, rationale, phase, task}` objects, not the plan's literal
+  "repeatable --decision flag, shared --rationale" wording. Rationale: the codebase's
+  established pattern for structured repeatable data is a JSON-array flag
+  (`check record --proof-links`), and a shared rationale across a batch would misrepresent
+  decisions that have genuinely different reasoning. The JSON-array form is a strict
+  superset — a caller can still give every element the same rationale — and achieves the
+  same ceremony goal (one call for N decisions).
+- D12 (2026-08-08, implementation): the `check record` lane gate (G2) only fires when a
+  lane is *resolved* — a run with no `plan_id` behaves exactly as before this feature
+  existed, and a resolved non-high-risk lane is unaffected. Rationale: `intake --plan-id`
+  is a new, optional flag that no playbook passes yet (that wiring is P5's job); making
+  the gate strict would silently start blocking a scenario no agent currently produces
+  correctly, for a repo that has done nothing wrong.
+- D13 (2026-08-08, implementation): `resume`'s own JSON shape is left untouched; the
+  `handoff record --next-action` round trip is completed by a new `query handoff --latest`
+  view instead. Rationale: `resume`'s shape is CONTRACT.md-locked and explicitly reserved
+  for P4's stage-shaped-context work (risk R-D); enriching it here would pre-empt that
+  phase's own contract change. `resume.latest_handoff_id` already names which handoff to
+  look up, so the round trip is complete without touching resume itself.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -419,9 +484,9 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p1-integrity-operability` (all 4 waves code-complete and verified; not
+- active_phase: `p2-complete-the-index` (both waves code-complete and verified; not
   DB-recorded as `in-progress`/`checked` — no live zharness in this session, so no `run
-  create`/`check record` was possible; see Progress entry above)
+  create`/`check record` was possible; see Progress entries above for both P1 and P2)
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
   left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
@@ -439,9 +504,12 @@ run_id, check_id, verdict, and proof_gaps. -->
     reduction while touching no contract and forcing no repository to refresh its docs
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability`, and route the diff through `check full` to record a real
-    DB-linked verdict — durable bookkeeping this session could not produce
+    `p1-integrity-operability` and `p2-complete-the-index`, and route the diff through
+    `check full` to record real DB-linked verdicts — durable bookkeeping this session
+    could not produce. Schema is now at version 9 (migrations 0007-0009); `db rebuild`
+    after minting IDs will replay everything cleanly (R7's own test proves this).
 - exact_next_action: build `zharness` from source (`cd cli && go build -o zharness
-  ./cmd/zharness`) in an environment that can run it, mint the plan/intake IDs, record a
-  `run`/`check` for `p1-integrity-operability` against this session's diff, then start
-  `p2-complete-the-index` wave 1
+  ./cmd/zharness`) in an environment that can run it, mint the plan/intake IDs, record
+  runs/checks for `p1-integrity-operability` and `p2-complete-the-index` against this
+  session's diff, then start `p3-cli-owns-the-pen` wave 1 — the appender wave, with its
+  own Pause condition (risk R-A) if a hand-edited plan cannot survive the writer intact

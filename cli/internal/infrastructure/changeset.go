@@ -34,6 +34,7 @@ var entityTables = map[string]string{
 	"intake":       "intakes",
 	"intervention": "interventions",
 	"trace":        "traces",
+	"decision":     "decisions",
 	"managed_doc":  "managed_docs",
 }
 
@@ -48,9 +49,10 @@ var entityColumns = map[string]map[string]bool{
 	"runs":          {"story_slug": true, "plan_id": true, "trace_ids": true, "artifact_path": true, "created_at": true},
 	"checks":        {"run_id": true, "verdict": true, "judge": true, "judge_model": true, "proof_links": true, "artifact_path": true, "created_at": true},
 	"handoffs":      {"run_id": true, "check_id": true, "anchors": true, "created_at": true},
-	"intakes":       {"type": true, "summary": true, "lane": true, "plan_path": true, "created_at": true},
+	"intakes":       {"type": true, "summary": true, "lane": true, "plan_path": true, "plan_id": true, "created_at": true},
 	"interventions": {"verdict_id": true, "reason": true, "created_at": true},
-	"traces":        {"run_id": true, "wave": true, "summary": true, "created_at": true},
+	"traces":        {"run_id": true, "wave": true, "summary": true, "task": true, "task_status": true, "created_at": true},
+	"decisions":     {"run_id": true, "phase": true, "task": true, "decision": true, "rationale": true, "created_at": true},
 	"managed_docs":  {"path": true, "installed_sha256": true, "docs_version": true, "updated_at": true},
 }
 
@@ -91,6 +93,10 @@ func validateFieldValues(table string, fields map[string]any) error {
 		}
 		if value, ok := fields["judge"]; ok {
 			return validateEnumValue(table, "judge", value, domain.IsValidJudge)
+		}
+	case "traces":
+		if value, ok := fields["task_status"]; ok {
+			return validateEnumValue(table, "task_status", value, domain.IsValidTaskStatus)
 		}
 	}
 	return nil

@@ -120,7 +120,7 @@ func TestLifecycleGuardRunCreateRejectsCheckedAndDone(t *testing.T) {
 			runID := createLifecycleRun(t, db, changesetDir, storySlug)
 			checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
 			if status == domain.StoryDone {
-				if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true); err != nil {
+				if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
 					t.Fatalf("RecordHandoff: %v", err)
 				}
 			}
@@ -170,7 +170,7 @@ func TestLifecycleGuardCheckRejectsCheckedAndDoneStory(t *testing.T) {
 			runID := createLifecycleRun(t, db, changesetDir, storySlug)
 			checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
 			if status == domain.StoryDone {
-				if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true); err != nil {
+				if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
 					t.Fatalf("RecordHandoff: %v", err)
 				}
 			}
@@ -199,7 +199,7 @@ func TestLifecycleGuardClosingHandoffRejectsNonLatestRun(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, olderRunID, checkID, nil, true)
+	id, path, err := RecordHandoff(db, changesetDir, olderRunID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "run_not_latest", "handoff record: run_id is not the latest run for its story")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -220,7 +220,7 @@ func TestLifecycleGuardClosingHandoffRejectsNonLatestCheck(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, runID, olderCheckID, nil, true)
+	id, path, err := RecordHandoff(db, changesetDir, runID, olderCheckID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_not_latest", "handoff record: check_id is not the latest check for its run")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -241,7 +241,7 @@ func TestLifecycleGuardClosingHandoffRequiresCheckedStory(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true)
+	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "phase_not_checked", "handoff record: story must be checked before phase close")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -262,7 +262,7 @@ func TestLifecycleGuardClosingHandoffRejectsUnknownVerdict(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true)
+	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_not_clean", "handoff record: cannot close a phase with REQUEST_CHANGES")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -284,7 +284,7 @@ func TestLifecycleGuardClosingHandoffRejectsCheckRunMismatch(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, otherRunID, checkID, nil, true)
+	id, path, err := RecordHandoff(db, changesetDir, otherRunID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_run_mismatch", "handoff record: check does not gate the supplied run")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -309,7 +309,7 @@ func TestLifecycleGuardClosingHandoffRequiresBothAnchors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-			id, path, err := RecordHandoff(db, changesetDir, tc.runID, tc.checkID, nil, true)
+			id, path, err := RecordHandoff(db, changesetDir, tc.runID, tc.checkID, "", nil, true)
 			assertLifecycleValidationError(t, err, "missing_required_field", "handoff record: --close-phase requires run_id and check_id")
 			if id != "" || path != "" {
 				t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -325,7 +325,7 @@ func TestLifecycleGuardLatestCleanCloseReachesDone(t *testing.T) {
 	runID := createLifecycleRun(t, db, changesetDir, storySlug)
 	checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
 
-	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true); err != nil {
+	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
 	if got := queryStoryStatus(t, db, storySlug); got != domain.StoryDone {

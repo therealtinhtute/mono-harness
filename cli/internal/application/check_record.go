@@ -47,6 +47,14 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		return "", "", &domain.ValidationError{Code: "run_not_latest", Message: "check record: run_id is not the latest run for its story"}
 	}
 
+	lane, laneResolved, err := resolveLaneForRun(db, runID)
+	if err != nil {
+		return "", "", err
+	}
+	if laneResolved && lane == domain.LaneHighRisk && judge != domain.JudgeIndependent {
+		return "", "", &domain.ValidationError{Code: "independent_judge_required", Message: "check record: lane is high-risk, --judge must be independent"}
+	}
+
 	proofLinksAny := make([]any, len(proofLinks))
 	for i, pl := range proofLinks {
 		proofLinksAny[i] = map[string]any{
@@ -82,4 +90,37 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		return "", "", err
 	}
 	return id, path, nil
+}
+
+// resolveLaneForRun joins runs.plan_id -> intakes.plan_id to find the
+// initiative lane a run belongs to (G2, docs/audit/workflow-harness-
+// ceremony-audit.md/V2). Both sides are optional (run_create --plan-id,
+// intake --plan-id), so an unresolvable lane is not an error: the gate
+// this enables simply does not apply. Only a resolved high-risk lane
+// blocks anything — every other lane, and every run with no plan_id
+// trail, behaves exactly as before this feature existed.
+func resolveLaneForRun(db *sql.DB, runID string) (lane string, ok bool, err error) {
+	var planID sql.NullString
+	if err := db.QueryRow(`SELECT plan_id FROM runs WHERE id = ?`, runID).Scan(&planID); err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !planID.Valid || planID.String == "" {
+		return "", false, nil
+	}
+
+	var laneCol sql.NullString
+	err = db.QueryRow(`SELECT lane FROM intakes WHERE plan_id = ? ORDER BY created_at DESC LIMIT 1`, planID.String).Scan(&laneCol)
+	if err == sql.ErrNoRows {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if !laneCol.Valid || laneCol.String == "" {
+		return "", false, nil
+	}
+	return laneCol.String, true, nil
 }
