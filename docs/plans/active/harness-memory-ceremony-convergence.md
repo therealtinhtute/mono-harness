@@ -549,6 +549,40 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   `cli/internal/embedded/embedded_test.go` (one required-phrase update). Verification:
   `cd cli && go clean -testcache && go build ./...`, `go vet ./...`, `go test ./...`
   (all packages ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green.
+- 2026-08-08, phase `p5-harvest`, wave 4, task_status=DONE, run_id=none, trace_id=none
+  (same environment constraint as the rest of this session). Owner confirmed proceeding
+  with the full wave after a check-in on its deletion-heavy scope. New `docs/playbooks/
+  git.md` (+ `cli/docs/embedded/playbooks/git.md` mirror — the 7th embedded playbook)
+  absorbs `git/SKILL.md`'s former `<instructions>` block (Step 0 gate-verdict warning,
+  stage/security-check/split-decision/commit, push, PR, merge) plus the operational core
+  of 6 now-deleted reference files: `workflow-commit.md`, `commit-standards.md`,
+  `safety-protocols.md`, `workflow-push.md`, `workflow-pr.md`, `workflow-merge.md` — their
+  content is now the playbook's Core Workflow, not duplicated elsewhere. `examples.md` was
+  also deleted (worked examples restating the absorbed workflows, no new procedural
+  information). Kept as genuinely supplementary, still-lazy-loaded references:
+  `branch-management.md` (naming/lifecycle/strategy — outside cm/cp/pr/merge's scope) and
+  `gh-cli-guide.md` (broader `gh` reference than PR creation alone). `git/SKILL.md` shrank
+  to frontmatter + version/preflight gate (merged into one round trip, matching wave 3's
+  pattern) + the Claude-facing role/security/context blocks + a trimmed 2-entry
+  `<references>` list — the operating logic that inflated it to 1,349 tokens is gone.
+  `cli/internal/interfaces/preflight.go`'s `preflightPlaybooks` map gained a `"git"` entry
+  so `preflight git --json` returns the new playbook path the same way the 6 spine stages
+  already do (additive; `contextEligibleStages` untouched — git still gets no context
+  packet, D7/NG-equivalent). All 4 scripts under `git/scripts/` (`branch-cleanup.sh`,
+  `commit-workflow.sh`, `create-pr.sh`, `safe-merge.sh`, 4,349 tokens) plus their
+  `scripts/README.md` were deleted — see D18. `.claimignore` gained 4 entries for the
+  audit doc's historical measurement references to the now-deleted script paths.
+  `TestPlaybookCount` bumped 6 to 7. Changed surfaces: `docs/playbooks/git.md` (new),
+  `cli/docs/embedded/playbooks/git.md` (new), `skills/workflow/git/SKILL.md`,
+  `skills/workflow/git/references/*.md` (7 deleted, 2 kept), `skills/workflow/git/scripts/`
+  (deleted entirely), `cli/internal/interfaces/preflight.go`, `cli/internal/embedded/
+  embedded_test.go`, `.claimignore`. `p5-harvest`'s own phase-level check
+  (`docs/playbooks/*.md` byte-identical to `cli/docs/embedded/playbooks/*.md`) covers the
+  new file too. Verification: `cd cli && go clean -testcache && go build ./...`,
+  `go vet ./...`, `go test ./...` (all packages ok, including the projection-drift and
+  playbook-count tests against the new 7th playbook) and `bash scripts/verify-doc-links.sh`
+  (0 findings, after the `.claimignore` additions) both green. `p5-harvest` is now
+  complete — all 4 waves done.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -655,6 +689,18 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   `0.1.0` was already stale before this session touched them. Since the exact sentence
   was being rewritten anyway, leaving a known-wrong floor value in the new text would be
   worse than fixing it in the same edit.
+- D18 (2026-08-08, implementation): deleted all 4 `skills/workflow/git/scripts/*.sh`
+  automation scripts and their `README.md`, rather than keeping them as executables the
+  agent runs without reading. Rationale: nothing in `git/SKILL.md` or any reference file
+  ever invoked them — the Core Workflow runs raw `git`/`gh` commands directly, not these
+  scripts. Their own `README.md` documented a stale path (`kit/skills/git/scripts`, not
+  the current `skills/workflow/git/scripts`) and a test command (`bats tests/`) with no
+  corresponding `tests/` directory anywhere in the repo — independent evidence they
+  predate the current skill and were never wired in. Grepped the whole repo (`*.md`,
+  `*.sh`, `*.json`, `*.yml`/`.yaml`) for any invocation or reference beyond the audit
+  doc's own historical measurement; found none. This is the "redundant with plain git"
+  branch of the plan's own task wording, not the "keep as executables" branch — there was
+  no live caller to preserve.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -662,11 +708,10 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p5-harvest` (waves 1-3 code-complete and verified; wave 4 — git skill
-  thinning — not started, deliberately paused for a check-in given its deletion-heavy
-  scope (`references/**` pruning, a keep-or-delete call on 4 shell scripts); not
-  DB-recorded as `in-progress`/`checked` — no live zharness in this session, so no `run
-  create`/`check record` was possible; see Progress entries above for P1 through P5)
+- active_phase: `p5-harvest` (all 4 waves code-complete and verified — wave 4 proceeded
+  after an owner check-in confirmed the full deletion-heavy scope; not DB-recorded as
+  `in-progress`/`checked` — no live zharness in this session, so no `run create`/`check
+  record` was possible; see Progress entries above for P1 through P5)
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
   left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
@@ -684,18 +729,15 @@ run_id, check_id, verdict, and proof_gaps. -->
     reduction while touching no contract and forcing no repository to refresh its docs
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability` through `p5-harvest` (waves 1-3), and route the diff through
-    `check full` to record real DB-linked verdicts — durable bookkeeping this session
-    could not produce. Schema is still at version 9 (no phase since P2 has shipped a
-    migration); `db rebuild` after minting IDs will replay everything cleanly (R7's own
-    test proves this).
-  - owner check-in needed before wave 4: `skills/workflow/git/SKILL.md` thinning requires
-    pruning `skills/workflow/git/references/**` (9,423 tokens of latent surface) against
-    what a new git playbook absorbs, and deciding whether to keep or delete the 4 shell
-    scripts under `skills/workflow/git/scripts/` (4,349 tokens) — both are real deletions,
-    not additive changes, and warrant confirmation before proceeding.
-- exact_next_action: get the owner's go-ahead on wave 4's scope (or explicit deferral),
-  then thin `skills/workflow/git/SKILL.md` toward the ~300-token template, move its
-  operating logic into a new git playbook alongside the six in `docs/playbooks/`, prune
-  `references/**` against what the playbook absorbs, and record the scripts keep/delete
-  decision — the last item in `p5-harvest`
+    `p1-integrity-operability` through `p5-harvest`, and route the diff through `check
+    full` to record real DB-linked verdicts — durable bookkeeping this session could not
+    produce. Schema is still at version 9 (no phase since P2 has shipped a migration);
+    `db rebuild` after minting IDs will replay everything cleanly (R7's own test proves
+    this). Embedded playbook count is now 7 (git.md added, `TestPlaybookCount` updated).
+- exact_next_action: `p1-integrity-operability` through `p5-harvest` are code-complete
+  and gate-green; `p5b-release` is next in the plan but is a real release-publish action
+  (push a `cli/vX.Y.Z` tag, bump `MIN_ZHARNESS_VERSION`, run `zharness init
+  --refresh-docs` on consuming repos — D8's ordering) that needs the owner's explicit
+  go-ahead, not something to do unprompted. Until then: build `zharness` from source in
+  an environment that can run it, mint the plan/intake IDs, and record real DB-linked
+  runs/checks for the five completed phases against this session's diff.

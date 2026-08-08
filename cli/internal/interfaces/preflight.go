@@ -27,6 +27,7 @@ var preflightPlaybooks = map[string]string{
 	"check":      "docs/playbooks/check.md",
 	"handoff":    "docs/playbooks/handoff.md",
 	"watzup":     "docs/playbooks/watzup.md",
+	"git":        "docs/playbooks/git.md",
 }
 
 // contextEligibleStages names the stages that receive a stage-shaped

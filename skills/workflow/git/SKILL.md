@@ -5,14 +5,12 @@ description: "Git operations with conventional commits. Use for staging, committ
 argument-hint: "cm|cp|pr|merge [args]"
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
 
-`git` owns no harness entity (`skills/workflow/README.md`'s skill-to-command mapping) — a missing, stale, or broken harness never blocks it. Run `zharness --version`. A `dev` build, or any build at or above MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), unlocks harness enrichment (Step 0 below). Otherwise print one line — `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)` — skip straight to Core Workflow, and skip Step 0 entirely.
-
-If the version gate passed, run `zharness preflight git --json`. Any `stop` it returns (including a corrupted database) is noted the same way and does not block; proceed to Core Workflow regardless of readiness — Git operations remain non-mutating to harness state.
+Run `zharness preflight git --json`. Missing binary or below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`): print `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)` and proceed straight to Core Workflow (Step 0 of the playbook is skipped). Otherwise read and follow the returned `playbook` path (`docs/playbooks/git.md`) when non-empty; any `stop` it returns is noted the same way and never blocks — Git operations remain non-mutating to harness state.
 
 <role>
 Act as a git operations specialist. Handle staging, committing, pushing, pull requests, and merges
@@ -58,87 +56,8 @@ Sacrifice grammar for concision. Pass token-efficiency rules to subagents.
 - `merge`: Merge [to-branch] [from-branch] (defaults: main, current)
 </context>
 
-<instructions>
-## Core Workflow
-
-### Step 0: Check Latest Gate Verdict (warn, never block)
-Before commit/PR steps, run `zharness query check --latest --json`. If it returns `verdict: REQUEST_CHANGES`, or the command fails (no `zharness` binary, `db_unreadable`, or no check recorded yet), print a one-line warning naming the verdict or the reason it's unavailable, then proceed anyway — this never blocks staging or committing. Only a verdict of `APPROVED` or `APPROVE_WITH_REQUESTS` proceeds silently.
-
-### Step 1: Stage + Analyze
-```bash
-git add -A && git diff --cached --stat && git diff --cached --name-only
-```
-
-### Step 2: Security Check
-Scan for secrets — see `safety-protocols.md`. If found: STOP, warn user, suggest `.gitignore`.
-
-### Step 3: Split Decision
-See `workflow-commit.md` for full split logic.
-
-**Split if:** mixed types (feat+fix), multiple scopes, config/deps+code, FILES > 10 unrelated.
-**Single if:** same type/scope, FILES ≤ 3, LINES ≤ 50.
-
-NOTE: Only use `feat`, `fix`, or `perf` for `.claude/` directory files (no `docs`).
-
-### Step 4: Commit
-```bash
-git commit -m "type(scope): description"
-```
-Search for related GitHub issues and add to PR body. See `commit-standards.md`.
-
----
-
-## Output Format
-
-**Console output:**
-```
-✓ staged: N files (+X/-Y lines)
-✓ security: passed
-✓ commit: HASH type(scope): description
-✓ pushed: yes/no
-```
-
-**For complex operations (PR, merge):**
-Save to: `.kit/cache/reports/git/{YYYYMMDD-HHmm}-{operation}.md` (gitignored local scratch — `git` is a sidecar skill and does not own harness lifecycle artifacts)
-
-Frontmatter:
-```yaml
----
-title: Git {Operation} - {slug}
-description: {one-line summary}
-status: completed
-created: YYYY-MM-DD
-tags: [git, {operation}]
----
-```
-
----
-
-## Error Handling
-
-| Error | Action |
-|-------|--------|
-| Secrets detected | Block commit, show files |
-| No changes | Exit cleanly |
-| Push rejected | Suggest `git pull --rebase` |
-| Merge conflicts | Suggest manual resolution |
-
-## Anti-Patterns
-- Staging everything with `git add -A` instead of specific files — catches .env, secrets, node_modules
-- Single commit when changes span multiple types/scopes — "one commit is cleaner" → un-reviewable diff, impossible to revert selectively
-- Skipping security scan because "it's just config" — config files often contain secrets or tokens
-- Force pushing without explicit user confirmation — overwrites upstream work silently
-</instructions>
-
 <references>
 Load as needed from `{baseDir}/references/`:
-- `workflow-commit.md` — Commit workflow with split logic
-- `workflow-push.md` — Push workflow with error handling
-- `workflow-pr.md` — PR creation with remote diff analysis
-- `workflow-merge.md` — Branch merge workflow
-- `commit-standards.md` — Conventional commit format rules
-- `safety-protocols.md` — Secret detection, branch protection
-- `branch-management.md` — Naming, lifecycle, strategies
-- `gh-cli-guide.md` — GitHub CLI commands reference
-- `examples.md` — Worked examples for all operations
+- `branch-management.md` — naming, lifecycle, strategies
+- `gh-cli-guide.md` — GitHub CLI commands reference beyond PR creation
 </references>
