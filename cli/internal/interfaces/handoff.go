@@ -19,26 +19,28 @@ func newHandoffCmd() *cobra.Command {
 
 	record := &cobra.Command{
 		Use:   "record",
-		Short: "Record a handoff (anchors: latest run/check IDs, open items)",
+		Short: "Record a handoff (anchors: latest run/check IDs, open items, exact next action)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			runID, _ := cmd.Flags().GetString("run-id")
 			checkID, _ := cmd.Flags().GetString("check-id")
 			openItemsRaw, _ := cmd.Flags().GetString("open-items")
+			nextAction, _ := cmd.Flags().GetString("next-action")
 			closePhase, _ := cmd.Flags().GetBool("close-phase")
-			return runHandoffRecord(cmd, runID, checkID, openItemsRaw, closePhase)
+			return runHandoffRecord(cmd, runID, checkID, openItemsRaw, nextAction, closePhase)
 		},
 	}
 	record.Flags().String("run-id", "", "ulid of the latest run (optional)")
 	record.Flags().String("check-id", "", "ulid of the latest check (optional)")
 	record.Flags().String("open-items", "[]", `JSON array of strings: ["open item", ...]`)
+	record.Flags().String("next-action", "", "the plan's Current State exact_next_action, persisted into anchors (optional)")
 	record.Flags().Bool("close-phase", false, "mark the gated run's story done (requires a clean check)")
 
 	handoff.AddCommand(record)
 	return handoff
 }
 
-func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw string, closePhase bool) error {
+func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw, nextAction string, closePhase bool) error {
 	var openItems []string
 	if err := json.Unmarshal([]byte(openItemsRaw), &openItems); err != nil {
 		return newUserError("invalid_open_items", fmt.Sprintf("handoff record: --open-items is not valid JSON: %v", err))
@@ -53,7 +55,7 @@ func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw string, c
 	}
 	defer db.Close()
 
-	id, _, err := application.RecordHandoff(db, changesetDir, runID, checkID, openItems, closePhase)
+	id, _, err := application.RecordHandoff(db, changesetDir, runID, checkID, nextAction, openItems, closePhase)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

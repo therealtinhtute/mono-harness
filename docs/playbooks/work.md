@@ -6,11 +6,11 @@ Execute the next approved work from `docs/plans/active/{slug}.md`. Full mode rec
 
 ## Preconditions and Modes
 
-1. Run `zharness --version`. A `dev` build satisfies the gate; otherwise require version `0.1.0` or newer. If unavailable or stale, print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop.
-2. Resolve mode:
+1. Resolve mode:
    - `full [phase {stable-phase-slug}]` — durable initiative execution from an active plan.
    - `bounded` (alias: `simple`) — known subsystem, bounded files, direct success criterion.
-3. Run `zharness preflight work --mode {full|bounded} --json` and follow its stop/recovery result exactly.
+2. Run `zharness preflight work --mode {full|bounded} --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result exactly. In full mode its `context` field is the source of Step 1's phase list and lifecycle position below — do not call `query state`/`query phases` again to obtain it.
+3. If this session's context was compacted or summarized since the last `preflight` call — including mid-phase, across waves — re-run it before trusting any earlier-read `context` packet or lifecycle ID; a summarized turn cannot be assumed to have carried exact DB state forward.
 
 **Zero-write rule:** bounded/simple mode creates no lifecycle rows, plans, reports, changesets, or markdown artifacts. It does not edit an existing active plan. The Git diff plus captured executable/observable proof are its durable evidence.
 
@@ -29,7 +29,7 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 
 ## Full-Mode Execution
 
-1. **Load state** — read the active plan, then run `zharness query state --json` and `zharness query phases --json`. Select the requested phase or the first non-done phase whose dependencies are done. Treat pre-existing disagreement between DB status and plan status as a stop requiring reconciliation.
+1. **Load state** — read the active plan, then read `context.phases` and `context.position` from the same `preflight work --json` response (Preconditions step 2) instead of separately calling `query state`/`query phases`. Select the requested phase or the first non-done phase whose dependencies are done. Treat pre-existing disagreement between DB status (`context.phases`) and plan status as a stop requiring reconciliation.
 2. **Check boundaries** — compare the requested diff and working tree against phase/task touched and avoided surfaces. Stop with `BLOCKED_CONTRACT_DRIFT` if work is already outside authority. Stop with `BLOCKED_VERIFICATION` if a task lacks a check.
 3. **Create the run row and synchronize the plan** — run `zharness run create --slug {stable-phase-slug} --plan-id {plan frontmatter id} --json`. Do not pass an artifact path. Immediately after success, save the returned run ID, set that phase's plan status to `in-progress`, update Current State to the same phase/status/run ID, and append the phase-start Progress entry with `task_status=in-progress`. Do not mutate the task definition, and do not continue while the DB says `in-progress` and the plan phase still says `planned`.
 4. **Confirm the wave** — restate the phase goal, selected wave, tasks, and checks. Ask only when the plan does not identify the next incomplete wave unambiguously.
@@ -41,7 +41,21 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 10. **Refresh current state** — update active phase, `lifecycle_status: in-progress`, latest run/trace IDs, blockers, open items, and exact next action. Keep the plan `status: active` until final closure.
 11. **Verify synchronization and gate the phase** — rerun `zharness query phases --json`; require the selected phase to be `in-progress` in both DB and plan. After all phase waves complete, invoke `check full` on the phase diff. Do not mark the phase checked or done; durable `check` and closing `handoff` own those transitions.
 
+## Command Reference
+
+- `zharness preflight work --mode {full|bounded} --json`
+- `zharness query phases --json` (step 11 only — post-mutation re-verification; Step 1 reads `context.phases` from preflight instead)
+- `zharness run create --slug {stable-phase-slug} --plan-id {plan-id} --json`
+- `zharness trace add --wave {N} --summary "..." --run-id {run-id} --json`
+
+## Exit Conditions
+
+- Full mode: the selected phase is `in-progress` in both DB and plan, every attempted task is appended to Progress, material decisions are appended with rationale, each completed wave has a trace ID, Current State is resumable, and completed implementation is routed to `check full`.
+- Bounded/simple mode: requested code and proof are shown in the response with zero lifecycle or markdown writes.
+
 ## Bounded/Simple Execution
+
+The rarer branch — routed here only when Preconditions step 1 resolved `bounded`/`simple`; a full-mode run never needs this section.
 
 1. Read at most the directly named files and nearest conventions.
 2. State the surgical change and success criterion.
@@ -51,23 +65,11 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 
 ## Status Routing
 
+Referenced by Full-Mode Execution steps 6-7 when recording a task's execution status.
+
 | Status | Meaning | Action |
 |---|---|---|
 | `DONE` | Implemented and verified | Continue |
 | `DONE_WITH_CONCERNS` | Verified with a surfaced concern | Record concern; continue only with acceptance |
 | `NEEDS_CONTEXT` | Required information is absent | Stop and obtain context |
 | `BLOCKED` | Cannot finish inside authority or proof boundary | Stop with `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, or `BLOCKED_CONTRACT_DRIFT` |
-
-## Command Reference
-
-- `zharness --version`
-- `zharness preflight work --mode {full|bounded} --json`
-- `zharness query state --json`
-- `zharness query phases --json`
-- `zharness run create --slug {stable-phase-slug} --plan-id {plan-id} --json`
-- `zharness trace add --wave {N} --summary "..." --run-id {run-id} --json`
-
-## Exit Conditions
-
-- Full mode: the selected phase is `in-progress` in both DB and plan, every attempted task is appended to Progress, material decisions are appended with rationale, each completed wave has a trace ID, Current State is resumable, and completed implementation is routed to `check full`.
-- Bounded/simple mode: requested code and proof are shown in the response with zero lifecycle or markdown writes.

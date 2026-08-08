@@ -40,6 +40,7 @@ type Intake struct {
 	Summary   string
 	Lane      string
 	PlanPath  string
+	PlanID    string
 	CreatedAt string
 }
 

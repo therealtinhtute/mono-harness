@@ -8,3 +8,8 @@ references/api-endpoints-payments.md  # illustrative example in create-skill/ref
 references/api-endpoints-users.md     # illustrative example in create-skill/references/token-efficiency-criteria.md, not a file in this repo
 references/api-patterns.md            # illustrative example in create-skill/references/writing-effective-instructions.md, not a file in this repo
 references/ffmpeg-encoding.md         # illustrative example in create-skill/SKILL.md showing a hypothetical skill layout
+
+skills/workflow/git/scripts/safe-merge.sh       # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned/unreferenced automation in P5 wave 4 of harness-memory-ceremony-convergence
+skills/workflow/git/scripts/create-pr.sh        # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned/unreferenced automation in P5 wave 4 of harness-memory-ceremony-convergence
+skills/workflow/git/scripts/commit-workflow.sh  # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned/unreferenced automation in P5 wave 4 of harness-memory-ceremony-convergence
+skills/workflow/git/scripts/branch-cleanup.sh   # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned/unreferenced automation in P5 wave 4 of harness-memory-ceremony-convergence

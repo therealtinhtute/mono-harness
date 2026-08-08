@@ -57,7 +57,7 @@ SQLite schema for `harness.db` and the changeset line/file format that reproduce
 | `id` | TEXT PK | ULID |
 | `run_id` | TEXT, nullable | FK `runs.id` |
 | `check_id` | TEXT, nullable | FK `checks.id` |
-| `anchors` | TEXT | Durable JSON `{latest_run_id, latest_check_id, open_items}`; run/check keys are present when their anchors are supplied |
+| `anchors` | TEXT | Durable JSON `{latest_run_id, latest_check_id, open_items, exact_next_action}`; run/check/next-action keys are present only when supplied. `exact_next_action` persists the plan's Current State field (D1, `docs/audit/workflow-harness-ceremony-audit.md`) — no migration needed, this column was already free-form JSON |
 | `created_at` | TEXT | |
 
 Handoff anchors and open items are durable database state. There is no fixed `.kit/HANDOFF.md` convention or required handoff markdown path in the schema.
@@ -72,6 +72,7 @@ Handoff anchors and open items are durable database state. There is no fixed `.k
 | `summary` | TEXT | |
 | `lane` | TEXT | enum `tiny\|normal\|high-risk` |
 | `plan_path` | TEXT, nullable | Optional repository-relative path to the initiative's evolving plan; added by migration `0005_intake_plan_path` |
+| `plan_id` | TEXT, nullable | Optional plan ULID, same value as `runs.plan_id`; added by migration `0009_intake_plan_id`. Not a foreign key, not part of lifecycle-link validation — the join `check record` uses to resolve a run's lane and gate `--judge` for `high-risk` (G2, `docs/audit/workflow-harness-ceremony-audit.md`/V2) |
 | `created_at` | TEXT | |
 
 #### `interventions`
@@ -89,7 +90,22 @@ Handoff anchors and open items are durable database state. There is no fixed `.k
 | `run_id` | TEXT, nullable | FK `runs.id` |
 | `wave` | INTEGER | |
 | `summary` | TEXT | |
+| `task` | TEXT, nullable | added in migration `0008_trace_task_granularity`; task name for a task-level trace, `NULL` for wave-level |
+| `task_status` | TEXT, nullable | added in migration `0008_trace_task_granularity`; enum `DONE\|DONE_WITH_CONCERNS\|NEEDS_CONTEXT\|BLOCKED` (docs/playbooks/work.md's Status Routing), `NULL` for wave-level |
 | `created_at` | TEXT | |
+
+#### `decisions`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | ULID |
+| `run_id` | TEXT, nullable | FK `runs.id`; optional, shared across a `decision add` batch |
+| `phase` | TEXT, nullable | FK `stories.slug` |
+| `task` | TEXT, nullable | free text, not a modeled entity — tasks exist only in plan markdown |
+| `decision` | TEXT NOT NULL | |
+| `rationale` | TEXT NOT NULL | |
+| `created_at` | TEXT | |
+
+Re-created by migration `0007_decisions`, which re-adds a table `0003_drop_dead_surface` dropped as dead surface with no writer (`git log -S "decision add"` returns nothing before `0007`) — not a reversal of that migration's judgment, since it was never wired to anything. The schema differs from the original (`id, summary, rationale, rejected, created_at`, no phase/task/run linkage): `phase`/`task`/`run_id` tie a decision to the work that produced it, matching what `work.md`'s `## Decisions` section already records in markdown. No historical changeset references the `decision` entity, so this migration is purely additive to replay.
 
 ### Managed infrastructure
 
@@ -118,9 +134,10 @@ Every table maps to exactly one changeset `entity` string (the value in `{op, en
 | `intakes` | `intake` | `intake` |
 | `interventions` | `intervention` | `intervention` |
 | `traces` | `trace` | `trace add` |
+| `decisions` | `decision` | `decision add` |
 | `managed_docs` | `managed_doc` | `init`, `init --refresh-docs`, layout migration |
 
-Cross-check against CONTRACT.md: database-mutating commands include `intake`, `story`, `intervention`, `trace add`, `run create`, `check record`, and `handoff record`, plus infrastructure mutations from `init`/`import`/`migrate`. Lifecycle commands may write multiple entity lines atomically for status and meta-pointer transitions while each created row uses the singular entity string above. `resume`, `query`, `validate`, `audit`, and `preflight` are read-only and write no changeset; `scaffold` is file-only and writes no database entity or changeset.
+Cross-check against CONTRACT.md: database-mutating commands include `intake`, `story`, `intervention`, `trace add`, `decision add`, `run create`, `check record`, and `handoff record`, plus infrastructure mutations from `init`/`import`/`migrate`. Lifecycle commands may write multiple entity lines atomically for status and meta-pointer transitions while each created row uses the singular entity string above. `resume`, `query`, `validate`, `audit`, and `preflight` are read-only and write no changeset; `scaffold` is file-only and writes no database entity or changeset.
 
 ## Changeset Format
 

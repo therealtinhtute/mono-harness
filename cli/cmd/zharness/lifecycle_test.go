@@ -233,10 +233,6 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 
 	runA := createLifecycleRun(t, bin, root, "phase-a", planIDResp.ID)
 	replacePlan(t, planPath, "- story_id: "+storyA.ID+"\n- status: planned", "- story_id: "+storyA.ID+"\n- status: in-progress")
-	progressA := "- 2026-07-27T04:00:00Z phase=phase-a wave=1 task=T1 task_status=DONE run_id=" + runA.ID + " trace_id=none verification=go test ./... -> pass result=phase-a implemented"
-	replacePlan(t, planPath, `## Progress
-<!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none`, "## Progress\n<!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->\n"+progressA)
 	replacePlan(t, planPath, `## Current State and Next Action
 - active_phase: none
 - lifecycle_status: not-planned
@@ -251,17 +247,15 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	assertLifecyclePhase(t, phases, "phase-a", "in-progress", "")
 	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "in-progress")
 
-	traceA := createLifecycleTrace(t, bin, root, runA.ID, "phase-a wave complete")
-	replacePlan(t, planPath, "phase=phase-a wave=1 task=T1 task_status=DONE run_id="+runA.ID+" trace_id=none", "phase=phase-a wave=1 task=T1 task_status=DONE run_id="+runA.ID+" trace_id="+traceA.ID)
+	// trace add and check record now write their own `## Progress`/
+	// `## Validation` entries (P3, "CLI owns the pen") — the test asserts
+	// against that real CLI-authored content instead of splicing its own
+	// hand-authored text in ahead of it.
+	traceA := createLifecycleTrace(t, bin, root, runA.ID, "phase-a wave complete", "T1", "DONE")
 	replacePlan(t, planPath, "- latest_trace_ids: []", "- latest_trace_ids: ["+traceA.ID+"]")
-	progressA = "- 2026-07-27T04:00:00Z phase=phase-a wave=1 task=T1 task_status=DONE run_id=" + runA.ID + " trace_id=" + traceA.ID + " verification=go test ./... -> pass result=phase-a implemented"
-	assertPlanContains(t, planPath, "run_id="+runA.ID, "trace_id="+traceA.ID)
+	assertPlanContains(t, planPath, "run: `"+runA.ID+"`", "task_status: `DONE`", "summary: phase-a wave complete")
 
 	requestA := createLifecycleCheck(t, bin, root, runA.ID, "REQUEST_CHANGES", "phase-a finding")
-	validationRequestA := "- 2026-07-27T04:01:00Z phase=phase-a command=go test ./... result=fail output=phase-a finding run_id=" + runA.ID + " check_id=" + requestA.ID + " verdict=REQUEST_CHANGES proof_gaps=none"
-	replacePlan(t, planPath, `## Validation
-<!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
-- none`, "## Validation\n<!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->\n"+validationRequestA)
 	replacePlan(t, planPath, "- latest_check_id: none", "- latest_check_id: "+requestA.ID)
 	replacePlan(t, planPath, "- blockers: none", "- blockers: [phase-a changes requested]")
 	replacePlan(t, planPath, "- open_items: [check phase-a]", "- open_items: [resolve phase-a findings]")
@@ -269,11 +263,9 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	phases = queryLifecyclePhases(t, bin, root)
 	assertLifecyclePhase(t, phases, "phase-a", "in-progress", "")
 	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "in-progress")
-	assertPlanContains(t, planPath, "check_id="+requestA.ID+" verdict=REQUEST_CHANGES", "lifecycle_status: in-progress")
+	assertPlanContains(t, planPath, "check: `"+requestA.ID+"`", "verdict: `REQUEST_CHANGES`", "lifecycle_status: in-progress")
 
 	checkA := createLifecycleCheck(t, bin, root, runA.ID, "APPROVED", "phase-a pass")
-	validationApprovedA := "- 2026-07-27T04:02:00Z phase=phase-a command=go test ./... result=pass output=phase-a pass run_id=" + runA.ID + " check_id=" + checkA.ID + " verdict=APPROVED proof_gaps=none"
-	replacePlan(t, planPath, validationRequestA, validationRequestA+"\n"+validationApprovedA)
 	replacePlan(t, planPath, "- story_id: "+storyA.ID+"\n- status: in-progress", "- story_id: "+storyA.ID+"\n- status: checked")
 	replacePlan(t, planPath, "- lifecycle_status: in-progress", "- lifecycle_status: checked")
 	replacePlan(t, planPath, "- latest_check_id: "+requestA.ID, "- latest_check_id: "+checkA.ID)
@@ -283,7 +275,7 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	phases = queryLifecyclePhases(t, bin, root)
 	assertLifecyclePhase(t, phases, "phase-a", "checked", "")
 	assertPlanPhaseStatus(t, planPath, 1, "phase-a", storyA.ID, "checked")
-	assertPlanContains(t, planPath, "check_id="+checkA.ID+" verdict=APPROVED", "latest_check_id: "+checkA.ID)
+	assertPlanContains(t, planPath, "check: `"+checkA.ID+"`", "verdict: `APPROVED`", "latest_check_id: "+checkA.ID)
 
 	handoffA := createLifecycleHandoff(t, bin, root, runA.ID, checkA.ID)
 	replacePlan(t, planPath, "- story_id: "+storyA.ID+"\n- status: checked", "- story_id: "+storyA.ID+"\n- status: done")
@@ -304,8 +296,6 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 
 	runB := createLifecycleRun(t, bin, root, "phase-b", planIDResp.ID)
 	replacePlan(t, planPath, "- story_id: "+storyB.ID+"\n- status: planned", "- story_id: "+storyB.ID+"\n- status: in-progress")
-	progressB := "- 2026-07-27T04:03:00Z phase=phase-b wave=1 task=T1 task_status=DONE run_id=" + runB.ID + " trace_id=none verification=go test ./... -> pass result=phase-b implemented"
-	replacePlan(t, planPath, progressA, progressA+"\n"+progressB)
 	replacePlan(t, planPath, "- active_phase: phase-a", "- active_phase: phase-b")
 	replacePlan(t, planPath, "- lifecycle_status: done", "- lifecycle_status: in-progress")
 	replacePlan(t, planPath, "- latest_run_id: "+runA.ID, "- latest_run_id: "+runB.ID)
@@ -318,14 +308,11 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	assertLifecyclePhase(t, phases, "phase-b", "in-progress", "phase-a")
 	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "in-progress")
 
-	traceB := createLifecycleTrace(t, bin, root, runB.ID, "phase-b wave complete")
-	replacePlan(t, planPath, "phase=phase-b wave=1 task=T1 task_status=DONE run_id="+runB.ID+" trace_id=none", "phase=phase-b wave=1 task=T1 task_status=DONE run_id="+runB.ID+" trace_id="+traceB.ID)
+	traceB := createLifecycleTrace(t, bin, root, runB.ID, "phase-b wave complete", "T1", "DONE")
 	replacePlan(t, planPath, "- latest_trace_ids: []", "- latest_trace_ids: ["+traceB.ID+"]")
-	assertPlanContains(t, planPath, "run_id="+runB.ID, "trace_id="+traceB.ID)
+	assertPlanContains(t, planPath, "run: `"+runB.ID+"`", "summary: phase-b wave complete")
 
 	checkB := createLifecycleCheck(t, bin, root, runB.ID, "APPROVED", "phase-b pass")
-	validationApprovedB := "- 2026-07-27T04:04:00Z phase=phase-b command=go test ./... result=pass output=phase-b pass run_id=" + runB.ID + " check_id=" + checkB.ID + " verdict=APPROVED proof_gaps=none"
-	replacePlan(t, planPath, validationApprovedA, validationApprovedA+"\n"+validationApprovedB)
 	replacePlan(t, planPath, "- story_id: "+storyB.ID+"\n- status: in-progress", "- story_id: "+storyB.ID+"\n- status: checked")
 	replacePlan(t, planPath, "- lifecycle_status: in-progress", "- lifecycle_status: checked")
 	replacePlan(t, planPath, "- latest_check_id: none", "- latest_check_id: "+checkB.ID)
@@ -335,7 +322,7 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	assertLifecyclePhase(t, phases, "phase-a", "done", "")
 	assertLifecyclePhase(t, phases, "phase-b", "checked", "phase-a")
 	assertPlanPhaseStatus(t, planPath, 2, "phase-b", storyB.ID, "checked")
-	assertPlanContains(t, planPath, "check_id="+checkB.ID+" verdict=APPROVED", "latest_check_id: "+checkB.ID)
+	assertPlanContains(t, planPath, "check: `"+checkB.ID+"`", "verdict: `APPROVED`", "latest_check_id: "+checkB.ID)
 
 	handoffB := createLifecycleHandoff(t, bin, root, runB.ID, checkB.ID)
 	replacePlan(t, planPath, "- story_id: "+storyB.ID+"\n- status: checked", "- story_id: "+storyB.ID+"\n- status: done")
@@ -367,7 +354,7 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 		"status: completed",
 		"latest_handoff_id: "+handoffB.ID,
 		"Append-only Progress is the sole task execution-status source",
-		"task_status=DONE",
+		"task_status: `DONE`",
 	)
 	assertPlanNotContains(t, completedPlan,
 		"\n        status:",
@@ -465,11 +452,18 @@ func createLifecycleRun(t *testing.T, bin, root, slug, planID string) struct {
 	return response
 }
 
-func createLifecycleTrace(t *testing.T, bin, root, runID, summary string) struct {
+func createLifecycleTrace(t *testing.T, bin, root, runID, summary, task, taskStatus string) struct {
 	ID string `json:"id"`
 } {
 	t.Helper()
-	out := runZ(t, bin, root, 0, "trace", "add", "--wave", "1", "--summary", summary, "--run-id", runID, "--json")
+	args := []string{"trace", "add", "--wave", "1", "--summary", summary, "--run-id", runID}
+	if task != "" {
+		args = append(args, "--task", task)
+	}
+	if taskStatus != "" {
+		args = append(args, "--task-status", taskStatus)
+	}
+	out := runZ(t, bin, root, 0, append(args, "--json")...)
 	var response struct {
 		ID string `json:"id"`
 	}

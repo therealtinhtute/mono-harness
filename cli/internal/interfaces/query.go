@@ -13,20 +13,24 @@ import (
 func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query <view>",
-		Short: "Read-only views: state, phases, artifacts, check",
+		Short: "Read-only views: state, phases, artifacts, check, traces, decisions, handoff",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			phaseFilter, _ := cmd.Flags().GetString("phase")
 			latest, _ := cmd.Flags().GetBool("latest")
-			return runQuery(cmd, args[0], phaseFilter, latest)
+			runID, _ := cmd.Flags().GetString("run-id")
+			tail, _ := cmd.Flags().GetInt("tail")
+			return runQuery(cmd, args[0], phaseFilter, latest, runID, tail)
 		},
 	}
-	cmd.Flags().String("phase", "", "filter the artifacts view by phase slug")
+	cmd.Flags().String("phase", "", "filter the artifacts/decisions/traces view by phase slug")
 	cmd.Flags().Bool("latest", false, "return the most recent verdict (check view)")
+	cmd.Flags().String("run-id", "", "filter the traces view to one run")
+	cmd.Flags().Int("tail", 0, "limit the traces/decisions view to the N most recent entries (0 = unbounded)")
 	return cmd
 }
 
-func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool) error {
+func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID string, tail int) error {
 	db, err := infrastructure.OpenReadOnly(dbPath)
 	if infrastructure.IsDatabaseNotFound(err) {
 		return newSystemError("db_unreadable", "query: no db at "+dbPath+"; run `zharness init` first")
@@ -69,6 +73,39 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool) error {
 		}
 		if !ok {
 			return newUserError("no_check_found", "query check --latest: no check rows found")
+		}
+		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
+
+	case "traces":
+		var v []application.TraceView
+		var err error
+		if phaseFilter != "" {
+			v, err = application.QueryTracesByPhase(raw, phaseFilter, tail)
+		} else {
+			v, err = application.QueryTraces(raw, runID, tail)
+		}
+		if err != nil {
+			return newSystemError("db_unreadable", fmt.Sprintf("query traces: %v", err))
+		}
+		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
+
+	case "decisions":
+		v, err := application.QueryDecisions(raw, phaseFilter, tail)
+		if err != nil {
+			return newSystemError("db_unreadable", fmt.Sprintf("query decisions: %v", err))
+		}
+		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
+
+	case "handoff":
+		if !latest {
+			return newUserError("unknown_view", "query handoff: only --latest is supported")
+		}
+		v, ok, err := application.QueryLatestHandoff(raw)
+		if err != nil {
+			return newSystemError("db_unreadable", fmt.Sprintf("query handoff --latest: %v", err))
+		}
+		if !ok {
+			return newUserError("no_handoff_found", "query handoff --latest: no handoff rows found")
 		}
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 

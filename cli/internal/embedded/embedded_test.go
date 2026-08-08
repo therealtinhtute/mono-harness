@@ -30,8 +30,8 @@ func TestPlaybookCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlaybookCount: %v", err)
 	}
-	if count != 6 {
-		t.Fatalf("playbook count = %d, want 6", count)
+	if count != 7 {
+		t.Fatalf("playbook count = %d, want 7", count)
 	}
 }
 
@@ -174,11 +174,14 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 			path: "playbooks/watzup.md",
 			required: []string{
 				"zharness preflight watzup --json",
-				"zharness resume --json",
+				"do not call `resume` separately",
 				"Remain read-only",
 				"docs/plans/active/{slug}.md",
 				"Read task execution status only from append-only `## Progress`",
 				"the sole task execution-status source",
+			},
+			forbidden: []string{
+				"zharness resume --json",
 			},
 		},
 	}

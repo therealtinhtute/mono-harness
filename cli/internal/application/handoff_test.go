@@ -1,6 +1,8 @@
 package application
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
@@ -11,7 +13,7 @@ func TestHandoffRecord(t *testing.T) {
 	runID := seedRun(t, db, changesetDir)
 	checkID := seedCheck(t, db, changesetDir)
 
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, []string{"finish continuity phase"}, false)
+	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, "", []string{"finish continuity phase"}, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
@@ -34,7 +36,7 @@ func TestHandoffRecordClosesCleanPhase(t *testing.T) {
 		t.Fatalf("RecordCheck() error = %v", err)
 	}
 
-	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true); err != nil {
+	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
 		t.Fatalf("RecordHandoff(close) error = %v", err)
 	}
 	if got := queryStoryStatus(t, db, "cli-domain"); got != domain.StoryDone {
@@ -51,7 +53,7 @@ func TestHandoffRecordRejectsDirtyPhaseClose(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, "cli-domain")
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, nil, true)
+	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_not_clean", "handoff record: cannot close a phase with REQUEST_CHANGES")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
@@ -62,7 +64,7 @@ func TestHandoffRecordRejectsDirtyPhaseClose(t *testing.T) {
 func TestHandoffRecordNoAnchors(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	id, path, err := RecordHandoff(db, changesetDir, "", "", nil, false)
+	id, path, err := RecordHandoff(db, changesetDir, "", "", "", nil, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
@@ -72,7 +74,7 @@ func TestHandoffRecordNoAnchors(t *testing.T) {
 func TestHandoffRecordEmptyOpenItem(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordHandoff(db, changesetDir, "", "", []string{""}, false)
+	_, _, err := RecordHandoff(db, changesetDir, "", "", "", []string{""}, false)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_open_items" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_open_items}", err)
@@ -82,7 +84,7 @@ func TestHandoffRecordEmptyOpenItem(t *testing.T) {
 func TestHandoffRecordUnknownRunID(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordHandoff(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", nil, false)
+	_, _, err := RecordHandoff(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", "", nil, false)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_run_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)
@@ -95,12 +97,146 @@ func TestHandoffRecordUnknownRunID(t *testing.T) {
 func TestHandoffRecordUnknownCheckID(t *testing.T) {
 	db, changesetDir := freshDB(t)
 
-	_, _, err := RecordHandoff(db, changesetDir, "", "01HZZZZZZZZZZZZZZZZZZZZZZZ", nil, false)
+	_, _, err := RecordHandoff(db, changesetDir, "", "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", nil, false)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_check_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_check_id}", err)
 	}
 	if got := countRows(t, db, "handoffs"); got != 0 {
 		t.Fatalf("handoffs rows = %d, want 0", got)
+	}
+}
+
+// TestHandoffRecordNextActionRoundTripsThroughResumeAndQuery is the round
+// trip the plan calls for (docs/plans/active/harness-memory-ceremony-convergence.md,
+// P2 wave 2): --next-action persists into handoffs.anchors with no
+// migration (anchors is already free-form JSON), resume's latest_handoff_id
+// points at the row, and query handoff --latest reads exact_next_action
+// back out.
+func TestHandoffRecordNextActionRoundTripsThroughResumeAndQuery(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	id, _, err := RecordHandoff(db, changesetDir, runID, checkID, "start p2-complete-the-index wave 1", []string{"owner decision pending"}, false)
+	if err != nil {
+		t.Fatalf("RecordHandoff: %v", err)
+	}
+
+	resumeView, err := Resume(db, "dev")
+	if err != nil {
+		t.Fatalf("Resume: %v", err)
+	}
+	if resumeView.LatestHandoffID == nil || *resumeView.LatestHandoffID != id {
+		t.Fatalf("Resume().LatestHandoffID = %v, want %q", resumeView.LatestHandoffID, id)
+	}
+
+	handoffView, ok, err := QueryLatestHandoff(db)
+	if err != nil {
+		t.Fatalf("QueryLatestHandoff: %v", err)
+	}
+	if !ok {
+		t.Fatal("QueryLatestHandoff ok = false, want true")
+	}
+	if handoffView.ID != id {
+		t.Fatalf("QueryLatestHandoff.ID = %q, want %q", handoffView.ID, id)
+	}
+	if handoffView.NextAction == nil || *handoffView.NextAction != "start p2-complete-the-index wave 1" {
+		t.Fatalf("QueryLatestHandoff.NextAction = %v, want %q", handoffView.NextAction, "start p2-complete-the-index wave 1")
+	}
+	if len(handoffView.OpenItems) != 1 || handoffView.OpenItems[0] != "owner decision pending" {
+		t.Fatalf("QueryLatestHandoff.OpenItems = %v, want [owner decision pending]", handoffView.OpenItems)
+	}
+}
+
+// TestHandoffRecordNextActionOptional proves the field is additive: a
+// handoff with no --next-action stores none, and the round trip reports
+// exact_next_action as nil rather than an empty string.
+func TestHandoffRecordNextActionOptional(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, false); err != nil {
+		t.Fatalf("RecordHandoff: %v", err)
+	}
+
+	handoffView, ok, err := QueryLatestHandoff(db)
+	if err != nil {
+		t.Fatalf("QueryLatestHandoff: %v", err)
+	}
+	if !ok {
+		t.Fatal("QueryLatestHandoff ok = false, want true")
+	}
+	if handoffView.NextAction != nil {
+		t.Fatalf("QueryLatestHandoff.NextAction = %v, want nil", handoffView.NextAction)
+	}
+}
+
+// TestHandoffRecordWritesPlanProgressEntry proves P3 wave 2 for handoff
+// record: the entry lands in `## Progress` as an event-log line (handoff
+// id, run, check, next action, open items), not as a rewrite of the
+// snapshot-style `## Current State and Next Action` section.
+func TestHandoffRecordWritesPlanProgressEntry(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	id, _, err := RecordHandoff(db, changesetDir, runID, checkID, "start next phase", []string{"owner decision pending"}, false)
+	if err != nil {
+		t.Fatalf("RecordHandoff: %v", err)
+	}
+
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "handoff: `"+id+"`") {
+		t.Fatalf("plan Progress missing handoff id:\n%s", content)
+	}
+	if !strings.Contains(content, "start next phase") || !strings.Contains(content, "owner decision pending") {
+		t.Fatalf("plan Progress missing next action/open items:\n%s", content)
+	}
+	if !strings.Contains(content, "## Current State and Next Action\n- active_phase: none") {
+		t.Fatalf("plan Current State section unexpectedly touched:\n%s", content)
+	}
+}
+
+// TestHandoffRecordMalformedPlanBlocksDBWrite is handoff record's version
+// of the atomicity proof: a missing `## Progress` section must fail before
+// the DB write, using the same pre-check pattern check_record's deferred
+// id/at minting requires.
+func TestHandoffRecordMalformedPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	corrupted := strings.Replace(string(data), "## Progress", "## Renamed", 1)
+	if err := os.WriteFile(planPath, []byte(corrupted), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	_, _, err = RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
+	if err == nil {
+		t.Fatal("RecordHandoff = nil error, want a plan-section-not-found failure")
+	}
+	if got := countRows(t, db, "handoffs"); got != 0 {
+		t.Fatalf("handoffs rows = %d, want 0 — DB write must not proceed when the plan can't be written to", got)
+	}
+	after, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile after failed RecordHandoff: %v", err)
+	}
+	if string(after) != corrupted {
+		t.Fatal("plan file changed despite the failed write")
 	}
 }

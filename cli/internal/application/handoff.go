@@ -2,6 +2,8 @@ package application
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
@@ -12,11 +14,11 @@ import (
 // DB-lookup-dependent (only checked when the corresponding flag is given),
 // so they're enforced here rather than in domain.Handoff.Validate() — same
 // pattern as CreateTrace's optional --run-id.
-func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []string, closePhase bool) (id, path string, err error) {
+func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, openItems []string, closePhase bool) (id, path string, err error) {
 	entity := domain.Handoff{
 		RunID:   optionalString(runID),
 		CheckID: optionalString(checkID),
-		Anchors: domain.HandoffAnchors{OpenItems: openItems},
+		Anchors: domain.HandoffAnchors{OpenItems: openItems, NextAction: optionalString(nextAction)},
 	}
 	if err := entity.Validate(); err != nil {
 		return "", "", err
@@ -106,14 +108,30 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []
 		}
 	}
 
+	// handoff record targets `## Progress`, not `## Current State and Next
+	// Action` — Current State is a snapshot (last-write-wins), not an
+	// append-only log, and the plan_section appender (P3 wave 1) only knows
+	// how to append after the last line of a section, so a handoff entry
+	// joins Progress's event log alongside trace/decision/check entries
+	// instead. Same deferred-id-minting workaround check_record uses:
+	// pre-check writability now, format the real entry with entryAt after.
+	if err := planSectionWritable("Progress"); err != nil {
+		return "", "", err
+	}
+
+	var entryAt string
 	id, path, _, err = AppendNewEntityAndApply(db, changesetDir, func(id string) []infrastructure.ChangesetLine {
 		at := orderedChangesetTime(id)
+		entryAt = at
 		anchors := map[string]any{"open_items": openItems}
 		if runID != "" {
 			anchors["latest_run_id"] = runID
 		}
 		if checkID != "" {
 			anchors["latest_check_id"] = checkID
+		}
+		if nextAction != "" {
+			anchors["exact_next_action"] = nextAction
 		}
 		fields := map[string]any{
 			"anchors":    anchors,
@@ -134,7 +152,40 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID string, openItems []
 	if err != nil {
 		return "", "", err
 	}
+
+	writePlan, err := preparePlanAppend("Progress", formatHandoffProgressEntry(entryAt, id, runID, checkID, nextAction, openItems, closePhase))
+	if err != nil {
+		// The pre-check above already proved the section exists; a failure
+		// here is a race (the plan changed mid-command) or an I/O error.
+		return id, path, fmt.Errorf("handoff %s recorded, but plan markdown update failed: %w", id, err)
+	}
+	if err := writePlan(); err != nil {
+		return id, path, fmt.Errorf("handoff %s recorded, but plan markdown update failed: %w", id, err)
+	}
 	return id, path, nil
+}
+
+// formatHandoffProgressEntry renders a `## Progress` line for a handoff
+// record — an event-log entry ("handoff recorded"), not a rewrite of the
+// snapshot-style `## Current State and Next Action` section.
+func formatHandoffProgressEntry(at, id, runID, checkID, nextAction string, openItems []string, closePhase bool) string {
+	line := fmt.Sprintf("- `%s` — handoff recorded. handoff: `%s`.", at, id)
+	if runID != "" {
+		line += fmt.Sprintf(" run: `%s`.", runID)
+	}
+	if checkID != "" {
+		line += fmt.Sprintf(" check: `%s`.", checkID)
+	}
+	if closePhase {
+		line += " phase closed."
+	}
+	if nextAction != "" {
+		line += fmt.Sprintf(" next action: %s.", nextAction)
+	}
+	if len(openItems) > 0 {
+		line += fmt.Sprintf(" open items: %s.", strings.Join(openItems, "; "))
+	}
+	return line
 }
 
 func optionalString(s string) *string {

@@ -148,6 +148,77 @@ func TestPreflightCommandWorkAutoUsesReducedWithoutActivePlan(t *testing.T) {
 	}
 }
 
+// TestPreflightCommandWorkAutoUsesReducedWithActivePlanButNoInProgressPhase
+// is the regression for F2/V2 (docs/audit/workflow-harness-ceremony-audit.md):
+// a live, readable harness with an active plan file but no story actually
+// in-progress must not route a small unrelated change through the full
+// durable ceremony path merely because some active plan exists.
+func TestPreflightCommandWorkAutoUsesReducedWithActivePlanButNoInProgressPhase(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightWorkPlaybookAndPlan(t)
+	seedPreflightStory(t, "planned")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "work", "--mode", "auto", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Mode != "reduced" || view.Stop != nil {
+		t.Fatalf("view = %+v, want reduced route: active plan present, but no story in-progress", view)
+	}
+}
+
+// TestPreflightCommandWorkAutoUsesDurableWithActiveInProgressPhase is the
+// positive control for the fix above: an active plan with a genuinely
+// in-progress story still resolves to the full durable path.
+func TestPreflightCommandWorkAutoUsesDurableWithActiveInProgressPhase(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightWorkPlaybookAndPlan(t)
+	seedPreflightStory(t, "in-progress")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "work", "--mode", "auto", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Mode != "durable" || view.Stop != nil {
+		t.Fatalf("view = %+v, want durable route: a story is genuinely in-progress", view)
+	}
+}
+
+func seedPreflightWorkPlaybookAndPlan(t *testing.T) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(preflightDocsPath, "playbooks"), 0o755); err != nil {
+		t.Fatalf("MkdirAll playbooks: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(preflightDocsPath, "playbooks", "work.md"), []byte("# work\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile work playbook: %v", err)
+	}
+	planPath := filepath.Join("docs", "plans", "active", "initiative.md")
+	if err := os.MkdirAll(filepath.Dir(planPath), 0o755); err != nil {
+		t.Fatalf("MkdirAll active plans: %v", err)
+	}
+	if err := os.WriteFile(planPath, []byte("# active plan\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile active plan: %v", err)
+	}
+}
+
+func seedPreflightStory(t *testing.T, status string) {
+	t.Helper()
+	db, err := infrastructure.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer db.Close()
+	if _, _, err := infrastructure.Migrate(db); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at)
+		VALUES ('01HPREFLIGHTSTORYSEEDULID', 'seeded', 'goal', ?, '2026-08-07T00:00:00Z')`, status); err != nil {
+		t.Fatalf("seed story status=%s: %v", status, err)
+	}
+}
+
 func TestPreflightCommandBlocksDurableWithoutHarness(t *testing.T) {
 	t.Chdir(t.TempDir())
 
@@ -258,5 +329,92 @@ func TestPreflightCommandReportsStaleDocs(t *testing.T) {
 	view := decodePreflight(t, out)
 	if view.Docs != application.PreflightDocsStale || view.Stop == nil || view.Stop.Code != "stale_docs" {
 		t.Fatalf("view = %+v", view)
+	}
+}
+
+func TestPreflightCommandIncludesVersion(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	out, err := runPreflightCommand(t, "1.2.3", "preflight", "watzup", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Version != "1.2.3" {
+		t.Fatalf("view.Version = %q, want %q", view.Version, "1.2.3")
+	}
+}
+
+// TestPreflightCommandWatzupIncludesContextWithoutPhases proves R4/wave 1:
+// watzup gets a stage-shaped packet (position/latest IDs/drift/readiness),
+// but not the Phases field its playbook never references.
+func TestPreflightCommandWatzupIncludesContextWithoutPhases(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightStory(t, "planned")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "watzup", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context == nil {
+		t.Fatal("watzup view.Context = nil, want a stage-shaped packet")
+	}
+	if view.Context.Phases != nil {
+		t.Fatalf("watzup view.Context.Phases = %v, want nil (watzup.md never calls query phases)", view.Context.Phases)
+	}
+}
+
+// TestPreflightCommandWorkIncludesContextWithPhases proves work's packet
+// carries the phases list — the field its playbook's "Load state" step
+// references via `query phases`.
+func TestPreflightCommandWorkIncludesContextWithPhases(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightWorkPlaybookAndPlan(t)
+	seedPreflightStory(t, "in-progress")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "work", "--mode", "auto", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context == nil {
+		t.Fatal("work view.Context = nil, want a stage-shaped packet")
+	}
+	if len(view.Context.Phases) != 1 || view.Context.Phases[0].Slug != "seeded" {
+		t.Fatalf("work view.Context.Phases = %+v, want the seeded story", view.Context.Phases)
+	}
+}
+
+// TestPreflightCommandCheckOmitsContext is NG2's routing proof: check
+// keeps its own separate resume/query calls unchanged, so it must never
+// receive a context packet even when the DB is ready.
+func TestPreflightCommandCheckOmitsContext(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightStory(t, "planned")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "check", "--mode", "review", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context != nil {
+		t.Fatalf("check view.Context = %+v, want nil (NG2: check's reads are unchanged)", view.Context)
+	}
+}
+
+// TestPreflightCommandContextNilWithoutHarness proves the packet degrades
+// gracefully (not a crash or a bogus empty packet) when there is no DB to
+// build it from.
+func TestPreflightCommandContextNilWithoutHarness(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "watzup", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context != nil {
+		t.Fatalf("watzup view.Context = %+v, want nil without a harness db", view.Context)
 	}
 }

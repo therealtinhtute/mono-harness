@@ -6,14 +6,14 @@ Read-only session recap. Combine Git state, DB lifecycle position, and the curre
 
 ## Preconditions
 
-1. Run `zharness --version`. A `dev` build satisfies the gate; otherwise require version `0.1.0` or newer. If unavailable or stale, print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop.
-2. Run `zharness preflight watzup --json` and follow its status. Reduced mode may recap Git and any readable active plan when DB state is absent; it must state that DB position is unavailable.
+1. Run `zharness preflight watzup --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its status. Its `context` field, when present, is the sole source of lifecycle position for Step 2 below — do not call `resume` separately. Reduced mode may recap Git and any readable active plan when DB state (and so `context`) is absent; it must state that DB position is unavailable.
+2. If this session's context was compacted or summarized since the last `preflight` call, re-run it before trusting any earlier-read `context` packet or lifecycle ID — a summarized turn cannot be assumed to have carried exact DB state forward.
 3. Remain read-only: do not initialize state, create lifecycle rows, write changesets, edit plans, run quality gates, or modify code.
 
 ## Steps
 
 1. **Read branch state** — run `git status -sb`, `git log --oneline main..HEAD`, and `git rev-list --left-right --count main...HEAD`. Capture branch, ahead/behind, and staged/unstaged/untracked scope.
-2. **Read lifecycle position** — run `zharness resume --json` once. Capture readiness, drift, current phase/status, and latest run/check/handoff IDs.
+2. **Read lifecycle position from the packet** — read `context` from the same `preflight watzup --json` response captured in Preconditions step 1; render its `position`, `drift`, `readiness`, and latest run/check/handoff IDs 1:1, with no independent prose re-derivation. When `context` is absent, state that DB position is unavailable rather than calling `resume` to fill the gap.
 3. **Select the active plan** — inspect `docs/plans/active/*.md`. Prefer the plan whose Phases and Verification or Current State matches DB `current_phase`. If more than one remains plausible, state the ambiguity instead of choosing silently.
 4. **Recap the plan** — summarize Outcome; active phase/wave/task; recent append-only Progress; material Decisions; latest Validation verdict/proof gaps; blockers/open items; and the exact next action already recorded in Current State. Read task execution status only from append-only `## Progress`, the sole task execution-status source; task definitions have no status fields.
 5. **Read WIP** — inspect the working-tree diff, capped at the most significant five files. Group coherent work themes and identify incomplete implementations or missing proof.
@@ -32,9 +32,7 @@ Keep the recap concise:
 
 ## Command Reference
 
-- `zharness --version`
 - `zharness preflight watzup --json`
-- `zharness resume --json`
 
 ## Exit Conditions
 

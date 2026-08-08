@@ -150,6 +150,57 @@ ALTER TABLE checks ADD COLUMN judge TEXT;
 ALTER TABLE checks ADD COLUMN judge_model TEXT;
 `,
 	},
+	{
+		// Re-creates the decisions table dropped by 0003_drop_dead_surface.
+		// It was dropped as dead surface with no writer, not rejected on
+		// merit (git log -S "decision add" returns nothing before this
+		// migration) — no historical changeset references the `decision`
+		// entity, so this is purely additive to replay. Schema differs
+		// from the original: phase/task/run_id link a decision to the
+		// work that produced it, matching what work.md's Decisions
+		// section already records in markdown (docs/audit/workflow-harness-ceremony-audit.md, D2).
+		Version: 7,
+		Name:    "0007_decisions",
+		SQL: `
+CREATE TABLE decisions (
+	id TEXT PRIMARY KEY,
+	run_id TEXT REFERENCES runs(id),
+	phase TEXT REFERENCES stories(slug),
+	task TEXT,
+	decision TEXT NOT NULL,
+	rationale TEXT NOT NULL,
+	created_at TEXT NOT NULL
+);
+`,
+	},
+	{
+		// A trace previously fired once per wave (`work.md`'s step 9), while
+		// `## Progress` in the plan markdown records one entry per *task*
+		// (step 7) — a mid-wave interruption left the index blind to
+		// completed tasks the markdown already recorded (G1,
+		// docs/audit/workflow-harness-ceremony-audit.md). task/task_status
+		// are both nullable: a wave-level trace (no task) remains valid.
+		// task_status, when set, is one of work.md's Status Routing values:
+		// DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, BLOCKED.
+		Version: 8,
+		Name:    "0008_trace_task_granularity",
+		SQL: `
+ALTER TABLE traces ADD COLUMN task TEXT;
+ALTER TABLE traces ADD COLUMN task_status TEXT;
+`,
+	},
+	{
+		// Enables gating --judge by lane (G2, docs/audit/workflow-harness-
+		// ceremony-audit.md/V2): runs.plan_id already stores the initiative
+		// plan's own ULID (run create --plan-id), but nothing on intakes
+		// carried the same value, so a check had no DB-native path back to
+		// its lane. plan_id here is the same kind of value as runs.plan_id
+		// — not a foreign key, not part of lifecycle-link validation — set
+		// via the new optional `intake --plan-id` flag.
+		Version: 9,
+		Name:    "0009_intake_plan_id",
+		SQL:     `ALTER TABLE intakes ADD COLUMN plan_id TEXT;`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

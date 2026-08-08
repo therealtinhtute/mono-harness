@@ -44,6 +44,7 @@ func NewRootCmd(version string) *cobra.Command {
 	root.AddCommand(newStoryCmd())
 	root.AddCommand(newInterventionCmd())
 	root.AddCommand(newTraceCmd())
+	root.AddCommand(newDecisionCmd())
 	root.AddCommand(newRunCmd())
 	root.AddCommand(newResumeCmd(version))
 	root.AddCommand(newPreflightCmd(version))

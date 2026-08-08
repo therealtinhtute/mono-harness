@@ -24,7 +24,7 @@ func TestPendingChangesetBlocksOrdinaryMutationUntilRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed story: %v", err)
 	}
-	_, _, fence, err := infrastructure.ChangesetStatus(db, dir)
+	_, _, fence, _, err := infrastructure.ChangesetStatus(db, dir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus before pending: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestPendingChangesetBlocksOrdinaryMutationUntilRecovery(t *testing.T) {
 		t.Fatalf("ListChangesets before blocked mutation: %v", err)
 	}
 	before := recoverySnapshotForTest(t, db, storyID)
-	_, _, err = CreateIntake(db, dir, "maintenance", "blocked while recovery is pending", "tiny", "")
+	_, _, err = CreateIntake(db, dir, "maintenance", "blocked while recovery is pending", "tiny", "", "")
 	validation, ok := err.(*domain.ValidationError)
 	if !ok || validation.Code != "changeset_recovery_required" || validation.Message == "" {
 		t.Fatalf("CreateIntake error = %T %v, want changeset_recovery_required", err, err)
@@ -61,7 +61,7 @@ func TestPendingChangesetBlocksOrdinaryMutationUntilRecovery(t *testing.T) {
 	if _, _, err := ApplyChangesetForRecovery(db, dir, pendingPath); err != nil {
 		t.Fatalf("apply earliest pending changeset: %v", err)
 	}
-	if _, _, err := CreateIntake(db, dir, "maintenance", "continues after recovery", "tiny", ""); err != nil {
+	if _, _, err := CreateIntake(db, dir, "maintenance", "continues after recovery", "tiny", "", ""); err != nil {
 		t.Fatalf("CreateIntake after recovery: %v", err)
 	}
 	live := recoverySnapshotForTest(t, db, storyID)
@@ -107,7 +107,7 @@ func TestDirectApplyRejectsExternalSameBasename(t *testing.T) {
 		t.Fatalf("write external impostor: %v", err)
 	}
 
-	pendingBefore, appliedBefore, fenceBefore, err := infrastructure.ChangesetStatus(db, dir)
+	pendingBefore, appliedBefore, fenceBefore, _, err := infrastructure.ChangesetStatus(db, dir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus before impostor: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestDirectApplyRejectsExternalSameBasename(t *testing.T) {
 	if stateAfter := recoverySnapshotForTest(t, db, storyID); stateAfter != stateBefore {
 		t.Fatalf("impostor changed database: before=%+v after=%+v", stateBefore, stateAfter)
 	}
-	pendingAfter, appliedAfter, fenceAfter, err := infrastructure.ChangesetStatus(db, dir)
+	pendingAfter, appliedAfter, fenceAfter, _, err := infrastructure.ChangesetStatus(db, dir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus after impostor: %v", err)
 	}
