@@ -6,9 +6,8 @@ Turn the locked initiative definition in `docs/plans/active/{slug}.md` into an e
 
 ## Preconditions
 
-1. Run `zharness --version`. A `dev` build satisfies the gate; otherwise require version `0.1.0` or newer. If unavailable or stale, print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop.
-2. Run `zharness preflight to-plan --mode full --json` and follow its stop/recovery result. Durable planning requires an initialized readable/writable database and ready managed docs.
-3. Require the intended active plan at `docs/plans/active/{slug}.md` with `status: active`, stable `id`/`intake_id`, and complete Outcome, Authority and Requirements, and Non-goals sections. If the initiative is ambiguous, route to `brainstorm refine` rather than guessing.
+1. Run `zharness preflight to-plan --mode full --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result. Durable planning requires an initialized readable/writable database and ready managed docs.
+2. Require the intended active plan at `docs/plans/active/{slug}.md` with `status: active`, stable `id`/`intake_id`, and complete Outcome, Authority and Requirements, and Non-goals sections. If the initiative is ambiguous, route to `brainstorm refine` rather than guessing.
 
 ## Arguments
 
@@ -46,7 +45,6 @@ Preserve every other section. After a phase/task definition is written, it is im
 
 ## Command Reference
 
-- `zharness --version`
 - `zharness preflight to-plan --mode full --json`
 - `zharness story --slug {stable-phase-slug} --goal "..." [--depends-on {slug}] --json`
 - `zharness query phases --json`

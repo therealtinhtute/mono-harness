@@ -509,6 +509,46 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   shape; check omits context; context nil without harness). Verification: `cd cli && go
   clean -testcache && go build ./...`, `go vet ./...`, `go test ./...` (all packages ok,
   clean cache) and `bash scripts/verify-doc-links.sh` (0 findings) both green. No blocker.
+- 2026-08-08, phase `p5-harvest`, waves 1-3, task_status=DONE, run_id=none, trace_id=none
+  (same environment constraint as P1-P4 — no live zharness binary in this session;
+  verified via `cd cli && go clean -testcache && go test ./...` and `bash
+  scripts/verify-doc-links.sh`). Wave 4 (git skill thinning) deliberately not started this
+  session — see Current State; it is the phase's largest, most deletion-heavy remaining
+  task and warrants its own check-in before touching `references/**`/scripts. Wave 1:
+  `watzup.md`, `work.md`, and `handoff.md` now read `context` from the SAME `preflight
+  {stage} --json` call already in their Preconditions instead of separately calling
+  `resume`/`query state`/`query phases` — one round trip where each previously spent two.
+  `check.md` is untouched (NG2). Every edit applied identically to `docs/playbooks/*.md`
+  and `cli/docs/embedded/playbooks/*.md` (kept byte-identical by hand-copying, since no
+  live `zharness init --refresh-docs` exists in this session); `TestProjectionDrift_
+  RootDocsMatchEmbed` stayed green throughout. `TestOnePlan_PlaybookContract`'s watzup
+  case required updating (its required-phrase list still named the now-removed literal
+  `zharness resume --json` call). Wave 2: vocabulary audit — every `context.X` noun the
+  three edited playbooks now reference (`position`, `drift`, `readiness`, `phases`,
+  `latest_run_id`/`latest_check_id`/`latest_handoff_id`) maps to a real `ContextPacket`
+  JSON field; no phantom nouns (recorded as D16). `context.traces`/`context.omitted`
+  (P4 wave 2) remain unconsumed by any playbook this round — legitimate on their own
+  merits (bounding read cost, R5), not yet wired to a reader; a future phase could give
+  watzup's Progress recap a lossless enough index-backed source to use them (see D16).
+  Added a rehydrate note (G5) to `watzup.md`/`work.md`/`handoff.md` Preconditions:
+  re-run `preflight` if this session's context was compacted/summarized since the last
+  call, since a summarized turn can't be assumed to have carried exact DB state forward.
+  Wave 3: dropped the separate `zharness --version` round trip from all 6 spine
+  `SKILL.md` files, all 6 playbooks, and the thin-trigger template
+  (`skills/workflow/README.md:41-56`) — F3's exact fix, now landable since P4 emits
+  `version` inside the SAME `preflight` response. Also fixed a latent staleness bug found
+  while rewriting this exact text: the 6 playbooks hardcoded a `0.1.0` version floor while
+  `skills/workflow/README.md`'s `MIN_ZHARNESS_VERSION` (the actual gate every SKILL.md
+  enforces) is `0.4.1` — corrected to match (D17). Deferred `work.md`'s rare branches
+  (Bounded/Simple Execution, Status Routing — G6) to the end of the file, after Command
+  Reference/Exit Conditions, so the common full-mode path reads uninterrupted; left
+  `check.md`'s analogous bounded-mode section in place (not named by this task, and
+  touching it wasn't necessary). Changed surfaces: `docs/playbooks/*.md` +
+  `cli/docs/embedded/playbooks/*.md` (all 6, mirrored), `skills/workflow/{brainstorm,
+  to-plan,work,check,handoff,watzup}/SKILL.md`, `skills/workflow/README.md`,
+  `cli/internal/embedded/embedded_test.go` (one required-phrase update). Verification:
+  `cd cli && go clean -testcache && go build ./...`, `go vet ./...`, `go test ./...`
+  (all packages ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -596,6 +636,25 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   gate and into future phases: `go clean -testcache` before the final `go test ./...`,
   since Go's cache can report a stale "ok" for a package whose transitive dependency
   changed if a prior run in the same session cached it first.
+- D16 (2026-08-08, implementation): P5 wave 1 wires `context.position`/`drift`/
+  `readiness`/`phases`/latest IDs into watzup/work/handoff, but not `context.traces`/
+  `context.omitted` (built in P4 wave 2) — no playbook reads them yet. Rationale: the
+  vocabulary audit's rule is one-directional (every noun a playbook references must be a
+  real packet field), not the reverse; `traces`/`omitted` are independently justified by
+  P4's own read-cost-bounding rationale (R5) whether or not a consumer exists yet.
+  Wiring them in would mean replacing watzup step 4's plan-file Progress recap with
+  `context.traces`, but `traces.summary` doesn't carry the changed-surfaces/exact-
+  verification-result detail a hand-authored Progress line does — switching sources now
+  would either lose information or force reading the plan file anyway, defeating the
+  purpose. Left for a future phase once a lossless-enough index-backed representation
+  exists.
+- D17 (2026-08-08, implementation): while merging each playbook's `--version` step into
+  its `preflight` call (wave 3), corrected the floor version they check from `0.1.0` to
+  `0.4.1`. Rationale: `skills/workflow/README.md`'s `MIN_ZHARNESS_VERSION` — the value
+  every spine `SKILL.md` actually enforces — is `0.4.1`; the playbooks' own hardcoded
+  `0.1.0` was already stale before this session touched them. Since the exact sentence
+  was being rewritten anyway, leaving a known-wrong floor value in the new text would be
+  worse than fixing it in the same edit.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -603,9 +662,11 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p4-stage-shaped-context` (all 3 waves code-complete and verified; not
+- active_phase: `p5-harvest` (waves 1-3 code-complete and verified; wave 4 — git skill
+  thinning — not started, deliberately paused for a check-in given its deletion-heavy
+  scope (`references/**` pruning, a keep-or-delete call on 4 shell scripts); not
   DB-recorded as `in-progress`/`checked` — no live zharness in this session, so no `run
-  create`/`check record` was possible; see Progress entries above for P1 through P4)
+  create`/`check record` was possible; see Progress entries above for P1 through P5)
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
   left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
@@ -623,17 +684,18 @@ run_id, check_id, verdict, and proof_gaps. -->
     reduction while touching no contract and forcing no repository to refresh its docs
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability` through `p4-stage-shaped-context`, and route the diff through
+    `p1-integrity-operability` through `p5-harvest` (waves 1-3), and route the diff through
     `check full` to record real DB-linked verdicts — durable bookkeeping this session
-    could not produce. Schema is still at version 9 (neither P3 nor P4 shipped a
+    could not produce. Schema is still at version 9 (no phase since P2 has shipped a
     migration); `db rebuild` after minting IDs will replay everything cleanly (R7's own
     test proves this).
-  - the plan's own suggested cut line above ("ending after `p3-cli-owns-the-pen`") has
-    already been passed with the owner's continued "continue" instruction; P4 is also now
-    code-complete. `p5-harvest` is the next phase where the read-cost payoff actually
-    lands (playbooks switch to reading the packet P4 built).
-- exact_next_action: build `zharness` from source (`cd cli && go build -o zharness
-  ./cmd/zharness`) in an environment that can run it, mint the plan/intake IDs, record
-  runs/checks for `p1-integrity-operability` through `p4-stage-shaped-context` against this
-  session's diff, then start `p5-harvest` — rewiring `watzup.md`/`work.md`/`handoff.md` to
-  read `preflight`'s `context` packet instead of separate `resume`/`query phases` calls
+  - owner check-in needed before wave 4: `skills/workflow/git/SKILL.md` thinning requires
+    pruning `skills/workflow/git/references/**` (9,423 tokens of latent surface) against
+    what a new git playbook absorbs, and deciding whether to keep or delete the 4 shell
+    scripts under `skills/workflow/git/scripts/` (4,349 tokens) — both are real deletions,
+    not additive changes, and warrant confirmation before proceeding.
+- exact_next_action: get the owner's go-ahead on wave 4's scope (or explicit deferral),
+  then thin `skills/workflow/git/SKILL.md` toward the ~300-token template, move its
+  operating logic into a new git playbook alongside the six in `docs/playbooks/`, prune
+  `references/**` against what the playbook absorbs, and record the scripts keep/delete
+  decision — the last item in `p5-harvest`

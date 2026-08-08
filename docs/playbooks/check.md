@@ -6,13 +6,12 @@ Quality gate for a response-only review, a bounded diff, or a durable phase. Dur
 
 ## Preconditions and Modes
 
-1. Run `zharness --version`. A `dev` build satisfies the gate; otherwise require version `0.1.0` or newer. If unavailable or stale, print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop.
-2. Preserve invocation intent:
+1. Preserve invocation intent:
    - `gate` — durable automated phase gate for `docs/plans/active/{slug}.md`; it does not perform the complete manual review.
    - `full` — durable gate plus the complete Security, Performance, Architecture, and Code Quality review.
    - `review` — response-only review, even when an active plan exists.
    - `bounded` (alias: `simple`) — response-only gate for a direct change with no durable initiative lifecycle.
-3. Run `zharness preflight check --mode {gate|full|review|bounded} --json` and follow its stop/recovery result exactly.
+2. Run `zharness preflight check --mode {gate|full|review|bounded} --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result exactly.
 
 **Zero-write rule:** review and bounded/simple modes create no lifecycle rows, plans, reports, changesets, or markdown artifacts. They do not call `zharness check record` and do not edit an active plan. Invocation intent wins: discovering an active plan never upgrades `review` or bounded/simple work into a durable gate.
 
@@ -50,7 +49,6 @@ Run the narrowest checks that prove the requested change, perform the requested 
 
 ## Command Reference
 
-- `zharness --version`
 - `zharness preflight check --mode {gate|full|review|bounded} --json`
 - `zharness resume --json`
 - `zharness audit --json`
