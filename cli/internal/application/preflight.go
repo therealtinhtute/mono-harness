@@ -22,16 +22,18 @@ const (
 )
 
 type PreflightView struct {
-	Stage     string    `json:"stage"`
-	Mode      string    `json:"mode"`
-	DB        string    `json:"db"`
-	Docs      string    `json:"docs"`
-	Playbook  string    `json:"playbook,omitempty"`
-	Readiness string    `json:"readiness"`
-	Stop      *StopInfo `json:"stop,omitempty"`
+	Stage     string         `json:"stage"`
+	Mode      string         `json:"mode"`
+	Version   string         `json:"version"`
+	DB        string         `json:"db"`
+	Docs      string         `json:"docs"`
+	Playbook  string         `json:"playbook,omitempty"`
+	Readiness string         `json:"readiness"`
+	Stop      *StopInfo      `json:"stop,omitempty"`
+	Context   *ContextPacket `json:"context,omitempty"`
 }
 
-func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook string) (PreflightView, error) {
+func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version string) (PreflightView, error) {
 	stage = strings.ToLower(strings.TrimSpace(stage))
 	mode, err := domain.ResolvePreflightMode(stage, requestedMode)
 	if err != nil {
@@ -47,6 +49,7 @@ func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook string) (Pre
 	view := PreflightView{
 		Stage:     stage,
 		Mode:      mode,
+		Version:   version,
 		DB:        dbStatus,
 		Docs:      docsStatus,
 		Playbook:  playbook,

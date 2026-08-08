@@ -331,3 +331,90 @@ func TestPreflightCommandReportsStaleDocs(t *testing.T) {
 		t.Fatalf("view = %+v", view)
 	}
 }
+
+func TestPreflightCommandIncludesVersion(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	out, err := runPreflightCommand(t, "1.2.3", "preflight", "watzup", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Version != "1.2.3" {
+		t.Fatalf("view.Version = %q, want %q", view.Version, "1.2.3")
+	}
+}
+
+// TestPreflightCommandWatzupIncludesContextWithoutPhases proves R4/wave 1:
+// watzup gets a stage-shaped packet (position/latest IDs/drift/readiness),
+// but not the Phases field its playbook never references.
+func TestPreflightCommandWatzupIncludesContextWithoutPhases(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightStory(t, "planned")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "watzup", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context == nil {
+		t.Fatal("watzup view.Context = nil, want a stage-shaped packet")
+	}
+	if view.Context.Phases != nil {
+		t.Fatalf("watzup view.Context.Phases = %v, want nil (watzup.md never calls query phases)", view.Context.Phases)
+	}
+}
+
+// TestPreflightCommandWorkIncludesContextWithPhases proves work's packet
+// carries the phases list — the field its playbook's "Load state" step
+// references via `query phases`.
+func TestPreflightCommandWorkIncludesContextWithPhases(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightWorkPlaybookAndPlan(t)
+	seedPreflightStory(t, "in-progress")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "work", "--mode", "auto", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context == nil {
+		t.Fatal("work view.Context = nil, want a stage-shaped packet")
+	}
+	if len(view.Context.Phases) != 1 || view.Context.Phases[0].Slug != "seeded" {
+		t.Fatalf("work view.Context.Phases = %+v, want the seeded story", view.Context.Phases)
+	}
+}
+
+// TestPreflightCommandCheckOmitsContext is NG2's routing proof: check
+// keeps its own separate resume/query calls unchanged, so it must never
+// receive a context packet even when the DB is ready.
+func TestPreflightCommandCheckOmitsContext(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightStory(t, "planned")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "check", "--mode", "review", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context != nil {
+		t.Fatalf("check view.Context = %+v, want nil (NG2: check's reads are unchanged)", view.Context)
+	}
+}
+
+// TestPreflightCommandContextNilWithoutHarness proves the packet degrades
+// gracefully (not a crash or a bogus empty packet) when there is no DB to
+// build it from.
+func TestPreflightCommandContextNilWithoutHarness(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "watzup", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Context != nil {
+		t.Fatalf("watzup view.Context = %+v, want nil without a harness db", view.Context)
+	}
+}

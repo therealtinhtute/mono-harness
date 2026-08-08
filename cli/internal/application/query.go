@@ -239,6 +239,69 @@ func QueryTraces(db *sql.DB, runID string, tail int) ([]TraceView, error) {
 	return views, nil
 }
 
+// QueryTracesByPhase reads trace rows for one phase, joining through
+// runs.story_slug, in chronological order and capped to the most recent N
+// (tail, 0 = unbounded) — the phase-scoped counterpart of QueryTraces'
+// run-scoped filter, for callers (preflight's context packet) that need a
+// phase's trace history rather than one run's.
+func QueryTracesByPhase(db *sql.DB, phaseSlug string, tail int) ([]TraceView, error) {
+	q := `
+		SELECT traces.id, traces.run_id, traces.wave, traces.summary, traces.task, traces.task_status, traces.created_at
+		FROM traces
+		JOIN runs ON runs.id = traces.run_id
+		WHERE runs.story_slug = ?
+		ORDER BY traces.created_at DESC, traces.id DESC`
+	args := []any{phaseSlug}
+	if tail > 0 {
+		q += ` LIMIT ?`
+		args = append(args, tail)
+	}
+
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query traces by phase: %w", err)
+	}
+	defer rows.Close()
+
+	views := []TraceView{}
+	for rows.Next() {
+		var v TraceView
+		var runIDCol, taskCol, taskStatusCol sql.NullString
+		if err := rows.Scan(&v.ID, &runIDCol, &v.Wave, &v.Summary, &taskCol, &taskStatusCol, &v.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan trace row: %w", err)
+		}
+		v.RunID = nullableString(runIDCol)
+		v.Task = nullableString(taskCol)
+		v.TaskStatus = nullableString(taskStatusCol)
+		views = append(views, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("query traces by phase: %w", err)
+	}
+
+	// DESC fetched the most recent `tail`; restore chronological order.
+	for i, j := 0, len(views)-1; i < j; i, j = i+1, j-1 {
+		views[i], views[j] = views[j], views[i]
+	}
+	return views, nil
+}
+
+// countTracesForPhase reports how many trace rows exist for a phase,
+// regardless of any tail cap — BuildContextPacket uses this to decide
+// whether QueryTracesByPhase's windowed result needs an Omitted entry.
+func countTracesForPhase(db *sql.DB, phaseSlug string) (int, error) {
+	var count int
+	err := db.QueryRow(`
+		SELECT COUNT(*)
+		FROM traces
+		JOIN runs ON runs.id = traces.run_id
+		WHERE runs.story_slug = ?`, phaseSlug).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count traces by phase: %w", err)
+	}
+	return count, nil
+}
+
 // DecisionView is one row of the `query decisions` view: the compressed-
 // index counterpart of a `## Decisions` markdown entry.
 type DecisionView struct {

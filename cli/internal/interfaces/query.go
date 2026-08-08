@@ -23,7 +23,7 @@ func newQueryCmd() *cobra.Command {
 			return runQuery(cmd, args[0], phaseFilter, latest, runID, tail)
 		},
 	}
-	cmd.Flags().String("phase", "", "filter the artifacts/decisions view by phase slug")
+	cmd.Flags().String("phase", "", "filter the artifacts/decisions/traces view by phase slug")
 	cmd.Flags().Bool("latest", false, "return the most recent verdict (check view)")
 	cmd.Flags().String("run-id", "", "filter the traces view to one run")
 	cmd.Flags().Int("tail", 0, "limit the traces/decisions view to the N most recent entries (0 = unbounded)")
@@ -77,7 +77,13 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 
 	case "traces":
-		v, err := application.QueryTraces(raw, runID, tail)
+		var v []application.TraceView
+		var err error
+		if phaseFilter != "" {
+			v, err = application.QueryTracesByPhase(raw, phaseFilter, tail)
+		} else {
+			v, err = application.QueryTraces(raw, runID, tail)
+		}
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query traces: %v", err))
 		}

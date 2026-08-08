@@ -461,6 +461,54 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green. No blocker; the wave
   1 Pause condition (risk R-A) did not trigger — the appender survived every adversarial
   and real-plan case tried.
+- 2026-08-08, phase `p4-stage-shaped-context`, all 3 waves, task_status=DONE, run_id=none,
+  trace_id=none (same environment constraint as P1-P3 — no live zharness binary in this
+  session; verified via `cd cli && go test ./...` and `bash scripts/verify-doc-links.sh`).
+  Also fixed a real regression found while re-running the full suite with a clean test
+  cache: `cmd/zharness`'s `TestLifecycle_ScratchDirFullChain` E2E test predates P3 and
+  manually spliced hand-authored Progress/Validation text into the plan file to simulate
+  what an agent would write — colliding with what `trace add`/`check record`/`handoff
+  record` now write for real (P3). My P3 gate run had reported this package `ok (cached)`
+  and missed it; `go clean -testcache` before this phase's gate surfaced it. Fixed by
+  deleting the now-obsolete manual splices and asserting against the real CLI-authored
+  format instead (see D15). Wave 1: `PreflightView` gained `Version` (from the same
+  `version` string `runPreflight` already threads through) and `Context
+  *application.ContextPacket` (`cli/internal/application/preflight.go`,
+  `context.go` — new). `context` is populated only for `watzup`/`work`/`handoff`
+  (`contextEligibleStages`, `cli/internal/interfaces/preflight.go`) — `check` never
+  receives one (NG2: its full-plan read and separate `resume`/`query phases` calls are
+  unchanged); `brainstorm`/`to-plan`/`git`/`interview` don't consult prior lifecycle state
+  on entry today, so they get nothing either, keeping the packet's fields matched 1:1 to
+  what each stage's current playbook actually calls. `Position`/latest IDs/`Drift`/
+  `Readiness` are `Resume`'s own derivation (same function, same DB read), so the packet
+  and `resume --json` can never disagree; `Phases` (`query phases`' shape) is populated
+  only for `work`/`handoff`, whose playbooks reference it — `watzup` never gets it, since
+  its playbook doesn't call `query phases`. `observePreflightState` now returns its opened
+  `*infrastructure.ReadOnlyDB` instead of closing it internally, so `runPreflight` reuses
+  the same handle (and the same held shared repository lock) to build the packet rather
+  than opening the database a second time — matching CONTRACT.md's own "one shared
+  directory-inode lock for the complete read-only SQLite handle lifetime" wording for
+  read-only commands. Wave 2: window policy — `Traces` (via new
+  `QueryTracesByPhase`/`countTracesForPhase` in `cli/internal/application/query.go`,
+  joining `traces` through `runs.story_slug`) is the current phase's own trace history,
+  capped at 30 (`contextTraceTail`); when a phase's real trace count exceeds the cap, the
+  packet also carries one `Omitted` entry (`{field, reason, fetch}`, R5) naming an exact
+  fetch command — `zharness query traces --phase {slug} --tail 0 --json` — using a new
+  `--phase` flag added to `query traces` alongside its existing `--run-id` filter
+  (`cli/internal/interfaces/query.go`), mirroring `query decisions --phase`'s precedent.
+  Wave 3: `cli/docs/CONTRACT.md`'s `preflight <stage>` entry documents `version` and the
+  full `context` shape, including which three stages receive one and why check doesn't;
+  `query <view>`'s `traces` args document the new `--phase` filter. `SCHEMA.md` is
+  unchanged — P4 shipped no migration, only application-layer read composition.
+  Changed surfaces: `cli/internal/application/{preflight,context,query}.go` (`context.go`
+  new), `cli/internal/interfaces/{preflight,query}.go`, `cli/docs/CONTRACT.md`, plus the
+  P3-regression fix to `cli/cmd/zharness/lifecycle_test.go`. New/updated tests:
+  `cli/internal/application/context_test.go` (new, 6 cases — packet shape per stage,
+  window/omission, no-current-phase, and reuse-of-Resume-drift), 5 new cases in
+  `cli/internal/interfaces/preflight_test.go` (version present; watzup/work packet
+  shape; check omits context; context nil without harness). Verification: `cd cli && go
+  clean -testcache && go build ./...`, `go vet ./...`, `go test ./...` (all packages ok,
+  clean cache) and `bash scripts/verify-doc-links.sh` (0 findings) both green. No blocker.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -536,6 +584,18 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   append-only log, and wave 1's appender only knows how to append after a section's last
   line; a handoff lands as an event-log entry alongside trace/decision/check entries
   instead of attempting a section-body replace the appender was never built for.
+- D15 (2026-08-08, implementation): fixed `cmd/zharness/TestLifecycle_ScratchDirFullChain`
+  (found stale-cached-green during P4, not caught in P3) by deleting its manual
+  Progress/Validation text splices rather than reworking them to coexist with the CLI's
+  own writes. Rationale: those splices existed only to simulate, by hand, exactly what P3
+  made the CLI do for real; keeping both would mean asserting on doubled, format-mismatched
+  content for no reason. The fix also extended `createLifecycleTrace`'s test helper to pass
+  `--task`/`--task-status`, preserving the test's original proof that task-status
+  granularity survives to the final completed plan, now through the real CLI-authored
+  format instead of a hand-written stand-in for it. Lesson carried into this phase's own
+  gate and into future phases: `go clean -testcache` before the final `go test ./...`,
+  since Go's cache can report a stale "ok" for a package whose transitive dependency
+  changed if a prior run in the same session cached it first.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -543,9 +603,9 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p3-cli-owns-the-pen` (both waves code-complete and verified; not
+- active_phase: `p4-stage-shaped-context` (all 3 waves code-complete and verified; not
   DB-recorded as `in-progress`/`checked` — no live zharness in this session, so no `run
-  create`/`check record` was possible; see Progress entries above for P1, P2, and P3)
+  create`/`check record` was possible; see Progress entries above for P1 through P4)
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
   left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
@@ -563,15 +623,17 @@ run_id, check_id, verdict, and proof_gaps. -->
     reduction while touching no contract and forcing no repository to refresh its docs
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability` through `p3-cli-owns-the-pen`, and route the diff through
+    `p1-integrity-operability` through `p4-stage-shaped-context`, and route the diff through
     `check full` to record real DB-linked verdicts — durable bookkeeping this session
-    could not produce. Schema is still at version 9 (P3 shipped no migration); `db rebuild`
-    after minting IDs will replay everything cleanly (R7's own test proves this).
-  - the plan's own suggested cut line above ("ending after `p3-cli-owns-the-pen`") is now
-    reachable: P3 is code-complete and verified. Continuing to `p4-stage-shaped-context`
-    is the standing instruction unless the owner redirects — it is not itself a stop signal.
+    could not produce. Schema is still at version 9 (neither P3 nor P4 shipped a
+    migration); `db rebuild` after minting IDs will replay everything cleanly (R7's own
+    test proves this).
+  - the plan's own suggested cut line above ("ending after `p3-cli-owns-the-pen`") has
+    already been passed with the owner's continued "continue" instruction; P4 is also now
+    code-complete. `p5-harvest` is the next phase where the read-cost payoff actually
+    lands (playbooks switch to reading the packet P4 built).
 - exact_next_action: build `zharness` from source (`cd cli && go build -o zharness
   ./cmd/zharness`) in an environment that can run it, mint the plan/intake IDs, record
-  runs/checks for `p1-integrity-operability` through `p3-cli-owns-the-pen` against this
-  session's diff, then start `p4-stage-shaped-context` — the reserved `resume` contract
-  change deferred by D13 (risk R-D)
+  runs/checks for `p1-integrity-operability` through `p4-stage-shaped-context` against this
+  session's diff, then start `p5-harvest` — rewiring `watzup.md`/`work.md`/`handoff.md` to
+  read `preflight`'s `context` packet instead of separate `resume`/`query phases` calls

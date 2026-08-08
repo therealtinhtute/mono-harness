@@ -29,6 +29,15 @@ var preflightPlaybooks = map[string]string{
 	"watzup":     "docs/playbooks/watzup.md",
 }
 
+// contextEligibleStages names the stages that receive a stage-shaped
+// context packet (R4). check is deliberately absent — NG2 keeps its
+// full-plan read and its own separate resume/query calls unchanged, so it
+// never reaches BuildContextPacket. brainstorm/to-plan don't consult prior
+// lifecycle state before writing (their playbooks call resume/query phases
+// only as post-write verification, not as input), and git/interview own no
+// harness entity (D7), so none of the four get a packet either.
+var contextEligibleStages = map[string]bool{"watzup": true, "work": true, "handoff": true}
+
 func newPreflightCmd(version string) *cobra.Command {
 	var mode string
 	cmd := &cobra.Command{
@@ -45,7 +54,10 @@ func newPreflightCmd(version string) *cobra.Command {
 
 func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) error {
 	stage = strings.ToLower(strings.TrimSpace(stage))
-	dbStatus, docsStatus, hasInProgressPhase := observePreflightState(version)
+	dbStatus, docsStatus, hasInProgressPhase, db := observePreflightState(version)
+	if db != nil {
+		defer db.Close()
+	}
 	requestedMode = resolvePreflightRequestedMode(stage, requestedMode, dbStatus, hasInProgressPhase)
 	playbook := preflightPlaybooks[stage]
 	if docsStatus == application.PreflightDocsReady && playbook != "" && !infrastructure.Exists(playbook) {
@@ -54,12 +66,19 @@ func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) erro
 	if docsStatus != application.PreflightDocsReady {
 		playbook = ""
 	}
-	view, err := application.Preflight(stage, requestedMode, dbStatus, docsStatus, playbook)
+	view, err := application.Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)
 		}
 		return newSystemError("preflight_failed", err.Error())
+	}
+	if db != nil && contextEligibleStages[stage] {
+		pkg, cerr := application.BuildContextPacket(db.Raw(), stage, version)
+		if cerr != nil {
+			return newSystemError("preflight_failed", fmt.Sprintf("preflight: build context: %v", cerr))
+		}
+		view.Context = pkg
 	}
 	return emitPreflight(cmd, view)
 }
@@ -106,33 +125,38 @@ func hasNonEmptyActivePlan() bool {
 // observePreflightState reads db/docs readiness and, in the same handle,
 // whether any story is in-progress — the signal resolvePreflightRequestedMode
 // needs to tell live durable work apart from a merely-present plan file.
-func observePreflightState(version string) (dbStatus, docsStatus string, hasInProgressPhase bool) {
+// It returns the opened handle (nil when the DB is missing/unreadable) so
+// runPreflight can reuse it to build the context packet — one shared
+// directory-inode lock and one SQLite handle for the complete preflight
+// command lifetime (CONTRACT.md's own read-only-command lock invariant),
+// rather than opening the DB a second time.
+func observePreflightState(version string) (dbStatus, docsStatus string, hasInProgressPhase bool, db *infrastructure.ReadOnlyDB) {
 	docsStatus = application.PreflightDocsReady
 	if !infrastructure.Exists(preflightDocsPath) {
 		docsStatus = application.PreflightDocsMissing
 	}
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	opened, err := infrastructure.OpenReadOnly(dbPath)
 	if infrastructure.IsDatabaseNotFound(err) {
-		return application.PreflightDBMissing, docsStatus, false
+		return application.PreflightDBMissing, docsStatus, false, nil
 	}
 	if err != nil {
-		return application.PreflightDBUnreadable, docsStatus, false
+		return application.PreflightDBUnreadable, docsStatus, false, nil
 	}
-	defer db.Close()
 
 	var docsVersion sql.NullString
-	if err := db.QueryRow(`SELECT docs_version FROM meta LIMIT 1`).Scan(&docsVersion); err != nil {
-		return application.PreflightDBUnreadable, docsStatus, false
+	if err := opened.Raw().QueryRow(`SELECT docs_version FROM meta LIMIT 1`).Scan(&docsVersion); err != nil {
+		opened.Close()
+		return application.PreflightDBUnreadable, docsStatus, false, nil
 	}
 	if docsStatus == application.PreflightDocsReady && docsVersion.Valid && docsVersion.String != "" && docsVersion.String != "dev" && version != "dev" && docsVersion.String != version {
 		docsStatus = application.PreflightDocsStale
 	}
 
 	var inProgressCount int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM stories WHERE status = ?`, domain.StoryInProgress).Scan(&inProgressCount); err == nil {
+	if err := opened.Raw().QueryRow(`SELECT COUNT(*) FROM stories WHERE status = ?`, domain.StoryInProgress).Scan(&inProgressCount); err == nil {
 		hasInProgressPhase = inProgressCount > 0
 	}
-	return application.PreflightDBReady, docsStatus, hasInProgressPhase
+	return application.PreflightDBReady, docsStatus, hasInProgressPhase, opened
 }
 
 func emitPreflight(cmd *cobra.Command, view application.PreflightView) error {

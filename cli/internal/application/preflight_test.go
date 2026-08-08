@@ -28,7 +28,7 @@ func TestPreflightMatrix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := Preflight(tt.stage, tt.requestedMode, tt.db, tt.docs, ".kit/docs/playbooks/test.md")
+			got, err := Preflight(tt.stage, tt.requestedMode, tt.db, tt.docs, ".kit/docs/playbooks/test.md", "dev")
 			if err != nil {
 				t.Fatalf("Preflight() error = %v", err)
 			}
@@ -49,7 +49,7 @@ func TestPreflightMatrix(t *testing.T) {
 func TestPreflightNormalizesStage(t *testing.T) {
 	t.Parallel()
 
-	view, err := Preflight(" WATZUP ", "", PreflightDBReady, PreflightDocsReady, ".kit/docs/playbooks/watzup.md")
+	view, err := Preflight(" WATZUP ", "", PreflightDBReady, PreflightDocsReady, ".kit/docs/playbooks/watzup.md", "dev")
 	if err != nil {
 		t.Fatalf("Preflight() error = %v", err)
 	}
@@ -61,10 +61,10 @@ func TestPreflightNormalizesStage(t *testing.T) {
 func TestPreflightRejectsInvalidObservedStatus(t *testing.T) {
 	t.Parallel()
 
-	if _, err := Preflight("watzup", "", "corrupt", PreflightDocsReady, ""); err == nil {
+	if _, err := Preflight("watzup", "", "corrupt", PreflightDocsReady, "", "dev"); err == nil {
 		t.Fatal("Preflight() invalid db status error = nil")
 	}
-	if _, err := Preflight("watzup", "", PreflightDBReady, "old", ""); err == nil {
+	if _, err := Preflight("watzup", "", PreflightDBReady, "old", "", "dev"); err == nil {
 		t.Fatal("Preflight() invalid docs status error = nil")
 	}
 }
