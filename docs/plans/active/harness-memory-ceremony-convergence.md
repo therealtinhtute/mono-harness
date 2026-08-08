@@ -94,6 +94,15 @@ updated: 2026-08-07
     `db rebuild` exists to recover data and must never destroy it. **Pause on failure.**
   - R-C: re-adding `decisions` reverses an approved subtraction (see D2). Justified by
     R1, but the justification must hold, not merely be asserted.
+  - R-D: **ordering hazard.** Bumping `MIN_ZHARNESS_VERSION` before the binary is
+    released points every skill's version gate at a version nobody can install, breaking
+    the chain. Releases are triggered by pushing a `cli/vX.Y.Z` tag; `install-zharness.sh`
+    resolves the latest published release. The bump and the release are therefore one
+    ordered unit, not two independent edits. See phase `p5b-release`.
+  - R-E: **P2 is a point of no return.** `migrations.go` is forward-only with no `Down`,
+    and once a changeset carries the `decision` entity it cannot replay on schema 6. The
+    remedy for a mistake in 0007 is migration 0008, not a rollback. Land P2 only when its
+    replay test is green.
 
 ## Verified Findings — read before implementing
 
@@ -129,6 +138,25 @@ precedent rather than introducing a second parsing style.
 `internal/{application,domain,infrastructure,interfaces}` plus `cmd/zharness`.
 `t.TempDir()` is the established isolation pattern.
 
+**V6 — the CLI already degrades for `git`; only the skill file blocks.** In a repository
+with no database, `zharness preflight git --json` returns
+`{"stage":"git","mode":"reduced","db":"missing","docs":"missing","readiness":"reduced"}`
+with exit 0 and no `stop`. The hard stop comes from `skills/workflow/git/SKILL.md:13`,
+which halts when the binary is absent — even though the next line states that Git
+operations are non-mutating to harness state. `skills/workflow/interview/SKILL.md:14`
+carries the same defect. Consequence: in a repository without zharness installed,
+neither skill can run at all, despite neither owning a harness entity
+(`skills/workflow/README.md:66-67`). Also relevant: `SKILL.md` files are **not** part of
+the embedded doc projection (`cli/docs/embedded/` holds only `AGENTS.md`, `WORKFLOW.md`,
+`playbooks/`, `templates/`), so fixing them bumps no `docs_version` and forces no
+`init --refresh-docs`. That is why this lands in P1 rather than P5.
+
+**V7 — release mechanics.** `.github/workflows/cli-release.yml` publishes on a pushed
+`cli/vX.Y.Z` tag; goreleaser publishes the release under the bare `vX.Y.Z` tag, and
+`scripts/install-zharness.sh` resolves the latest published release. `version` is stamped
+at build time and defaults to `dev` (`cli/cmd/zharness/main.go:9`), which is why local
+builds always satisfy the gate.
+
 ## Phases and Verification
 
 <!-- Phase and task definitions are immutable after to-plan. Do not add task status fields.
@@ -162,6 +190,16 @@ status changes to mirror DB transitions. -->
     - task: `hasNonEmptyActivePlan` (`cli/internal/interfaces/preflight.go:78-90`) requires
       a phase actually `in-progress`, not merely a non-empty file
       | check: preflight returns `reduced` for an active plan with no in-progress phase
+  - wave 4 (V6 — skill files only, no doc projection, no version bump):
+    - task: `skills/workflow/git/SKILL.md:13` and `skills/workflow/interview/SKILL.md:14`
+      degrade instead of hard-stopping — a missing binary proceeds without harness
+      enrichment, an old one warns and continues
+      | check: both skills usable in a repository that has never run `zharness init`
+    - task: harness enrichment (`query check --latest`) is skipped, not failed, when
+      `db: missing` | check: no error surfaced for an uninitialized repository
+    - task: record the rule in `skills/workflow/README.md` — a skill that owns no harness
+      entity must not hard-stop on the harness (`README.md:66-67` already names the two)
+      | check: `bash scripts/verify-doc-links.sh`
 - checks:
   - `cd cli && go test ./...`
   - `bash scripts/verify-doc-links.sh`
@@ -197,8 +235,12 @@ status changes to mirror DB transitions. -->
 - waves:
   - wave 1:
     - task: markdown section appender — locate `## X`, insert before the next `## `,
-      following the parse precedent at `cli/internal/application/next.go:127-170` (V3)
-      | check: malformed and hand-edited plans append correctly or fail without data loss
+      following the parse precedent at `cli/internal/application/next.go:127-170` (V3).
+      **Hand-written plans are the primary case, not an edge case**: every plan that
+      exists today was written by an agent editing markdown directly, in whatever shape
+      it chose. The appender must accept those, not just files it produced itself.
+      | check: plans with reordered sections, missing sections, trailing content after the
+      last heading, and CRLF line endings all append correctly or fail without data loss
   - wave 2:
     - task: `trace add`, `decision add`, `check record`, `handoff record` write index +
       markdown atomically | check: index and markdown cannot diverge; failure rolls back both
@@ -250,16 +292,46 @@ status changes to mirror DB transitions. -->
       the template at `skills/workflow/README.md:41-52` | check: both gates
     - task: defer rare branches out of the main playbook body — bounded mode, status
       routing (addresses G6) | check: projection-drift test green
-    - task: bump `MIN_ZHARNESS_VERSION` at `skills/workflow/README.md:35` | check: both gates
+  - wave 4 (the static outlier the audit measured but the earlier plan dropped):
+    - task: thin-trigger `skills/workflow/git/SKILL.md` — 1,349 tokens, four times any
+      spine trigger — down toward the ~300-token template at `skills/workflow/README.md:41-52`,
+      moving operating logic into a git playbook alongside the six in `docs/playbooks`
+      | check: both gates; projection-drift test green
+    - task: prune `skills/workflow/git/references/**` against what the new playbook
+      absorbs — 9,423 tokens of latent surface, 58% of the chain's total
+      | check: `bash scripts/verify-doc-links.sh`
+    - task: decide the four shell scripts under `skills/workflow/git/scripts/` (4,349
+      tokens) — keep as executables the agent runs without reading, or delete as
+      redundant with plain `git`; record the choice in Decisions
+      | check: no skill references a deleted script
 - checks:
   - `cd cli && go test ./...`
   - `bash scripts/verify-doc-links.sh`
   - `docs/playbooks/*.md` byte-identical to `cli/docs/embedded/playbooks/*.md`
 
+### phase_slug: `p5b-release`
+- status: planned
+- goal: publish the binary the bumped version gate points at, in that order (risk R-D)
+- depends_on: `p5-harvest`
+- waves:
+  - wave 1:
+    - task: push a `cli/vX.Y.Z` tag and confirm `.github/workflows/cli-release.yml`
+      publishes the release under the bare `vX.Y.Z` tag (V7)
+      | check: `gh release list` shows the new release
+    - task: only after the release is published, bump `MIN_ZHARNESS_VERSION` at
+      `skills/workflow/README.md:35` and in every skill trigger that names it
+      | check: `bash scripts/install-zharness.sh` installs a binary satisfying the new floor
+    - task: run `zharness init --refresh-docs` against this repository and confirm
+      preflight no longer reports `stale_docs`
+      | check: `zharness preflight work --json` returns `docs: ready`
+- checks:
+  - `bash scripts/verify-doc-links.sh`
+  - a fresh clone can install zharness and run `watzup` end to end
+
 ### phase_slug: `p6-measure-and-close`
 - status: planned
 - goal: prove the outcome with the same method that measured the baseline
-- depends_on: `p5-harvest`
+- depends_on: `p5b-release`
 - waves:
   - wave 1:
     - task: re-run the audit's lifecycle measurement; append before/after to
@@ -270,6 +342,11 @@ status changes to mirror DB transitions. -->
 - checks:
   - both gates
   - `git status` shows only files named in this plan's scope
+- standing obligation for every phase, not just this one: any durable `check` returning
+  `REQUEST_CHANGES` appends one row per finding to `docs/evals/failures.md`, and any
+  failure class appearing there a second time becomes a deterministic check under
+  `scripts/` before this initiative closes. An initiative that repairs the harness must
+  obey the harness's own graduation rule.
 
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status,
@@ -296,6 +373,19 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
 - D6 (2026-08-07, verification): G2 moves from Phase 1 to Phase 2. Rationale: V2 — no
   join exists from a check to `intakes.lane`, so it is not the pure-validation change
   the earlier plan assumed.
+- D7 (2026-08-07, planning): a skill that owns no harness entity must not hard-stop on
+  the harness. Applies to exactly `git` and `interview` per the mapping table at
+  `skills/workflow/README.md:66-67`; the 6 spine skills keep their hard stop because they
+  write to the harness. Rationale: V6 — the CLI already degrades correctly, so the stop
+  is a skill-file defect that makes `git` unusable in any repository without zharness,
+  for no benefit.
+- D8 (2026-08-07, planning): the version bump and the binary release are one ordered
+  unit in their own phase, not two edits inside the harvest. Rationale: risk R-D — the
+  bump alone points the gate at a version nobody can install.
+- D9 (2026-08-07, planning): the `git` skill's static bloat returns to scope in P5 wave 4.
+  Rationale: it was the audit's largest static outlier (1,349-token trigger, 9,423 tokens
+  latent, 58% of the chain's latent surface) and fell out of the plan only because it is
+  a bloat problem rather than a memory problem — which is not a reason to drop it.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -314,7 +404,9 @@ run_id, check_id, verdict, and proof_gaps. -->
   - owner decision: does `.kit/changesets/` become committed? Decides whether
     `db rebuild` is a convenience or load-bearing (NG4)
   - owner decision: the trust model in D5/NG3
-  - Phases 4–6 end in a deliberate release beat: bump the version, release the binary,
-    run `zharness init --refresh-docs` on consuming repos
+  - `p5b-release` is a deliberate release beat: publish the binary first, bump
+    `MIN_ZHARNESS_VERSION` second, then `zharness init --refresh-docs` on consuming repos
+  - suggested cut line: ending after `p3-cli-owns-the-pen` captures the whole ceremony
+    reduction while touching no contract and forcing no repository to refresh its docs
 - exact_next_action: mint the plan and intake IDs, then start `p1-integrity-operability`
   wave 1
