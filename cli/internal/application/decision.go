@@ -2,6 +2,8 @@ package application
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -52,6 +54,16 @@ func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.
 	}
 
 	at := time.Now().UTC().Format(time.RFC3339)
+
+	entryLines := make([]string, len(decisions))
+	for i, d := range decisions {
+		entryLines[i] = formatDecisionEntry(at, d)
+	}
+	writePlan, err := preparePlanAppend("Decisions", strings.Join(entryLines, "\n"))
+	if err != nil {
+		return nil, "", err
+	}
+
 	lines := make([]infrastructure.ChangesetLine, 0, len(decisions))
 	ids = make([]string, 0, len(decisions))
 	for _, d := range decisions {
@@ -76,7 +88,29 @@ func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.
 	if err != nil {
 		return nil, "", err
 	}
+
+	if err := writePlan(); err != nil {
+		return ids, path, fmt.Errorf("decisions %v recorded, but plan markdown update failed: %w", ids, err)
+	}
 	return ids, path, nil
+}
+
+// formatDecisionEntry renders one `## Decisions` line using only the
+// fields decision add actually receives (P3, "one writer") — not the
+// richer Discovered/Rationale/Result narrative structure a hand-authored
+// decision uses, and not an auto-numbered "D{n}" title, which would
+// require scanning existing entries for the highest number and risk
+// colliding with a hand-authored one.
+func formatDecisionEntry(at string, d domain.Decision) string {
+	line := fmt.Sprintf("- `%s` — %s", at, d.Decision)
+	if d.Phase != "" {
+		line += fmt.Sprintf(" (phase: `%s`)", d.Phase)
+	}
+	if d.Task != "" {
+		line += fmt.Sprintf(", task: %s", d.Task)
+	}
+	line += fmt.Sprintf(". rationale: %s.", d.Rationale)
+	return line
 }
 
 func phaseExists(db *sql.DB, slug string) (bool, error) {

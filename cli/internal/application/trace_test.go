@@ -1,6 +1,8 @@
 package application
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
@@ -74,5 +76,95 @@ func TestCreateTraceInvalidTaskStatus(t *testing.T) {
 	}
 	if got := countRows(t, db, "traces"); got != 0 {
 		t.Fatalf("traces rows = %d, want 0", got)
+	}
+}
+
+// TestCreateTraceWritesPlanProgressEntry is P3 wave 2's core proof for
+// trace add: the same call that creates the DB row also appends a
+// `## Progress` line to the single active plan, in one operation.
+func TestCreateTraceWritesPlanProgressEntry(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+
+	id, _, err := CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "task A", domain.TaskStatusDone)
+	if err != nil {
+		t.Fatalf("CreateTrace: %v", err)
+	}
+	if id == "" {
+		t.Fatal("CreateTrace returned empty id")
+	}
+
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s): %v", planPath, err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "## Decisions\n<!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->\n- none") {
+		t.Fatalf("plan Decisions section corrupted:\n%s", content)
+	}
+	if !strings.Contains(content, "task A") || !strings.Contains(content, runID) || !strings.Contains(content, "wave 1") {
+		t.Fatalf("plan Progress section missing expected trace fields:\n%s", content)
+	}
+	if !strings.Contains(content, "## Progress\n<!--") {
+		t.Fatalf("plan Progress heading/comment corrupted:\n%s", content)
+	}
+}
+
+// TestCreateTraceNoActivePlanSkipsMarkdownWrite proves the feature is
+// additive: with zero active plans (the ordinary case for most of this
+// package's other tests, and for bounded/simple work), the DB write still
+// succeeds and nothing is written to disk.
+func TestCreateTraceNoActivePlanSkipsMarkdownWrite(t *testing.T) {
+	chdirFixture(t)
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+
+	id, _, err := CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "", "")
+	if err != nil {
+		t.Fatalf("CreateTrace: %v", err)
+	}
+	if id == "" {
+		t.Fatal("CreateTrace returned empty id")
+	}
+	if _, err := os.Stat("docs"); err == nil {
+		t.Fatal("docs/ unexpectedly created with no active plan")
+	}
+}
+
+// TestCreateTraceMalformedPlanBlocksDBWrite is the atomicity proof risk
+// R-A/wave 2 requires: when the active plan is missing the Progress
+// section entirely, the whole operation fails BEFORE the changeset/DB
+// write — the common failure mode has zero side effects, so index and
+// markdown cannot diverge from it.
+func TestCreateTraceMalformedPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	corrupted := strings.Replace(string(data), "## Progress", "## Renamed Somehow", 1)
+	if err := os.WriteFile(planPath, []byte(corrupted), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+
+	_, _, err = CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "", "")
+	if err == nil {
+		t.Fatal("CreateTrace = nil error, want a plan-section-not-found failure")
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0 — DB write must not proceed when the plan can't be written to", got)
+	}
+	after, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile after failed CreateTrace: %v", err)
+	}
+	if string(after) != corrupted {
+		t.Fatalf("plan file changed despite the failed write:\nbefore=%s\nafter=%s", corrupted, string(after))
 	}
 }

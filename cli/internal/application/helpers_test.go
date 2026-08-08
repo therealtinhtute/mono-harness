@@ -2,6 +2,7 @@ package application
 
 import (
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -9,6 +10,51 @@ import (
 
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
+
+// scaffoldedPlanFixture is a minimal plan with every append-only section
+// in its bootstrap ("- none") state, matching scaffold.go's real template
+// closely enough to exercise the plan-write path (P3 wave 2).
+const scaffoldedPlanFixture = `---
+id: 01TESTPLANFIXTUREXULIDXXX
+type: plan
+status: active
+---
+
+# Plan: Fixture
+
+## Progress
+<!-- Append-only durable entries record timestamp, phase, wave, task, task_status,
+run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
+- none
+
+## Decisions
+<!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
+- none
+
+## Validation
+<!-- Append-only durable entries record timestamp, phase, exact command/result/output,
+run_id, check_id, verdict, and proof_gaps. -->
+- none
+
+## Current State and Next Action
+- active_phase: none
+`
+
+// writeActivePlanFixture writes scaffoldedPlanFixture at
+// docs/plans/active/{slug}.md, relative to the test's current directory —
+// callers must have already chdir'd into a scratch root (chdirFixture).
+// Returns the plan's path for direct reads/assertions.
+func writeActivePlanFixture(t *testing.T, slug string) string {
+	t.Helper()
+	path := filepath.Join("docs", "plans", "active", slug+".md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(scaffoldedPlanFixture), 0o644); err != nil {
+		t.Fatalf("WriteFile(%s): %v", path, err)
+	}
+	return path
+}
 
 // freshDB opens a fresh, migrated db plus an adjacent (not-yet-existing)
 // changeset dir, both scoped to a per-test temp dir.

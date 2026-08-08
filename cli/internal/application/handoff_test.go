@@ -1,6 +1,8 @@
 package application
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
@@ -168,5 +170,73 @@ func TestHandoffRecordNextActionOptional(t *testing.T) {
 	}
 	if handoffView.NextAction != nil {
 		t.Fatalf("QueryLatestHandoff.NextAction = %v, want nil", handoffView.NextAction)
+	}
+}
+
+// TestHandoffRecordWritesPlanProgressEntry proves P3 wave 2 for handoff
+// record: the entry lands in `## Progress` as an event-log line (handoff
+// id, run, check, next action, open items), not as a rewrite of the
+// snapshot-style `## Current State and Next Action` section.
+func TestHandoffRecordWritesPlanProgressEntry(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	id, _, err := RecordHandoff(db, changesetDir, runID, checkID, "start next phase", []string{"owner decision pending"}, false)
+	if err != nil {
+		t.Fatalf("RecordHandoff: %v", err)
+	}
+
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "handoff: `"+id+"`") {
+		t.Fatalf("plan Progress missing handoff id:\n%s", content)
+	}
+	if !strings.Contains(content, "start next phase") || !strings.Contains(content, "owner decision pending") {
+		t.Fatalf("plan Progress missing next action/open items:\n%s", content)
+	}
+	if !strings.Contains(content, "## Current State and Next Action\n- active_phase: none") {
+		t.Fatalf("plan Current State section unexpectedly touched:\n%s", content)
+	}
+}
+
+// TestHandoffRecordMalformedPlanBlocksDBWrite is handoff record's version
+// of the atomicity proof: a missing `## Progress` section must fail before
+// the DB write, using the same pre-check pattern check_record's deferred
+// id/at minting requires.
+func TestHandoffRecordMalformedPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	corrupted := strings.Replace(string(data), "## Progress", "## Renamed", 1)
+	if err := os.WriteFile(planPath, []byte(corrupted), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	_, _, err = RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
+	if err == nil {
+		t.Fatal("RecordHandoff = nil error, want a plan-section-not-found failure")
+	}
+	if got := countRows(t, db, "handoffs"); got != 0 {
+		t.Fatalf("handoffs rows = %d, want 0 — DB write must not proceed when the plan can't be written to", got)
+	}
+	after, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile after failed RecordHandoff: %v", err)
+	}
+	if string(after) != corrupted {
+		t.Fatal("plan file changed despite the failed write")
 	}
 }

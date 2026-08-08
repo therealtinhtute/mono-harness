@@ -415,6 +415,52 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   CLI-level). Verification: `cd cli && go build ./...`, `go vet ./...`, `go test ./...`
   (all packages ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green.
   No blocker.
+- 2026-08-08, phase `p3-cli-owns-the-pen`, both waves, task_status=DONE, run_id=none,
+  trace_id=none (same environment constraint as P1/P2 — no live zharness binary in this
+  session; verified via `cd cli && go test ./...` and `bash scripts/verify-doc-links.sh`).
+  Wave 1: `cli/internal/application/plan_section.go` (new) — `AppendToPlanSection`, a
+  line-oriented (not AST) markdown-section appender following the parse precedent at
+  `cli/internal/application/next.go:127-170` (V3); locates `## X`, inserts before the
+  next `## ` heading (or EOF), handles the scaffolded "- none" placeholder, trailing
+  content, reordered sections, sub-headings, HTML comments, and CRLF. 13 unit tests plus
+  `TestAppendToPlanSectionRealHandWrittenPlanIsNotCorrupted`, which feeds a real excerpt
+  of `docs/plans/completed/eval-layer.md` through it — zero data loss. Also verified with
+  a throwaway smoke test against this plan's own 516-line file and `eval-layer.md`'s
+  303-line file (both round-tripped with an appended line and no lost content; smoke-test
+  scaffolding was deleted after, confirmed via `git status --porcelain`). Wave 2: `trace
+  add`, `decision add`, `check record`, and `handoff record` each now write their DB row
+  and a matching plan markdown line in one call — `cli/internal/application/plan_write.go`
+  (new: `preparePlanAppend`/`activePlanForWrite`, no-op when zero or 2+ plans are active,
+  atomic temp-file-plus-rename write). `trace add`/`decision add` compute entry text
+  before the DB write (id/at available upfront), so a missing section fails with zero
+  side effects by construction. `check record`/`handoff record` use
+  `AppendNewEntityAndApply`, which mints id/at only inside its closure (preserved
+  deliberately — see that function's own clock-precision doc comment, not touched by
+  this phase); for these two, `planSectionWritable` dry-run-checks the section exists
+  *before* the DB write, and the real formatted entry (using the id/at captured via a
+  closure-scoped `entryAt`) writes *after* — same "index and markdown cannot diverge"
+  guarantee, reached by pre-check instead of pre-compute (see D14). `handoff record`
+  targets `## Progress` (an event-log line: handoff id, run, check, next action, open
+  items), not `## Current State and Next Action`, because Current State is snapshot-style
+  (last-write-wins), not append-only, and the wave 1 appender only knows how to append
+  after a section's last line (see D14). Changed surfaces:
+  `cli/internal/application/plan_section.go`, `plan_write.go` (both new),
+  `cli/internal/application/{trace,decision,check_record,handoff}.go`,
+  `cli/internal/application/helpers_test.go` (`scaffoldedPlanFixture`,
+  `writeActivePlanFixture`), `cli/docs/CONTRACT.md` (`trace add`/`decision add`/`check
+  record`/`handoff record` entries now document the markdown side effect; corrected the
+  now-false claim that `handoff record` writes no markdown artifact). New/updated tests:
+  `cli/internal/application/plan_section_test.go` (new, 13 cases),
+  `TestCreateTraceWritesPlanProgressEntry` + `TestCreateTraceNoActivePlanSkipsMarkdownWrite`
+  + `TestCreateTraceMalformedPlanBlocksDBWrite`,
+  `TestRecordDecisionsWritesPlanDecisionsEntryPerElement` +
+  `TestRecordDecisionsAtomicityIncludesPlanWrite`,
+  `TestCheckRecordWritesPlanValidationEntry` + `TestCheckRecordMalformedPlanBlocksDBWrite`,
+  `TestHandoffRecordWritesPlanProgressEntry` + `TestHandoffRecordMalformedPlanBlocksDBWrite`.
+  Verification: `cd cli && go build ./...`, `go vet ./...`, `go test ./...` (all packages
+  ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green. No blocker; the wave
+  1 Pause condition (risk R-A) did not trigger — the appender survived every adversarial
+  and real-plan case tried.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -477,6 +523,19 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   for P4's stage-shaped-context work (risk R-D); enriching it here would pre-empt that
   phase's own contract change. `resume.latest_handoff_id` already names which handoff to
   look up, so the round trip is complete without touching resume itself.
+- D14 (2026-08-08, implementation): `check record` and `handoff record` prove atomicity by
+  a writability pre-check (`planSectionWritable`, a dry-run `preparePlanAppend` call with
+  placeholder content) before the DB write, then the real formatted entry after —
+  not by computing entry text upfront like `trace add`/`decision add`. Rationale: both
+  commands mint their id/at inside `AppendNewEntityAndApply`'s closure, a deliberate
+  clock-precision design (documented on that function) this phase does not change; the
+  entry text embeds the id, so it cannot be computed before the closure runs. The
+  pre-check still gives the same guarantee for the common failure mode (missing section):
+  zero side effects. `handoff record` additionally targets `## Progress`, not `##
+  Current State and Next Action` — Current State is a snapshot (last-write-wins), not an
+  append-only log, and wave 1's appender only knows how to append after a section's last
+  line; a handoff lands as an event-log entry alongside trace/decision/check entries
+  instead of attempting a section-body replace the appender was never built for.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -484,9 +543,9 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p2-complete-the-index` (both waves code-complete and verified; not
+- active_phase: `p3-cli-owns-the-pen` (both waves code-complete and verified; not
   DB-recorded as `in-progress`/`checked` — no live zharness in this session, so no `run
-  create`/`check record` was possible; see Progress entries above for both P1 and P2)
+  create`/`check record` was possible; see Progress entries above for P1, P2, and P3)
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
   left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
@@ -504,12 +563,15 @@ run_id, check_id, verdict, and proof_gaps. -->
     reduction while touching no contract and forcing no repository to refresh its docs
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability` and `p2-complete-the-index`, and route the diff through
+    `p1-integrity-operability` through `p3-cli-owns-the-pen`, and route the diff through
     `check full` to record real DB-linked verdicts — durable bookkeeping this session
-    could not produce. Schema is now at version 9 (migrations 0007-0009); `db rebuild`
+    could not produce. Schema is still at version 9 (P3 shipped no migration); `db rebuild`
     after minting IDs will replay everything cleanly (R7's own test proves this).
+  - the plan's own suggested cut line above ("ending after `p3-cli-owns-the-pen`") is now
+    reachable: P3 is code-complete and verified. Continuing to `p4-stage-shaped-context`
+    is the standing instruction unless the owner redirects — it is not itself a stop signal.
 - exact_next_action: build `zharness` from source (`cd cli && go build -o zharness
   ./cmd/zharness`) in an environment that can run it, mint the plan/intake IDs, record
-  runs/checks for `p1-integrity-operability` and `p2-complete-the-index` against this
-  session's diff, then start `p3-cli-owns-the-pen` wave 1 — the appender wave, with its
-  own Pause condition (risk R-A) if a hand-edited plan cannot survive the writer intact
+  runs/checks for `p1-integrity-operability` through `p3-cli-owns-the-pen` against this
+  session's diff, then start `p4-stage-shaped-context` — the reserved `resume` contract
+  change deferred by D13 (risk R-D)

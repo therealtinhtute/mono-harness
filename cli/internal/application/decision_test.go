@@ -1,6 +1,8 @@
 package application
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
@@ -131,5 +133,73 @@ func TestRecordDecisionsBatchIsAtomicOnValidationFailure(t *testing.T) {
 	}
 	if got := countRows(t, db, "decisions"); got != 0 {
 		t.Fatalf("decisions rows = %d, want 0 — the valid first element must not be written alone", got)
+	}
+}
+
+// TestRecordDecisionsWritesPlanDecisionsEntryPerElement proves the whole
+// batch lands as separate, individually-formatted lines in the plan's
+// `## Decisions` section, in one operation (P3 wave 2).
+func TestRecordDecisionsWritesPlanDecisionsEntryPerElement(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	db, changesetDir := freshDB(t)
+	seedStory(t, db, changesetDir, "p1", "planned")
+
+	ids, _, err := RecordDecisions(db, changesetDir, "", []domain.Decision{
+		{Decision: "picked A over B", Rationale: "matched constraint", Phase: "p1", Task: "wave 1 task"},
+		{Decision: "deferred C", Rationale: "out of scope"},
+	})
+	if err != nil {
+		t.Fatalf("RecordDecisions: %v", err)
+	}
+	if len(ids) != 2 {
+		t.Fatalf("RecordDecisions ids = %v, want 2", ids)
+	}
+
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "picked A over B") || !strings.Contains(content, "matched constraint") {
+		t.Fatalf("plan Decisions missing first entry:\n%s", content)
+	}
+	if !strings.Contains(content, "deferred C") || !strings.Contains(content, "out of scope") {
+		t.Fatalf("plan Decisions missing second entry:\n%s", content)
+	}
+	if !strings.Contains(content, "## Progress\n<!-- Append-only durable entries record timestamp, phase, wave, task, task_status,\nrun_id, trace_id, exact verification/result, and changed surfaces or blocker. -->\n- none") {
+		t.Fatalf("plan Progress section corrupted:\n%s", content)
+	}
+}
+
+// TestRecordDecisionsAtomicityIncludesPlanWrite extends the atomicity
+// proof to the plan-write path: a malformed plan (Decisions section
+// missing) must block the DB write too, not just leave the plan corrupted.
+func TestRecordDecisionsAtomicityIncludesPlanWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	corrupted := strings.Replace(string(data), "## Decisions", "## Renamed", 1)
+	if err := os.WriteFile(planPath, []byte(corrupted), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	db, changesetDir := freshDB(t)
+	_, _, err = RecordDecisions(db, changesetDir, "", []domain.Decision{{Decision: "d", Rationale: "r"}})
+	if err == nil {
+		t.Fatal("RecordDecisions = nil error, want a plan-section-not-found failure")
+	}
+	if got := countRows(t, db, "decisions"); got != 0 {
+		t.Fatalf("decisions rows = %d, want 0", got)
+	}
+	after, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile after failed RecordDecisions: %v", err)
+	}
+	if string(after) != corrupted {
+		t.Fatal("plan file changed despite the failed write")
 	}
 }

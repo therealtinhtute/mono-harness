@@ -53,6 +53,12 @@ func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task
 
 	at := time.Now().UTC().Format(time.RFC3339)
 	id = ulid.Make().String()
+
+	writePlan, err := preparePlanAppend("Progress", formatTraceProgressEntry(at, wave, summary, runID, task, taskStatus))
+	if err != nil {
+		return "", "", err
+	}
+
 	fields := map[string]any{
 		"wave":       wave,
 		"summary":    summary,
@@ -73,5 +79,30 @@ func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task
 	if err != nil {
 		return "", "", err
 	}
+
+	if err := writePlan(); err != nil {
+		return id, path, fmt.Errorf("trace %s recorded, but plan markdown update failed: %w", id, err)
+	}
 	return id, path, nil
+}
+
+// formatTraceProgressEntry renders a `## Progress` line using only the
+// fields trace add actually receives — it is not a substitute for the
+// richer changed-surfaces/verification detail work.md's playbook asks an
+// agent to write by hand, only an honest, always-current compressed line
+// that cannot drift from the traces row it accompanies (P3, "one writer").
+func formatTraceProgressEntry(at string, wave int, summary, runID, task, taskStatus string) string {
+	line := fmt.Sprintf("- `%s` — wave %d", at, wave)
+	if task != "" {
+		line += fmt.Sprintf(", task %s", task)
+	}
+	line += "."
+	if taskStatus != "" {
+		line += fmt.Sprintf(" task_status: `%s`.", taskStatus)
+	}
+	if runID != "" {
+		line += fmt.Sprintf(" run: `%s`.", runID)
+	}
+	line += fmt.Sprintf(" summary: %s.", summary)
+	return line
 }
