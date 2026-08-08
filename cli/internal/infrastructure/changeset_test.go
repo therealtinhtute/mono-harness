@@ -182,7 +182,7 @@ func TestChangesetRejectsInvalidLifecycleEnumsWithoutMutation(t *testing.T) {
 				t.Fatalf("database changed after rejected enum:\nbefore = %+v\nafter  = %+v", before, after)
 			}
 
-			pending, appliedCount, fence, err := ChangesetStatus(db, dir)
+			pending, appliedCount, fence, _, err := ChangesetStatus(db, dir)
 			if err != nil {
 				t.Fatalf("ChangesetStatus: %v", err)
 			}
@@ -571,4 +571,92 @@ func TestChangesetReplay(t *testing.T) {
 	if got := countRows(t, db2, "stories"); got != 1 {
 		t.Fatalf("db2 stories rows = %d, want 1", got)
 	}
+}
+
+// TestChangesetStatusFlagsInterleavedMachineChangesetNeverApplied reproduces
+// the two-machine data-loss scenario from docs/audit/workflow-harness-ceremony-audit.md
+// (F5): machine A applies id1, then id3, advancing its fence past id2's ULID
+// region. A changeset at id2 — written by another machine and merged into
+// A's directory via git, exactly as `.kit/changesets/` would be if committed
+// — never runs through ApplyChangeset, because by the time it arrives id2 is
+// already below the fence and any attempt to apply it is rejected as
+// out-of-order. Before this fix, ChangesetStatus counted id2 as applied
+// purely because its ULID is <= the fence, reporting a false all-clear while
+// the story it should have created is silently absent from the database.
+func TestChangesetStatusFlagsInterleavedMachineChangesetNeverApplied(t *testing.T) {
+	db := freshDB(t)
+	dir := t.TempDir()
+
+	const (
+		id1 = "01HAAAAAAAAAAAAAAAAAAAAAA1" // machine A, wave 1: creates story a1
+		id2 = "01HAAAAAAAAAAAAAAAAAAAAAA2" // machine B: creates story b1 — never applied to A
+		id3 = "01HAAAAAAAAAAAAAAAAAAAAAA3" // machine A, wave 2: creates story a2
+	)
+
+	a1ID, a2ID, b1ID := ulid.Make().String(), ulid.Make().String(), ulid.Make().String()
+
+	path1, err := WriteChangesetWithID(dir, id1, []ChangesetLine{{
+		Op: "create", Entity: "story", ID: a1ID,
+		Fields: map[string]any{"slug": "a1", "goal": "machine A wave 1", "status": domain.StoryPlanned, "created_at": "2026-08-07T08:00:00Z"},
+		At:     "2026-08-07T08:00:00Z",
+	}})
+	if err != nil {
+		t.Fatalf("WriteChangesetWithID id1: %v", err)
+	}
+	if _, _, err := ApplyChangeset(db, path1); err != nil {
+		t.Fatalf("ApplyChangeset id1: %v", err)
+	}
+
+	// Machine B's changeset lands in the directory (simulating a git merge
+	// of committed changesets) but is deliberately never run through
+	// ApplyChangeset — id3 below applies first in this test, exactly as it
+	// would on machine A's own timeline, so by the time anyone tries to
+	// apply id2 it is already out of order and rejected.
+	if _, err := WriteChangesetWithID(dir, id2, []ChangesetLine{{
+		Op: "create", Entity: "story", ID: b1ID,
+		Fields: map[string]any{"slug": "b1", "goal": "machine B wave 1", "status": domain.StoryPlanned, "created_at": "2026-08-07T08:00:30Z"},
+		At:     "2026-08-07T08:00:30Z",
+	}}); err != nil {
+		t.Fatalf("WriteChangesetWithID id2: %v", err)
+	}
+
+	path3, err := WriteChangesetWithID(dir, id3, []ChangesetLine{{
+		Op: "create", Entity: "story", ID: a2ID,
+		Fields: map[string]any{"slug": "a2", "goal": "machine A wave 2", "status": domain.StoryPlanned, "created_at": "2026-08-07T08:01:00Z"},
+		At:     "2026-08-07T08:01:00Z",
+	}})
+	if err != nil {
+		t.Fatalf("WriteChangesetWithID id3: %v", err)
+	}
+	if _, _, err := ApplyChangeset(db, path3); err != nil {
+		t.Fatalf("ApplyChangeset id3: %v", err)
+	}
+
+	// Confirm the loss the audit measured: b1 is not in the database, even
+	// though its changeset sits at or below the fence.
+	var found string
+	if err := db.QueryRow(`SELECT id FROM stories WHERE id = ?`, b1ID).Scan(&found); err != sql.ErrNoRows {
+		t.Fatalf("story b1 lookup = (%q, %v), want sql.ErrNoRows proving it was never applied", found, err)
+	}
+
+	pending, appliedCount, fence, unverifiedBelowFence, err := ChangesetStatus(db, dir)
+	if err != nil {
+		t.Fatalf("ChangesetStatus: %v", err)
+	}
+	if len(pending) != 0 {
+		t.Fatalf("pending = %v, want none — id2 is below the fence, not pending", pending)
+	}
+	if appliedCount != 3 || fence != id3 {
+		t.Fatalf("status = (applied=%d, fence=%q), want (3, %q)", appliedCount, fence, id3)
+	}
+	if len(unverifiedBelowFence) != 1 || unverifiedBelowFence[0] != filepath.Base(pathForID(t, dir, id2)) {
+		t.Fatalf("unverifiedBelowFence = %v, want exactly [%s] — the false all-clear this fixes", unverifiedBelowFence, id2+".changeset.jsonl")
+	}
+}
+
+// pathForID resolves a changeset's full path from its filename ULID, for
+// assertions that only know the id, not the directory-joined path.
+func pathForID(t *testing.T, dir, id string) string {
+	t.Helper()
+	return filepath.Join(dir, id+".changeset.jsonl")
 }

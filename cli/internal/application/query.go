@@ -131,6 +131,60 @@ func QueryLatestCheck(db *sql.DB) (CheckView, bool, error) {
 	return v, true, nil
 }
 
+// TraceView is one row of the `query traces` view: a wave's compressed
+// summary, the compact index counterpart of a `## Progress` entry.
+type TraceView struct {
+	ID        string  `json:"id"`
+	RunID     *string `json:"run_id"`
+	Wave      int     `json:"wave"`
+	Summary   string  `json:"summary"`
+	CreatedAt string  `json:"created_at"`
+}
+
+// QueryTraces reads trace rows in chronological order, optionally filtered
+// to one run (`--run-id`) and/or capped to the most recent N (`--tail`, 0
+// means unbounded). Filtering is applied in SQL so --tail counts from the
+// filtered set, not the whole table.
+func QueryTraces(db *sql.DB, runID string, tail int) ([]TraceView, error) {
+	q := `SELECT id, run_id, wave, summary, created_at FROM traces`
+	args := []any{}
+	if runID != "" {
+		q += ` WHERE run_id = ?`
+		args = append(args, runID)
+	}
+	q += ` ORDER BY created_at DESC, id DESC`
+	if tail > 0 {
+		q += ` LIMIT ?`
+		args = append(args, tail)
+	}
+
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query traces: %w", err)
+	}
+	defer rows.Close()
+
+	views := []TraceView{}
+	for rows.Next() {
+		var v TraceView
+		var runIDCol sql.NullString
+		if err := rows.Scan(&v.ID, &runIDCol, &v.Wave, &v.Summary, &v.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan trace row: %w", err)
+		}
+		v.RunID = nullableString(runIDCol)
+		views = append(views, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("query traces: %w", err)
+	}
+
+	// DESC fetched the most recent `tail`; restore chronological order.
+	for i, j := 0, len(views)-1; i < j; i, j = i+1, j-1 {
+		views[i], views[j] = views[j], views[i]
+	}
+	return views, nil
+}
+
 func nullableString(s sql.NullString) *string {
 	if !s.Valid {
 		return nil

@@ -34,6 +34,10 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 
 `MIN_ZHARNESS_VERSION = 0.4.1` (bumped from `0.3.0` across the `cli/v0.4.x` fix cycle — v0.4.0 added explicit autonomous-entry intent + the pure `zharness id` helper; v0.4.1 completes exact ID usage across every manual-ID playbook consumer: brainstorm, to-plan, work, and check. A pre-`0.4.1` docs set can still leave a cold full-lifecycle agent guessing at SPEC/meta-changeset IDs). Every one of the 6 spine skills runs `zharness --version` before anything else; a `dev` build (unreleased local build) always satisfies the gate. Otherwise, a missing binary or a version below `0.4.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
 
+### Non-spine skills degrade instead of stopping
+
+A skill that owns no harness entity must not hard-stop on the harness. Of the 8 workflow skills, exactly two have no dedicated entity in the mapping table below: `git` and `interview`. Neither writes to the harness, so a missing, stale, or unreadable `zharness` is never a reason to refuse their actual work — staging and committing, or grilling an intent. Each prints one line noting harness enrichment is unavailable (the `git` gate-verdict warning, or nothing at all for `interview`) and proceeds regardless. This does not weaken the 6 spine skills' hard stop above: a durable write with no harness to write the durable record to is a real blocker, not a degraded feature, precisely because those 6 each own the entity they'd be writing.
+
 ## Thin-Trigger Template
 
 Every one of the 6 spine skills follows this shape, ≤30 rendered lines including frontmatter:

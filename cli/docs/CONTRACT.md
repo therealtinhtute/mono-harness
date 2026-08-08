@@ -18,7 +18,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 ## Core (Phase 3 — cli-core)
 
-Repository coordination is cross-process and repository-root scoped. `preflight`, `query`, `next`, `resume`, `validate`, `audit`, and `db changeset status` hold a shared directory-inode lock for the complete read-only SQLite handle lifetime. `init`, `migrate`, `migrate layout` (including dry-run), `import`, `db changeset apply`, `intake`, `story`, `intervention`, `trace add`, `run create`, `check record`, and `handoff record` hold the exclusive lock from before DB probing/application validation through SQLite close. Lock acquisition creates no file, times out after five seconds with `repository_lock_timeout` (2), and reports unsupported platforms as `repository_lock_unsupported` (2); Linux and Darwin are supported.
+Repository coordination is cross-process and repository-root scoped. `preflight`, `query`, `next`, `resume`, `validate`, `audit`, `db changeset status`, and `db status` hold a shared directory-inode lock for the complete read-only SQLite handle lifetime. `init`, `migrate`, `migrate layout` (including dry-run), `import`, `db changeset apply`, `db rebuild`, `intake`, `story`, `intervention`, `trace add`, `run create`, `check record`, and `handoff record` hold the exclusive lock from before DB probing/application validation through SQLite close. Lock acquisition creates no file, times out after five seconds with `repository_lock_timeout` (2), and reports unsupported platforms as `repository_lock_unsupported` (2); Linux and Darwin are supported.
 
 Append-producing mutations allocate canonical changeset filenames strictly above both `meta.last_applied_changeset` and every canonical existing filename. A pending earlier changeset blocks ordinary mutation with `changeset_recovery_required` (1) before any new file or DB change; recover by applying the named earliest file. Direct apply enforces the same earliest-first order. `init` replay remains sorted and exempt, and an apply failure leaves the file pending with its transaction and fence unchanged.
 
@@ -77,19 +77,36 @@ Append-producing mutations allocate canonical changeset filenames strictly above
 
 ### `db changeset status`
 - Args: none
-- `--json`: `{"pending": ["ulid.changeset.jsonl", ...], "applied_count": N, "last_applied": "ulid"}`
+- `--json`: `{"pending": ["ulid.changeset.jsonl", ...], "applied_count": N, "last_applied": "ulid", "unverified_below_fence": ["ulid.changeset.jsonl", ...]}`
+- `unverified_below_fence` names changesets at or below the fence whose create-op entity ids are missing from their tables — proof they were never actually applied despite the fence assuming order-based coverage (F5, `docs/audit/workflow-harness-ceremony-audit.md`). Update-only changesets cannot be verified this way and are never listed here. Empty in the ordinary single-fence-advance case; non-empty is a signal to run `db rebuild`.
 - Errors: `db_unreadable` (2)
 - Consumer: `continuity` (verify rebuild completeness), `watzup` (indirect, via `resume`)
 
+### `db rebuild --yes`
+- Args: `--yes` required — without it, the command refuses with `confirmation_required` and mutates nothing
+- Deletes `harness.db` and its `-wal`/`-shm` sidecars if present, re-migrates to the current schema, then replays every changeset under `.kit/changesets/` in ULID order from empty. Database-only: unlike `init`, it never touches `docs/`, `AGENTS.md`, or `.gitignore`.
+- `--json`: `{"status":"rebuilt","schema_version":N,"replayed":N}`
+- Errors: `confirmation_required` (1), `db_not_writable` (2), `changeset_replay_failed` (2)
+- Consumer: recovery after `db changeset status`/`db status` reports `unverified_below_fence`, or after any suspected DB/changeset divergence
+
+### `db status`
+- Args: none
+- `--json`: `{"schema_version":N,"fence":"ulid","rows":{"stories":N,"runs":N,"checks":N,"handoffs":N,"intakes":N,"interventions":N,"traces":N,"managed_docs":N},"pending":[...],"unverified_below_fence":[...],"context_cost_estimate":{"active_plan_path":"...","active_plan_bytes":N,"stages":{"watzup":{"playbook_bytes":N,"estimated_tokens_today":N}, ...},"note":"..."}}`
+- `rows` is introspected from the schema (every table except `meta`), so a later migration's new table appears automatically without a contract change here.
+- `context_cost_estimate` reports, per spine stage, the byte size of that stage's playbook plus the current active plan — the `bytes/4` heuristic documented in `docs/audit/workflow-harness-ceremony-audit.md` — answering "how expensive would resuming be right now" (addresses that audit's G4). It reflects today's full-plan-read path, not the compressed-index read path this initiative is adding.
+- Errors: `db_unreadable` (2)
+- Consumer: an agent or operator checking harness health before deciding whether `db rebuild` is warranted
+
 ### `query <view>`
-- Views: `state`, `phases`, `artifacts`, `check --latest`
-- Args: `state` (no args); `phases` (no args, lists all stories + status); `artifacts` (`--phase {slug}` optional filter); `check --latest` (`--latest` flag, returns most recent check verdict)
+- Views: `state`, `phases`, `artifacts`, `check --latest`, `traces`
+- Args: `state` (no args); `phases` (no args, lists all stories + status); `artifacts` (`--phase {slug}` optional filter); `check --latest` (`--latest` flag, returns most recent check verdict); `traces` (`--run-id {ulid}` optional filter, `--tail {N}` optional cap on the most recent entries, 0/omitted = unbounded)
 - `--json` (`state`): `{"current_phase":"slug"|null,"entry_phase":"slug"|null,"schema_version":N,"latest_run_id":"ulid"|null,"latest_check_id":"ulid"|null}`
 - `--json` (`phases`): `[{"slug":"...","goal":"...","status":"planned|in-progress|checked|done","depends_on":"slug"|null,"created_at":"..."}, ...]`
 - `--json` (`artifacts`): `[{"id":"ulid","story_slug":"slug","artifact_path":"","created_at":"..."}, ...]`; `artifact_path` is optional/deprecated lifecycle metadata encoded as a string that may be empty and is never resolved on disk
 - `--json` (`check --latest`): `{"id":"ulid","verdict":"APPROVED"|"APPROVE_WITH_REQUESTS"|"REQUEST_CHANGES","phase":"slug","judge":"independent"|"same-session"|null,"judge_model":"..."|null}`; `judge`/`judge_model` are `null` for a check recorded before the eval-layer initiative
+- `--json` (`traces`): `[{"id":"ulid","run_id":"ulid"|null,"wave":N,"summary":"...","created_at":"..."}, ...]` in chronological order; the compressed-index counterpart of a plan's `## Progress` entries (see `docs/audit/workflow-harness-ceremony-audit.md`)
 - Errors: `unknown_view` (1), `no_check_found` (1), `db_unreadable` (2)
-- Consumer: `to-plan` (phase status), `git` (`query check --latest`, warn-not-block on FAIL/missing), `continuity`
+- Consumer: `to-plan` (phase status), `git` (`query check --latest`, warn-not-block on FAIL/missing), `continuity`, `watzup`/`work`/`handoff` (`traces`, reading wave history without opening the plan file)
 
 ---
 

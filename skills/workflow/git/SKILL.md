@@ -10,9 +10,9 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
 
-Run `zharness --version`. A `dev` build always passes. Otherwise, if the binary is missing or reports a version below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP.
+`git` owns no harness entity (`skills/workflow/README.md`'s skill-to-command mapping) — a missing, stale, or broken harness never blocks it. Run `zharness --version`. A `dev` build, or any build at or above MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), unlocks harness enrichment (Step 0 below). Otherwise print one line — `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)` — skip straight to Core Workflow, and skip Step 0 entirely.
 
-Run `zharness preflight git --json`. If `stop` is present, state its message and follow its exact recovery before continuing. Reduced mode is valid; Git operations remain non-mutating to harness state.
+If the version gate passed, run `zharness preflight git --json`. Any `stop` it returns (including a corrupted database) is noted the same way and does not block; proceed to Core Workflow regardless of readiness — Git operations remain non-mutating to harness state.
 
 <role>
 Act as a git operations specialist. Handle staging, committing, pushing, pull requests, and merges

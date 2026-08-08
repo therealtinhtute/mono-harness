@@ -363,27 +363,73 @@ func Replay(db *sql.DB, dir string) (totalApplied int, err error) {
 }
 
 // ChangesetStatus reports pending vs. applied changesets against the
-// current fence (CONTRACT.md `db changeset status`).
-func ChangesetStatus(db *sql.DB, dir string) (pending []string, appliedCount int, lastApplied string, err error) {
+// current fence (CONTRACT.md `db changeset status`). "Applied" for a
+// changeset at or below the fence is only ever an assumption from
+// filename order — nothing individually records that each one actually
+// ran. UnverifiedBelowFence names those where that assumption does not
+// hold: a create-op entity id the changeset should have inserted is
+// missing from its table, which happens when a changeset from another
+// machine lands below a fence that already advanced past its ULID
+// region (see docs/audit/workflow-harness-ceremony-audit.md, F5 — the
+// false all-clear this replaces). Update-only changesets cannot be
+// verified this way and are not flagged.
+func ChangesetStatus(db *sql.DB, dir string) (pending []string, appliedCount int, lastApplied string, unverifiedBelowFence []string, err error) {
 	fence, err := readFence(db)
 	if err != nil {
-		return nil, 0, "", err
+		return nil, 0, "", nil, err
 	}
 
 	names, err := ListChangesets(dir)
 	if err != nil {
-		return nil, 0, "", err
+		return nil, 0, "", nil, err
 	}
 
 	for _, name := range names {
 		id := changesetULID(name)
 		if fence == "" || id > fence {
 			pending = append(pending, name)
-		} else {
-			appliedCount++
+			continue
+		}
+		appliedCount++
+
+		verified, verr := changesetCreatesPresent(db, filepath.Join(dir, name))
+		if verr != nil {
+			return nil, 0, "", nil, verr
+		}
+		if !verified {
+			unverifiedBelowFence = append(unverifiedBelowFence, name)
 		}
 	}
-	return pending, appliedCount, fence, nil
+	return pending, appliedCount, fence, unverifiedBelowFence, nil
+}
+
+// changesetCreatesPresent spot-checks a changeset's create-op entity ids
+// against their tables. It reports false the moment one is missing —
+// proof the changeset was never actually applied despite being at or
+// below the fence.
+func changesetCreatesPresent(db *sql.DB, path string) (bool, error) {
+	lines, err := ReadChangeset(path)
+	if err != nil {
+		return false, fmt.Errorf("verify %s: %w", filepath.Base(path), err)
+	}
+	for _, line := range lines {
+		if line.Op != "create" || line.Entity == "meta" {
+			continue
+		}
+		table, ok := entityTables[line.Entity]
+		if !ok {
+			continue
+		}
+		var found string
+		q := fmt.Sprintf("SELECT id FROM %s WHERE id = ?", table) //nolint:gosec // table is allowlist-derived, not user input
+		switch err := db.QueryRow(q, line.ID).Scan(&found); {
+		case err == sql.ErrNoRows:
+			return false, nil
+		case err != nil:
+			return false, fmt.Errorf("verify %s in %s: %w", line.ID, table, err)
+		}
+	}
+	return true, nil
 }
 
 type queryRower interface {

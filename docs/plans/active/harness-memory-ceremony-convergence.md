@@ -351,7 +351,33 @@ status changes to mirror DB transitions. -->
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status,
 run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none
+- 2026-08-07, phase `p1-integrity-operability`, all 4 waves, task_status=DONE, run_id=none,
+  trace_id=none (zharness is not installed in this working environment — see the plan's
+  Pre-harness note; work was implemented and verified directly against `cd cli && go test
+  ./...` and `bash scripts/verify-doc-links.sh` rather than through a live CLI-driven
+  lifecycle). Changed surfaces: `cli/internal/application/query.go` (+`TraceView`,
+  `QueryTraces`), `cli/internal/application/db_status.go` (new — `QueryDBStatus`,
+  `ContextCostEstimate`), `cli/internal/interfaces/query.go` (`traces` view, `--run-id`,
+  `--tail`), `cli/internal/interfaces/db.go` (`db rebuild --yes`, `db status`),
+  `cli/internal/infrastructure/changeset.go` (`ChangesetStatus` now returns
+  `unverifiedBelowFence`), `cli/internal/interfaces/repository_lock.go` (`db rebuild` added
+  to the exclusive-lock command list), `cli/internal/interfaces/preflight.go`
+  (`resolvePreflightRequestedMode`/`observePreflightState` now require a real in-progress
+  story, not just a non-empty active-plan file, before auto-resolving `work` to full mode),
+  `cli/docs/CONTRACT.md` (documents `query traces`, `db rebuild`, `db status`, the
+  `unverified_below_fence` field, and the widened shared/exclusive lock lists),
+  `skills/workflow/git/SKILL.md` + `skills/workflow/interview/SKILL.md` (version/preflight
+  gates degrade instead of hard-stopping — neither skill owns a harness entity),
+  `skills/workflow/README.md` (records the "no entity, no hard-stop" rule). Plus new/updated
+  tests: `cli/internal/application/query_test.go`, `cli/internal/infrastructure/changeset_test.go`
+  (`TestChangesetStatusFlagsInterleavedMachineChangesetNeverApplied` — reproduces the
+  audit's F5 two-machine `b1` loss), `cli/internal/interfaces/db_test.go` (new — including
+  `TestDBRebuildRecoversInterleavedMachineChangeset`, the CLI-level counterpart proving
+  `db rebuild --yes` recovers the row), `cli/internal/interfaces/preflight_test.go`
+  (`TestPreflightCommandWorkAutoUsesReducedWithActivePlanButNoInProgressPhase` and its
+  positive control), `cli/internal/interfaces/read_only_commands_test.go`. Verification:
+  `cd cli && go build ./...`, `go vet ./...`, `go test ./...` (all packages ok) and
+  `bash scripts/verify-doc-links.sh` (0 findings) both green. No blocker.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -393,8 +419,11 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: none
-- lifecycle_status: planned
+- active_phase: `p1-integrity-operability` (all 4 waves code-complete and verified; not
+  DB-recorded as `in-progress`/`checked` — no live zharness in this session, so no `run
+  create`/`check record` was possible; see Progress entry above)
+- lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
+  left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
 - latest_trace_ids: []
 - latest_check_id: none
@@ -408,5 +437,11 @@ run_id, check_id, verdict, and proof_gaps. -->
     `MIN_ZHARNESS_VERSION` second, then `zharness init --refresh-docs` on consuming repos
   - suggested cut line: ending after `p3-cli-owns-the-pen` captures the whole ceremony
     reduction while touching no contract and forcing no repository to refresh its docs
-- exact_next_action: mint the plan and intake IDs, then start `p1-integrity-operability`
-  wave 1
+  - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
+    (frontmatter still has the pre-harness placeholders), run `zharness run create` for
+    `p1-integrity-operability`, and route the diff through `check full` to record a real
+    DB-linked verdict — durable bookkeeping this session could not produce
+- exact_next_action: build `zharness` from source (`cd cli && go build -o zharness
+  ./cmd/zharness`) in an environment that can run it, mint the plan/intake IDs, record a
+  `run`/`check` for `p1-integrity-operability` against this session's diff, then start
+  `p2-complete-the-index` wave 1

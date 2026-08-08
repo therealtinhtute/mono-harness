@@ -41,6 +41,7 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 		{name: "preflight full", args: []string{"preflight", "check", "--mode", "full", "--json"}, wantFragment: `"db":"ready"`},
 		{name: "query state", args: []string{"query", "state", "--json"}, wantFragment: `"current_phase":"beta"`},
 		{name: "query phases", args: []string{"query", "phases", "--json"}, wantFragment: `"slug":"beta"`},
+		{name: "query traces", args: []string{"query", "traces", "--json"}, wantFragment: `"summary":"wave one done"`},
 		{name: "resume", args: []string{"resume", "--json"}, wantFragment: `"current_phase":"beta"`},
 		{name: "validate", args: []string{"validate", "--json"}, wantFragment: `"valid":true`},
 		{name: "audit", args: []string{"audit", "--json"}, wantFragment: `"contract_violations":[]`},
@@ -62,6 +63,15 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 				}
 				if _, err := db.Exec(`UPDATE meta SET current_phase = 'beta'`); err != nil {
 					t.Fatalf("seed current phase: %v", err)
+				}
+				runID := ulid.Make().String()
+				if _, err := db.Exec(`INSERT INTO runs (id, story_slug, trace_ids, artifact_path, created_at)
+					VALUES (?, 'beta', '[]', '', '2026-07-27T00:00:00Z')`, runID); err != nil {
+					t.Fatalf("seed run for traces: %v", err)
+				}
+				if _, err := db.Exec(`INSERT INTO traces (id, run_id, wave, summary, created_at)
+					VALUES (?, ?, 1, 'wave one done', '2026-07-27T00:00:01Z')`, ulid.Make().String(), runID); err != nil {
+					t.Fatalf("seed trace: %v", err)
 				}
 			})
 

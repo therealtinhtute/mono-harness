@@ -45,8 +45,8 @@ func newPreflightCmd(version string) *cobra.Command {
 
 func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) error {
 	stage = strings.ToLower(strings.TrimSpace(stage))
-	requestedMode = resolvePreflightRequestedMode(stage, requestedMode)
-	dbStatus, docsStatus := observePreflightState(version)
+	dbStatus, docsStatus, hasInProgressPhase := observePreflightState(version)
+	requestedMode = resolvePreflightRequestedMode(stage, requestedMode, dbStatus, hasInProgressPhase)
 	playbook := preflightPlaybooks[stage]
 	if docsStatus == application.PreflightDocsReady && playbook != "" && !infrastructure.Exists(playbook) {
 		docsStatus = application.PreflightDocsMissing
@@ -64,13 +64,27 @@ func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) erro
 	return emitPreflight(cmd, view)
 }
 
-func resolvePreflightRequestedMode(stage, requestedMode string) string {
+// resolvePreflightRequestedMode auto-resolves work's mode. No active plan
+// file at all still means simple, unchanged. With a plan file present, a
+// *readable* harness that shows no story actually in-progress means the
+// plan isn't the work at hand right now, so this downgrades to simple
+// instead of routing any small unrelated change through the full
+// 62-operation ceremony path merely because some active plan exists
+// (docs/audit/workflow-harness-ceremony-audit.md, F2/V2). A missing or
+// unreadable harness can't answer that question, so an active plan file
+// alone still resolves to full there, the same as before this fix —
+// otherwise a real durable initiative with no db yet would silently
+// downgrade to simple instead of surfacing `harness_required`.
+func resolvePreflightRequestedMode(stage, requestedMode, dbStatus string, hasInProgressPhase bool) string {
 	requestedMode = strings.ToLower(strings.TrimSpace(requestedMode))
 	if stage == "work" && (requestedMode == "" || requestedMode == "auto") {
-		if hasNonEmptyActivePlan() {
-			return "full"
+		if !hasNonEmptyActivePlan() {
+			return "simple"
 		}
-		return "simple"
+		if dbStatus == application.PreflightDBReady && !hasInProgressPhase {
+			return "simple"
+		}
+		return "full"
 	}
 	return requestedMode
 }
@@ -89,28 +103,36 @@ func hasNonEmptyActivePlan() bool {
 	return false
 }
 
-func observePreflightState(version string) (dbStatus, docsStatus string) {
+// observePreflightState reads db/docs readiness and, in the same handle,
+// whether any story is in-progress — the signal resolvePreflightRequestedMode
+// needs to tell live durable work apart from a merely-present plan file.
+func observePreflightState(version string) (dbStatus, docsStatus string, hasInProgressPhase bool) {
 	docsStatus = application.PreflightDocsReady
 	if !infrastructure.Exists(preflightDocsPath) {
 		docsStatus = application.PreflightDocsMissing
 	}
 	db, err := infrastructure.OpenReadOnly(dbPath)
 	if infrastructure.IsDatabaseNotFound(err) {
-		return application.PreflightDBMissing, docsStatus
+		return application.PreflightDBMissing, docsStatus, false
 	}
 	if err != nil {
-		return application.PreflightDBUnreadable, docsStatus
+		return application.PreflightDBUnreadable, docsStatus, false
 	}
 	defer db.Close()
 
 	var docsVersion sql.NullString
 	if err := db.QueryRow(`SELECT docs_version FROM meta LIMIT 1`).Scan(&docsVersion); err != nil {
-		return application.PreflightDBUnreadable, docsStatus
+		return application.PreflightDBUnreadable, docsStatus, false
 	}
 	if docsStatus == application.PreflightDocsReady && docsVersion.Valid && docsVersion.String != "" && docsVersion.String != "dev" && version != "dev" && docsVersion.String != version {
 		docsStatus = application.PreflightDocsStale
 	}
-	return application.PreflightDBReady, docsStatus
+
+	var inProgressCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM stories WHERE status = ?`, domain.StoryInProgress).Scan(&inProgressCount); err == nil {
+		hasInProgressPhase = inProgressCount > 0
+	}
+	return application.PreflightDBReady, docsStatus, hasInProgressPhase
 }
 
 func emitPreflight(cmd *cobra.Command, view application.PreflightView) error {

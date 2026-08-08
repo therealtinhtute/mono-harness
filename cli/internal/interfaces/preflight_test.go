@@ -148,6 +148,77 @@ func TestPreflightCommandWorkAutoUsesReducedWithoutActivePlan(t *testing.T) {
 	}
 }
 
+// TestPreflightCommandWorkAutoUsesReducedWithActivePlanButNoInProgressPhase
+// is the regression for F2/V2 (docs/audit/workflow-harness-ceremony-audit.md):
+// a live, readable harness with an active plan file but no story actually
+// in-progress must not route a small unrelated change through the full
+// durable ceremony path merely because some active plan exists.
+func TestPreflightCommandWorkAutoUsesReducedWithActivePlanButNoInProgressPhase(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightWorkPlaybookAndPlan(t)
+	seedPreflightStory(t, "planned")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "work", "--mode", "auto", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Mode != "reduced" || view.Stop != nil {
+		t.Fatalf("view = %+v, want reduced route: active plan present, but no story in-progress", view)
+	}
+}
+
+// TestPreflightCommandWorkAutoUsesDurableWithActiveInProgressPhase is the
+// positive control for the fix above: an active plan with a genuinely
+// in-progress story still resolves to the full durable path.
+func TestPreflightCommandWorkAutoUsesDurableWithActiveInProgressPhase(t *testing.T) {
+	t.Chdir(t.TempDir())
+	seedPreflightWorkPlaybookAndPlan(t)
+	seedPreflightStory(t, "in-progress")
+
+	out, err := runPreflightCommand(t, "dev", "preflight", "work", "--mode", "auto", "--json")
+	if err != nil {
+		t.Fatalf("preflight command error = %v", err)
+	}
+	view := decodePreflight(t, out)
+	if view.Mode != "durable" || view.Stop != nil {
+		t.Fatalf("view = %+v, want durable route: a story is genuinely in-progress", view)
+	}
+}
+
+func seedPreflightWorkPlaybookAndPlan(t *testing.T) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(preflightDocsPath, "playbooks"), 0o755); err != nil {
+		t.Fatalf("MkdirAll playbooks: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(preflightDocsPath, "playbooks", "work.md"), []byte("# work\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile work playbook: %v", err)
+	}
+	planPath := filepath.Join("docs", "plans", "active", "initiative.md")
+	if err := os.MkdirAll(filepath.Dir(planPath), 0o755); err != nil {
+		t.Fatalf("MkdirAll active plans: %v", err)
+	}
+	if err := os.WriteFile(planPath, []byte("# active plan\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile active plan: %v", err)
+	}
+}
+
+func seedPreflightStory(t *testing.T, status string) {
+	t.Helper()
+	db, err := infrastructure.Open(dbPath)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer db.Close()
+	if _, _, err := infrastructure.Migrate(db); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at)
+		VALUES ('01HPREFLIGHTSTORYSEEDULID', 'seeded', 'goal', ?, '2026-08-07T00:00:00Z')`, status); err != nil {
+		t.Fatalf("seed story status=%s: %v", status, err)
+	}
+}
+
 func TestPreflightCommandBlocksDurableWithoutHarness(t *testing.T) {
 	t.Chdir(t.TempDir())
 

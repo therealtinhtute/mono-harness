@@ -24,7 +24,7 @@ func TestPendingChangesetBlocksOrdinaryMutationUntilRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed story: %v", err)
 	}
-	_, _, fence, err := infrastructure.ChangesetStatus(db, dir)
+	_, _, fence, _, err := infrastructure.ChangesetStatus(db, dir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus before pending: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestDirectApplyRejectsExternalSameBasename(t *testing.T) {
 		t.Fatalf("write external impostor: %v", err)
 	}
 
-	pendingBefore, appliedBefore, fenceBefore, err := infrastructure.ChangesetStatus(db, dir)
+	pendingBefore, appliedBefore, fenceBefore, _, err := infrastructure.ChangesetStatus(db, dir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus before impostor: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestDirectApplyRejectsExternalSameBasename(t *testing.T) {
 	if stateAfter := recoverySnapshotForTest(t, db, storyID); stateAfter != stateBefore {
 		t.Fatalf("impostor changed database: before=%+v after=%+v", stateBefore, stateAfter)
 	}
-	pendingAfter, appliedAfter, fenceAfter, err := infrastructure.ChangesetStatus(db, dir)
+	pendingAfter, appliedAfter, fenceAfter, _, err := infrastructure.ChangesetStatus(db, dir)
 	if err != nil {
 		t.Fatalf("ChangesetStatus after impostor: %v", err)
 	}

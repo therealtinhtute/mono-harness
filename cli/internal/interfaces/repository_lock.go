@@ -18,6 +18,7 @@ var exclusiveMutationCommandPaths = map[string]struct{}{
 	"migrate layout":     {},
 	"import":             {},
 	"db changeset apply": {},
+	"db rebuild":         {},
 	"intake":             {},
 	"story":              {},
 	"intervention":       {},
