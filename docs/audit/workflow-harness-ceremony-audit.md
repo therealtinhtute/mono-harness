@@ -1,6 +1,6 @@
 # Workflow Harness — Ceremony and Context Audit
 
-**Date:** 2026-08-07
+**Date:** 2026-08-07 (baseline, §1–9); re-measured 2026-08-09 after `harness-memory-ceremony-convergence` phases P1–P5 (§10–13).
 **Scope:** `skills/workflow` and the `zharness` CLI. `skills/craft`, `skills/shipping`, and `rules` were excluded by agreement.
 **Method:** `zharness` built from source at `cli` (Go 1.24.7, `CGO_ENABLED=0`), initialized in a throwaway git repository, and driven through a complete `watzup → brainstorm → to-plan → work → check → handoff` lifecycle for one tiny change. Every command and its exact stdout were recorded, then tokenized.
 **Primary metric:** ceremony — the number of mandated operations to carry one small change from intent to closure. Token cost is reported in support of that, not as the headline.
@@ -280,3 +280,83 @@ Splitting the plan would cost the property that makes it valuable — one diffab
 - `skills/craft`, `skills/shipping`, and `rules` — excluded by scope. Their frontmatter descriptions occupy every session alongside the 444 tokens measured here, so the true always-on figure for a full installation is higher than this document states.
 - Retry and self-correction cost. The lifecycle was driven directly rather than by an agent, so no wrong turns, re-reads, or failed verifications are included. Real-world cost is strictly higher than the figures above.
 - Cross-model behaviour. Ceremony counts derive from playbook text and would hold for any agent; token counts are Claude-oriented.
+
+---
+
+## 10. F4–F7 — findings from implementation and deeper research
+
+Discovered during the `harness-memory-ceremony-convergence` initiative's verification and build phases (P1–P5), after this document's original F1–F3. Each is now fixed; each is recorded here because the fix was not obvious from F1–F3 alone.
+
+**F4 — the index was a copy with gaps, not a compressed index of the markdown.** `decisions` was dropped by migration `0003_drop_dead_surface` as dead surface with no writer, and `traces` recorded only wave-level summaries while `## Progress` recorded task-level entries. So an agent asking "what happened" had no query that answered it faithfully — `zharness query` offered `state`, `phases`, `artifacts`, `check`, none of which return plan prose (section 6's own "asymmetry" observation). This produced the locked mental model in section 11 below, and directly motivated P2 (re-add `decisions` with a writer; add `traces.task`/`task_status`) and P6's own fix (§12): `query check --latest` exposed only the most recent verdict, leaving `## Validation` — the third append-only section — still write-only. `query checks` closes that gap.
+
+**F5 — a two-machine changeset merge could silently lose a row.** `ChangesetStatus` reported a clean state even when a changeset from a second machine, interleaved below the local apply fence, had never actually been applied — the row it described simply did not exist, with no error and no drift flag. Reproduced by `TestChangesetStatusFlagsInterleavedMachineChangesetNeverApplied`. Fixed in P1: `ChangesetStatus` now returns `unverifiedBelowFence`, and `db rebuild --yes` (full replay from empty) recovers the row, proven end-to-end by `TestDBRebuildRecoversInterleavedMachineChangeset`.
+
+**F6 — two skills hard-stopped on a harness they don't write to.** `git` and `interview` own no harness entity (`skills/workflow/README.md`'s own mapping table already said so), yet both skills refused to run at all without a working `zharness` binary — the opposite of what "owns no entity" should mean. The CLI's own `preflight` already degraded correctly (`{"mode":"reduced","readiness":"reduced"}`, exit 0, no `stop`, for a repository with no database); the defect was purely in the two `SKILL.md` files' own gate text. Fixed in P1 wave 4: both now proceed with a one-line degrade notice instead of stopping, and neither is part of the embedded docs projection, so the fix needed no version bump.
+
+**F7 — release mechanics were unverified, and the version-floor bump was unordered relative to the release it depends on.** The original plan risked writing `MIN_ZHARNESS_VERSION` in the same breath as the code that needs it, before any binary satisfying that floor existed to install — a self-inflicted `install-zharness.sh` failure for every consumer. Verified instead: `.github/workflows/cli-release.yml` triggers on a pushed `cli/vX.Y.Z` tag, and `goreleaser` publishes under the bare `vX.Y.Z` tag `scripts/install-zharness.sh` resolves. The fix is procedural, not code: publish first, bump `MIN_ZHARNESS_VERSION` second, `zharness init --refresh-docs` third (`p5b-release`, D8) — never bump the floor before a satisfying binary is installable.
+
+---
+
+## 11. The locked mental model
+
+> **The DB is not a copy of the markdown. It is the compressed index of it.**
+
+Every append-only markdown section (`## Progress`, `## Decisions`, `## Validation`) now has a matching table, a matching writer, and a matching query — `traces`/`query traces`/`query checks`, `decisions`/`query decisions`, `checks`/`query checks`. What the index does *not* do, by design (R2, NG2): answer "is this correct." Correctness — full plan narrative, requirements, rejected alternatives, exact review context — stays a markdown read, and `check`'s full-plan read is exactly that, deliberately untouched by this initiative. The index answers "what happened"; the markdown remains the only source for "was it right." Ceremony reduction came from routing more "what happened" reads through the compressed index (F4, this document's P4/P5) — not from touching the one case (`check`) where a full read is the correct answer, not a cost to cut.
+
+---
+
+## 12. P6 — re-measured after P1–P5
+
+Same method as section 2: `zharness` built from source (now carrying P1–P5), initialized in a throwaway repository, driven through the same `watzup → brainstorm → to-plan → work → check → handoff` lifecycle for one tiny change (one phase, one wave, one task). Every command's exact output was recorded; the run produced zero non-zero exit codes and `validate --json` returned `{"valid":true,"findings":[]}` at the end. The scratch plan file (`## Progress`/`## Validation`) was never hand-edited — every entry it carries was written by `trace add`, `handoff record`, and `check record` themselves, which is itself the direct, observable proof of P3 ("CLI owns the pen").
+
+### CLI round trips per stage
+
+| Stage | Before (F1 baseline) | After (P1–P5) | Delta |
+|---|---|---|---|
+| `watzup` | 3 (`--version`, `preflight`, `resume`) | **1** (`preflight` — `version` + `context` in one response) | −2 |
+| `brainstorm` lock | 5 | **4** (`--version` folded into `preflight`) | −1 |
+| `to-plan` full | 4 | **3** (`--version` folded into `preflight`) | −1 |
+| `work` full | 7 | **5** (`preflight`, `run create`, `trace add` ×2 — task- and wave-level, `query phases`) | −2 |
+| `check` gate | 6 | **5** (`--version` folded into `preflight`; NG2 — `resume`/`audit`/`query phases`/`check record` unchanged) | −1 |
+| `handoff` | 6 | **3** (`preflight`, `handoff record`, `query phases`) | −3 |
+| **Total** | **31** | **21** | **−10 (32%)** |
+
+### Mandated ceremony operations (CLI + file reads + file writes + other), same methodology as §4
+
+| Stage | CLI | Reads | Writes | Other | Ops (before → after) |
+|---|---|---|---|---|---|
+| `watzup` | 1 | 2 | 0 | 0 | 5 → **3** |
+| `brainstorm` | 4 | 0 | 6 | 0 | 11 → **10** |
+| `to-plan` | 3 | 1 | 2 | 0 | 7 → **6** |
+| `work` full | 5 | 3 | 4 | 1 | 17 → **13** |
+| `check` gate | 5 | 3 | 2 | 1 | 13 → **11** |
+| `handoff` | 3 | 1 | 2 | 0 | 9 → **6** |
+| **Total** | **21** | **10** | **16** | **2** | **62 → 49 (21%)** |
+
+`work` and `check` lose one write each because `trace add`/`decision add` and `check record` now write their own `## Progress`/`## Validation` entries as part of the CLI call already counted in the CLI column, not as a separate agent-driven edit. `handoff`'s write count is unchanged: its own new `## Progress` entry is likewise absorbed into the CLI call, not an addition to this column.
+
+### Success signals — honest verification, not all fully met
+
+- **≤ 35 mandated operations, down from 62** — **not met.** Measured: 62 → 49 (21% reduction, not the targeted 44%). The gap is F1: this initiative replaced F1's proposed fix (a plan-slice read command, P3 in the original ranked list) with a bounded context-packet windowing mechanism (P4/P5) that caps *growth* without eliminating the base per-stage file-read/file-write floor that F2 measured. Closing the remaining gap needs the deferred plan-slice read path, not further round-trip collapsing — round trips are largely exhausted (F3, F5's `resume`/`query state` collapse) as a source of further ceremony cuts.
+- **`watzup` cold start costs 2 operations, down from 5** — **not met, but the CLI-call target inside it is.** Measured: 5 → 3. The CLI portion dropped from 3 calls to 1 (the actual target of P1/F3/F4's fixes); the 2 remaining operations are file reads (git state, active plan) that no proposal in this initiative addressed, since P3 (plan-slice reads) — the fix that would touch them — was not built.
+- **Growth ratio within 20% across a 1- vs 8-phase plan, down from 6.4x** — **partially met, and only for the packet-covered portion.** `context.traces` is capped at 30 entries regardless of phase count (`contextTraceTail`, verified by `TestBuildContextPacketTracesCappedDeclaresOmitted`), so the position/phases/recent-traces portion of a `watzup`/`work`/`handoff` read is now phase-count-independent by construction — an 8-phase initiative's context packet costs the same as a 1-phase one. What is **not** flattened: `watzup`'s own recap (Outcome, full Decisions, Current State) still reads the whole plan file, and that portion still scales with plan size exactly as F1 described. The 6.4x ratio is reduced only in proportion to how much of a stage's read moved to the packet — not eliminated, because the plan-slice read path (P3 in the original ranking) was never built.
+- **Every append-only section has a query returning its compressed form — no section is write-only** — **met.** `## Progress` → `query traces`/`query traces --phase`; `## Decisions` → `query decisions`; `## Validation` → `query checks` (new, P6 — `query check --latest` alone left this signal unmet until now).
+- **After a simulated two-machine interleaved merge, every row is present after `db rebuild`, or `db status` names what's missing** — **met.** `TestChangesetStatusFlagsInterleavedMachineChangesetNeverApplied` and `TestDBRebuildRecoversInterleavedMachineChangeset` (F5, P1) prove both halves of this signal.
+
+---
+
+## 13. Realigned ROI — what shipped against what was proposed
+
+| Proposal (§7) | Shipped | Where |
+|---|---|---|
+| P1 — emit `version` in `preflight` | ✅ as designed | P4 wave 1 |
+| P2 — scope the active-plan check to in-progress work | ✅ as designed | P1 wave 3 |
+| P3 — plan-slice read path | ❌ not built | Superseded by the bounded context-packet windowing (P4/P5) — caps growth, does not eliminate the full-read floor. Remains the highest-value item left on the table; the growth-ratio and ≤35-op success signals both fall short specifically because of this gap. |
+| P4 — thin-trigger `git` | ✅ as designed, plus its `references/`+`scripts/` cleanup | P5 wave 4 |
+| P5 — collapse `resume`/`query state` | ✅, generalized into the stage-shaped `context` packet (also folds `query phases`) | P4 + P5 waves 1–3 |
+| *(not proposed)* — `## Validation`'s missing list query | ✅ | P6, closing F4's Validation gap |
+| *(not proposed)* — two-machine changeset loss (F5) | ✅ | P1 wave 2 |
+| *(not proposed)* — `git`/`interview` false hard-stop (F6) | ✅ | P1 wave 4 |
+| *(not proposed)* — release-ordering risk (F7) | ✅ (procedural) | `p5b-release`, D8 |
+
+Four of five originally-ranked proposals shipped essentially as designed. The one that did not (P3) is the reason the two most ambitious success signals — ≤35 ops and the growth ratio — are only partially met. Three additional fixes shipped that were not in the original five, discovered during implementation rather than at audit time (F4's Validation gap, F5, F6, F7) — each traced to a concrete failure mode found by writing the code, not by re-reading the playbooks harder.

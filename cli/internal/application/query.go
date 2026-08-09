@@ -134,6 +134,70 @@ func QueryLatestCheck(db *sql.DB) (CheckView, bool, error) {
 	return v, true, nil
 }
 
+// CheckListView is one row of the `query checks` view: the compressed-
+// index counterpart of a plan's `## Validation` entries, closing the gap
+// `query check --latest` leaves — the latest verdict was queryable, but
+// not the append-only history it was drawn from (P6's own success-signal
+// verification: "every append-only markdown section has a query that
+// returns its compressed form"). Separate from CheckView so `query check
+// --latest --json`'s locked shape is untouched.
+type CheckListView struct {
+	ID         string  `json:"id"`
+	RunID      string  `json:"run_id"`
+	Phase      string  `json:"phase"`
+	Verdict    string  `json:"verdict"`
+	Judge      *string `json:"judge"`
+	JudgeModel *string `json:"judge_model"`
+	CreatedAt  string  `json:"created_at"`
+}
+
+// QueryChecks reads check rows in chronological order, optionally
+// filtered to one phase (`--phase`, matching `query decisions`/`query
+// traces --phase`'s filter convention) and/or capped to the most recent N
+// (`--tail`, 0 = unbounded).
+func QueryChecks(db *sql.DB, phase string, tail int) ([]CheckListView, error) {
+	q := `
+		SELECT checks.id, checks.run_id, runs.story_slug, checks.verdict, checks.judge, checks.judge_model, checks.created_at
+		FROM checks
+		JOIN runs ON runs.id = checks.run_id`
+	args := []any{}
+	if phase != "" {
+		q += ` WHERE runs.story_slug = ?`
+		args = append(args, phase)
+	}
+	q += ` ORDER BY checks.created_at DESC, checks.id DESC`
+	if tail > 0 {
+		q += ` LIMIT ?`
+		args = append(args, tail)
+	}
+
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query checks: %w", err)
+	}
+	defer rows.Close()
+
+	views := []CheckListView{}
+	for rows.Next() {
+		var v CheckListView
+		var judge, judgeModel sql.NullString
+		if err := rows.Scan(&v.ID, &v.RunID, &v.Phase, &v.Verdict, &judge, &judgeModel, &v.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan check row: %w", err)
+		}
+		v.Judge = nullableString(judge)
+		v.JudgeModel = nullableString(judgeModel)
+		views = append(views, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("query checks: %w", err)
+	}
+
+	for i, j := 0, len(views)-1; i < j; i, j = i+1, j-1 {
+		views[i], views[j] = views[j], views[i]
+	}
+	return views, nil
+}
+
 // HandoffView is the `query handoff --latest` view: the most recent
 // handoff's anchors, flattened out of its JSON column — the read half of
 // the round trip for `handoff record --next-action` (D1,

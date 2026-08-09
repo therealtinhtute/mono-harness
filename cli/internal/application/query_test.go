@@ -1,9 +1,12 @@
 package application
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
+
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
 func TestQueryArtifactsPreservesLegacyArtifactPaths(t *testing.T) {
@@ -89,5 +92,71 @@ func TestQueryTracesChronologicalOrderAndFilters(t *testing.T) {
 	}
 	if len(none) != 0 {
 		t.Fatalf("traces for unknown run = %+v, want empty", none)
+	}
+}
+
+// TestQueryChecksChronologicalOrderAndFilters is P6's own success-signal
+// fix: `query check --latest` only ever exposed the most recent verdict,
+// leaving Validation's append-only history unqueryable — the one
+// append-only section that was still write-only. QueryChecks closes that
+// gap with the same phase/tail filter shape as QueryTraces/QueryDecisions.
+func TestQueryChecksChronologicalOrderAndFilters(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+
+	var ids []string
+	for i, verdict := range []string{"REQUEST_CHANGES", "APPROVED"} {
+		id, _, err := RecordCheck(db, changesetDir, runID, verdict, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "x"}})
+		if err != nil {
+			t.Fatalf("RecordCheck(%d): %v", i, err)
+		}
+		if _, err := db.Exec(`UPDATE checks SET created_at = ? WHERE id = ?`, fmt.Sprintf("2026-07-27T12:0%d:00Z", i), id); err != nil {
+			t.Fatalf("backdate check %d: %v", i, err)
+		}
+		ids = append(ids, id)
+	}
+
+	all, err := QueryChecks(db, "", 0)
+	if err != nil {
+		t.Fatalf("QueryChecks: %v", err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("checks = %+v, want 2 rows", all)
+	}
+	if all[0].ID != ids[0] || all[1].ID != ids[1] {
+		t.Fatalf("checks order = [%s %s], want chronological %v", all[0].ID, all[1].ID, ids)
+	}
+	if all[0].Verdict != "REQUEST_CHANGES" || all[1].Verdict != "APPROVED" {
+		t.Fatalf("checks verdicts = [%s %s], want [REQUEST_CHANGES APPROVED]", all[0].Verdict, all[1].Verdict)
+	}
+	if all[0].Phase != "cli-domain" || all[0].RunID != runID {
+		t.Fatalf("checks[0] phase/run = %s/%s, want cli-domain/%s", all[0].Phase, all[0].RunID, runID)
+	}
+	if all[0].Judge == nil || *all[0].Judge != domain.JudgeIndependent {
+		t.Fatalf("checks[0].Judge = %v, want %s", all[0].Judge, domain.JudgeIndependent)
+	}
+
+	tailed, err := QueryChecks(db, "", 1)
+	if err != nil {
+		t.Fatalf("QueryChecks tail=1: %v", err)
+	}
+	if len(tailed) != 1 || tailed[0].ID != ids[1] {
+		t.Fatalf("tailed checks = %+v, want only the most recent check", tailed)
+	}
+
+	filtered, err := QueryChecks(db, "cli-domain", 0)
+	if err != nil {
+		t.Fatalf("QueryChecks phase filter: %v", err)
+	}
+	if len(filtered) != 2 {
+		t.Fatalf("filtered checks = %+v, want 2 rows for cli-domain", filtered)
+	}
+
+	none, err := QueryChecks(db, "no-such-phase", 0)
+	if err != nil {
+		t.Fatalf("QueryChecks unknown phase: %v", err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("checks for unknown phase = %+v, want empty", none)
 	}
 }
