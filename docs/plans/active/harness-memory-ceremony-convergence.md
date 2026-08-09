@@ -628,6 +628,13 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   `docs/audit/workflow-harness-ceremony-audit.md` (sections 10-13). Verification:
   `cd cli && go clean -testcache && go build ./...`, `go vet ./...`, `go test ./...` (all
   packages ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green.
+- 2026-08-09, handoff, no code change this session — PR #43 confirmed merged (`b3d1b12`)
+  after an owner check-in earlier in the day; refreshed `## Current State and Next Action`
+  to drop the stale "open a PR" action and state the real remaining scope precisely:
+  `p5b-release` is the only phase left, blocked on the owner pushing `cli/v0.8.0` (this
+  and every prior session's git credentials return a persistent HTTP 403 on tag push).
+  Verification: `bash scripts/verify-doc-links.sh` (0 findings); no code touched, so no Go
+  gate needed.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -763,40 +770,45 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p6-measure-and-close`, wave 1 done (re-measurement + audit doc sections
-  10-13 + the `query checks`/`work.md` fixes it surfaced); not DB-recorded as
-  `in-progress`/`checked` — no live zharness in this session, so no `run create`/`check
-  record` was possible; see Progress entries above for P1 through P6)
+- active_phase: `p5b-release` (the only phase not yet merged). `p1-integrity-operability`
+  through `p6-measure-and-close` are all merged into `master`: PR #42 (`ac73f22`, P1-P5)
+  and PR #43 (`b3d1b12`, P6 wave 1) both merged, CI green on both, no open review comments.
+  Not DB-recorded as `in-progress`/`checked` for any phase — no live zharness in any
+  session so far, so no `run create`/`check record` was ever possible; see Progress
+  entries above for the full P1-P6 record.
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
-  left unchanged rather than claiming a DB transition this session could not perform)
+  left unchanged rather than claiming a DB transition no session could perform)
 - latest_run_id: none
 - latest_trace_ids: []
 - latest_check_id: none
 - latest_handoff_id: none
 - blockers:
-  - `p5b-release` (tag push) is blocked: this session's git credentials return HTTP 403
-    on `git push origin cli/vX.Y.Z`, retried twice, not transient. No GitHub API tool
+  - `p5b-release` wave 1 task 1 (push a `cli/vX.Y.Z` tag) is blocked for any Claude Code
+    session on this repo: git credentials here return HTTP 403 on `git push origin
+    cli/vX.Y.Z`, retried and confirmed persistent, not transient. No GitHub API tool
     available creates a tag in a way that also fires the `push: tags:` trigger
     `.github/workflows/cli-release.yml` needs (a Release created via the REST API is a
-    `create` event, not a `push` event — it would not invoke goreleaser). Needs either a
-    credential with tag-push rights, or the owner pushing the tag directly.
+    `create` event, not a `push` event — it would not invoke goreleaser). Needs the owner
+    to push the tag directly from a credential with tag-push rights.
 - open_items:
   - owner decision: does `.kit/changesets/` become committed? Decides whether
     `db rebuild` is a convenience or load-bearing (NG4)
   - owner decision: the trust model in D5/NG3
-  - PR #42 is merged (`ac73f22`, D19) — `master` carries P1 through P5 in full;
-    `p6-measure-and-close` wave 1's diff (this session) is not yet in a PR
-  - once `cli/v0.8.0` (or whatever the owner tags) is pushed and published: bump
-    `MIN_ZHARNESS_VERSION` in `skills/workflow/README.md` and confirm
-    `bash scripts/install-zharness.sh` installs a binary satisfying the new floor, then
-    `zharness init --refresh-docs` against this repository and confirm `preflight`
-    reports `docs: ready` — `p5b-release`'s remaining two tasks, both ordered strictly
-    after the tag publishes (D8)
+  - `p5b-release` wave 1, in strict order (D8, R-D): (1) owner pushes `cli/v0.8.0` (next
+    tag after the existing `cli/v0.7.0`) from `master` and confirms
+    `.github/workflows/cli-release.yml` publishes it — `gh release list` shows the new
+    release; (2) only after that publishes, bump `MIN_ZHARNESS_VERSION` at
+    `skills/workflow/README.md:35` and every skill trigger naming it, confirm
+    `bash scripts/install-zharness.sh` installs a binary satisfying the new floor; (3) run
+    `zharness init --refresh-docs` against this repository and confirm `zharness preflight
+    work --json` reports `docs: ready` (no more `stale_docs`). Phase checks:
+    `bash scripts/verify-doc-links.sh` and a fresh clone installing zharness and running
+    `watzup` end to end.
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
     `p1-integrity-operability` through `p6-measure-and-close`, and route the diff through
-    `check full` to record real DB-linked verdicts — durable bookkeeping this session
-    could not produce. Schema is still at version 9 (no phase since P2 has shipped a
+    `check full` to record real DB-linked verdicts — durable bookkeeping no session so far
+    could produce. Schema is still at version 9 (no phase since P2 has shipped a
     migration); `db rebuild` after minting IDs will replay everything cleanly (R7's own
     test proves this). Embedded playbook count is 7 (`git.md`, `TestPlaybookCount`
     updated in P5).
@@ -804,8 +816,7 @@ run_id, check_id, verdict, and proof_gaps. -->
     two of P6's own success signals (≤35 ops, growth ratio within 20%) are only partially
     met (§12 of the audit doc) — the next real ceremony win if this initiative continues
     past `p6-measure-and-close`.
-- exact_next_action: open a PR for `p6-measure-and-close`'s wave-1 diff (query checks,
-  work.md's step 7-9 fix, audit doc sections 10-13) on
-  `claude/harness-skill-optimization-tzc0xb` (restarted from `master`, D19); once the
-  owner pushes the `cli/vX.Y.Z` tag and it publishes, finish `p5b-release`'s two remaining
-  tasks (version-floor bump, `refresh-docs`), then this initiative can close.
+- exact_next_action: owner pushes `cli/v0.8.0` from `master` and confirms the release
+  publishes; the next session then does `p5b-release` wave 1 tasks 2-3 (version-floor
+  bump, `refresh-docs`) and its phase checks, and this initiative closes — `p6` was its
+  last content phase.
