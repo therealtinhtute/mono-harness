@@ -583,6 +583,51 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   playbook-count tests against the new 7th playbook) and `bash scripts/verify-doc-links.sh`
   (0 findings, after the `.claimignore` additions) both green. `p5-harvest` is now
   complete — all 4 waves done.
+- 2026-08-09, phase `p6-measure-and-close`, wave 1, task_status=DONE, run_id=none,
+  trace_id=none (session had no live zharness binary to record durable runs/checks
+  against; PR #42 merged into `master` at `ac73f22` mid-session — this phase's own diff
+  therefore develops on a branch restarted from `master`, D19). `p5b-release` (the tag
+  push + `MIN_ZHARNESS_VERSION` bump + `refresh-docs`) did not happen — pushing a release
+  tag was blocked by a 403 permission error on this session's git credentials (retried
+  twice, persistent, not transient); the owner chose to proceed to P6 on merged code
+  rather than wait. Re-ran the audit's lifecycle measurement for real: built `zharness`
+  from source (carrying all of P1-P5), initialized a throwaway scratch repository, and
+  drove the full `watzup → brainstorm → to-plan → work → check → handoff` lifecycle for
+  one tiny change by hand, recording every command's exact output — zero non-zero exit
+  codes, `validate --json` returned `{"valid":true,"findings":[]}`. The scratch plan's
+  `## Progress`/`## Validation` entries were never hand-edited; every one was written by
+  `trace add`/`handoff record`/`check record` themselves — direct, observable proof of P3.
+  Found and fixed a real staleness bug while measuring: `work.md` steps 7/9 still
+  described manually appending Progress entries and splicing a trace ID into an existing
+  one — stale since P3 made `trace add` write that entry itself. Rewrote steps 7-9 to call
+  `trace add --task/--task-status` per task (replacing the manual per-task append) and
+  `decision add` explicitly in step 8, removing the now-impossible trace-ID-splice
+  instruction. Also closed a real gap the measurement surfaced: `query check --latest`
+  only ever exposed the latest verdict, leaving `## Validation` — the one append-only
+  section without a full-history query — still write-only. Added `QueryChecks`/`query
+  checks --phase --tail` (mirrors `query traces`/`query decisions`'s shape exactly;
+  `check --latest`'s locked shape is untouched). Appended sections 10-13 to
+  `docs/audit/workflow-harness-ceremony-audit.md`: F4-F7 (findings from implementation,
+  not caught at original-audit time), the locked mental model as a standalone quotable
+  statement, the full before/after re-measurement, and a realigned ROI table against the
+  original five ranked proposals. Reported honestly, not adjusted to fit: ceremony dropped
+  62→49 ops (21%, not the targeted ≤35/44%) and `watzup` cold start 5→3 (not the targeted
+  2) because P3's original proposal (a plan-slice read path) was never built — P4/P5's
+  bounded context-packet windowing caps growth but doesn't eliminate the base per-stage
+  read/write floor F2 measured. The growth-ratio signal (6.4x → within 20%) is met only
+  for the packet-covered portion (traces capped at 30 regardless of phase count,
+  `TestBuildContextPacketTracesCappedDeclaresOmitted`); `watzup`'s own plan-file recap
+  still scales with plan size. Two signals fully met: every append-only section now has a
+  list query (Progress/Decisions/Validation → traces/decisions/checks), and the two-machine
+  merge guarantee (F5, P1's existing tests). Changed surfaces:
+  `cli/internal/application/query.go` (`CheckListView`, `QueryChecks`),
+  `cli/internal/application/query_test.go`, `cli/internal/interfaces/query.go` (`checks`
+  view wired), `cli/internal/interfaces/query_checks_test.go` (new),
+  `docs/playbooks/work.md` + `cli/docs/embedded/playbooks/work.md` (steps 7-9 fix),
+  `cli/docs/CONTRACT.md` (`query checks` documented),
+  `docs/audit/workflow-harness-ceremony-audit.md` (sections 10-13). Verification:
+  `cd cli && go clean -testcache && go build ./...`, `go vet ./...`, `go test ./...` (all
+  packages ok) and `bash scripts/verify-doc-links.sh` (0 findings) both green.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -701,6 +746,16 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   doc's own historical measurement; found none. This is the "redundant with plain git"
   branch of the plan's own task wording, not the "keep as executables" branch — there was
   no live caller to preserve.
+- D19 (2026-08-09, implementation): PR #42 merged into `master` mid-session (owner
+  request), before `p5b-release`'s tag push. Per this session's own operating rule for a
+  merged designated branch, `p6-measure-and-close`'s work develops on
+  `claude/harness-skill-optimization-tzc0xb` restarted from `origin/master`
+  (`git checkout -B` onto the merged tip, keeping the same branch name), not stacked on
+  the now-closed history. Any PR this phase opens is a new PR, not #42 reopened.
+  Rationale: a merged PR cannot track new commits; restarting from the branch's own merge
+  target is the documented recovery, and P6's diff (query checks, work.md's step 7-9 fix,
+  the audit doc's sections 10-13) has no dependency on anything only P1-P5's branch state
+  carried — master already has all of it.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -708,36 +763,49 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p5-harvest` (all 4 waves code-complete and verified — wave 4 proceeded
-  after an owner check-in confirmed the full deletion-heavy scope; not DB-recorded as
+- active_phase: `p6-measure-and-close`, wave 1 done (re-measurement + audit doc sections
+  10-13 + the `query checks`/`work.md` fixes it surfaced); not DB-recorded as
   `in-progress`/`checked` — no live zharness in this session, so no `run create`/`check
-  record` was possible; see Progress entries above for P1 through P5)
+  record` was possible; see Progress entries above for P1 through P6)
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
   left unchanged rather than claiming a DB transition this session could not perform)
 - latest_run_id: none
 - latest_trace_ids: []
 - latest_check_id: none
 - latest_handoff_id: none
-- blockers: none
+- blockers:
+  - `p5b-release` (tag push) is blocked: this session's git credentials return HTTP 403
+    on `git push origin cli/vX.Y.Z`, retried twice, not transient. No GitHub API tool
+    available creates a tag in a way that also fires the `push: tags:` trigger
+    `.github/workflows/cli-release.yml` needs (a Release created via the REST API is a
+    `create` event, not a `push` event — it would not invoke goreleaser). Needs either a
+    credential with tag-push rights, or the owner pushing the tag directly.
 - open_items:
   - owner decision: does `.kit/changesets/` become committed? Decides whether
     `db rebuild` is a convenience or load-bearing (NG4)
   - owner decision: the trust model in D5/NG3
-  - `p5b-release` is a deliberate release beat: publish the binary first, bump
-    `MIN_ZHARNESS_VERSION` second, then `zharness init --refresh-docs` on consuming repos
-  - suggested cut line: ending after `p3-cli-owns-the-pen` captures the whole ceremony
-    reduction while touching no contract and forcing no repository to refresh its docs
+  - PR #42 is merged (`ac73f22`, D19) — `master` carries P1 through P5 in full;
+    `p6-measure-and-close` wave 1's diff (this session) is not yet in a PR
+  - once `cli/v0.8.0` (or whatever the owner tags) is pushed and published: bump
+    `MIN_ZHARNESS_VERSION` in `skills/workflow/README.md` and confirm
+    `bash scripts/install-zharness.sh` installs a binary satisfying the new floor, then
+    `zharness init --refresh-docs` against this repository and confirm `preflight`
+    reports `docs: ready` — `p5b-release`'s remaining two tasks, both ordered strictly
+    after the tag publishes (D8)
   - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
     (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability` through `p5-harvest`, and route the diff through `check
-    full` to record real DB-linked verdicts — durable bookkeeping this session could not
-    produce. Schema is still at version 9 (no phase since P2 has shipped a migration);
-    `db rebuild` after minting IDs will replay everything cleanly (R7's own test proves
-    this). Embedded playbook count is now 7 (git.md added, `TestPlaybookCount` updated).
-- exact_next_action: `p1-integrity-operability` through `p5-harvest` are code-complete
-  and gate-green; `p5b-release` is next in the plan but is a real release-publish action
-  (push a `cli/vX.Y.Z` tag, bump `MIN_ZHARNESS_VERSION`, run `zharness init
-  --refresh-docs` on consuming repos — D8's ordering) that needs the owner's explicit
-  go-ahead, not something to do unprompted. Until then: build `zharness` from source in
-  an environment that can run it, mint the plan/intake IDs, and record real DB-linked
-  runs/checks for the five completed phases against this session's diff.
+    `p1-integrity-operability` through `p6-measure-and-close`, and route the diff through
+    `check full` to record real DB-linked verdicts — durable bookkeeping this session
+    could not produce. Schema is still at version 9 (no phase since P2 has shipped a
+    migration); `db rebuild` after minting IDs will replay everything cleanly (R7's own
+    test proves this). Embedded playbook count is 7 (`git.md`, `TestPlaybookCount`
+    updated in P5).
+  - P3's deferred proposal (a plan-slice read path into the CLI) is the concrete reason
+    two of P6's own success signals (≤35 ops, growth ratio within 20%) are only partially
+    met (§12 of the audit doc) — the next real ceremony win if this initiative continues
+    past `p6-measure-and-close`.
+- exact_next_action: open a PR for `p6-measure-and-close`'s wave-1 diff (query checks,
+  work.md's step 7-9 fix, audit doc sections 10-13) on
+  `claude/harness-skill-optimization-tzc0xb` (restarted from `master`, D19); once the
+  owner pushes the `cli/vX.Y.Z` tag and it publishes, finish `p5b-release`'s two remaining
+  tasks (version-floor bump, `refresh-docs`), then this initiative can close.
