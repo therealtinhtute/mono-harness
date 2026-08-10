@@ -7,7 +7,7 @@ Explore a decision in the response, or lock/refine the durable initiative at `do
 ## Preconditions
 
 1. Choose `explore`, `lock-from-idea`, `lock-from-files`, or `refine` from the request shape. Ask only when mode or scope is genuinely ambiguous.
-2. Run `zharness preflight brainstorm --mode {explore|lock} --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its status and recovery exactly. Explore may continue in reduced mode; lock/refine requires durable readiness.
+2. Run `zharness preflight brainstorm --mode {explore|lock} --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its status and recovery exactly. Explore may continue in reduced mode; lock/refine requires durable readiness.
 
 ## Modes
 

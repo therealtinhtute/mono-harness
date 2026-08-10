@@ -635,6 +635,41 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   and every prior session's git credentials return a persistent HTTP 403 on tag push).
   Verification: `bash scripts/verify-doc-links.sh` (0 findings); no code touched, so no Go
   gate needed.
+- 2026-08-10, phase `p5b-release`, wave 1, task_status=DONE, run_id=none (still no live
+  zharness DB when the tag work started; one now exists locally — see below). Owner pushed
+  `cli/v0.8.0` twice: the first push resolved to a stale local `origin/master` (commit
+  `673d0b9`, predating this entire initiative) and CI published that release before it was
+  caught (D20). The corrected push to the right commit (`51bfa30`) then failed CI at
+  "Create local bare tag for goreleaser" because the first release had already created the
+  bare `v0.8.0` tag ref, and git refused to recreate it (D20). Owner deleted both the bad
+  release and the bare tag; the retry still needed a fresh CI run, which required a new tag
+  rather than reusing `cli/v0.8.0` (goreleaser's runner-local checkout would still see the
+  already-fetched bare tag from git history otherwise) — retagged as `cli/v0.8.1` per D20,
+  confirmed pointing at `51bfa30` before the push. That run succeeded: release `v0.8.1`
+  published with 5 assets (darwin amd64/arm64, linux amd64/arm64, checksums.txt) from the
+  correct commit. Bumped `MIN_ZHARNESS_VERSION` 0.4.1 -> 0.8.1 in `skills/workflow/README.md`
+  (both occurrences), root `README.md`, all 8 spine `SKILL.md` files, and both playbook
+  copies (`docs/playbooks/*.md` + `cli/docs/embedded/playbooks/*.md`, kept byte-identical);
+  rewrote README.md:35's bump rationale, which a blind find-replace would have corrupted
+  into a self-referential non sequitur (it originally described what the *old* v0.4.1
+  release added, not this bump's reason). Left `docs/workflow-harness/pilot-evidence/
+  2026-07-19-agent-pilot-final.md` untouched — historical record of a pilot run against the
+  literal v0.4.1 binary, not a live version reference. Ran `zharness init --refresh-docs`
+  for the first time ever in this actual repository (prior sessions only ever verified in
+  throwaway scratch repos) — `harness.db` now exists here for real, gitignored, schema
+  version 9; `preflight work --json` returns `docs: ready`, `db: ready`. Could not fully
+  exercise `bash scripts/install-zharness.sh` end to end: this session has no `gh` CLI, and
+  the repo is private, so an anonymous `curl` against a release asset 404s — verified the
+  release and its assets exist and CI built them from the correct commit instead; the
+  script itself is unchanged and was already proven working for `v0.7.0` and earlier.
+  Changed surfaces: `skills/workflow/README.md`, root `README.md`, 8× `skills/workflow/*/
+  SKILL.md`, `docs/playbooks/*.md` (7 files), `cli/docs/embedded/playbooks/*.md` (7 files,
+  kept in sync). Verification: `bash scripts/verify-doc-links.sh` (0 findings, after fixing
+  a self-inflicted broken cross-reference to a not-yet-existing `docs/plans/completed/`
+  path), `cd cli && go clean -testcache && go build ./... && go vet ./... && go test ./...`
+  (all packages ok — no Go source changed, this just reconfirms nothing else regressed).
+  `p5b-release`'s own two checks: doc-links gate green; the install-end-to-end check is
+  partially verified per the `gh`-CLI caveat above.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -763,6 +798,24 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   target is the documented recovery, and P6's diff (query checks, work.md's step 7-9 fix,
   the audit doc's sections 10-13) has no dependency on anything only P1-P5's branch state
   carried — master already has all of it.
+- D20 (2026-08-10, implementation): `p5b-release`'s tag ended up as `cli/v0.8.1`, not the
+  `cli/v0.8.0` named throughout earlier Current State/open-items text. Sequence: owner's
+  first `git tag cli/v0.8.0 origin/master` resolved against a stale local ref (their
+  `origin/master` hadn't been fetched since before this initiative merged), tagging
+  `673d0b9` — 10 commits behind, predating P1 entirely. CI published a release from that
+  wrong commit before anyone caught it. Retagging `cli/v0.8.0` at the correct commit
+  (`51bfa30`) and force-pushing triggered a second CI run, which failed at goreleaser's
+  "create local bare tag" step: the first (bad) release had already caused GitHub to create
+  a bare `v0.8.0` ref, and `actions/checkout`'s `fetch-depth: 0` pulls that ref into the
+  runner, so `git tag v0.8.0 $GITHUB_SHA` collided with it. Deleting the bad release and the
+  bare tag fixed the underlying conflict, but re-running would still start from a
+  now-ambiguous `cli/v0.8.0` history (git tags aren't truly gone the instant a ref is
+  deleted, and there was no clean way to confirm no residual runner-side cache without
+  testing it). Cheaper and unambiguous: tag fresh as `cli/v0.8.1` instead of re-touching
+  `v0.8.0` a third time. Consequence: `MIN_ZHARNESS_VERSION` and every reference to it
+  target `0.8.1`, not `0.8.0` — every mention of "0.8.0" in this plan's own Progress/
+  Current-State history predates this decision and describes the abandoned first attempt,
+  not the shipped floor.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
@@ -770,53 +823,44 @@ run_id, check_id, verdict, and proof_gaps. -->
 - none
 
 ## Current State and Next Action
-- active_phase: `p5b-release` (the only phase not yet merged). `p1-integrity-operability`
-  through `p6-measure-and-close` are all merged into `master`: PR #42 (`ac73f22`, P1-P5)
-  and PR #43 (`b3d1b12`, P6 wave 1) both merged, CI green on both, no open review comments.
-  Not DB-recorded as `in-progress`/`checked` for any phase — no live zharness in any
-  session so far, so no `run create`/`check record` was ever possible; see Progress
-  entries above for the full P1-P6 record.
+- active_phase: none — every planned phase (`p1-integrity-operability` through
+  `p5b-release`) is code-complete and merged into `master`. `p5b-release` wave 1's 3 tasks
+  are all done (D20, Progress above): release `cli/v0.8.1` published from the correct
+  commit, `MIN_ZHARNESS_VERSION` bumped 0.4.1 -> 0.8.1 everywhere it's named, `zharness init
+  --refresh-docs` run for real in this repository (`harness.db` now exists here, gitignored,
+  schema 9, `docs: ready`). Not DB-recorded as `in-progress`/`checked`/`done` for any phase
+  in the DB itself — every phase's actual work happened in a session with no live zharness
+  (or, for this final phase, in a scratch/throwaway DB until the very last step), so no
+  `run create`/`check record`/`handoff --close-phase` was ever performed against this
+  initiative's own phases. See Progress entries above for the full P1 through `p5b-release`
+  record.
 - lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
-  left unchanged rather than claiming a DB transition no session could perform)
+  left unchanged rather than claiming a DB transition no session performed; this plan is
+  **not** moved to `docs/plans/completed/` for the same reason — `handoff`'s own rule
+  requires every phase `done` in DB before that move, and none is)
 - latest_run_id: none
 - latest_trace_ids: []
 - latest_check_id: none
 - latest_handoff_id: none
-- blockers:
-  - `p5b-release` wave 1 task 1 (push a `cli/vX.Y.Z` tag) is blocked for any Claude Code
-    session on this repo: git credentials here return HTTP 403 on `git push origin
-    cli/vX.Y.Z`, retried and confirmed persistent, not transient. No GitHub API tool
-    available creates a tag in a way that also fires the `push: tags:` trigger
-    `.github/workflows/cli-release.yml` needs (a Release created via the REST API is a
-    `create` event, not a `push` event — it would not invoke goreleaser). Needs the owner
-    to push the tag directly from a credential with tag-push rights.
+- blockers: none
 - open_items:
   - owner decision: does `.kit/changesets/` become committed? Decides whether
     `db rebuild` is a convenience or load-bearing (NG4)
   - owner decision: the trust model in D5/NG3
-  - `p5b-release` wave 1, in strict order (D8, R-D): (1) owner pushes `cli/v0.8.0` (next
-    tag after the existing `cli/v0.7.0`) from `master` and confirms
-    `.github/workflows/cli-release.yml` publishes it — `gh release list` shows the new
-    release; (2) only after that publishes, bump `MIN_ZHARNESS_VERSION` at
-    `skills/workflow/README.md:35` and every skill trigger naming it, confirm
-    `bash scripts/install-zharness.sh` installs a binary satisfying the new floor; (3) run
-    `zharness init --refresh-docs` against this repository and confirm `zharness preflight
-    work --json` reports `docs: ready` (no more `stale_docs`). Phase checks:
-    `bash scripts/verify-doc-links.sh` and a fresh clone installing zharness and running
-    `watzup` end to end.
-  - once zharness is installed in a working environment: mint this plan's `id`/`intake_id`
-    (frontmatter still has the pre-harness placeholders), run `zharness run create` for
-    `p1-integrity-operability` through `p6-measure-and-close`, and route the diff through
-    `check full` to record real DB-linked verdicts — durable bookkeeping no session so far
-    could produce. Schema is still at version 9 (no phase since P2 has shipped a
-    migration); `db rebuild` after minting IDs will replay everything cleanly (R7's own
-    test proves this). Embedded playbook count is 7 (`git.md`, `TestPlaybookCount`
-    updated in P5).
+  - retroactive DB bookkeeping (optional, not attempted this session — out of scope for
+    what was asked): mint this plan's `id`/`intake_id` (frontmatter still has the
+    pre-harness placeholders), run `zharness run create` + `check record` +
+    `handoff record --close-phase` for each of `p1-integrity-operability` through
+    `p5b-release` against `harness.db` (now real, in this repo), and only then move this
+    plan to `docs/plans/completed/`. Nothing about the shipped code depends on this; it
+    only exists to make the DB agree with what git history already shows happened.
+  - `bash scripts/install-zharness.sh` was not verified end to end against the published
+    `v0.8.1` binary — this session has no `gh` CLI and the repo is private, so an anonymous
+    download 404s. Verified instead: the release and its 5 assets exist, built by CI from
+    the correct commit (`51bfa30`). The script itself is unchanged from what already worked
+    for `v0.7.0` and earlier releases.
   - P3's deferred proposal (a plan-slice read path into the CLI) is the concrete reason
     two of P6's own success signals (≤35 ops, growth ratio within 20%) are only partially
-    met (§12 of the audit doc) — the next real ceremony win if this initiative continues
-    past `p6-measure-and-close`.
-- exact_next_action: owner pushes `cli/v0.8.0` from `master` and confirms the release
-  publishes; the next session then does `p5b-release` wave 1 tasks 2-3 (version-floor
-  bump, `refresh-docs`) and its phase checks, and this initiative closes — `p6` was its
-  last content phase.
+    met (§12 of the audit doc) — the next real ceremony win, if this initiative resumes.
+- exact_next_action: none required — all planned phases are code-complete and merged. If
+  resumed, the only remaining work is the optional retroactive DB bookkeeping above.
