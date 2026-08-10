@@ -29,7 +29,7 @@ func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string)
 		t.Fatalf("CreateTrace: %v", err)
 	}
 	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "PASS"},
+		{Command: "true", OutputRef: "PASS"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
@@ -215,7 +215,7 @@ func TestValidateReportsBrokenDatabaseLink(t *testing.T) {
 func TestValidateReportsHandoffRunCheckMismatch(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	checkRunID := createLifecycleRun(t, db, changesetDir, "cli-domain")
-	checkID, _, err := RecordCheck(db, changesetDir, checkRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./..."}})
+	checkID, _, err := RecordCheck(db, changesetDir, checkRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}

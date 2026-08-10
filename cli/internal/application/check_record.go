@@ -56,6 +56,12 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		return "", "", &domain.ValidationError{Code: "independent_judge_required", Message: "check record: lane is high-risk, --judge must be independent"}
 	}
 
+	if verdict == domain.VerdictApproved || verdict == domain.VerdictApproveWithRequests {
+		if err := verifyProofLinks(proofLinks); err != nil {
+			return "", "", err
+		}
+	}
+
 	// AppendNewEntityAndApply mints id/at internally (from the changeset
 	// ULID, for clock-precision "latest check" ordering — see its own
 	// doc comment), so the Validation entry's exact text isn't knowable
