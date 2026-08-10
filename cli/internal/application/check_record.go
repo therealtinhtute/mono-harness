@@ -56,12 +56,6 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		return "", "", &domain.ValidationError{Code: "independent_judge_required", Message: "check record: lane is high-risk, --judge must be independent"}
 	}
 
-	if verdict == domain.VerdictApproved || verdict == domain.VerdictApproveWithRequests {
-		if err := verifyProofLinks(proofLinks); err != nil {
-			return "", "", err
-		}
-	}
-
 	// AppendNewEntityAndApply mints id/at internally (from the changeset
 	// ULID, for clock-precision "latest check" ordering — see its own
 	// doc comment), so the Validation entry's exact text isn't knowable
@@ -69,9 +63,19 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 	// placeholder content, so the common failure mode (missing section)
 	// still fails before the DB write — same "index and markdown cannot
 	// diverge" guarantee trace/decision get from computing their entry
-	// text upfront, just reached by checking writability instead.
+	// text upfront, just reached by checking writability instead. Checked
+	// before proof verification below: both are preconditions with no side
+	// effects of their own, and this one is microseconds against
+	// verification's up-to-5-minutes-per-command, so a check doomed to
+	// fail here shouldn't pay for re-running every proof command first.
 	if err := planSectionWritable("Validation"); err != nil {
 		return "", "", err
+	}
+
+	if verdict == domain.VerdictApproved || verdict == domain.VerdictApproveWithRequests {
+		if err := verifyProofLinks(proofLinks); err != nil {
+			return "", "", err
+		}
 	}
 
 	proofLinksAny := make([]any, len(proofLinks))

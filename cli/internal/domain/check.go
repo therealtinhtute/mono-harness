@@ -68,6 +68,11 @@ func (c Check) Validate() error {
 	if c.Verdict != VerdictRequestChanges && len(c.ProofLinks) == 0 {
 		return &ValidationError{Code: "empty_proof_links", Message: fmt.Sprintf("check: proof_links required for verdict %q", c.Verdict)}
 	}
+	for _, pl := range c.ProofLinks {
+		if strings.TrimSpace(pl.Command) == "" {
+			return &ValidationError{Code: "invalid_proof_links", Message: "check: proof_links[].command must not be blank"}
+		}
+	}
 	if !IsValidJudge(c.Judge) {
 		return &ValidationError{Code: "invalid_judge", Message: fmt.Sprintf("check: invalid judge %q", c.Judge)}
 	}

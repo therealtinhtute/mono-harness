@@ -38,24 +38,9 @@ func AppendToPlanSection(content, section, entry string) (string, error) {
 	entry = strings.ReplaceAll(entry, "\r\n", "\n")
 
 	lines := strings.Split(normalized, "\n")
-	headingAt := -1
-	for i, line := range lines {
-		if name, ok := headingName(line); ok && name == section {
-			headingAt = i
-			break
-		}
-	}
-	if headingAt == -1 {
+	bodyStart, bodyEnd, ok := findPlanSectionBody(lines, section)
+	if !ok {
 		return "", &sectionNotFoundError{section: section}
-	}
-
-	bodyStart := headingAt + 1
-	bodyEnd := len(lines)
-	for i := bodyStart; i < len(lines); i++ {
-		if _, ok := headingName(lines[i]); ok {
-			bodyEnd = i
-			break
-		}
 	}
 
 	body := lines[bodyStart:bodyEnd]
@@ -139,6 +124,35 @@ func headingName(line string) (name string, ok bool) {
 		return "", false
 	}
 	return strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")), true
+}
+
+// findPlanSectionBody locates a `## {name}` heading within lines (already
+// split on "\n", with any CRLF normalized to LF by the caller) and returns
+// the line-index range [start, end) of its body — every line after the
+// heading up to the next `## ` heading, or end of file. ok is false when
+// no such heading exists. Shared by the write path (AppendToPlanSection)
+// and the read path (extractPlanSection, plan_query.go) so a change to
+// where a section starts or ends can't desync one from the other.
+func findPlanSectionBody(lines []string, name string) (start, end int, ok bool) {
+	headingAt := -1
+	for i, line := range lines {
+		if got, headingOK := headingName(line); headingOK && got == name {
+			headingAt = i
+			break
+		}
+	}
+	if headingAt == -1 {
+		return 0, 0, false
+	}
+	start = headingAt + 1
+	end = len(lines)
+	for i := start; i < len(lines); i++ {
+		if _, headingOK := headingName(lines[i]); headingOK {
+			end = i
+			break
+		}
+	}
+	return start, end, true
 }
 
 type sectionNotFoundError struct{ section string }
