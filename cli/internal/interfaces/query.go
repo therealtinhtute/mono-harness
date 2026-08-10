@@ -7,30 +7,44 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/therealtinhtute/skills/cli/internal/application"
+	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query <view>",
-		Short: "Read-only views: state, phases, artifacts, check, checks, traces, decisions, handoff",
+		Short: "Read-only views: state, phases, artifacts, check, checks, traces, decisions, handoff, plan",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			phaseFilter, _ := cmd.Flags().GetString("phase")
 			latest, _ := cmd.Flags().GetBool("latest")
 			runID, _ := cmd.Flags().GetString("run-id")
 			tail, _ := cmd.Flags().GetInt("tail")
-			return runQuery(cmd, args[0], phaseFilter, latest, runID, tail)
+			section, _ := cmd.Flags().GetString("section")
+			return runQuery(cmd, args[0], phaseFilter, latest, runID, tail, section)
 		},
 	}
-	cmd.Flags().String("phase", "", "filter the artifacts/decisions/traces/checks view by phase slug")
+	cmd.Flags().String("phase", "", "filter the artifacts/decisions/traces/checks view by phase slug, or select the phase block for the plan view")
 	cmd.Flags().Bool("latest", false, "return the most recent verdict (check view)")
 	cmd.Flags().String("run-id", "", "filter the traces view to one run")
 	cmd.Flags().Int("tail", 0, "limit the traces/decisions/checks view to the N most recent entries (0 = unbounded)")
+	cmd.Flags().String("section", "", "plan view: current-state or phase (phase requires --phase)")
 	return cmd
 }
 
-func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID string, tail int) error {
+func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID string, tail int, section string) error {
+	if view == "plan" {
+		v, err := application.QueryPlanSection(section, phaseFilter)
+		if err != nil {
+			if ve, ok := err.(*domain.ValidationError); ok {
+				return mapValidationError(ve)
+			}
+			return newSystemError("plan_unreadable", fmt.Sprintf("query plan: %v", err))
+		}
+		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
+	}
+
 	db, err := infrastructure.OpenReadOnly(dbPath)
 	if infrastructure.IsDatabaseNotFound(err) {
 		return newSystemError("db_unreadable", "query: no db at "+dbPath+"; run `zharness init` first")

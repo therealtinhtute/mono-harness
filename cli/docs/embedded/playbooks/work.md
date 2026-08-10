@@ -29,7 +29,7 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 
 ## Full-Mode Execution
 
-1. **Load state** — read the active plan, then read `context.phases` and `context.position` from the same `preflight work --json` response (Preconditions step 2) instead of separately calling `query state`/`query phases`. Select the requested phase or the first non-done phase whose dependencies are done. Treat pre-existing disagreement between DB status (`context.phases`) and plan status as a stop requiring reconciliation.
+1. **Load state** — read `context.phases` and `context.position` from the same `preflight work --json` response (Preconditions step 2) instead of separately calling `query state`/`query phases`. Select the requested phase or the first non-done phase whose dependencies are done. For that phase, call `zharness query plan --section phase --phase {stable-phase-slug} --json` for its waves/tasks/checks definition and `zharness query traces --phase {stable-phase-slug} --json` for what's already recorded against it, instead of reading the whole active plan (the ceremony audit's P3 proposal, `docs/audit/workflow-harness-ceremony-audit.md`). If `query plan` reports `degraded: true`, read the plan file directly for this phase's definition. Treat pre-existing disagreement between DB status (`context.phases`) and plan status as a stop requiring reconciliation.
 2. **Check boundaries** — compare the requested diff and working tree against phase/task touched and avoided surfaces. Stop with `BLOCKED_CONTRACT_DRIFT` if work is already outside authority. Stop with `BLOCKED_VERIFICATION` if a task lacks a check.
 3. **Create the run row and synchronize the plan** — run `zharness run create --slug {stable-phase-slug} --plan-id {plan frontmatter id} --json`. Do not pass an artifact path. Immediately after success, save the returned run ID, set that phase's plan status to `in-progress`, update Current State to the same phase/status/run ID, and append the phase-start Progress entry with `task_status=in-progress`. Do not mutate the task definition, and do not continue while the DB says `in-progress` and the plan phase still says `planned`.
 4. **Confirm the wave** — restate the phase goal, selected wave, tasks, and checks. Ask only when the plan does not identify the next incomplete wave unambiguously.
@@ -44,6 +44,8 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 ## Command Reference
 
 - `zharness preflight work --mode {full|bounded} --json`
+- `zharness query plan --section phase --phase {stable-phase-slug} --json` (step 1 — the phase's own definition)
+- `zharness query traces --phase {stable-phase-slug} --json` (step 1 — what's already recorded for it)
 - `zharness query phases --json` (step 11 only — post-mutation re-verification; Step 1 reads `context.phases` from preflight instead)
 - `zharness run create --slug {stable-phase-slug} --plan-id {plan-id} --json`
 - `zharness trace add --wave {N} [--task "..." --task-status {status}] --summary "..." --run-id {run-id} --json`
