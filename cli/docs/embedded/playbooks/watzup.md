@@ -14,8 +14,8 @@ Read-only session recap. Combine Git state, DB lifecycle position, and the curre
 
 1. **Read branch state** — run `git status -sb`, `git log --oneline main..HEAD`, and `git rev-list --left-right --count main...HEAD`. Capture branch, ahead/behind, and staged/unstaged/untracked scope.
 2. **Read lifecycle position from the packet** — read `context` from the same `preflight watzup --json` response captured in Preconditions step 1; render its `position`, `drift`, `readiness`, and latest run/check/handoff IDs 1:1, with no independent prose re-derivation. When `context` is absent, state that DB position is unavailable rather than calling `resume` to fill the gap.
-3. **Select the active plan** — inspect `docs/plans/active/*.md`. Prefer the plan whose Phases and Verification or Current State matches DB `current_phase`. If more than one remains plausible, state the ambiguity instead of choosing silently.
-4. **Recap the plan** — summarize Outcome; active phase/wave/task; recent append-only Progress; material Decisions; latest Validation verdict/proof gaps; blockers/open items; and the exact next action already recorded in Current State. Read task execution status only from append-only `## Progress`, the sole task execution-status source; task definitions have no status fields.
+3. **Select the active plan** — confirm exactly one file exists under `docs/plans/active/*.md` by name, without reading it. `query plan` below resolves to it automatically; if more than one exists, it reports `ambiguous_active_plan` — only then read each candidate's Current State to disambiguate.
+4. **Recap the plan** — read the plan's `## Outcome` directly (small, fixed size — not the growing history F1 identified, `docs/audit/workflow-harness-ceremony-audit.md`). For everything else, call `zharness query plan --section current-state --json` (blockers, open items, the recorded exact next action), `zharness query traces --tail 5 --json` and `zharness query decisions --tail 5 --json` (recent Progress/Decisions), and `zharness query checks --tail 1 --json` (latest Validation verdict/proof gaps) instead of reading the rest of the file (the ceremony audit's P3 proposal). If any of these report `degraded: true` or the plan is otherwise unreadable, fall back to a full read. Read task execution status only from append-only `## Progress`, the sole task execution-status source — via `query traces` above, its compressed index, not a full-file read. Task definitions have no status fields.
 5. **Read WIP** — inspect the working-tree diff, capped at the most significant five files. Group coherent work themes and identify incomplete implementations or missing proof.
 6. **Assess risks** — include DB drift and recovery verbatim, explicit plan blockers, missing tests, large uncommitted diffs, public-contract breaks, secrets, or unsafe migrations. Do not invent reassurance when proof is absent.
 7. **Recommend one action** — use drift recovery first; otherwise use the active plan's exact next action when it still matches Git state. If stale, name the concrete reconciliation action.
@@ -33,6 +33,8 @@ Keep the recap concise:
 ## Command Reference
 
 - `zharness preflight watzup --json`
+- `zharness query plan --section current-state --json` (step 4)
+- `zharness query traces --tail 5 --json`, `zharness query decisions --tail 5 --json`, `zharness query checks --tail 1 --json` (step 4)
 
 ## Exit Conditions
 

@@ -351,7 +351,7 @@ Same method as section 2: `zharness` built from source (now carrying P1–P5), i
 |---|---|---|
 | P1 — emit `version` in `preflight` | ✅ as designed | P4 wave 1 |
 | P2 — scope the active-plan check to in-progress work | ✅ as designed | P1 wave 3 |
-| P3 — plan-slice read path | ❌ not built | Superseded by the bounded context-packet windowing (P4/P5) — caps growth, does not eliminate the full-read floor. Remains the highest-value item left on the table; the growth-ratio and ≤35-op success signals both fall short specifically because of this gap. |
+| P3 — plan-slice read path | ✅ shipped, scoped down from the original proposal | post-`p6-measure-and-close` follow-up (§14) |
 | P4 — thin-trigger `git` | ✅ as designed, plus its `references/`+`scripts/` cleanup | P5 wave 4 |
 | P5 — collapse `resume`/`query state` | ✅, generalized into the stage-shaped `context` packet (also folds `query phases`) | P4 + P5 waves 1–3 |
 | *(not proposed)* — `## Validation`'s missing list query | ✅ | P6, closing F4's Validation gap |
@@ -359,4 +359,27 @@ Same method as section 2: `zharness` built from source (now carrying P1–P5), i
 | *(not proposed)* — `git`/`interview` false hard-stop (F6) | ✅ | P1 wave 4 |
 | *(not proposed)* — release-ordering risk (F7) | ✅ (procedural) | `p5b-release`, D8 |
 
-Four of five originally-ranked proposals shipped essentially as designed. The one that did not (P3) is the reason the two most ambitious success signals — ≤35 ops and the growth ratio — are only partially met. Three additional fixes shipped that were not in the original five, discovered during implementation rather than at audit time (F4's Validation gap, F5, F6, F7) — each traced to a concrete failure mode found by writing the code, not by re-reading the playbooks harder.
+All five originally-ranked proposals shipped, four essentially as designed and one (P3) scoped down at implementation time — see §14 for why and by how much. Three additional fixes shipped that were not in the original five, discovered during implementation rather than at audit time (F4's Validation gap, F5, F6, F7) — each traced to a concrete failure mode found by writing the code, not by re-reading the playbooks harder.
+
+---
+
+## 14. P3, shipped after `p6-measure-and-close` — the last item on the table
+
+Built on request after the initiative's other six phases had already merged. Re-scoped from the original three-section proposal (`current-state|progress-tail|phase`) to two (`current-state|phase`): by the time this was built, `query traces`/`query decisions`/`query checks` (P2, P6) already gave every append-only section a bounded, indexed read — a `progress-tail` markdown-section query would have duplicated that, parsing the same history a second way instead of reusing the query surface built for it. What remained genuinely markdown-only, because neither is table-backed by design, was the free-text `## Current State and Next Action` snapshot and one phase's own `### phase_slug: ...` definition (waves/tasks/checks) inside `## Phases and Verification`.
+
+**Shipped:** `zharness query plan --section {current-state|phase} [--phase {slug}] --json`. The only `query` view that opens no database — it resolves the single file under `docs/plans/active/*.md` and slices its markdown directly, with `degraded:true` (full file content, not a failure) when the requested section or phase block isn't found, so a malformed hand-edited plan can't block an agent. `watzup`, `work`, and `handoff` were rewired to call it, each paired with the already-shipped `traces`/`decisions`/`checks --tail` queries for the append-only parts; `check`'s full-plan audit read is untouched, per NG2.
+
+**Measured, not projected** — same tokenizer (`o200k_base`, `gpt-tokenizer`) against this initiative's own plan file at its current size (16,321 tokens, 620 lines — itself a real 7-phase initiative, not a synthetic example):
+
+| Read | Tokens | vs. full file |
+|---|---|---|
+| Full plan file (the old `watzup`/`work`/`handoff` read) | 16,321 | — |
+| `## Outcome` alone (still read directly — small, fixed, not the growth driver) | 218 | — |
+| `query plan --section current-state` | 789 | — |
+| `query plan --section phase --phase p6-measure-and-close` | 247 | — |
+| **`watzup`'s new read** (Outcome + current-state) | **1,007** | **16.2x smaller** |
+| **`work`'s new read** (one phase's own definition) | **247** | **66x smaller** |
+
+`traces`/`decisions`/`checks --tail` add a small, `--tail`-bounded amount on top (not measured with real data — this repository's own `harness.db` has no recorded runs yet, per `p5b-release`'s deferred retroactive-bookkeeping item) that does not grow with the plan's history, unlike the full-file read it replaces.
+
+This closes the gap the original P6 measurement (§12) reported honestly as unmet: the ≤35-op and growth-ratio success signals fell short specifically because P3 hadn't been built. It was not re-measured against a live full lifecycle after shipping — that would require driving `watzup`/`work`/`handoff` through the harness again, which §12 already did once for P1–P6's own claims and is not repeated here for a single follow-on command.

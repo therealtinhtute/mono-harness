@@ -8,7 +8,7 @@ Persist resumable state for a durable initiative by updating `## Current State a
 
 1. Run `zharness preflight handoff --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result. Handoff has one durable mode and does not accept `--mode full`. Its `context` field is the source of Step 2's lifecycle position and phase list below — do not call `resume`/`query phases` again to obtain it.
 2. If this session's context was compacted or summarized since the last `preflight` call, re-run it before trusting any earlier-read `context` packet or lifecycle ID — a summarized turn cannot be assumed to have carried exact DB state forward.
-3. Read the active plan before changing it. Preserve its identity, initiative definition, planned work, append-only history, and validation evidence.
+3. Read the active plan's `## Current State and Next Action` (`zharness query plan --section current-state --json`; if it reports `degraded: true`, read the whole file instead) before changing it. Preserve its identity, initiative definition, planned work, append-only history, and validation evidence.
 
 ## Owned Plan State
 
@@ -22,7 +22,7 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
 ## Steps
 
 1. **Capture repository state** — run `git status --short --branch`, recent `git log`, and diff stats. Summarize branch, uncommitted scope, and checkpoint state.
-2. **Load lifecycle state** — read `context.position`, `context.phases`, and latest run/check/handoff IDs from the same `preflight handoff --json` response (Preconditions step 1) instead of separately calling `resume`/`query phases`, then read the active plan's Progress, Decisions, Validation, and Current State. Use those IDs as lifecycle anchors; stop on pre-existing plan/DB phase-status disagreement.
+2. **Load lifecycle state** — read `context.position`, `context.phases`, and latest run/check/handoff IDs from the same `preflight handoff --json` response (Preconditions step 1) instead of separately calling `resume`/`query phases`. For the plan's own record, call `zharness query traces --tail 10 --json`, `zharness query decisions --tail 10 --json`, and `zharness query checks --tail 3 --json` for recent Progress/Decisions/Validation, and reuse Preconditions step 3's `query plan --section current-state` result for Current State — do not re-read the whole file for any of this (P3, `docs/audit/workflow-harness-ceremony-audit.md`). Use those IDs as lifecycle anchors; stop on pre-existing plan/DB phase-status disagreement.
 3. **Identify continuity facts** — what completed, what remains in progress, blockers and unblock conditions, proof gaps, and the exact next action. Preserve known blocker taxonomy.
 4. **Record an incomplete handoff when the phase is not closable** — create a concise JSON list from unresolved blockers and next steps, then run `zharness handoff record [--run-id {run-id}] [--check-id {check-id}] --open-items '["...", ...]' --json`. Save the returned handoff ID, update Current State with honest execution status and that ID, and keep the plan active. Do not use `--close-phase` without a matching clean check.
 5. **Close every cleanly checked phase**:
@@ -40,6 +40,8 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
 ## Command Reference
 
 - `zharness preflight handoff --json`
+- `zharness query plan --section current-state --json` (Preconditions step 3 / step 2 — the plan's free-text snapshot; not table-backed, so this is the only markdown read this playbook needs)
+- `zharness query traces --tail {N} --json`, `zharness query decisions --tail {N} --json`, `zharness query checks --tail {N} --json` (step 2 — recent Progress/Decisions/Validation, in place of reading the file)
 - `zharness query phases --json` (steps 5/6 only — post-mutation re-verification; step 2 reads `context.position`/`context.phases` from preflight instead)
 - `zharness handoff record [--run-id {run-id}] [--check-id {check-id}] --open-items '[...]' --json`
 - `zharness handoff record --run-id {run-id} --check-id {check-id} --open-items '[]' --close-phase --json`
