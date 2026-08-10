@@ -105,7 +105,7 @@ func createLifecycleRun(t *testing.T, db *sql.DB, changesetDir, storySlug string
 
 func recordCleanLifecycleCheck(t *testing.T, db *sql.DB, changesetDir, runID string) string {
 	t.Helper()
-	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "ok"}})
+	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -147,14 +147,14 @@ func TestLifecycleGuardCheckUsesLatestInProgressRun(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordCheck(db, changesetDir, olderRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "ok"}})
+	id, path, err := RecordCheck(db, changesetDir, olderRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
 	assertLifecycleValidationError(t, err, "run_not_latest", "check record: run_id is not the latest run for its story")
 	if id != "" || path != "" {
 		t.Fatalf("rejected RecordCheck returned id=%q path=%q, want empty values", id, path)
 	}
 	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
 
-	if _, _, err := RecordCheck(db, changesetDir, latestRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "ok"}}); err != nil {
+	if _, _, err := RecordCheck(db, changesetDir, latestRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}); err != nil {
 		t.Fatalf("RecordCheck(latest run): %v", err)
 	}
 	if got := queryStoryStatus(t, db, storySlug); got != domain.StoryChecked {
@@ -176,7 +176,7 @@ func TestLifecycleGuardCheckRejectsCheckedAndDoneStory(t *testing.T) {
 			}
 
 			before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-			id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "ok"}})
+			id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
 			assertLifecycleValidationError(t, err, "story_not_checkable", "check record: story must be in-progress")
 			if id != "" || path != "" {
 				t.Fatalf("rejected RecordCheck returned id=%q path=%q, want empty values", id, path)

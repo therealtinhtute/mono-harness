@@ -106,7 +106,7 @@ func TestQueryChecksChronologicalOrderAndFilters(t *testing.T) {
 
 	var ids []string
 	for i, verdict := range []string{"REQUEST_CHANGES", "APPROVED"} {
-		id, _, err := RecordCheck(db, changesetDir, runID, verdict, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "go test ./...", OutputRef: "x"}})
+		id, _, err := RecordCheck(db, changesetDir, runID, verdict, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "x"}})
 		if err != nil {
 			t.Fatalf("RecordCheck(%d): %v", i, err)
 		}

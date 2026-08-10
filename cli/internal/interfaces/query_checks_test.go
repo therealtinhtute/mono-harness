@@ -34,7 +34,7 @@ func TestCheckRecordAndQueryChecksRoundTrip(t *testing.T) {
 		t.Fatalf("check record (1): %v (output=%s)", err, checkOut)
 	}
 
-	checkOut2, err := runDBCommand(t, "check", "record", "--verdict", "APPROVED", "--run-id", runResult.ID, "--judge", "independent", "--judge-model", "test-model", "--proof-links", `[{"command":"go test ./...","output_ref":"pass"}]`, "--json")
+	checkOut2, err := runDBCommand(t, "check", "record", "--verdict", "APPROVED", "--run-id", runResult.ID, "--judge", "independent", "--judge-model", "test-model", "--proof-links", `[{"command":"true","output_ref":"pass"}]`, "--json")
 	if err != nil {
 		t.Fatalf("check record (2): %v (output=%s)", err, checkOut2)
 	}

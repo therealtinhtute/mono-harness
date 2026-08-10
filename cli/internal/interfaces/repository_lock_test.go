@@ -95,7 +95,7 @@ func TestLifecycleValidationRunsInsideExclusiveMutationBoundary(t *testing.T) {
 
 	jsonOutput = false
 	resumeFacts = ""
-	checkCmd, _ := newRepositoryLockCommand("check", "record", "--verdict", "APPROVED", "--run-id", runResponse.ID, "--judge", "independent", "--judge-model", "test-model", "--proof-links", `[{"command":"go test ./...","output_ref":"pass"}]`)
+	checkCmd, _ := newRepositoryLockCommand("check", "record", "--verdict", "APPROVED", "--run-id", runResponse.ID, "--judge", "independent", "--judge-model", "test-model", "--proof-links", `[{"command":"true","output_ref":"pass"}]`)
 	runCmd, _ := newRepositoryLockCommand("run", "create", "--slug", "serialized")
 	checkDone := make(chan error, 1)
 	go func() { checkDone <- checkCmd.Execute() }()

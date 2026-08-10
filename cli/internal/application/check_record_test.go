@@ -15,7 +15,7 @@ func TestCheckRecord(t *testing.T) {
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
 	id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok", ArtifactPath: ".kit/runs/work/x.md"},
+		{Command: "true", OutputRef: "ok", ArtifactPath: ".kit/runs/work/x.md"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
@@ -124,7 +124,7 @@ func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
 	}
 
 	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok"},
+		{Command: "true", OutputRef: "ok"},
 	})
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "independent_judge_required" {
@@ -135,7 +135,7 @@ func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
 	}
 
 	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok"},
+		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck with independent judge: %v", err)
@@ -154,7 +154,7 @@ func TestCheckRecordAllowsSameSessionJudgeWhenLaneUnresolvable(t *testing.T) {
 	runID := createLifecycleRun(t, db, changesetDir, "no-plan-id-trail")
 
 	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok"},
+		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
@@ -182,7 +182,7 @@ func TestCheckRecordAllowsSameSessionJudgeForNonHighRiskLane(t *testing.T) {
 	}
 
 	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok"},
+		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
@@ -202,8 +202,8 @@ func TestCheckRecordWritesPlanValidationEntry(t *testing.T) {
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
 	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok"},
-		{Command: "bash scripts/verify-doc-links.sh", OutputRef: "0 findings"},
+		{Command: "true", OutputRef: "ok"},
+		{Command: "echo checked", OutputRef: "0 findings"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
@@ -220,10 +220,10 @@ func TestCheckRecordWritesPlanValidationEntry(t *testing.T) {
 	if !strings.Contains(content, "cli-domain") {
 		t.Fatalf("plan Validation missing phase:\n%s", content)
 	}
-	if !strings.Contains(content, "  - `go test ./...` → ok") {
+	if !strings.Contains(content, "  - `true` → ok") {
 		t.Fatalf("plan Validation missing first proof-link sub-bullet:\n%s", content)
 	}
-	if !strings.Contains(content, "  - `bash scripts/verify-doc-links.sh` → 0 findings") {
+	if !strings.Contains(content, "  - `echo checked` → 0 findings") {
 		t.Fatalf("plan Validation missing second proof-link sub-bullet:\n%s", content)
 	}
 	if !strings.Contains(content, "## Decisions\n<!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->\n- none") {
@@ -252,7 +252,7 @@ func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
 	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
-		{Command: "go test ./...", OutputRef: "ok"},
+		{Command: "true", OutputRef: "ok"},
 	})
 	if err == nil {
 		t.Fatal("RecordCheck = nil error, want a plan-section-not-found failure")
