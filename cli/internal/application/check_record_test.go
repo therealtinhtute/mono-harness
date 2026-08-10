@@ -2,6 +2,7 @@ package application
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -251,11 +252,19 @@ func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
+	// A proof command with an observable side effect: if it never ran,
+	// the marker never appears. Proves planSectionWritable is checked
+	// before proof verification, not after -- a check doomed to fail here
+	// shouldn't pay for re-running every proof command first.
+	marker := filepath.Join(t.TempDir(), "ran")
 	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
-		{Command: "true", OutputRef: "ok"},
+		{Command: "touch " + marker, OutputRef: "ok"},
 	})
 	if err == nil {
 		t.Fatal("RecordCheck = nil error, want a plan-section-not-found failure")
+	}
+	if _, statErr := os.Stat(marker); !os.IsNotExist(statErr) {
+		t.Fatal("proof command ran despite the plan-section check failing first")
 	}
 	if got := countRows(t, db, "checks"); got != 0 {
 		t.Fatalf("checks rows = %d, want 0 — DB write must not proceed when the plan can't be written to", got)

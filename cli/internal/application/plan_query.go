@@ -90,28 +90,16 @@ func QueryPlanSection(section, phase string) (PlanSectionView, error) {
 
 // extractPlanSection returns the body of a `## {name}` heading — every line
 // after it up to (not including) the next `## ` heading, or end of file.
-// Mirrors AppendToPlanSection's line-scan approach (V3) so the read and
-// write paths agree on where a section starts and ends.
+// Shares findPlanSectionBody (plan_section.go) with AppendToPlanSection so
+// the read and write paths cannot independently drift on where a section
+// starts and ends (V3).
 func extractPlanSection(content, name string) (string, bool) {
 	lines := strings.Split(normalizeLineEndings(content), "\n")
-	headingAt := -1
-	for i, line := range lines {
-		if got, ok := headingName(line); ok && got == name {
-			headingAt = i
-			break
-		}
-	}
-	if headingAt == -1 {
+	start, end, ok := findPlanSectionBody(lines, name)
+	if !ok {
 		return "", false
 	}
-	bodyEnd := len(lines)
-	for i := headingAt + 1; i < len(lines); i++ {
-		if _, ok := headingName(lines[i]); ok {
-			bodyEnd = i
-			break
-		}
-	}
-	return strings.TrimSpace(strings.Join(lines[headingAt+1:bodyEnd], "\n")), true
+	return strings.TrimSpace(strings.Join(lines[start:end], "\n")), true
 }
 
 // extractPlanPhaseBlock returns one phase's `### phase_slug: \`{slug}\“

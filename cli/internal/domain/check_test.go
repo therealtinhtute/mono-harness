@@ -19,6 +19,10 @@ func TestCheckValidate(t *testing.T) {
 		{"approve-with-requests without proof", Check{RunID: "r1", Verdict: VerdictApproveWithRequests, Judge: JudgeIndependent, JudgeModel: "claude-opus-5"}, "empty_proof_links"},
 		{"invalid judge", Check{RunID: "r1", Verdict: VerdictApproved, Judge: "maybe", JudgeModel: "claude-opus-5", ProofLinks: proof}, "invalid_judge"},
 		{"missing judge_model", Check{RunID: "r1", Verdict: VerdictApproved, Judge: JudgeIndependent, ProofLinks: proof}, "missing_required_field"},
+		{"blank command", Check{RunID: "r1", Verdict: VerdictApproved, Judge: JudgeIndependent, JudgeModel: "claude-opus-5", ProofLinks: []ProofLink{{Command: "", OutputRef: "looks good"}}}, "invalid_proof_links"},
+		{"whitespace-only command", Check{RunID: "r1", Verdict: VerdictApproved, Judge: JudgeIndependent, JudgeModel: "claude-opus-5", ProofLinks: []ProofLink{{Command: "   ", OutputRef: "looks good"}}}, "invalid_proof_links"},
+		{"blank command among valid ones", Check{RunID: "r1", Verdict: VerdictApproved, Judge: JudgeIndependent, JudgeModel: "claude-opus-5", ProofLinks: []ProofLink{proof[0], {Command: "", OutputRef: "x"}}}, "invalid_proof_links"},
+		{"blank command on request-changes is still rejected", Check{RunID: "r1", Verdict: VerdictRequestChanges, Judge: JudgeSameSession, JudgeModel: "claude-opus-5", ProofLinks: []ProofLink{{Command: "", OutputRef: "x"}}}, "invalid_proof_links"},
 	}
 
 	for _, tc := range cases {
