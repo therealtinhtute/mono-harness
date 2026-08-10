@@ -6,7 +6,7 @@ Git operations with conventional commits: staging, committing, pushing, pull req
 
 ## Preconditions
 
-1. Run `zharness preflight git --json`. Missing binary: print `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)`, skip Step 0 below, and proceed to Core Workflow regardless. Otherwise check its `version` field — a `dev` build or any build at or above MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`) unlocks Step 0; below it, print the same one-line warning, skip Step 0, and proceed. Any `stop` `preflight` returns (including a corrupted database) is noted the same way and never blocks — Git operations remain non-mutating to harness state.
+1. Run `zharness preflight git --json`. Missing binary: print `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)`, skip Step 0 below, and proceed to Core Workflow regardless. Otherwise check its `version` field — a `dev` build or any build at or above MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`) unlocks Step 0; below it, print the same one-line warning, skip Step 0, and proceed. Any `stop` `preflight` returns (including a corrupted database) is noted the same way and never blocks — Git operations remain non-mutating to harness state.
 
 ## Arguments
 

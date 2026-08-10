@@ -6,7 +6,7 @@ Read-only session recap. Combine Git state, DB lifecycle position, and the curre
 
 ## Preconditions
 
-1. Run `zharness preflight watzup --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its status. Its `context` field, when present, is the sole source of lifecycle position for Step 2 below — do not call `resume` separately. Reduced mode may recap Git and any readable active plan when DB state (and so `context`) is absent; it must state that DB position is unavailable.
+1. Run `zharness preflight watzup --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its status. Its `context` field, when present, is the sole source of lifecycle position for Step 2 below — do not call `resume` separately. Reduced mode may recap Git and any readable active plan when DB state (and so `context`) is absent; it must state that DB position is unavailable.
 2. If this session's context was compacted or summarized since the last `preflight` call, re-run it before trusting any earlier-read `context` packet or lifecycle ID — a summarized turn cannot be assumed to have carried exact DB state forward.
 3. Remain read-only: do not initialize state, create lifecycle rows, write changesets, edit plans, run quality gates, or modify code.
 

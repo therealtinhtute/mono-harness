@@ -11,7 +11,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: executable steps, not planning prose. No filler.
 
-Run `zharness preflight to-plan --mode {full|phase} --json` using the invocation mode (`full` by default). Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Otherwise check its `version` field — below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`): print the same message and STOP; a `dev` build always passes. If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path.
+Run `zharness preflight to-plan --mode {full|phase} --json` using the invocation mode (`full` by default). Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Otherwise check its `version` field — below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`): print the same message and STOP; a `dev` build always passes. If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path.
 
 Arguments: `[mode:full|phase] [phase-name?]` — passed through as-is (default: `full`).
 

@@ -32,7 +32,7 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 
 ## Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.4.1` (bumped from `0.3.0` across the `cli/v0.4.x` fix cycle — v0.4.0 added explicit autonomous-entry intent + the pure `zharness id` helper; v0.4.1 completes exact ID usage across every manual-ID playbook consumer: brainstorm, to-plan, work, and check. A pre-`0.4.1` docs set can still leave a cold full-lifecycle agent guessing at SPEC/meta-changeset IDs). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first and only readiness call; a missing binary fails that shell invocation directly. Otherwise the skill checks the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3, `docs/audit/workflow-harness-ceremony-audit.md`): a `dev` build (unreleased local build) always satisfies the gate, and a version below `0.4.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+`MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after `harness-memory-ceremony-convergence` (`cli/v0.8.1`, `docs/plans/active/harness-memory-ceremony-convergence.md`): schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first and only readiness call; a missing binary fails that shell invocation directly. Otherwise the skill checks the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3, `docs/audit/workflow-harness-ceremony-audit.md`): a `dev` build (unreleased local build) always satisfies the gate, and a version below `0.8.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
 
 ### Non-spine skills degrade instead of stopping
 
@@ -48,7 +48,7 @@ name: {skill-name}
 description: {unchanged from before this initiative — skills.sh discovery/trigger UX is Claude-facing content, stays here}
 ---
 
-Run `zharness preflight {stage} [--mode {mode}] --json`. Missing binary: stop, tell the user to run `bash scripts/install-zharness.sh`. Otherwise check its `version` field — below MIN_ZHARNESS_VERSION (0.4.1): stop with the same message; a `dev` build always passes. If it returns `stop`, state the message and follow the exact recovery. Otherwise read and follow its returned `playbook` path when present; reduced mode must remain read-only.
+Run `zharness preflight {stage} [--mode {mode}] --json`. Missing binary: stop, tell the user to run `bash scripts/install-zharness.sh`. Otherwise check its `version` field — below MIN_ZHARNESS_VERSION (0.8.1): stop with the same message; a `dev` build always passes. If it returns `stop`, state the message and follow the exact recovery. Otherwise read and follow its returned `playbook` path when present; reduced mode must remain read-only.
 
 Defer to: {one line naming the skills this stage hands off to or resumes from}
 ```

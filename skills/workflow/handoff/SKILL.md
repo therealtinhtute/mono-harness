@@ -11,7 +11,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
 
-Run `zharness preflight handoff --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Otherwise check its `version` field — a `dev` build always passes; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and STOP. If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path.
+Run `zharness preflight handoff --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Otherwise check its `version` field — a `dev` build always passes; below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), print the same message and STOP. If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path.
 
 Argument: `[context]` — optional additional context to include in the handoff, passed through as-is.
 

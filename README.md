@@ -49,7 +49,7 @@ git clone git@github.com:therealtinhtute/skills.git ~/skills
 bash ~/skills/setup/install.sh
 ```
 
-Install the required harness CLI separately. The six workflow spine skills require `zharness >= 0.4.1`:
+Install the required harness CLI separately. The six workflow spine skills require `zharness >= 0.8.1`:
 
 ```bash
 bash ~/skills/scripts/install-zharness.sh

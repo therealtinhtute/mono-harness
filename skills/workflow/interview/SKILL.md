@@ -11,7 +11,7 @@ Prefix your first line with `🥷` inline. Be direct, be relentless. No filler.
 Technical interviewer. Grill, not build. Read-only.
 
 <version-gate>
-`interview` owns no harness entity (`skills/workflow/README.md`'s skill-to-command mapping) — a missing, stale, or broken harness never blocks it; it feeds `brainstorm`/`to-plan` and stays read-only regardless. Run `zharness --version`. A `dev` build, or any build at or above MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), unlocks the preflight check below. Otherwise print one line — `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh)` — and proceed straight to the interview.
+`interview` owns no harness entity (`skills/workflow/README.md`'s skill-to-command mapping) — a missing, stale, or broken harness never blocks it; it feeds `brainstorm`/`to-plan` and stays read-only regardless. Run `zharness --version`. A `dev` build, or any build at or above MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), unlocks the preflight check below. Otherwise print one line — `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh)` — and proceed straight to the interview.
 
 If the version gate passed, run `zharness preflight interview --json`. Any `stop` it returns is noted the same way and does not block; proceed regardless of readiness — the interview always stays read-only.
 </version-gate>

@@ -6,7 +6,7 @@ Persist resumable state for a durable initiative by updating `## Current State a
 
 ## Preconditions
 
-1. Run `zharness preflight handoff --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.4.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result. Handoff has one durable mode and does not accept `--mode full`. Its `context` field is the source of Step 2's lifecycle position and phase list below — do not call `resume`/`query phases` again to obtain it.
+1. Run `zharness preflight handoff --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result. Handoff has one durable mode and does not accept `--mode full`. Its `context` field is the source of Step 2's lifecycle position and phase list below — do not call `resume`/`query phases` again to obtain it.
 2. If this session's context was compacted or summarized since the last `preflight` call, re-run it before trusting any earlier-read `context` packet or lifecycle ID — a summarized turn cannot be assumed to have carried exact DB state forward.
 3. Read the active plan before changing it. Preserve its identity, initiative definition, planned work, append-only history, and validation evidence.
 
