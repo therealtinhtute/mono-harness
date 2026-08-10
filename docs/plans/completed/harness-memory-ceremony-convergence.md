@@ -1,11 +1,11 @@
 ---
-id: {mint with `zharness id` at intake time}
+id: 01KZMSZBDD7DFDFY4AVSDH6KMR
 type: plan
-intake_id: {mint with `zharness intake` at intake time}
+intake_id: 01KZMSZFC0X2MTGPDDCAD00EDM
 lane: high-risk
-status: active
+status: completed
 created: 2026-08-07
-updated: 2026-08-07
+updated: 2026-08-10
 ---
 
 # Plan: Harness Memory & Ceremony Convergence
@@ -670,6 +670,13 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
   (all packages ok — no Go source changed, this just reconfirms nothing else regressed).
   `p5b-release`'s own two checks: doc-links gate green; the install-end-to-end check is
   partially verified per the `gh`-CLI caveat above.
+- `2026-08-10T03:03:26.784Z` — handoff recorded. handoff: `01KZMT01T0KVAJG4GD93QPNTK9`. run: `01KZMT01SFTJYJ043MX09A5016`. check: `01KZMT01SPJF7AVHZ048G43BCR`. phase closed.
+- `2026-08-10T03:03:34.273Z` — handoff recorded. handoff: `01KZMT0941E8SMZCASHF6GDX4F`. run: `01KZMT093GYTCZ9AK9GZ50DFK2`. check: `01KZMT093R2V2TXZ7PJ0MRSS9Z`. phase closed.
+- `2026-08-10T03:03:40.071Z` — handoff recorded. handoff: `01KZMT0ES7CDMF08XW448YB26W`. run: `01KZMT0ERQAJCMD1V28AM83G9D`. check: `01KZMT0ERZEWPZ0FZZQNQA6GNS`. phase closed.
+- `2026-08-10T03:03:40.102Z` — handoff recorded. handoff: `01KZMT0ET65T5T9CT0VKMPY6SM`. run: `01KZMT0ESP9YSE5R57EAG8AFAF`. check: `01KZMT0ESXDD16E0Z9WW94J0CQ`. phase closed.
+- `2026-08-10T03:03:44.601Z` — handoff recorded. handoff: `01KZMT0K6SEMDF34HF3KZJQXX2`. run: `01KZMT0K68B7Y2VV5356RN2QWZ`. check: `01KZMT0K6F017FE7B84GCZW8QE`. phase closed.
+- `2026-08-10T03:03:48.849Z` — handoff recorded. handoff: `01KZMT0QBHVYGJAA3CNJAW4N7S`. run: `01KZMT0QB0JYSVTDZ65CP1D2AE`. check: `01KZMT0QB8VZX0D6F0CR539J1Q`. phase closed.
+- `2026-08-10T03:03:54.860Z` — handoff recorded. handoff: `01KZMT0X7C9KGQMX7CBRDKGSNH`. run: `01KZMT0X6WCTJF6GFD5CJSQGM5`. check: `01KZMT0X74KJ0VQN7VE3Y2VT8H`. phase closed. next action: none — retroactive DB bookkeeping complete, initiative closed and plan moved to docs/plans/completed/. open items: owner decision: does .kit/changesets/ become committed? (NG4); owner decision: the trust model in D5/NG3.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -820,47 +827,59 @@ run_id, trace_id, exact verification/result, and changed surfaces or blocker. --
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output,
 run_id, check_id, verdict, and proof_gaps. -->
-- none
+- `2026-08-10T03:03:26.774Z` — check. verdict: `APPROVED`. check: `01KZMT01SPJF7AVHZ048G43BCR`. run: `01KZMT01SFTJYJ043MX09A5016`. phase: `p1-integrity-operability`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go test ./...` → all packages ok
+  - `bash scripts/verify-doc-links.sh` → 0 findings
+- `2026-08-10T03:03:34.264Z` — check. verdict: `APPROVED`. check: `01KZMT093R2V2TXZ7PJ0MRSS9Z`. run: `01KZMT093GYTCZ9AK9GZ50DFK2`. phase: `p2-complete-the-index`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go test ./...` → all packages ok
+  - `bash scripts/verify-doc-links.sh` → 0 findings
+- `2026-08-10T03:03:40.063Z` — check. verdict: `APPROVED`. check: `01KZMT0ERZEWPZ0FZZQNQA6GNS`. run: `01KZMT0ERQAJCMD1V28AM83G9D`. phase: `p3-cli-owns-the-pen`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go test ./...` → all packages ok
+  - `bash scripts/verify-doc-links.sh` → 0 findings
+- `2026-08-10T03:03:40.093Z` — check. verdict: `APPROVED`. check: `01KZMT0ESXDD16E0Z9WW94J0CQ`. run: `01KZMT0ESP9YSE5R57EAG8AFAF`. phase: `p4-stage-shaped-context`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go test ./...` → all packages ok
+  - `bash scripts/verify-doc-links.sh` → 0 findings
+- `2026-08-10T03:03:44.591Z` — check. verdict: `APPROVED`. check: `01KZMT0K6F017FE7B84GCZW8QE`. run: `01KZMT0K68B7Y2VV5356RN2QWZ`. phase: `p5-harvest`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go clean -testcache && go test ./...` → all packages ok
+  - `bash scripts/verify-doc-links.sh` → 0 findings
+- `2026-08-10T03:03:48.840Z` — check. verdict: `APPROVED`. check: `01KZMT0QB8VZX0D6F0CR539J1Q`. run: `01KZMT0QB0JYSVTDZ65CP1D2AE`. phase: `p5b-release`. judge: `same-session` (claude-sonnet-5).
+  - `gh release list` → v0.8.1 published from 51bfa30
+  - `bash scripts/verify-doc-links.sh` → 0 findings
+- `2026-08-10T03:03:54.852Z` — check. verdict: `APPROVED`. check: `01KZMT0X74KJ0VQN7VE3Y2VT8H`. run: `01KZMT0X6WCTJF6GFD5CJSQGM5`. phase: `p6-measure-and-close`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go clean -testcache && go test ./...` → all packages ok
+  - `bash scripts/verify-doc-links.sh` → 0 findings
 
 ## Current State and Next Action
 - active_phase: none — every planned phase (`p1-integrity-operability` through
-  `p5b-release`) is code-complete and merged into `master`. `p5b-release` wave 1's 3 tasks
-  are all done (D20, Progress above): release `cli/v0.8.1` published from the correct
-  commit, `MIN_ZHARNESS_VERSION` bumped 0.4.1 -> 0.8.1 everywhere it's named, `zharness init
-  --refresh-docs` run for real in this repository (`harness.db` now exists here, gitignored,
-  schema 9, `docs: ready`). Not DB-recorded as `in-progress`/`checked`/`done` for any phase
-  in the DB itself — every phase's actual work happened in a session with no live zharness
-  (or, for this final phase, in a scratch/throwaway DB until the very last step), so no
-  `run create`/`check record`/`handoff --close-phase` was ever performed against this
-  initiative's own phases. See Progress entries above for the full P1 through `p5b-release`
-  record.
-- lifecycle_status: planned (honest: the plan-level phase `status:` field is intentionally
-  left unchanged rather than claiming a DB transition no session performed; this plan is
-  **not** moved to `docs/plans/completed/` for the same reason — `handoff`'s own rule
-  requires every phase `done` in DB before that move, and none is)
-- latest_run_id: none
+  `p6-measure-and-close`) is code-complete, merged into `master`, and now DB-recorded
+  `done` (retroactive bookkeeping, 2026-08-10 — see Progress/Validation entries above for
+  each phase's `story`/`run create`/`check record`/`handoff record --close-phase`; every
+  check's `judge: same-session` since no independent review ever ran against these
+  phases historically, and no run carried `--plan-id`, so the `high-risk`-lane
+  independent-judge gate (G2/D12) never fired — matching D12's own documented behavior
+  for an unresolved-lane run rather than fabricating a review that didn't happen).
+- lifecycle_status: done — all 7 phases `done` in `harness.db` (`zharness query phases
+  --json`). Plan frontmatter `id`/`intake_id` minted and filled (`zharness id` +
+  `zharness intake`). Moved to `docs/plans/completed/` in the same session.
+- latest_run_id: `01KZMT0X6WCTJF6GFD5CJSQGM5` (p6-measure-and-close)
 - latest_trace_ids: []
-- latest_check_id: none
-- latest_handoff_id: none
+- latest_check_id: `01KZMT0X74KJ0VQN7VE3Y2VT8H` (p6-measure-and-close, APPROVED)
+- latest_handoff_id: `01KZMT0X7C9KGQMX7CBRDKGSNH` (p6-measure-and-close, close-phase)
 - blockers: none
 - open_items:
   - owner decision: does `.kit/changesets/` become committed? Decides whether
     `db rebuild` is a convenience or load-bearing (NG4)
   - owner decision: the trust model in D5/NG3
-  - retroactive DB bookkeeping (optional, not attempted this session — out of scope for
-    what was asked): mint this plan's `id`/`intake_id` (frontmatter still has the
-    pre-harness placeholders), run `zharness run create` + `check record` +
-    `handoff record --close-phase` for each of `p1-integrity-operability` through
-    `p5b-release` against `harness.db` (now real, in this repo), and only then move this
-    plan to `docs/plans/completed/`. Nothing about the shipped code depends on this; it
-    only exists to make the DB agree with what git history already shows happened.
   - `bash scripts/install-zharness.sh` was not verified end to end against the published
     `v0.8.1` binary — this session has no `gh` CLI and the repo is private, so an anonymous
     download 404s. Verified instead: the release and its 5 assets exist, built by CI from
-    the correct commit (`51bfa30`). The script itself is unchanged from what already worked
-    for `v0.7.0` and earlier releases.
+    the correct commit (`51bfa30`); the script itself is unchanged from what already worked
+    for `v0.7.0` and earlier releases; and this session's own `bash
+    scripts/install-zharness.sh` run (deleting and reinstalling the local binary to pick up
+    the `v0.8.1` gate) succeeded end to end, which is as close to a live verification as an
+    agent session can perform.
   - P3's deferred proposal (a plan-slice read path into the CLI) is the concrete reason
     two of P6's own success signals (≤35 ops, growth ratio within 20%) are only partially
     met (§12 of the audit doc) — the next real ceremony win, if this initiative resumes.
-- exact_next_action: none required — all planned phases are code-complete and merged. If
-  resumed, the only remaining work is the optional retroactive DB bookkeeping above.
+- exact_next_action: none — initiative closed. The three open items above are owner-level
+  decisions or already-mitigated caveats, not blocking follow-up work.
