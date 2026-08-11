@@ -89,7 +89,7 @@ updated: 2026-08-11
 
 ### phase_slug: `p2-check-routing`
 - story_id: 01KZQVGMWZADNY0AN10ESTEYQC
-- status: planned
+- status: checked
 - goal: stop paying the opus cold-cache round trip every phase (R4): the per-phase gate becomes `check gate` executed in-session; the complete manual review runs exactly once, on the final phase, gated by handoff closure preconditions
 - depends_on: ['p1-quick-wins']
 - touched_surfaces: [cli/docs/embedded/playbooks/work.md, cli/docs/embedded/playbooks/check.md, cli/docs/embedded/playbooks/handoff.md, docs/playbooks/work.md, docs/playbooks/check.md, docs/playbooks/handoff.md, cli/internal/embedded/**, skills/workflow/check/SKILL.md]
@@ -173,24 +173,34 @@ updated: 2026-08-11
 - `2026-08-11T07:35:15Z` — wave 2, task delete orphaned references/ dirs. task_status: `DONE`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: deleted work/check/brainstorm/handoff references/ (6 files); git/ and interview/ kept; 2 historical mentions added to .claimignore following P5w4 precedent; verify-doc-links.sh -> OK.
 - `2026-08-11T07:35:15Z` — wave 2. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: wave 2 complete: F5 orphaned references deleted.
 - `2026-08-11T09:24:43.517Z` — handoff recorded. handoff: `01KZR26XBXY8NVEY6QP3VSJD6R`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. check: `01KZQW0SW1FY3CQA9HSJ9T1F6V`. phase closed.
+- `2026-08-11T09:26:10Z` — wave 1. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: phase p2-check-routing started.
+- `2026-08-11T09:30:08Z` — wave 1, task route per-phase gate to in-session check gate. task_status: `DONE`. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: work.md step 11 + Exit Conditions: explicit in-session gate steps, explicit no-dispatch-to-/check-skill (opus frontmatter would defeat the point); go test ./internal/embedded/ -run Drift -> PASS.
+- `2026-08-11T09:30:08Z` — wave 1, task document gate as standard per-phase path, full as closure review. task_status: `DONE`. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: check.md Purpose + mode list + Output Format mode line; go test ./internal/embedded/ -run Drift -> PASS.
+- `2026-08-11T09:30:08Z` — wave 1, task final-phase check-full closure precondition in handoff.md. task_status: `DONE`. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: step 5 clarifies gate suffices for non-final; step 6 requires clean check full for final phase, notes mode not yet DB-persisted (wave 2 scope); go test ./internal/embedded/ -run Drift -> PASS; grep full docs/playbooks/handoff.md -> hit.
+- `2026-08-11T09:30:08Z` — wave 1. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: wave 1 complete: R4 playbook routing shipped across work/check/handoff, all three embedded<->scaffolded in sync, go test ./... -> PASS.
+- `2026-08-11T09:31:14Z` — wave 2, task evaluate CLI-side enforcement. task_status: `DONE`. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: evaluated: needs checks.mode migration + a final-phase concept absent from the schema (single-parent depends_on can't answer DAG-terminal queries). Disproportionate per plan's own mitigation clause; recorded decision 01KZR2JG6PRPRJN2H69AXYAG0E, shipping playbook-only precondition instead.
+- `2026-08-11T09:31:14Z` — wave 2. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: wave 2 complete: CLI-enforcement evaluated and declined with recorded rationale; playbook-only precondition stands.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
-- none
+- `2026-08-11T09:31:03Z` — Ship the final-phase check-full requirement as a playbook-only precondition (handoff.md step 6); do not add CLI-side enforcement (a checks.mode column plus handoff record --close-phase validation) in this phase. (phase: `p2-check-routing`), task: evaluate CLI-side enforcement. rationale: CLI-side enforcement needs two things the codebase does not have today: a schema migration adding mode to checks (plus a --mode flag on check record and backfill semantics for pre-migration rows with no mode), and a notion of the initiative's final phase, which does not exist anywhere in the data model -- stories.depends_on is single-parent only, so determining finality means computing DAG-terminal nodes (stories nothing else depends_on) at close time, a case the current schema and handoff.record code path were never designed to answer, and a multi-leaf DAG (independent phase chains) has no defined single final phase to even check against. That is real cross-cutting schema work, not a quick add, and the plans own risk mitigation for this exact task explicitly authorizes stopping here rather than half-implementing. The playbook precondition already written (handoff.md step 6, requiring a check full verdict named explicitly, not inferred from verdict alone) gives the practical protection this requirement needed, at the same enforcement level most of this codebase's cross-phase ordering already relies on (dependency ordering itself is playbook-followed, not hard-blocked by depends_on). Revisit only if the playbook-level discipline proves insufficient in practice -- that would be its own initiative, not a wave-2 add-on to this one..
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
 - `2026-08-11T07:36:31.873Z` — check. verdict: `APPROVED`. check: `01KZQW0SW1FY3CQA9HSJ9T1F6V`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. phase: `p1-quick-wins`. judge: `same-session` (claude-sonnet-5).
   - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
   - `cd cli && go test ./...` → ok x6 packages, 0 failures
+- `2026-08-11T09:32:38.651Z` — check. verdict: `APPROVED`. check: `01KZR2NDBVP1VB11H727827DXN`. run: `01KZR291BC9QYFN70AJ82JJHME`. phase: `p2-check-routing`. judge: `same-session` (claude-sonnet-5).
+  - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
+  - `cd cli && go test ./...` → ok x6 packages, 0 failures
 
 ## Current State and Next Action
-- active_phase: none (p1-quick-wins closed; p2-check-routing not yet started)
-- lifecycle_status: done (p1-quick-wins only; initiative overall remains active — 3 phases outstanding)
-- latest_run_id: 01KZQVJ1X37NPRKF6Z1YDY85KF
-- latest_trace_ids: [01KZQVYF1NETG44ESA273RB6C8, 01KZQVYF29ZBDS06TKR5AXFSV1]
-- latest_check_id: 01KZQW0SW1FY3CQA9HSJ9T1F6V
+- active_phase: p2-check-routing
+- lifecycle_status: checked
+- latest_run_id: 01KZR291BC9QYFN70AJ82JJHME
+- latest_trace_ids: [01KZR2GTR86R7DTAJGB06PT2MJ, 01KZR2GTRHJE3EA5SN8KFKQ7ZR, 01KZR2GTRRKT1X4AM1Z633MH2Y, 01KZR2GTRYNGDYEJ0FQ3H7JDS1, 01KZR2JVB9QHSK3AF4HZ6W5EPZ, 01KZR2JVBGBMEYK6YKNHH9C6DA]
+- latest_check_id: 01KZR2NDBVP1VB11H727827DXN
 - latest_handoff_id: 01KZR26XBXY8NVEY6QP3VSJD6R
 - blockers: none
-- open_items: [p2 wave-2 CLI-enforcement decision — evaluate at execution time]
-- exact_next_action: work full phase p2-check-routing
+- open_items: [none — p2's own CLI-enforcement question resolved by decision 01KZR2JG6PRPRJN2H69AXYAG0E]
+- exact_next_action: p2-check-routing is checked (not yet handed off); next durable work is `work full phase p3-fewer-round-trips`

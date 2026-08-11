@@ -39,7 +39,7 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 8. **Record decisions** — only when execution discovers a plan gap, valid trade-off, deviation, or wrong assumption, run `zharness decision add --decisions '[{"decision":"...","rationale":"...","phase":"{stable-phase-slug}","task":"{task}"}, ...]' --run-id {run-id} --json`. The CLI appends the matching `## Decisions` entry itself; never hand-edit or rewrite an earlier decision.
 9. **Complete the wave** — after every task is `DONE` or explicitly accepted `DONE_WITH_CONCERNS`, run `zharness trace add --wave {N} --summary "{one-line outcome}" --run-id {run-id} --json` (wave-level: omit `--task`/`--task-status`). This appends its own `## Progress` summary line; there is no trace ID to splice into an earlier entry.
 10. **Refresh current state** — update active phase, `lifecycle_status: in-progress`, latest run/trace IDs, blockers, open items, and exact next action. Keep the plan `status: active` until final closure.
-11. **Verify synchronization and gate the phase** — rerun `zharness query phases --json`; require the selected phase to be `in-progress` in both DB and plan. After all phase waves complete, invoke `check full` on the phase diff. Do not mark the phase checked or done; durable `check` and closing `handoff` own those transitions.
+11. **Verify synchronization and gate the phase** — rerun `zharness query phases --json`; require the selected phase to be `in-progress` in both DB and plan. After all phase waves complete, perform `check.md`'s durable `gate` steps (Review and Gate Steps 1-4 and 6-11, skipping step 5's complete manual review) **yourself, in this same session**, on the phase diff — do not dispatch to the separate `/check` skill for this: its own frontmatter pins `model: opus`, and prompt caches are model-scoped, so routing through it would force exactly the cold-cache switch this step exists to avoid (F1, `docs/audit/sdlc-token-cache-audit.md` — a per-phase `check full` was costing $0.275/phase, 63% of the gate's own cost, for a review most phases don't need). The complete manual review (`check.md` full mode) runs exactly once, on the initiative's final phase, as a `handoff` closure precondition (`handoff.md` step 6) — that single review may switch model, since it happens once per initiative rather than once per phase. Do not mark the phase checked or done; durable `check` and closing `handoff` own those transitions.
 
 ## Command Reference
 
@@ -53,7 +53,7 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 
 ## Exit Conditions
 
-- Full mode: the selected phase is `in-progress` in both DB and plan, every attempted task is appended to Progress, material decisions are appended with rationale, each completed wave has a trace ID, Current State is resumable, and completed implementation is routed to `check full`.
+- Full mode: the selected phase is `in-progress` in both DB and plan, every attempted task is appended to Progress, material decisions are appended with rationale, each completed wave has a trace ID, Current State is resumable, and completed implementation is gated in-session per step 11 (`check.md`'s `full` mode, via the separate `/check` skill, applies only when the selected phase is the initiative's final phase — see `handoff.md` step 6).
 - Bounded/simple mode: requested code and proof are shown in the response with zero lifecycle or markdown writes.
 
 ## Bounded/Simple Execution
