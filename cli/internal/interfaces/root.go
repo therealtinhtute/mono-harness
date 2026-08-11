@@ -4,21 +4,31 @@
 // and research commands are added in later phases.
 package interfaces
 
-import "github.com/spf13/cobra"
+import (
+	"os"
+	"time"
+
+	"github.com/spf13/cobra"
+)
 
 // jsonOutput is bound to the --json persistent flag; every command reads
 // it directly instead of re-resolving the flag from cmd.Flags().
 var jsonOutput bool
 
 // Execute builds and runs the root command, returning the process exit
-// code per CONTRACT.md (0 success, 1 user error, 2 system error).
+// code per CONTRACT.md (0 success, 1 user error, 2 system error). Every
+// invocation is also logged best-effort (R8, logInvocation) — a
+// side-channel forensic record, not part of the exit-code contract above.
 func Execute(version string) int {
+	start := time.Now()
 	root := NewRootCmd(version)
 	err := root.Execute()
-	if err == nil {
-		return 0
+	exit := 0
+	if err != nil {
+		exit = handleError(root.ErrOrStderr(), err)
 	}
-	return handleError(root.ErrOrStderr(), err)
+	logInvocation(os.Args[1:], exit, time.Since(start), invocationErrorCode(err))
+	return exit
 }
 
 // NewRootCmd builds the zharness root command with all registered

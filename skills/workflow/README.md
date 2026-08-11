@@ -30,6 +30,10 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 
 `git` and `interview` sit outside this spine — see mapping table below.
 
+## SDLC Stage Coverage
+
+The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (`docs/audit/sdlc-gap-analysis.md` G1): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill (`docs/audit/sdlc-gap-analysis.md` G2), not a retrofit onto `work` or `check`.
+
 ## Version Gate
 
 `MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after `harness-memory-ceremony-convergence` (`cli/v0.8.1`, `docs/plans/completed/harness-memory-ceremony-convergence.md`): schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first and only readiness call; a missing binary fails that shell invocation directly. Otherwise the skill checks the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3, `docs/audit/workflow-harness-ceremony-audit.md`): a `dev` build (unreleased local build) always satisfies the gate, and a version below `0.8.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.

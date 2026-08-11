@@ -147,7 +147,7 @@ updated: 2026-08-11
 
 ### phase_slug: `p4-observability-and-scope`
 - story_id: 01KZQVGMXF4NNZH727CR534YYF
-- status: planned
+- status: checked
 - goal: give failed lifecycles a forensic record outside agent transcripts (R8) and make the missing deploy/monitoring stages a declared non-goal instead of an ambient gap (R9)
 - depends_on: ['p3-fewer-round-trips']
 - touched_surfaces: [cli/cmd/zharness/main.go, cli/internal/interfaces/root.go, .gitignore (\.kit/ already covered — verify), skills/workflow/README.md]
@@ -191,6 +191,10 @@ updated: 2026-08-11
 - `2026-08-11T12:39:08Z` — wave 2. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: wave 2 complete: work.md/check.md playbook edits for batched flush and context-packet-based lifecycle read; binary rebuilt and docs re-scaffolded from correct repo root after a misdirected first attempt (stray files in cli/ cleaned up, no data lost); go test ./internal/embedded/ -run Drift green, full go test ./... green, doc-links green.
 - `2026-08-11T12:41:41.933Z` — handoff recorded. handoff: `01KZRDFJSD77QK47M9EF1EMJ0H`. run: `01KZR291BC9QYFN70AJ82JJHME`. check: `01KZR2NDBVP1VB11H727827DXN`. phase closed. next action: close p3-fewer-round-trips next, then begin p4-observability-and-scope.
 - `2026-08-11T12:41:49.417Z` — handoff recorded. handoff: `01KZRDFT39YVSG1BARN8QTAQA8`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. check: `01KZRDDGB8VZXF0G5ACQZSG5FA`. phase closed. next action: begin p4-observability-and-scope (JSONL invocation logging, skills/workflow/README.md scope declaration) — this is the initiative's final phase and its closure requires a clean check full verdict per handoff.md step 6.
+- `2026-08-11T12:44:23Z` — wave 1. run: `01KZRDKNV8SSNFGCQBJ1HKY2DF`. summary: phase p4-observability-and-scope started.
+- `2026-08-11T12:46:26Z` — wave 1, task JSONL invocation logging. task_status: `DONE`. run: `01KZRDKNV8SSNFGCQBJ1HKY2DF`. summary: logInvocation wired into Execute (root.go); appends {ts,argv,exit,ms,error_code} to .kit/log/zharness.jsonl, best-effort, rotates to .1 at 1MB; stdout/stderr contracts untouched; go test ./... and smoke test green.
+- `2026-08-11T12:47:11Z` — wave 1, task README scope declaration. task_status: `DONE`. run: `01KZRDKNV8SSNFGCQBJ1HKY2DF`. summary: added SDLC Stage Coverage section to skills/workflow/README.md declaring deployment/release/monitoring out of scope per G1, pointing to a future ship skill (G2) if a deploy target materializes; doc-links + grep check green.
+- `2026-08-11T12:47:11Z` — wave 1. run: `01KZRDKNV8SSNFGCQBJ1HKY2DF`. summary: wave 1 (only wave) complete: JSONL invocation logging (R8) and README scope declaration (R9) both DONE; go test ./..., go vet ./..., verify-doc-links.sh, and both task-specific smoke checks all green.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -210,14 +214,20 @@ updated: 2026-08-11
   - `cd cli && go test ./...` → gate proof: all 6 packages pass
   - `bash scripts/verify-doc-links.sh` → gate proof: doc links OK (0 findings)
   - `cd cli && go test ./internal/embedded/ -run Drift` → gate proof: embedded playbooks match scaffolded docs
+- `2026-08-11T12:48:30.724Z` — check. verdict: `APPROVED`. check: `01KZRDW204N3EPF4AH8APAZK3K`. run: `01KZRDKNV8SSNFGCQBJ1HKY2DF`. phase: `p4-observability-and-scope`. judge: `same-session` (claude-fable-5).
+  - `cd cli && CGO_ENABLED=0 go build ./...` → full-mode proof: build clean
+  - `cd cli && go vet ./...` → full-mode proof: vet clean
+  - `cd cli && go test ./...` → full-mode proof: all 7 packages pass (incl. new invocation_log_test.go)
+  - `bash scripts/verify-doc-links.sh` → full-mode proof: doc links OK (0 findings)
+  - `grep -qi "out of scope" skills/workflow/README.md` → full-mode proof: R9 scope paragraph present
 
 ## Current State and Next Action
-- active_phase: none (p1/p2/p3 all done; p4-observability-and-scope is planned and ready — its only dependency, p3, is done)
-- lifecycle_status: done (p3-fewer-round-trips; p2-check-routing also done)
-- latest_run_id: 01KZRC6GR8DZHW7M2ZFT9Q9R3R
-- latest_trace_ids: [01KZRC7B8M65EG4NNRRR2JR5ZF, 01KZRCNX5RTQEVHC26ZNT15NY7, 01KZRCSHTTWZARW8DX6AP4ME1T, 01KZRCZ3PY2BGS94ZY0FNMA94Y, 01KZRD4RW1XZJMR5YJ5NC82AGJ, 01KZRD4RWAWVJ06DS3GTZRJE8H, 01KZRDARPWXGSCW92BY2WXMDHA, 01KZRDARPWXGSCW92BY4D98SSG, 01KZRDAWZH1E6C2HBZ679SRZW8]
-- latest_check_id: 01KZRDDGB8VZXF0G5ACQZSG5FA
+- active_phase: p4-observability-and-scope (checked via `check full` — same-session judge, APPROVED; ready for closing handoff)
+- lifecycle_status: checked
+- latest_run_id: 01KZRDKNV8SSNFGCQBJ1HKY2DF
+- latest_trace_ids: [01KZRDMGTHRPA3KE8XXSZZC50B, 01KZRDR87G0KA22E2D1F1PGAQC, 01KZRDSMDJZY56P3HRWP8V8JQ6, 01KZRDSMDW7W1R1KFCZVVHJF73]
+- latest_check_id: 01KZRDW204N3EPF4AH8APAZK3K
 - latest_handoff_id: 01KZRDFT39YVSG1BARN8QTAQA8
 - blockers: none
 - open_items: none
-- exact_next_action: run `work full phase p4-observability-and-scope` — p4 is the initiative's final phase, so its closing `handoff` will require a clean `check full` verdict (handoff.md step 6) before this plan can move to `docs/plans/completed/`
+- exact_next_action: run closing `handoff record --close-phase` for p4-observability-and-scope (run 01KZRDKNV8SSNFGCQBJ1HKY2DF, check 01KZRDW204N3EPF4AH8APAZK3K, a recorded `full`-mode APPROVED verdict) — this closes the whole initiative; move this plan to `docs/plans/completed/` after
