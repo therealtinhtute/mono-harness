@@ -115,7 +115,7 @@ updated: 2026-08-11
 
 ### phase_slug: `p3-fewer-round-trips`
 - story_id: 01KZQVGMX7WYAS6S6Z1J6FWTY0
-- status: planned
+- status: checked
 - goal: remove the mandated round trips that return ≤150 bytes each — batched wave traces (R5), a `context` packet on `preflight check` (R6), and a cost gauge that measures the current read path (R7)
 - depends_on: ['p1-quick-wins']
 - touched_surfaces: [cli/internal/interfaces/trace*.go, cli/internal/application/trace.go, cli/internal/application/preflight.go, cli/internal/interfaces/preflight.go, cli/internal/application/db_status.go, cli/internal/application/context.go, cli/docs/CONTRACT.md, cli/docs/embedded/playbooks/work.md, cli/docs/embedded/playbooks/check.md, docs/playbooks/work.md, docs/playbooks/check.md]
@@ -180,6 +180,15 @@ updated: 2026-08-11
 - `2026-08-11T09:30:08Z` — wave 1. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: wave 1 complete: R4 playbook routing shipped across work/check/handoff, all three embedded<->scaffolded in sync, go test ./... -> PASS.
 - `2026-08-11T09:31:14Z` — wave 2, task evaluate CLI-side enforcement. task_status: `DONE`. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: evaluated: needs checks.mode migration + a final-phase concept absent from the schema (single-parent depends_on can't answer DAG-terminal queries). Disproportionate per plan's own mitigation clause; recorded decision 01KZR2JG6PRPRJN2H69AXYAG0E, shipping playbook-only precondition instead.
 - `2026-08-11T09:31:14Z` — wave 2. run: `01KZR291BC9QYFN70AJ82JJHME`. summary: wave 2 complete: CLI-enforcement evaluated and declined with recorded rationale; playbook-only precondition stands.
+- `2026-08-11T12:19:43Z` — wave 1. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: phase p3-fewer-round-trips started.
+- `2026-08-11T12:27:40Z` — wave 1, task add trace add --tasks batched flag. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: batched trace add --tasks implemented (domain.TraceTask, application.CreateTraces, CLI --tasks flag, CONTRACT.md updated); go test ./... -run Trace green.
+- `2026-08-11T12:29:40Z` — wave 1, task replay-equivalence test for batched trace add. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: cli/internal/infrastructure/trace_replay_test.go: batch vs per-call field equivalence + DB-rebuilt-from-changesets agreement; go test ./internal/infrastructure/ -run Replay green.
+- `2026-08-11T12:32:42Z` — wave 1, task extend preflight check context packet. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: check gate/full now receive the same context packet as work/handoff (phases+position+latest IDs+drift); review/bounded stay packet-free; supersedes ceremony-audit NG2; CONTRACT.md updated; go test ./... -run Preflight green.
+- `2026-08-11T12:35:47Z` — wave 1, task fix db status context_cost_estimate to model section-read path. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: watzup/work/handoff now cost Outcome+CurrentState / phase-block / CurrentState respectively instead of full-plan bytes; brainstorm/to-plan/check unchanged; drift-confession note replaced; go test ./... -run 'DbStatus|Status' green.
+- `2026-08-11T12:35:47Z` — wave 1. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: wave 1 complete: batched trace add --tasks, replay-equivalence test, preflight check context packet, honest context_cost_estimate — all 4 tasks DONE, full go test ./... and verify-doc-links.sh green.
+- `2026-08-11T12:39:04Z` — wave 2, task edit work.md steps 7/9 for batched-flush description. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: step 7 collects task entries into a pending batch (DONE stays pending, BLOCKED/NEEDS_CONTEXT/DONE_WITH_CONCERNS flushes immediately); step 9 flushes remaining pending entries then the unchanged wave-summary call; Command Reference updated.
+- `2026-08-11T12:39:04Z` — wave 2, task edit check.md step 1 to read from preflight context packet. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: step 1 reads lifecycle position from preflight check context packet instead of a separate zharness resume --json call; Command Reference updated; resume itself untouched for other callers.
+- `2026-08-11T12:39:08Z` — wave 2. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: wave 2 complete: work.md/check.md playbook edits for batched flush and context-packet-based lifecycle read; binary rebuilt and docs re-scaffolded from correct repo root after a misdirected first attempt (stray files in cli/ cleaned up, no data lost); go test ./internal/embedded/ -run Drift green, full go test ./... green, doc-links green.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -193,14 +202,20 @@ updated: 2026-08-11
 - `2026-08-11T09:32:38.651Z` — check. verdict: `APPROVED`. check: `01KZR2NDBVP1VB11H727827DXN`. run: `01KZR291BC9QYFN70AJ82JJHME`. phase: `p2-check-routing`. judge: `same-session` (claude-sonnet-5).
   - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
   - `cd cli && go test ./...` → ok x6 packages, 0 failures
+- `2026-08-11T12:40:33.896Z` — check. verdict: `APPROVED`. check: `01KZRDDGB8VZXF0G5ACQZSG5FA`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. phase: `p3-fewer-round-trips`. judge: `same-session` (claude-fable-5).
+  - `cd cli && CGO_ENABLED=0 go build ./...` → gate proof: build clean
+  - `cd cli && go vet ./...` → gate proof: vet clean
+  - `cd cli && go test ./...` → gate proof: all 6 packages pass
+  - `bash scripts/verify-doc-links.sh` → gate proof: doc links OK (0 findings)
+  - `cd cli && go test ./internal/embedded/ -run Drift` → gate proof: embedded playbooks match scaffolded docs
 
 ## Current State and Next Action
-- active_phase: p2-check-routing
+- active_phase: p3-fewer-round-trips (checked; p2-check-routing also remains checked — both need a closing handoff to done before p4 starts)
 - lifecycle_status: checked
-- latest_run_id: 01KZR291BC9QYFN70AJ82JJHME
-- latest_trace_ids: [01KZR2GTR86R7DTAJGB06PT2MJ, 01KZR2GTRHJE3EA5SN8KFKQ7ZR, 01KZR2GTRRKT1X4AM1Z633MH2Y, 01KZR2GTRYNGDYEJ0FQ3H7JDS1, 01KZR2JVB9QHSK3AF4HZ6W5EPZ, 01KZR2JVBGBMEYK6YKNHH9C6DA]
-- latest_check_id: 01KZR2NDBVP1VB11H727827DXN
+- latest_run_id: 01KZRC6GR8DZHW7M2ZFT9Q9R3R
+- latest_trace_ids: [01KZRC7B8M65EG4NNRRR2JR5ZF, 01KZRCNX5RTQEVHC26ZNT15NY7, 01KZRCSHTTWZARW8DX6AP4ME1T, 01KZRCZ3PY2BGS94ZY0FNMA94Y, 01KZRD4RW1XZJMR5YJ5NC82AGJ, 01KZRD4RWAWVJ06DS3GTZRJE8H, 01KZRDARPWXGSCW92BY2WXMDHA, 01KZRDARPWXGSCW92BY4D98SSG, 01KZRDAWZH1E6C2HBZ679SRZW8]
+- latest_check_id: 01KZRDDGB8VZXF0G5ACQZSG5FA
 - latest_handoff_id: 01KZR26XBXY8NVEY6QP3VSJD6R
 - blockers: none
-- open_items: [none — p2's own CLI-enforcement question resolved by decision 01KZR2JG6PRPRJN2H69AXYAG0E]
-- exact_next_action: p2-check-routing is checked (not yet handed off); next durable work is `work full phase p3-fewer-round-trips`
+- open_items: [p2-check-routing and p3-fewer-round-trips both need a closing handoff to done before p4-observability-and-scope can start]
+- exact_next_action: run closing `handoff` for both p2-check-routing and p3-fewer-round-trips (batched, since neither is the initiative's final phase — no `check full` required for this closure), then begin p4-observability-and-scope

@@ -190,7 +190,12 @@ func TestDBStatusReportsSchemaFenceRowsAndContextCost(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join("docs", "plans", "active"), 0o755); err != nil {
 		t.Fatalf("MkdirAll active plans: %v", err)
 	}
-	plan := []byte("---\nid: x\n---\n# Plan\n\n## Outcome\nresult\n")
+	// A real phase block and a real Current State section, both smaller
+	// than the whole plan, so a bounded per-stage read is provably cheaper
+	// than a full-plan read (R7, docs/audit/sdlc-token-cache-audit.md).
+	plan := []byte("---\nid: x\n---\n# Plan\n\n## Outcome\nresult\n\n" +
+		"## Phases and Verification\n### phase_slug: `alpha`\n- status: in-progress\n- goal: phase alpha goal\n\n" +
+		"## Current State and Next Action\n- active_phase: alpha\n- lifecycle_status: in-progress\n")
 	if err := os.WriteFile(filepath.Join("docs", "plans", "active", "demo.md"), plan, 0o644); err != nil {
 		t.Fatalf("WriteFile active plan: %v", err)
 	}
@@ -203,6 +208,9 @@ func TestDBStatusReportsSchemaFenceRowsAndContextCost(t *testing.T) {
 	if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at)
 		VALUES (?, 'alpha', 'goal', 'planned', '2026-08-07T00:00:00Z')`, storyID); err != nil {
 		t.Fatalf("seed story: %v", err)
+	}
+	if _, err := db.Exec(`UPDATE meta SET current_phase = 'alpha'`); err != nil {
+		t.Fatalf("seed current_phase: %v", err)
 	}
 	if err := db.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
@@ -238,13 +246,44 @@ func TestDBStatusReportsSchemaFenceRowsAndContextCost(t *testing.T) {
 	if view.ContextCost.ActivePlanPath == "" || view.ContextCost.ActivePlanBytes != len(plan) {
 		t.Fatalf("context cost plan = (%q, %d), want (non-empty, %d)", view.ContextCost.ActivePlanPath, view.ContextCost.ActivePlanBytes, len(plan))
 	}
-	work, ok := view.ContextCost.Stages["work"]
-	if !ok {
-		t.Fatal("context cost stages missing 'work'")
+
+	fullPlanEstimate := func(stage string) int {
+		s, ok := view.ContextCost.Stages[stage]
+		if !ok {
+			t.Fatalf("context cost stages missing %q", stage)
+		}
+		return (s.PlaybookBytes + len(plan)) / 4
 	}
-	if work.EstimatedTokensToday != (work.PlaybookBytes+len(plan))/4 {
-		t.Fatalf("work estimated_tokens_today = %d, want (playbook_bytes+plan_bytes)/4", work.EstimatedTokensToday)
+
+	// watzup/work/handoff read a bounded section (R7), so their estimate
+	// must be strictly cheaper than a full-plan read of the same plan —
+	// this plan's Outcome/phase-block/Current State sections are each
+	// smaller than the whole file by construction above.
+	for _, stage := range []string{"watzup", "work", "handoff"} {
+		s, ok := view.ContextCost.Stages[stage]
+		if !ok {
+			t.Fatalf("context cost stages missing %q", stage)
+		}
+		if s.EstimatedTokensToday >= fullPlanEstimate(stage) {
+			t.Fatalf("%s estimated_tokens_today = %d, want less than the full-plan estimate %d (section-read path, R7)", stage, s.EstimatedTokensToday, fullPlanEstimate(stage))
+		}
+		if s.EstimatedTokensToday <= s.PlaybookBytes/4 {
+			t.Fatalf("%s estimated_tokens_today = %d, want more than playbook-only %d (its section must contribute real bytes)", stage, s.EstimatedTokensToday, s.PlaybookBytes/4)
+		}
 	}
+
+	// brainstorm/to-plan/check still read the plan in full — their
+	// estimate must be unchanged, exactly (playbook_bytes+plan_bytes)/4.
+	for _, stage := range []string{"brainstorm", "to-plan", "check"} {
+		s, ok := view.ContextCost.Stages[stage]
+		if !ok {
+			t.Fatalf("context cost stages missing %q", stage)
+		}
+		if want := fullPlanEstimate(stage); s.EstimatedTokensToday != want {
+			t.Fatalf("%s estimated_tokens_today = %d, want %d (unchanged full-plan read)", stage, s.EstimatedTokensToday, want)
+		}
+	}
+
 	if view.ContextCost.Note == "" {
 		t.Fatal("context cost note is empty, want the heuristic caveat")
 	}

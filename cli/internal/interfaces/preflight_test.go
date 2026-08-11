@@ -386,20 +386,57 @@ func TestPreflightCommandWorkIncludesContextWithPhases(t *testing.T) {
 	}
 }
 
-// TestPreflightCommandCheckOmitsContext is NG2's routing proof: check
-// keeps its own separate resume/query calls unchanged, so it must never
-// receive a context packet even when the DB is ready.
-func TestPreflightCommandCheckOmitsContext(t *testing.T) {
-	t.Chdir(t.TempDir())
-	seedPreflightStory(t, "planned")
+// TestPreflightCommandCheckReviewAndBoundedOmitContext proves check's
+// response-only modes stay packet-free: review/bounded never call
+// `check record`/touch the plan, so they have no lifecycle position to
+// prefetch and must not pay the packet's cost.
+func TestPreflightCommandCheckReviewAndBoundedOmitContext(t *testing.T) {
+	for _, mode := range []string{"review", "bounded", "simple"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			seedPreflightStory(t, "planned")
 
-	out, err := runPreflightCommand(t, "dev", "preflight", "check", "--mode", "review", "--json")
-	if err != nil {
-		t.Fatalf("preflight command error = %v", err)
+			out, err := runPreflightCommand(t, "dev", "preflight", "check", "--mode", mode, "--json")
+			if err != nil {
+				t.Fatalf("preflight command error = %v", err)
+			}
+			view := decodePreflight(t, out)
+			if view.Context != nil {
+				t.Fatalf("check --mode %s view.Context = %+v, want nil (response-only, no lifecycle position to prefetch)", mode, view.Context)
+			}
+		})
 	}
-	view := decodePreflight(t, out)
-	if view.Context != nil {
-		t.Fatalf("check view.Context = %+v, want nil (NG2: check's reads are unchanged)", view.Context)
+}
+
+// TestPreflightCommandCheckGateAndFullIncludeContextWithPhases is R6's
+// routing proof (docs/audit/sdlc-token-cache-audit.md): check's durable
+// gate/full modes now get the same stage-shaped packet work/handoff
+// already receive, replacing check.md step 1's separate `zharness resume
+// --json` call — superseding this initiative's own earlier NG2, which
+// kept check's reads entirely separate (docs/audit/workflow-harness-
+// ceremony-audit.md).
+func TestPreflightCommandCheckGateAndFullIncludeContextWithPhases(t *testing.T) {
+	for _, mode := range []string{"gate", "full"} {
+		t.Run(mode, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			seedPreflightWorkPlaybookAndPlan(t)
+			if err := os.WriteFile(filepath.Join(preflightDocsPath, "playbooks", "check.md"), []byte("# check\n"), 0o644); err != nil {
+				t.Fatalf("WriteFile check playbook: %v", err)
+			}
+			seedPreflightStory(t, "in-progress")
+
+			out, err := runPreflightCommand(t, "dev", "preflight", "check", "--mode", mode, "--json")
+			if err != nil {
+				t.Fatalf("preflight command error = %v", err)
+			}
+			view := decodePreflight(t, out)
+			if view.Context == nil {
+				t.Fatalf("check --mode %s view.Context = nil, want a stage-shaped packet", mode)
+			}
+			if len(view.Context.Phases) != 1 || view.Context.Phases[0].Slug != "seeded" {
+				t.Fatalf("check --mode %s view.Context.Phases = %+v, want the seeded story", mode, view.Context.Phases)
+			}
+		})
 	}
 }
 

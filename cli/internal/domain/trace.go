@@ -50,3 +50,29 @@ func (t Trace) Validate() error {
 	}
 	return nil
 }
+
+// TraceTask is one element of `trace add --tasks`'s batch — the flush-once-
+// per-wave counterpart of CreateTrace's single task-level form (R5,
+// docs/audit/sdlc-token-cache-audit.md: work previously paid one round trip
+// per completed task even though most tasks land clean within the same
+// wave). Unlike Trace's optional Task/TaskStatus, all three fields are
+// required here: a batch element is always a task-level entry, never the
+// wave-level summary trace, which keeps its own single-call form.
+type TraceTask struct {
+	Task       string `json:"task"`
+	TaskStatus string `json:"task_status"`
+	Summary    string `json:"summary"`
+}
+
+func (t TraceTask) Validate() error {
+	if t.Task == "" {
+		return &ValidationError{Code: "missing_required_field", Message: "trace: task is required"}
+	}
+	if t.Summary == "" {
+		return &ValidationError{Code: "missing_required_field", Message: "trace: summary is required"}
+	}
+	if !IsValidTaskStatus(t.TaskStatus) {
+		return &ValidationError{Code: "invalid_task_status", Message: "trace: invalid task_status " + t.TaskStatus}
+	}
+	return nil
+}

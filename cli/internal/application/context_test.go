@@ -24,9 +24,9 @@ func TestBuildContextPacketWatzupOmitsPhases(t *testing.T) {
 	}
 }
 
-// TestBuildContextPacketWorkAndHandoffIncludePhases proves work and
-// handoff both get the phases list — the packet replacing their separate
-// `query phases` call.
+// TestBuildContextPacketWorkAndHandoffIncludePhases proves work, handoff,
+// and check (R6) all get the phases list — the packet replacing their
+// separate `query phases`/`resume` calls.
 func TestBuildContextPacketWorkAndHandoffIncludePhases(t *testing.T) {
 	db, changesetDir := freshDB(t)
 	createLifecycleRun(t, db, changesetDir, "cli-domain")
@@ -34,7 +34,7 @@ func TestBuildContextPacketWorkAndHandoffIncludePhases(t *testing.T) {
 		t.Fatalf("CreateStory: %v", err)
 	}
 
-	for _, stage := range []string{"work", "handoff"} {
+	for _, stage := range []string{"work", "handoff", "check"} {
 		pkg, err := BuildContextPacket(db, stage, "dev")
 		if err != nil {
 			t.Fatalf("BuildContextPacket(%s): %v", stage, err)

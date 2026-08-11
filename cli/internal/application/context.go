@@ -42,15 +42,21 @@ type OmittedField struct {
 
 // contextPhasesStages names the stages whose playbook reads the phases
 // list (`query phases`) today — work.md and handoff.md's "Load state"
-// steps. watzup.md does not call `query phases`, so its packet omits
-// Phases entirely rather than carrying a field it never references.
-var contextPhasesStages = map[string]bool{"work": true, "handoff": true}
+// steps, and check.md's gate/full mode (R6, docs/audit/sdlc-token-cache-
+// audit.md — check.md step 1's separate `zharness resume --json` call is
+// replaced by this same packet). watzup.md does not call `query phases`,
+// so its packet omits Phases entirely rather than carrying a field it
+// never references.
+var contextPhasesStages = map[string]bool{"work": true, "handoff": true, "check": true}
 
 // BuildContextPacket assembles the stage-shaped packet for stage (R4).
-// Callers gate which stages receive a packet at all (interfaces/preflight.go's
-// contextEligibleStages) — check.md keeps its own separate resume/query
-// calls by design (NG2: its full-plan read is audit, not ceremony this
-// initiative optimizes), so check never reaches this function.
+// Callers gate which stages receive a packet at all, and for which modes
+// (interfaces/preflight.go's contextEligibleStages/checkContextEligible) —
+// check's response-only review/bounded modes still perform zero durable
+// reads or writes beyond what their own playbook already does, so only
+// its durable gate/full modes reach this function (R6 supersedes this
+// initiative's own earlier NG2, which kept check's reads entirely
+// separate; docs/audit/workflow-harness-ceremony-audit.md).
 func BuildContextPacket(db *sql.DB, stage, version string) (*ContextPacket, error) {
 	resumeView, err := Resume(db, version)
 	if err != nil {

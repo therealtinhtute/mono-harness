@@ -133,6 +133,182 @@ func TestCreateTraceNoActivePlanSkipsMarkdownWrite(t *testing.T) {
 	}
 }
 
+// TestCreateTracesBatchAndQueryRoundTrip is the round trip for R5
+// (docs/audit/sdlc-token-cache-audit.md): a batch of task-level entries
+// lands as separate, individually queryable trace rows in one call.
+func TestCreateTracesBatchAndQueryRoundTrip(t *testing.T) {
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+
+	ids, path, err := CreateTraces(db, changesetDir, 1, runID, []domain.TraceTask{
+		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
+		{Task: "task B", TaskStatus: domain.TaskStatusDoneWithConcerns, Summary: "did B, minor concern"},
+	})
+	if err != nil {
+		t.Fatalf("CreateTraces: %v", err)
+	}
+	if len(ids) != 2 {
+		t.Fatalf("CreateTraces ids = %v, want 2", ids)
+	}
+	if ids[0] == ids[1] {
+		t.Fatalf("CreateTraces minted duplicate ids: %v", ids)
+	}
+	if path == "" {
+		t.Fatal("CreateTraces path is empty, want a written changeset")
+	}
+	if got := countRows(t, db, "traces"); got != 2 {
+		t.Fatalf("traces rows = %d, want 2", got)
+	}
+
+	var task, taskStatus string
+	if err := db.QueryRow(`SELECT task, task_status FROM traces WHERE id = ?`, ids[0]).Scan(&task, &taskStatus); err != nil {
+		t.Fatalf("query traces[0]: %v", err)
+	}
+	if task != "task A" || taskStatus != domain.TaskStatusDone {
+		t.Fatalf("traces[0] (task, task_status) = (%q, %q), want (%q, %q)", task, taskStatus, "task A", domain.TaskStatusDone)
+	}
+	if err := db.QueryRow(`SELECT task, task_status FROM traces WHERE id = ?`, ids[1]).Scan(&task, &taskStatus); err != nil {
+		t.Fatalf("query traces[1]: %v", err)
+	}
+	if task != "task B" || taskStatus != domain.TaskStatusDoneWithConcerns {
+		t.Fatalf("traces[1] (task, task_status) = (%q, %q), want (%q, %q)", task, taskStatus, "task B", domain.TaskStatusDoneWithConcerns)
+	}
+}
+
+func TestCreateTracesEmptyBatch(t *testing.T) {
+	db, changesetDir := freshDB(t)
+
+	_, _, err := CreateTraces(db, changesetDir, 1, "", nil)
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "empty_tasks" {
+		t.Fatalf("err = %v, want *domain.ValidationError{Code: empty_tasks}", err)
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0", got)
+	}
+}
+
+func TestCreateTracesTooManyTasks(t *testing.T) {
+	db, changesetDir := freshDB(t)
+
+	tasks := make([]domain.TraceTask, 21)
+	for i := range tasks {
+		tasks[i] = domain.TraceTask{Task: "t", TaskStatus: domain.TaskStatusDone, Summary: "s"}
+	}
+	_, _, err := CreateTraces(db, changesetDir, 1, "", tasks)
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "too_many_tasks" {
+		t.Fatalf("err = %v, want *domain.ValidationError{Code: too_many_tasks}", err)
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0", got)
+	}
+}
+
+// TestCreateTracesBatchIsAtomicOnValidationFailure proves a batch with one
+// invalid element writes nothing — not a partial batch — matching
+// RecordDecisions's precedent (decision_test.go).
+func TestCreateTracesBatchIsAtomicOnValidationFailure(t *testing.T) {
+	db, changesetDir := freshDB(t)
+
+	_, _, err := CreateTraces(db, changesetDir, 1, "", []domain.TraceTask{
+		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
+		{Task: "task B", TaskStatus: "BOGUS", Summary: "did B"},
+	})
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "invalid_task_status" {
+		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_task_status}", err)
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0 — the valid first element must not be written alone", got)
+	}
+}
+
+func TestCreateTracesUnknownRunID(t *testing.T) {
+	db, changesetDir := freshDB(t)
+
+	_, _, err := CreateTraces(db, changesetDir, 1, "01HZZZZZZZZZZZZZZZZZZZZZZZ", []domain.TraceTask{
+		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
+	})
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "unknown_run_id" {
+		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0", got)
+	}
+}
+
+// TestCreateTracesWritesPlanProgressEntryPerElement proves the whole batch
+// lands as separate, individually-formatted lines in the plan's
+// `## Progress` section, in one operation (P3 wave 1, R5).
+func TestCreateTracesWritesPlanProgressEntryPerElement(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+
+	ids, _, err := CreateTraces(db, changesetDir, 1, runID, []domain.TraceTask{
+		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
+		{Task: "task B", TaskStatus: domain.TaskStatusDoneWithConcerns, Summary: "did B, minor concern"},
+	})
+	if err != nil {
+		t.Fatalf("CreateTraces: %v", err)
+	}
+	if len(ids) != 2 {
+		t.Fatalf("CreateTraces ids = %v, want 2", ids)
+	}
+
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "task A") || !strings.Contains(content, "did A") {
+		t.Fatalf("plan Progress missing first entry:\n%s", content)
+	}
+	if !strings.Contains(content, "task B") || !strings.Contains(content, "did B, minor concern") {
+		t.Fatalf("plan Progress missing second entry:\n%s", content)
+	}
+	if !strings.Contains(content, "## Decisions\n<!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->\n- none") {
+		t.Fatalf("plan Decisions section corrupted:\n%s", content)
+	}
+}
+
+// TestCreateTracesAtomicityIncludesPlanWrite extends the atomicity proof to
+// the plan-write path: a malformed plan (Progress section missing) must
+// block the DB write too, not just leave the plan corrupted.
+func TestCreateTracesAtomicityIncludesPlanWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	data, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	corrupted := strings.Replace(string(data), "## Progress", "## Renamed Somehow", 1)
+	if err := os.WriteFile(planPath, []byte(corrupted), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	db, changesetDir := freshDB(t)
+	_, _, err = CreateTraces(db, changesetDir, 1, "", []domain.TraceTask{
+		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
+	})
+	if err == nil {
+		t.Fatal("CreateTraces = nil error, want a plan-section-not-found failure")
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0 — DB write must not proceed when the plan can't be written to", got)
+	}
+	after, err := os.ReadFile(planPath)
+	if err != nil {
+		t.Fatalf("ReadFile after failed CreateTraces: %v", err)
+	}
+	if string(after) != corrupted {
+		t.Fatalf("plan file changed despite the failed write:\nbefore=%s\nafter=%s", corrupted, string(after))
+	}
+}
+
 // TestCreateTraceMalformedPlanBlocksDBWrite is the atomicity proof risk
 // R-A/wave 2 requires: when the active plan is missing the Progress
 // section entirely, the whole operation fails BEFORE the changeset/DB

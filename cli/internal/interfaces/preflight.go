@@ -30,14 +30,25 @@ var preflightPlaybooks = map[string]string{
 	"git":        "docs/playbooks/git.md",
 }
 
-// contextEligibleStages names the stages that receive a stage-shaped
-// context packet (R4). check is deliberately absent — NG2 keeps its
-// full-plan read and its own separate resume/query calls unchanged, so it
-// never reaches BuildContextPacket. brainstorm/to-plan don't consult prior
-// lifecycle state before writing (their playbooks call resume/query phases
-// only as post-write verification, not as input), and git/interview own no
-// harness entity (D7), so none of the four get a packet either.
+// contextEligibleStages names the stages that unconditionally receive a
+// stage-shaped context packet (R4). check is handled separately
+// (checkContextEligible) since only its durable gate/full modes qualify —
+// review/bounded stay response-only with zero packet cost. brainstorm/to-plan
+// don't consult prior lifecycle state before writing (their playbooks call
+// resume/query phases only as post-write verification, not as input), and
+// git/interview own no harness entity (D7), so none of those four get a
+// packet either.
 var contextEligibleStages = map[string]bool{"watzup": true, "work": true, "handoff": true}
+
+// checkContextEligible reports whether check's resolved preflight mode
+// qualifies for a context packet (R6, docs/audit/sdlc-token-cache-audit.md):
+// gate/full/auto/"" all resolve to domain.PreflightModeDurable per
+// domain.preflightModes' check entry, exactly the modes whose playbook
+// step (check.md step 1) reads lifecycle position at all — review/bounded
+// resolve to reduced and stay packet-free, unchanged from before R6.
+func checkContextEligible(stage string, resolvedMode string) bool {
+	return stage == "check" && resolvedMode == domain.PreflightModeDurable
+}
 
 func newPreflightCmd(version string) *cobra.Command {
 	var mode string
@@ -74,7 +85,7 @@ func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) erro
 		}
 		return newSystemError("preflight_failed", err.Error())
 	}
-	if db != nil && contextEligibleStages[stage] {
+	if db != nil && (contextEligibleStages[stage] || checkContextEligible(stage, view.Mode)) {
 		pkg, cerr := application.BuildContextPacket(db.Raw(), stage, version)
 		if cerr != nil {
 			return newSystemError("preflight_failed", fmt.Sprintf("preflight: build context: %v", cerr))

@@ -29,7 +29,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 
 ## Review and Gate Steps
 
-1. **Load scope without changing intent** — read the diff and repository verification instructions. For gate/full, also read the active plan and `zharness resume --json`, and require a latest run for the phase. Review may consult an active plan for context but remains response-only.
+1. **Load scope without changing intent** — read the diff and repository verification instructions. For gate/full, read lifecycle position (`context.position`, `context.phases`, latest run/check/handoff IDs, drift) from the same `preflight check --mode {gate|full} --json` response (Preconditions step 2) instead of a separate `zharness resume --json` call (R6, `docs/audit/sdlc-token-cache-audit.md`), also read the active plan, and require a latest run for the phase. Review may consult an active plan for context but remains response-only.
 2. **Classify depth and drift** — use quick/standard/deep based on blast radius, not only line count. Label scope on-target, drift, or incomplete before checks. A phase-boundary violation blocks a clean durable verdict.
 3. **Run the automated gate** — execute applicable tests, type checks, lint/static analysis, and build in repository-defined order. Capture actual output; never self-certify.
 4. **Review plan alignment when applicable** — compare the diff with accepted requirements, Non-goals, phase surfaces, task outputs, append-only Progress entries, and recorded Decisions. Read task execution status only from Progress. Missing planned proof is a finding even when local tests pass. If `docs/evals/failures.md` exists, read it and, for every failure class recorded two or more times, state explicitly whether the current diff is clean of that class; a repository without that file skips this without it being an error.
@@ -49,8 +49,7 @@ Run the narrowest checks that prove the requested change, perform the requested 
 
 ## Command Reference
 
-- `zharness preflight check --mode {gate|full|review|bounded} --json`
-- `zharness resume --json`
+- `zharness preflight check --mode {gate|full|review|bounded} --json` (step 1 — gate/full's `context` field replaces a separate `zharness resume --json` call)
 - `zharness audit --json`
 - `zharness query phases --json`
 - `zharness check record --verdict {verdict} --run-id {run-id} --judge {independent|same-session} --judge-model {model} --proof-links '[...]' --json`
