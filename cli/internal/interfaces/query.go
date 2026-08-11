@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 
@@ -91,6 +92,9 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 
 	case "checks":
+		if err := checkKnownPhase(raw, "checks", phaseFilter); err != nil {
+			return err
+		}
 		v, err := application.QueryChecks(raw, phaseFilter, tail)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query checks: %v", err))
@@ -98,6 +102,9 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 
 	case "traces":
+		if err := checkKnownPhase(raw, "traces", phaseFilter); err != nil {
+			return err
+		}
 		var v []application.TraceView
 		var err error
 		if phaseFilter != "" {
@@ -111,6 +118,9 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 
 	case "decisions":
+		if err := checkKnownPhase(raw, "decisions", phaseFilter); err != nil {
+			return err
+		}
 		v, err := application.QueryDecisions(raw, phaseFilter, tail)
 		if err != nil {
 			return newSystemError("db_unreadable", fmt.Sprintf("query decisions: %v", err))
@@ -133,6 +143,20 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 	default:
 		return newUserError("unknown_view", fmt.Sprintf("query: unknown view %q", view))
 	}
+}
+
+// checkKnownPhase rejects a --phase filter that names no story row with a
+// user-facing unknown_phase error (R2), instead of letting the query
+// through to return an indistinguishable empty result. No-op when
+// phaseFilter is blank (unfiltered query).
+func checkKnownPhase(raw *sql.DB, view, phaseFilter string) error {
+	if err := application.RequireKnownPhase(raw, phaseFilter); err != nil {
+		if ve, ok := err.(*domain.ValidationError); ok {
+			return mapValidationError(ve)
+		}
+		return newSystemError("db_unreadable", fmt.Sprintf("query %s: %v", view, err))
+	}
+	return nil
 }
 
 func emitQueryResult(cmd *cobra.Command, v any, plain string) error {

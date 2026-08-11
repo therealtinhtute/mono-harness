@@ -115,6 +115,136 @@ func TestExtractPlanPhaseBlockHandlesCRLF(t *testing.T) {
 	}
 }
 
+// planQueryListFixture mirrors the literal shape `zharness scaffold plan`
+// produces once `to-plan` fills it in without `###` headings — the shape
+// audited in docs/audit/sdlc-token-cache-audit.md §4, which the pre-fix
+// regex silently degraded on every plan built the documented way.
+const planQueryListFixture = "# Plan: Demo\n" +
+	"\n" +
+	"## Outcome\n" +
+	"- result: demo\n" +
+	"\n" +
+	"## Phases and Verification\n" +
+	"- planning_status: planned\n" +
+	"- phases:\n" +
+	"  - phase_slug: p1-first\n" +
+	"    story_id: 01STORYULID0000000000001\n" +
+	"    status: planned\n" +
+	"    goal: first phase\n" +
+	"    depends_on: none\n" +
+	"    waves:\n" +
+	"      - wave: 1\n" +
+	"        tasks:\n" +
+	"          - task: do the thing\n" +
+	"            check: it works\n" +
+	"  - phase_slug: p2-last\n" +
+	"    story_id: 01STORYULID0000000000002\n" +
+	"    status: planned\n" +
+	"    goal: last phase\n" +
+	"    depends_on: ['p1-first']\n" +
+	"    waves:\n" +
+	"      - wave: 1\n" +
+	"        tasks:\n" +
+	"          - task: do the other thing\n" +
+	"            check: it also works\n" +
+	"\n" +
+	"## Progress\n" +
+	"- none\n" +
+	"\n" +
+	"## Current State and Next Action\n" +
+	"- active_phase: none\n" +
+	"- exact_next_action: to-plan\n"
+
+func TestExtractPlanPhaseBlockListFormFindsNonLastPhase(t *testing.T) {
+	body, ok := extractPlanPhaseBlock(planQueryListFixture, "p1-first")
+	if !ok {
+		t.Fatalf("extractPlanPhaseBlock: not found in list-form fixture")
+	}
+	if !containsAll(body, "goal: first phase", "do the thing") {
+		t.Fatalf("body = %q, want the p1-first block only", body)
+	}
+	if containsAll(body, "last phase") {
+		t.Fatalf("body = %q, leaked p2-last's content", body)
+	}
+}
+
+func TestExtractPlanPhaseBlockListFormLastPhaseStopsAtNextTopLevelHeading(t *testing.T) {
+	body, ok := extractPlanPhaseBlock(planQueryListFixture, "p2-last")
+	if !ok {
+		t.Fatalf("extractPlanPhaseBlock: not found in list-form fixture")
+	}
+	if !containsAll(body, "goal: last phase", "do the other thing") {
+		t.Fatalf("body = %q, want the p2-last block", body)
+	}
+	if containsAll(body, "## Progress", "- none") {
+		t.Fatalf("body = %q, leaked past the phase block into ## Progress", body)
+	}
+}
+
+func TestExtractPlanPhaseBlockListFormUnknownSlugReturnsNotFound(t *testing.T) {
+	if _, ok := extractPlanPhaseBlock(planQueryListFixture, "no-such-phase"); ok {
+		t.Fatalf("extractPlanPhaseBlock: want not found for an undefined slug in list-form fixture")
+	}
+}
+
+func TestExtractPlanPhaseBlockListFormHandlesCRLF(t *testing.T) {
+	crlf := "## Phases and Verification\r\n" +
+		"- phases:\r\n" +
+		"  - phase_slug: only\r\n" +
+		"    status: planned\r\n" +
+		"\r\n" +
+		"## Progress\r\n" +
+		"- none\r\n"
+	body, ok := extractPlanPhaseBlock(crlf, "only")
+	if !ok {
+		t.Fatalf("extractPlanPhaseBlock: not found")
+	}
+	if body != "status: planned" {
+		t.Fatalf("body = %q, want %q", body, "status: planned")
+	}
+}
+
+func TestExtractPlanPhaseBlockHeadingFormTakesPrecedenceOverListForm(t *testing.T) {
+	// The list-form "dup" sits under a real "## " heading so the
+	// heading-form block's own boundary (next "### phase_slug:" or next
+	// "## ") correctly excludes it — proving heading-form content, not
+	// list-form content, is what came back.
+	mixed := "## Phases and Verification\n" +
+		"### phase_slug: `dup`\n" +
+		"- source: heading\n" +
+		"\n" +
+		"## Progress\n" +
+		"- phases:\n" +
+		"  - phase_slug: dup\n" +
+		"    source: list\n"
+	body, ok := extractPlanPhaseBlock(mixed, "dup")
+	if !ok {
+		t.Fatalf("extractPlanPhaseBlock: not found")
+	}
+	if !containsAll(body, "source: heading") || containsAll(body, "source: list") {
+		t.Fatalf("body = %q, want the heading-form block to take precedence", body)
+	}
+}
+
+func TestQueryPlanSectionListFormPhaseRoundTrip(t *testing.T) {
+	chdirFixture(t)
+	writeFile(t, "docs/plans/active/demo.md", planQueryListFixture)
+
+	v, err := QueryPlanSection("phase", "p1-first")
+	if err != nil {
+		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if v.Degraded {
+		t.Fatalf("QueryPlanSection: unexpectedly degraded on list-form plan")
+	}
+	if !containsAll(v.Content, "goal: first phase") {
+		t.Fatalf("Content = %q", v.Content)
+	}
+	if containsAll(v.Content, "last phase") {
+		t.Fatalf("Content = %q, leaked p2-last's content", v.Content)
+	}
+}
+
 func containsAll(s string, substrs ...string) bool {
 	for _, sub := range substrs {
 		if !strings.Contains(s, sub) {

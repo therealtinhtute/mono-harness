@@ -62,6 +62,46 @@ func TestQueryPlanCurrentStateAndPhaseRoundTrip(t *testing.T) {
 	}
 }
 
+// queryPlanListFormFixture mirrors the list form to-plan actually produces
+// (no `###` headings) — see plan_query_test.go's planQueryListFixture in
+// the application layer for the full rationale.
+const queryPlanListFormFixture = "# Plan: Demo\n" +
+	"\n" +
+	"## Phases and Verification\n" +
+	"- phases:\n" +
+	"  - phase_slug: p1-first\n" +
+	"    status: planned\n" +
+	"    goal: first phase\n" +
+	"\n" +
+	"## Current State and Next Action\n" +
+	"- active_phase: none\n"
+
+func TestQueryPlanListFormPhaseRoundTrip(t *testing.T) {
+	t.Chdir(t.TempDir())
+	path := filepath.Join("docs", "plans", "active", "demo.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(queryPlanListFormFixture), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	out, err := runDBCommand(t, "query", "plan", "--section", "phase", "--phase", "p1-first", "--json")
+	if err != nil {
+		t.Fatalf("query plan --section phase: %v (output=%s)", err, out)
+	}
+	var v struct {
+		Content  string `json:"content"`
+		Degraded bool   `json:"degraded"`
+	}
+	if err := json.Unmarshal([]byte(out), &v); err != nil {
+		t.Fatalf("decode output %q: %v", out, err)
+	}
+	if v.Degraded {
+		t.Fatalf("list-form phase query unexpectedly degraded: %+v", v)
+	}
+}
+
 func TestQueryPlanUnknownSectionIsUserError(t *testing.T) {
 	t.Chdir(t.TempDir())
 	writeQueryPlanFixture(t)

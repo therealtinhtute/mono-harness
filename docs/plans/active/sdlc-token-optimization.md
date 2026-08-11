@@ -1,7 +1,7 @@
 ---
 id: 01KZQT1CYB0R07QHVZ6CHXYTP3
 type: plan
-intake_id: pending — record via `zharness intake --type harness-improvement --lane normal --summary "SDLC token + cache optimization" --plan-path docs/plans/active/sdlc-token-optimization.md --plan-id 01KZQT1CYB0R07QHVZ6CHXYTP3 --json` on the executing machine, then replace this value
+intake_id: 01KZQVGGFSR9GZH6VCQ2WJFDC1
 lane: normal
 status: active
 created: 2026-08-11
@@ -62,8 +62,8 @@ updated: 2026-08-11
 - phases:
 
 ### phase_slug: `p1-quick-wins`
-- story_id: pending — mint via `zharness story --slug p1-quick-wins --goal "Zero-risk fixes: plan-section regex, unknown-phase error, orphaned references" --json`
-- status: planned
+- story_id: 01KZQVGMWQ2PG1RJ47015YP4TP
+- status: checked
 - goal: land the three findings that need no judgment call — restore the 4.3× plan-section read (R1), make unknown-phase filters fail loudly (R2), delete the four orphaned references directories (R3)
 - depends_on: none
 - touched_surfaces: [cli/internal/application/plan_query.go, cli/internal/application/plan_query_test.go, cli/internal/interfaces/query_plan_test.go, cli/internal/application/query.go, cli/internal/interfaces/query_checks_test.go, cli/docs/CONTRACT.md, skills/workflow/work/references/**, skills/workflow/check/references/**, skills/workflow/brainstorm/references/**, skills/workflow/handoff/references/**]
@@ -88,7 +88,7 @@ updated: 2026-08-11
 - checks (phase gate): "bash scripts/verify-doc-links.sh && cd cli && go test ./..."
 
 ### phase_slug: `p2-check-routing`
-- story_id: pending — mint via `zharness story --slug p2-check-routing --goal "Per-phase gate in-session, full review once at closure" --depends-on p1-quick-wins --json`
+- story_id: 01KZQVGMWZADNY0AN10ESTEYQC
 - status: planned
 - goal: stop paying the opus cold-cache round trip every phase (R4): the per-phase gate becomes `check gate` executed in-session; the complete manual review runs exactly once, on the final phase, gated by handoff closure preconditions
 - depends_on: ['p1-quick-wins']
@@ -114,7 +114,7 @@ updated: 2026-08-11
 - checks (phase gate): "bash scripts/verify-doc-links.sh && cd cli && go test ./..."
 
 ### phase_slug: `p3-fewer-round-trips`
-- story_id: pending — mint via `zharness story --slug p3-fewer-round-trips --goal "Batch trace add, stage-shaped preflight for check, honest cost gauge" --depends-on p1-quick-wins --json`
+- story_id: 01KZQVGMX7WYAS6S6Z1J6FWTY0
 - status: planned
 - goal: remove the mandated round trips that return ≤150 bytes each — batched wave traces (R5), a `context` packet on `preflight check` (R6), and a cost gauge that measures the current read path (R7)
 - depends_on: ['p1-quick-wins']
@@ -146,7 +146,7 @@ updated: 2026-08-11
 - checks (phase gate): "bash scripts/verify-doc-links.sh && cd cli && go test ./..."
 
 ### phase_slug: `p4-observability-and-scope`
-- story_id: pending — mint via `zharness story --slug p4-observability-and-scope --goal "JSONL invocation log; declare post-merge lifecycle scope" --depends-on p3-fewer-round-trips --json`
+- story_id: 01KZQVGMXF4NNZH727CR534YYF
 - status: planned
 - goal: give failed lifecycles a forensic record outside agent transcripts (R8) and make the missing deploy/monitoring stages a declared non-goal instead of an ambient gap (R9)
 - depends_on: ['p3-fewer-round-trips']
@@ -165,7 +165,13 @@ updated: 2026-08-11
 
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none
+- `2026-08-11T07:28:55Z` — wave 1. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: phase p1-quick-wins started.
+- `2026-08-11T07:31:52Z` — wave 1, task widen extractPlanPhaseBlock regex. task_status: `DONE`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: list-form matcher added, heading precedence kept; go test ./internal/application/ -run 'PlanSection|PlanQuery' -> PASS.
+- `2026-08-11T07:31:52Z` — wave 1, task list-form test fixtures + CLI round-trip test. task_status: `DONE`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: 9 new tests (app + interfaces layers); go test ./... -> PASS.
+- `2026-08-11T07:34:26Z` — wave 1, task unknown_phase error for query traces|decisions|checks --phase. task_status: `DONE`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: RequireKnownPhase in application/query.go, wired via checkKnownPhase; CONTRACT.md updated; go test ./internal/... -run Query -> PASS; grep unknown_phase CONTRACT.md -> 3 hits.
+- `2026-08-11T07:34:26Z` — wave 1. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: wave 1 complete: R1 regex widening + tests, R2 unknown_phase error + tests, CONTRACT.md updated.
+- `2026-08-11T07:35:15Z` — wave 2, task delete orphaned references/ dirs. task_status: `DONE`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: deleted work/check/brainstorm/handoff references/ (6 files); git/ and interview/ kept; 2 historical mentions added to .claimignore following P5w4 precedent; verify-doc-links.sh -> OK.
+- `2026-08-11T07:35:15Z` — wave 2. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: wave 2 complete: F5 orphaned references deleted.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -173,15 +179,17 @@ updated: 2026-08-11
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
-- none
+- `2026-08-11T07:36:31.873Z` — check. verdict: `APPROVED`. check: `01KZQW0SW1FY3CQA9HSJ9T1F6V`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. phase: `p1-quick-wins`. judge: `same-session` (claude-sonnet-5).
+  - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
+  - `cd cli && go test ./...` → ok x6 packages, 0 failures
 
 ## Current State and Next Action
-- active_phase: none
-- lifecycle_status: planned (definitions final; DB rows pending — harness state is per-machine)
-- latest_run_id: none
-- latest_trace_ids: []
-- latest_check_id: none
+- active_phase: p1-quick-wins
+- lifecycle_status: checked
+- latest_run_id: 01KZQVJ1X37NPRKF6Z1YDY85KF
+- latest_trace_ids: [01KZQVYF1NETG44ESA273RB6C8, 01KZQVYF29ZBDS06TKR5AXFSV1]
+- latest_check_id: 01KZQW0SW1FY3CQA9HSJ9T1F6V
 - latest_handoff_id: none
 - blockers: none
-- open_items: [record intake and replace frontmatter intake_id, mint story rows for the four phases (`to-plan` resume path: definitions exist, only IDs are pending), p2 wave-2 CLI-enforcement decision]
-- exact_next_action: on the executing machine — `zharness init` (if needed) → record intake → `to-plan full` to mint story IDs → `work full phase p1-quick-wins`
+- open_items: [p2 wave-2 CLI-enforcement decision — evaluate at execution time]
+- exact_next_action: p1-quick-wins is checked (not yet handed off); next durable work is `work full phase p2-check-routing`
