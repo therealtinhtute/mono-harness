@@ -63,7 +63,7 @@ updated: 2026-08-11
 
 ### phase_slug: `p1-quick-wins`
 - story_id: 01KZQVGMWQ2PG1RJ47015YP4TP
-- status: checked
+- status: done
 - goal: land the three findings that need no judgment call — restore the 4.3× plan-section read (R1), make unknown-phase filters fail loudly (R2), delete the four orphaned references directories (R3)
 - depends_on: none
 - touched_surfaces: [cli/internal/application/plan_query.go, cli/internal/application/plan_query_test.go, cli/internal/interfaces/query_plan_test.go, cli/internal/application/query.go, cli/internal/interfaces/query_checks_test.go, cli/docs/CONTRACT.md, skills/workflow/work/references/**, skills/workflow/check/references/**, skills/workflow/brainstorm/references/**, skills/workflow/handoff/references/**]
@@ -172,6 +172,7 @@ updated: 2026-08-11
 - `2026-08-11T07:34:26Z` — wave 1. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: wave 1 complete: R1 regex widening + tests, R2 unknown_phase error + tests, CONTRACT.md updated.
 - `2026-08-11T07:35:15Z` — wave 2, task delete orphaned references/ dirs. task_status: `DONE`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: deleted work/check/brainstorm/handoff references/ (6 files); git/ and interview/ kept; 2 historical mentions added to .claimignore following P5w4 precedent; verify-doc-links.sh -> OK.
 - `2026-08-11T07:35:15Z` — wave 2. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. summary: wave 2 complete: F5 orphaned references deleted.
+- `2026-08-11T09:24:43.517Z` — handoff recorded. handoff: `01KZR26XBXY8NVEY6QP3VSJD6R`. run: `01KZQVJ1X37NPRKF6Z1YDY85KF`. check: `01KZQW0SW1FY3CQA9HSJ9T1F6V`. phase closed.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -184,12 +185,12 @@ updated: 2026-08-11
   - `cd cli && go test ./...` → ok x6 packages, 0 failures
 
 ## Current State and Next Action
-- active_phase: p1-quick-wins
-- lifecycle_status: checked
+- active_phase: none (p1-quick-wins closed; p2-check-routing not yet started)
+- lifecycle_status: done (p1-quick-wins only; initiative overall remains active — 3 phases outstanding)
 - latest_run_id: 01KZQVJ1X37NPRKF6Z1YDY85KF
 - latest_trace_ids: [01KZQVYF1NETG44ESA273RB6C8, 01KZQVYF29ZBDS06TKR5AXFSV1]
 - latest_check_id: 01KZQW0SW1FY3CQA9HSJ9T1F6V
-- latest_handoff_id: none
+- latest_handoff_id: 01KZR26XBXY8NVEY6QP3VSJD6R
 - blockers: none
 - open_items: [p2 wave-2 CLI-enforcement decision — evaluate at execution time]
-- exact_next_action: p1-quick-wins is checked (not yet handed off); next durable work is `work full phase p2-check-routing`
+- exact_next_action: work full phase p2-check-routing
