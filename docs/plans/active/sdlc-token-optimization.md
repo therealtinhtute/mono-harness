@@ -89,7 +89,7 @@ updated: 2026-08-11
 
 ### phase_slug: `p2-check-routing`
 - story_id: 01KZQVGMWZADNY0AN10ESTEYQC
-- status: checked
+- status: done
 - goal: stop paying the opus cold-cache round trip every phase (R4): the per-phase gate becomes `check gate` executed in-session; the complete manual review runs exactly once, on the final phase, gated by handoff closure preconditions
 - depends_on: ['p1-quick-wins']
 - touched_surfaces: [cli/docs/embedded/playbooks/work.md, cli/docs/embedded/playbooks/check.md, cli/docs/embedded/playbooks/handoff.md, docs/playbooks/work.md, docs/playbooks/check.md, docs/playbooks/handoff.md, cli/internal/embedded/**, skills/workflow/check/SKILL.md]
@@ -115,7 +115,7 @@ updated: 2026-08-11
 
 ### phase_slug: `p3-fewer-round-trips`
 - story_id: 01KZQVGMX7WYAS6S6Z1J6FWTY0
-- status: checked
+- status: done
 - goal: remove the mandated round trips that return ≤150 bytes each — batched wave traces (R5), a `context` packet on `preflight check` (R6), and a cost gauge that measures the current read path (R7)
 - depends_on: ['p1-quick-wins']
 - touched_surfaces: [cli/internal/interfaces/trace*.go, cli/internal/application/trace.go, cli/internal/application/preflight.go, cli/internal/interfaces/preflight.go, cli/internal/application/db_status.go, cli/internal/application/context.go, cli/docs/CONTRACT.md, cli/docs/embedded/playbooks/work.md, cli/docs/embedded/playbooks/check.md, docs/playbooks/work.md, docs/playbooks/check.md]
@@ -189,6 +189,8 @@ updated: 2026-08-11
 - `2026-08-11T12:39:04Z` — wave 2, task edit work.md steps 7/9 for batched-flush description. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: step 7 collects task entries into a pending batch (DONE stays pending, BLOCKED/NEEDS_CONTEXT/DONE_WITH_CONCERNS flushes immediately); step 9 flushes remaining pending entries then the unchanged wave-summary call; Command Reference updated.
 - `2026-08-11T12:39:04Z` — wave 2, task edit check.md step 1 to read from preflight context packet. task_status: `DONE`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: step 1 reads lifecycle position from preflight check context packet instead of a separate zharness resume --json call; Command Reference updated; resume itself untouched for other callers.
 - `2026-08-11T12:39:08Z` — wave 2. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. summary: wave 2 complete: work.md/check.md playbook edits for batched flush and context-packet-based lifecycle read; binary rebuilt and docs re-scaffolded from correct repo root after a misdirected first attempt (stray files in cli/ cleaned up, no data lost); go test ./internal/embedded/ -run Drift green, full go test ./... green, doc-links green.
+- `2026-08-11T12:41:41.933Z` — handoff recorded. handoff: `01KZRDFJSD77QK47M9EF1EMJ0H`. run: `01KZR291BC9QYFN70AJ82JJHME`. check: `01KZR2NDBVP1VB11H727827DXN`. phase closed. next action: close p3-fewer-round-trips next, then begin p4-observability-and-scope.
+- `2026-08-11T12:41:49.417Z` — handoff recorded. handoff: `01KZRDFT39YVSG1BARN8QTAQA8`. run: `01KZRC6GR8DZHW7M2ZFT9Q9R3R`. check: `01KZRDDGB8VZXF0G5ACQZSG5FA`. phase closed. next action: begin p4-observability-and-scope (JSONL invocation logging, skills/workflow/README.md scope declaration) — this is the initiative's final phase and its closure requires a clean check full verdict per handoff.md step 6.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -210,12 +212,12 @@ updated: 2026-08-11
   - `cd cli && go test ./internal/embedded/ -run Drift` → gate proof: embedded playbooks match scaffolded docs
 
 ## Current State and Next Action
-- active_phase: p3-fewer-round-trips (checked; p2-check-routing also remains checked — both need a closing handoff to done before p4 starts)
-- lifecycle_status: checked
+- active_phase: none (p1/p2/p3 all done; p4-observability-and-scope is planned and ready — its only dependency, p3, is done)
+- lifecycle_status: done (p3-fewer-round-trips; p2-check-routing also done)
 - latest_run_id: 01KZRC6GR8DZHW7M2ZFT9Q9R3R
 - latest_trace_ids: [01KZRC7B8M65EG4NNRRR2JR5ZF, 01KZRCNX5RTQEVHC26ZNT15NY7, 01KZRCSHTTWZARW8DX6AP4ME1T, 01KZRCZ3PY2BGS94ZY0FNMA94Y, 01KZRD4RW1XZJMR5YJ5NC82AGJ, 01KZRD4RWAWVJ06DS3GTZRJE8H, 01KZRDARPWXGSCW92BY2WXMDHA, 01KZRDARPWXGSCW92BY4D98SSG, 01KZRDAWZH1E6C2HBZ679SRZW8]
 - latest_check_id: 01KZRDDGB8VZXF0G5ACQZSG5FA
-- latest_handoff_id: 01KZR26XBXY8NVEY6QP3VSJD6R
+- latest_handoff_id: 01KZRDFT39YVSG1BARN8QTAQA8
 - blockers: none
-- open_items: [p2-check-routing and p3-fewer-round-trips both need a closing handoff to done before p4-observability-and-scope can start]
-- exact_next_action: run closing `handoff` for both p2-check-routing and p3-fewer-round-trips (batched, since neither is the initiative's final phase — no `check full` required for this closure), then begin p4-observability-and-scope
+- open_items: none
+- exact_next_action: run `work full phase p4-observability-and-scope` — p4 is the initiative's final phase, so its closing `handoff` will require a clean `check full` verdict (handoff.md step 6) before this plan can move to `docs/plans/completed/`
