@@ -3,7 +3,7 @@
 The measured-constant cost model behind `docs/audit/sdlc-token-cache-audit.md`
 and `docs/audit/sdlc-gap-analysis.md`, preserved so the optimization plan's
 success signal ("re-run the cost model, `work` ≤ 32 turns, per-phase gate cost
-−50%" — `docs/plans/active/sdlc-token-optimization.md`) is executable rather
+−50%" — `docs/plans/completed/sdlc-token-optimization.md`) is executable rather
 than re-derivable.
 
 - `model.py` — per-stage turn ledgers and raw token model. Every char constant
