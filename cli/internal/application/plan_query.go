@@ -33,6 +33,14 @@ type PlanSectionView struct {
 
 var planPhaseHeading = regexp.MustCompile("(?m)^### phase_slug: `([^`\r\n]+)`[ \t]*\r?$")
 
+// planPhaseListItem matches the scaffold template's list form
+// (`  - phase_slug: {slug}`, under `## Phases and Verification` →
+// `- phases:`) — the shape `zharness scaffold plan` and `to-plan` actually
+// produce when a plan is hand- or agent-filled without `###` headings.
+// Group 1 is the item's leading whitespace, used to find its sibling
+// boundary; group 2 is the slug.
+var planPhaseListItem = regexp.MustCompile(`(?m)^([ \t]*)- phase_slug: ([a-zA-Z0-9][a-zA-Z0-9_-]*)[ \t]*\r?$`)
+
 // QueryPlanSection resolves the single active plan under
 // docs/plans/active/*.md and returns the requested slice. section is
 // "current-state" or "phase" ("phase" requires phase, a phase_slug).
@@ -102,14 +110,28 @@ func extractPlanSection(content, name string) (string, bool) {
 	return strings.TrimSpace(strings.Join(lines[start:end], "\n")), true
 }
 
-// extractPlanPhaseBlock returns one phase's `### phase_slug: \`{slug}\“
-// block — every line after that heading up to (not including) the next
-// `### phase_slug:` heading or the next `## ` heading, whichever comes
-// first. Not scoped to inside `## Phases and Verification` specifically:
-// phase_slug headings are unambiguous on their own, and scoping would only
-// add a failure mode for a plan whose sections got reordered by hand.
+// extractPlanPhaseBlock returns one phase's block, trying the `###
+// phase_slug: \`{slug}\`` heading form first and the scaffold template's
+// `- phase_slug: {slug}` list form second — a plan may use either
+// depending on how to-plan filled it in. The heading form keeps precedence
+// when a plan happens to contain both (an unlikely hand-edit, but the
+// heading form is the more explicit signal).
 func extractPlanPhaseBlock(content, slug string) (string, bool) {
 	normalized := normalizeLineEndings(content)
+	if body, ok := extractPlanPhaseHeadingBlock(normalized, slug); ok {
+		return body, true
+	}
+	return extractPlanPhaseListBlock(normalized, slug)
+}
+
+// extractPlanPhaseHeadingBlock returns one phase's `### phase_slug:
+// \`{slug}\`` block — every line after that heading up to (not including)
+// the next `### phase_slug:` heading or the next `## ` heading, whichever
+// comes first. Not scoped to inside `## Phases and Verification`
+// specifically: phase_slug headings are unambiguous on their own, and
+// scoping would only add a failure mode for a plan whose sections got
+// reordered by hand. content must already be normalized to LF.
+func extractPlanPhaseHeadingBlock(normalized, slug string) (string, bool) {
 	matches := planPhaseHeading.FindAllStringSubmatchIndex(normalized, -1)
 
 	start := -1
@@ -127,17 +149,52 @@ func extractPlanPhaseBlock(content, slug string) (string, bool) {
 	if start == -1 {
 		return "", false
 	}
+	return trimPlanPhaseBlockBody(normalized[start:end]), true
+}
 
-	body := normalized[start:end]
-	// A "## " heading (any other phase's section boundary, e.g. the next
-	// top-level section after the last phase) can still fall inside
-	// [start, end) when slug is the last phase_slug block in the file.
+// extractPlanPhaseListBlock returns one phase's `  - phase_slug: {slug}`
+// list-item block — every line after that item up to (not including) the
+// next sibling `- phase_slug:` item at the same or lesser indentation, or
+// the next `## ` heading. Sibling boundary is indentation-based rather
+// than "next match" because a phase's own body (waves, tasks) may itself
+// contain deeper-indented lines that are not siblings. content must
+// already be normalized to LF.
+func extractPlanPhaseListBlock(normalized, slug string) (string, bool) {
+	matches := planPhaseListItem.FindAllStringSubmatchIndex(normalized, -1)
+
+	start := -1
+	end := len(normalized)
+	for i, m := range matches {
+		if normalized[m[4]:m[5]] != slug {
+			continue
+		}
+		indent := len(normalized[m[2]:m[3]])
+		start = m[1] // end of the matched list-item line (before its newline)
+		for j := i + 1; j < len(matches); j++ {
+			if len(normalized[matches[j][2]:matches[j][3]]) <= indent {
+				end = matches[j][0]
+				break
+			}
+		}
+		break
+	}
+	if start == -1 {
+		return "", false
+	}
+	return trimPlanPhaseBlockBody(normalized[start:end]), true
+}
+
+// trimPlanPhaseBlockBody clips a candidate phase body at the next top-level
+// "## " heading — which can still fall inside a naively-sliced range when
+// the requested phase is the last one defined — then trims surrounding
+// whitespace.
+func trimPlanPhaseBlockBody(body string) string {
 	if idx := strings.Index(body, "\n## "); idx != -1 {
 		body = body[:idx]
 	} else if strings.HasPrefix(body, "## ") {
 		body = ""
 	}
-	return strings.TrimSpace(body), true
+	return strings.TrimSpace(body)
 }
 
 func normalizeLineEndings(content string) string {

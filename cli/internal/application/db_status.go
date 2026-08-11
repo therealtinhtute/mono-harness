@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
@@ -82,7 +83,7 @@ func QueryDBStatus(db *sql.DB, changesetDir, playbooksDir, activePlanGlob string
 		unverified = []string{}
 	}
 
-	cost, err := estimateContextCost(playbooksDir, activePlanGlob)
+	cost, err := estimateContextCost(db, playbooksDir, activePlanGlob)
 	if err != nil {
 		return DBStatusView{}, err
 	}
@@ -119,56 +120,115 @@ func lifecycleTableNames(db *sql.DB) ([]string, error) {
 	return names, rows.Err()
 }
 
-func estimateContextCost(playbooksDir, activePlanGlob string) (ContextCostEstimate, error) {
+// contextCostSectionStages names the stages whose playbook now reads a
+// bounded slice of the active plan rather than the whole file (R7,
+// docs/audit/sdlc-token-cache-audit.md — the section-read path P3's wave 1
+// shipped: watzup.md's `query plan --section current-state`, work.md's
+// `query plan --section phase`, handoff.md's `query plan --section
+// current-state`). brainstorm/to-plan/check are absent: their playbooks
+// still read the plan in full (brainstorm/to-plan define it; check's
+// full-plan alignment review is audit, not ceremony — see check.md's own
+// Preconditions step 1), so their estimate keeps modeling a full-plan read.
+var contextCostSectionStages = map[string]bool{"watzup": true, "work": true, "handoff": true}
+
+func estimateContextCost(db *sql.DB, playbooksDir, activePlanGlob string) (ContextCostEstimate, error) {
 	cost := ContextCostEstimate{
 		Stages: map[string]StageContextCost{},
 		Note: "bytes/4 heuristic (docs/audit/workflow-harness-ceremony-audit.md's tokenizer " +
-			"methodology), not an exact count. Reflects today's full-plan-read path; the " +
-			"index read path this initiative adds is not yet reflected here.",
+			"methodology), not an exact count. watzup/work/handoff report their own documented " +
+			"section-read path (R7, docs/audit/sdlc-token-cache-audit.md) — Outcome+Current State " +
+			"for watzup, the selected phase's block for work, Current State for handoff — not a " +
+			"full-plan read; brainstorm/to-plan/check still read the plan in full, matching their " +
+			"own playbooks, so their estimate keeps modeling that.",
 	}
 
-	planPath, planBytes, err := activePlanSize(activePlanGlob)
+	planPath, planContent, err := activePlanContent(activePlanGlob)
 	if err != nil {
 		return cost, err
 	}
 	cost.ActivePlanPath = planPath
-	cost.ActivePlanBytes = planBytes
+	cost.ActivePlanBytes = len(planContent)
+
+	currentPhase, err := currentPhaseSlugOrEmpty(db)
+	if err != nil {
+		return cost, err
+	}
 
 	for _, stage := range contextCostStages {
 		playbookBytes, err := fileSizeOrZero(filepath.Join(playbooksDir, stage+".md"))
 		if err != nil {
 			return cost, err
 		}
-		// Every stage's precondition step reads the whole active plan
-		// today, on top of its own playbook (F1) — that sum is what P5
-		// changes, so it is what "today" must report.
+		planReadBytes := len(planContent)
+		if contextCostSectionStages[stage] {
+			planReadBytes = stagePlanReadBytes(stage, planContent, currentPhase)
+		}
 		cost.Stages[stage] = StageContextCost{
 			PlaybookBytes:        playbookBytes,
-			EstimatedTokensToday: (playbookBytes + planBytes) / 4,
+			EstimatedTokensToday: (playbookBytes + planReadBytes) / 4,
 		}
 	}
 	return cost, nil
 }
 
-// activePlanSize finds the first non-empty match for the active-plan glob,
-// mirroring next.go's findActivePlans preference order, and returns its
-// path and byte size. No match (or every match empty) returns ("", 0, nil).
-func activePlanSize(glob string) (path string, size int, err error) {
+// stagePlanReadBytes models exactly what watzup/work/handoff's own
+// playbook text says it reads from the plan (see contextCostSectionStages).
+// A section that can't be found degrades to the full plan, mirroring
+// `query plan`'s own degraded-read fallback (QueryPlanSection) — a
+// malformed plan costs what a full read always cost, not less.
+func stagePlanReadBytes(stage, planContent, currentPhase string) int {
+	switch stage {
+	case "watzup":
+		return sectionBytesOrFull(planContent, "Outcome") + sectionBytesOrFull(planContent, "Current State and Next Action")
+	case "work":
+		if currentPhase == "" {
+			return 0
+		}
+		if body, ok := extractPlanPhaseBlock(planContent, currentPhase); ok {
+			return len(body)
+		}
+		return len(planContent)
+	case "handoff":
+		return sectionBytesOrFull(planContent, "Current State and Next Action")
+	default:
+		return len(planContent)
+	}
+}
+
+func sectionBytesOrFull(planContent, name string) int {
+	if body, ok := extractPlanSection(planContent, name); ok {
+		return len(body)
+	}
+	return len(planContent)
+}
+
+func currentPhaseSlugOrEmpty(db *sql.DB) (string, error) {
+	var slug sql.NullString
+	if err := db.QueryRow(`SELECT current_phase FROM meta LIMIT 1`).Scan(&slug); err != nil {
+		return "", fmt.Errorf("db status: read current_phase: %w", err)
+	}
+	return slug.String, nil
+}
+
+// activePlanContent finds the first non-empty match for the active-plan
+// glob, mirroring next.go's findActivePlans preference order, and returns
+// its path and content. No match (or every match empty) returns ("", "", nil).
+func activePlanContent(glob string) (path, content string, err error) {
 	matches, err := filepath.Glob(glob)
 	if err != nil {
-		return "", 0, fmt.Errorf("db status: glob active plans: %w", err)
+		return "", "", fmt.Errorf("db status: glob active plans: %w", err)
 	}
 	sort.Strings(matches)
 	for _, m := range matches {
-		info, statErr := os.Stat(m)
-		if statErr != nil {
-			return "", 0, fmt.Errorf("db status: stat %s: %w", m, statErr)
+		data, readErr := os.ReadFile(m)
+		if readErr != nil {
+			return "", "", fmt.Errorf("db status: read %s: %w", m, readErr)
 		}
-		if info.Size() > 0 {
-			return m, int(info.Size()), nil
+		if strings.TrimSpace(string(data)) != "" {
+			return m, string(data), nil
 		}
 	}
-	return "", 0, nil
+	return "", "", nil
 }
 
 func fileSizeOrZero(path string) (int, error) {

@@ -3,6 +3,7 @@ package application
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -10,6 +11,8 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
+
+const maxTraceTasksPerBatch = 20
 
 func runExists(db *sql.DB, id string) (bool, error) {
 	var found string
@@ -84,6 +87,75 @@ func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task
 		return id, path, fmt.Errorf("trace %s recorded, but plan markdown update failed: %w", id, err)
 	}
 	return id, path, nil
+}
+
+// CreateTraces validates and records a batch of task-level trace entities in
+// one changeset — the flush-once-per-wave counterpart of CreateTrace (R5,
+// docs/audit/sdlc-token-cache-audit.md). All entries share wave and the
+// optional run_id; each still mints its own id/timestamp and gets its own
+// `## Progress` line, one per element, so a mid-wave interruption leaves the
+// same queryable per-task granularity CreateTrace's single-call form
+// already provides — batching removes the round trips, not the index rows.
+func CreateTraces(db *sql.DB, changesetDir string, wave int, runID string, tasks []domain.TraceTask) (ids []string, path string, err error) {
+	if len(tasks) == 0 {
+		return nil, "", &domain.ValidationError{Code: "empty_tasks", Message: "trace add: at least one task is required"}
+	}
+	if len(tasks) > maxTraceTasksPerBatch {
+		return nil, "", &domain.ValidationError{Code: "too_many_tasks", Message: fmt.Sprintf("trace add: at most %d tasks per batch", maxTraceTasksPerBatch)}
+	}
+	for _, t := range tasks {
+		if err := t.Validate(); err != nil {
+			return nil, "", err
+		}
+	}
+	if wave < 0 {
+		return nil, "", &domain.ValidationError{Message: "trace: wave must be >= 0"}
+	}
+
+	if runID != "" {
+		exists, err := runExists(db, runID)
+		if err != nil {
+			return nil, "", err
+		}
+		if !exists {
+			return nil, "", &domain.ValidationError{Code: "unknown_run_id", Message: "trace: run_id " + runID + " not found"}
+		}
+	}
+
+	at := time.Now().UTC().Format(time.RFC3339)
+
+	entryLines := make([]string, len(tasks))
+	for i, t := range tasks {
+		entryLines[i] = formatTraceProgressEntry(at, wave, t.Summary, runID, t.Task, t.TaskStatus)
+	}
+	writePlan, err := preparePlanAppend("Progress", strings.Join(entryLines, "\n"))
+	if err != nil {
+		return nil, "", err
+	}
+
+	lines := make([]infrastructure.ChangesetLine, 0, len(tasks))
+	ids = make([]string, 0, len(tasks))
+	for _, t := range tasks {
+		id := ulid.Make().String()
+		fields := map[string]any{
+			"wave": wave, "summary": t.Summary, "task": t.Task, "task_status": t.TaskStatus, "created_at": at,
+		}
+		if runID != "" {
+			fields["run_id"] = runID
+		}
+		lines = append(lines, infrastructure.ChangesetLine{Op: "create", Entity: "trace", ID: id, Fields: fields, At: at})
+		ids = append(ids, id)
+	}
+
+	path, _, err = AppendAndApply(db, changesetDir, lines)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err := writePlan(); err != nil {
+		return ids, path, fmt.Errorf("traces %v recorded, but plan markdown update failed: %w", ids, err)
+	}
+	return ids, path, nil
 }
 
 // formatTraceProgressEntry renders a `## Progress` line using only the

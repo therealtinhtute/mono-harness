@@ -423,6 +423,29 @@ func QueryDecisions(db *sql.DB, phase string, tail int) ([]DecisionView, error) 
 	return views, nil
 }
 
+// RequireKnownPhase validates that phase names an existing story row,
+// returning a ValidationError (unknown_phase) if not. Callers that filter a
+// compressed-index view by phase (traces/decisions/checks) use this so an
+// empty result unambiguously means "phase exists, nothing recorded yet" —
+// not "this phase was never defined", which returned the same `[]` before.
+// A blank phase (no filter requested) is always valid and returns nil.
+func RequireKnownPhase(db *sql.DB, phase string) error {
+	if phase == "" {
+		return nil
+	}
+	var exists bool
+	if err := db.QueryRow(`SELECT EXISTS(SELECT 1 FROM stories WHERE slug = ?)`, phase).Scan(&exists); err != nil {
+		return fmt.Errorf("check phase exists: %w", err)
+	}
+	if !exists {
+		return &domain.ValidationError{
+			Code:    "unknown_phase",
+			Message: fmt.Sprintf("query: no story row for phase %q", phase),
+		}
+	}
+	return nil
+}
+
 func nullableString(s sql.NullString) *string {
 	if !s.Valid {
 		return nil

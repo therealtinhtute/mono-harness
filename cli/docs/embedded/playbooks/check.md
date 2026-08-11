@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Quality gate for a response-only review, a bounded diff, or a durable phase. Durable `gate` runs automated checks, audits lifecycle alignment, records the verdict in the DB, and synchronizes exact evidence and phase status in the active plan. `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review. `review` and bounded/simple modes return evidence in the response only.
+Quality gate for a response-only review, a bounded diff, or a durable phase. Durable `gate` runs automated checks, audits lifecycle alignment, records the verdict in the DB, and synchronizes exact evidence and phase status in the active plan — this is the mode `work` performs itself, in-session, after every phase's waves complete (`work.md` step 11; `work` does not dispatch to the separate `/check` skill for this — see that step for why). `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review; `handoff` requires a clean `full` verdict exactly once, on an initiative's final phase, before closing it (`handoff.md` step 6) — a per-phase `full` would pay a cold prompt-cache model switch every phase for a review most phases don't need (F1, `docs/audit/sdlc-token-cache-audit.md`). `review` and bounded/simple modes return evidence in the response only.
 
 ## Preconditions and Modes
 
 1. Preserve invocation intent:
-   - `gate` — durable automated phase gate for `docs/plans/active/{slug}.md`; it does not perform the complete manual review.
-   - `full` — durable gate plus the complete Security, Performance, Architecture, and Code Quality review.
+   - `gate` — durable automated phase gate for `docs/plans/active/{slug}.md`; it does not perform the complete manual review. `work` performs this itself, in-session, per phase — not via the separate `/check` skill.
+   - `full` — durable gate plus the complete Security, Performance, Architecture, and Code Quality review. `work` never performs this; `handoff` requires it exactly once, via the `/check` skill, on the initiative's final phase, before closing it.
    - `review` — response-only review, even when an active plan exists.
    - `bounded` (alias: `simple`) — response-only gate for a direct change with no durable initiative lifecycle.
 2. Run `zharness preflight check --mode {gate|full|review|bounded} --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stop. Otherwise check its `version` field — a `dev` build satisfies the gate; below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), print the same message and stop. Then follow its stop/recovery result exactly.
@@ -29,7 +29,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 
 ## Review and Gate Steps
 
-1. **Load scope without changing intent** — read the diff and repository verification instructions. For gate/full, also read the active plan and `zharness resume --json`, and require a latest run for the phase. Review may consult an active plan for context but remains response-only.
+1. **Load scope without changing intent** — read the diff and repository verification instructions. For gate/full, read lifecycle position (`context.position`, `context.phases`, latest run/check/handoff IDs, drift) from the same `preflight check --mode {gate|full} --json` response (Preconditions step 2) instead of a separate `zharness resume --json` call (R6, `docs/audit/sdlc-token-cache-audit.md`), also read the active plan, and require a latest run for the phase. Review may consult an active plan for context but remains response-only.
 2. **Classify depth and drift** — use quick/standard/deep based on blast radius, not only line count. Label scope on-target, drift, or incomplete before checks. A phase-boundary violation blocks a clean durable verdict.
 3. **Run the automated gate** — execute applicable tests, type checks, lint/static analysis, and build in repository-defined order. Capture actual output; never self-certify.
 4. **Review plan alignment when applicable** — compare the diff with accepted requirements, Non-goals, phase surfaces, task outputs, append-only Progress entries, and recorded Decisions. Read task execution status only from Progress. Missing planned proof is a finding even when local tests pass. If `docs/evals/failures.md` exists, read it and, for every failure class recorded two or more times, state explicitly whether the current diff is clean of that class; a repository without that file skips this without it being an error.
@@ -49,8 +49,7 @@ Run the narrowest checks that prove the requested change, perform the requested 
 
 ## Command Reference
 
-- `zharness preflight check --mode {gate|full|review|bounded} --json`
-- `zharness resume --json`
+- `zharness preflight check --mode {gate|full|review|bounded} --json` (step 1 — gate/full's `context` field replaces a separate `zharness resume --json` call)
 - `zharness audit --json`
 - `zharness query phases --json`
 - `zharness check record --verdict {verdict} --run-id {run-id} --judge {independent|same-session} --judge-model {model} --proof-links '[...]' --json`
@@ -60,6 +59,7 @@ Run the narrowest checks that prove the requested change, perform the requested 
 End the response with:
 
 ```text
+mode: gate | full | review | bounded
 scope: on target | drift | incomplete
 depth: quick | standard | deep
 gate: pass | fail
