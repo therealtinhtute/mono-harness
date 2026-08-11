@@ -221,6 +221,10 @@ updated: 2026-08-11
   - `cd cli && go test ./...` → full-mode proof: all 7 packages pass (incl. new invocation_log_test.go)
   - `bash scripts/verify-doc-links.sh` → full-mode proof: doc links OK (0 findings)
   - `grep -qi "out of scope" skills/workflow/README.md` → full-mode proof: R9 scope paragraph present
+- `2026-08-11T15:30:00Z` — check. verdict: `APPROVED` (post-release re-measurement, not a phase gate). check: re-measurement follow-up. run: n/a — post-completion audit. phase: n/a. judge: `same-session` (claude-sonnet-5).
+  - Method: audit method re-run against `zharness v0.9.0` — throwaway repo, filled 3-phase list-form plan; every CLI response measured in bytes; turn ledgers re-derived from the shipped work.md/check.md.
+  - Measured CLI constants: `query plan --section phase` ok = 1,332 B, degraded = 6,848 B (R1 confirmed live: 5.1×); preflight context packet = 668 B at 3 phases (R6); `trace add --tasks` 5-entry = 181 B, single = 35 B (R5); check record = 105 B; handoff record = 36 B; playbooks grew (work 9,018→10,987; check 9,149→10,233; handoff 7,338→8,078).
+  - Success-signal re-check: `work` = 34 turns (target ≤ 32 — MISS by 2: work.md step 9 keeps the wave summary as a separate call on top of the batched flush, two trace calls per wave; the audit's counterfactual modeled one); per-phase gate = $0.0681 warm (target −50% — MET at −84% vs legacy $0.4364); chain total = $0.6166/phase (−38% vs $0.9927; audit predicted ~−31%). `model.py`/`cache_model.py`/`cost-model README` updated with re-measured constants and ledgers.
 
 ## Current State and Next Action
 - active_phase: none — all four phases (p1, p2, p3, p4) are `done`; the initiative is complete

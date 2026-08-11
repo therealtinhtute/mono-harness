@@ -59,7 +59,7 @@ STAGES = [
     ("brainstorm", m.brainstorm(), "opus"),
     ("to-plan",  m.to_plan(),  "opus"),
     ("work",     m.work_full(), "sonnet"),
-    ("check",    m.check_full(), "opus"),
+    ("check gate", m.check_gate(), "sonnet"),   # R4: in-session, same model as work
     ("git",      m.git_stage(), "sonnet"),
     ("handoff",  m.handoff(),  "sonnet"),
 ]
@@ -78,16 +78,17 @@ print(f"{'TOTAL':<20}{'':>10}{'':>10}{'':>9}{tot_c:>10.4f}{tot_u:>11.4f}{(1-tot_
 
 print()
 print("=== COST OF MODEL SWITCHING (cache is model-scoped) ===")
-# the pipeline as-is: every stage is a cold cache because the model changed
-# counterfactual: work+check on the SAME model -> check's prefix stays warm
-wf, wt = m.work_full(); cf, ct = m.check_full()
-c_switch,_,_,_,_ = cost_cached(cf, ct, "opus", cold_start=True)
-c_warm,_,_,_,_   = cost_cached(cf, ct, "sonnet", cold_start=False)
-c_same_cold,_,_,_,_ = cost_cached(cf, ct, "sonnet", cold_start=True)
-print(f"  check full on opus, cold (current)          ${c_switch:.4f}")
-print(f"  check full on sonnet, cold                  ${c_same_cold:.4f}")
-print(f"  check full on sonnet, warm from work        ${c_warm:.4f}   <- same-model, cache survives")
-print(f"  per-phase saving from not switching:        ${c_switch-c_warm:.4f}  ({(1-c_warm/c_switch)*100:.0f}%)")
+# R4 shipped: the per-phase gate runs in-session on sonnet, warm from work.
+# The opus full review now runs exactly once per initiative, at final closure.
+gf, gt = m.check_gate(); ff, ft = m.check_full()
+c_gate_warm,_,_,_,_ = cost_cached(gf, gt, "sonnet", cold_start=False)
+c_full_cold,_,_,_,_ = cost_cached(ff, ft, "opus", cold_start=True)
+c_gate_cold,_,_,_,_ = cost_cached(gf, gt, "sonnet", cold_start=True)
+print(f"  check gate in-session, warm from work       ${c_gate_warm:.4f}   <- per phase (R4)")
+print(f"  check gate on sonnet, cold                  ${c_gate_cold:.4f}")
+print(f"  check full on opus, cold (legacy per-phase) ${c_full_cold:.4f}")
+print(f"  per-phase saving vs legacy check full:      ${c_full_cold-c_gate_warm:.4f}  ({(1-c_gate_warm/c_full_cold)*100:.0f}%)")
+print(f"  final-phase full (opus, cold):              ${c_full_cold:.4f} once per initiative")
 
 print()
 print("=== 20-BLOCK LOOKBACK: does the work loop blow the window? ===")
