@@ -1,4 +1,4 @@
-# TINHTUTE Skills
+# Skills & Z-Harness 
 
 A collection of personal Claude Code skills following the [skills.sh](https://skills.sh) ecosystem format.
 
