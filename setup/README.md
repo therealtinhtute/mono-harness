@@ -23,7 +23,7 @@ After install: edit `~/.claude/settings.json` → set `ANTHROPIC_AUTH_TOKEN`.
 
 - **Node.js** v18+ (required by hooks)
 - **jq** (required by statusline) — `brew install jq` or `apt install jq`
-- SSH key configured for `git@github.com:therealtinhtute/skills.git`
+- SSH key configured for `git@github.com:therealtinhtute/mono-harness.git`
 
 ## Hooks overview
 

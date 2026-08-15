@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is the personal skills repository for `therealtinhtute` — a `skills.sh`-compatible collection of agent skills for Claude Code and other AI agents.
+This is the personal mono-harness repository for `therealtinhtute` — a `skills.sh`-compatible collection of agent skills for Claude Code and other AI agents.
 
 ## Project Structure
 
@@ -56,10 +56,10 @@ Each skill directory contains:
 
 ```bash
 # List skills without installing
-npx skills add git@github.com:therealtinhtute/skills.git --list
+npx skills add git@github.com:therealtinhtute/mono-harness.git --list
 
 # Install all skills globally for Claude Code
-npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
+npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
 ```
 
 ## Gate Commands
@@ -102,4 +102,4 @@ When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent inst
 - **Stable release:** This repo is the stable, standalone release of the skills. The former `orkit-tui` incubator has been archived — this repo is no longer synced from it; edit skills here directly.
 - **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, optional `references/` and `scripts/` directories.
 - **rules/ directory:** Source-of-truth for rules installed to `~/.claude/rules/`. Keep in sync with installed versions.
-- **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/skills.git`) as long as local SSH keys are configured.
+- **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/mono-harness.git`) as long as local SSH keys are configured.

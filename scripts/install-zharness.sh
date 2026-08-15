@@ -10,7 +10,7 @@
 # Requires: gh (authenticated against this repo), tar.
 set -euo pipefail
 
-REPO="therealtinhtute/skills"
+REPO="therealtinhtute/mono-harness"
 INSTALL_DIR="${HOME}/.local/bin"
 
 if ! command -v gh >/dev/null 2>&1; then

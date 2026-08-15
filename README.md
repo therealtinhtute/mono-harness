@@ -1,4 +1,4 @@
-# Skills & Z-Harness 
+# Mono-Harness
 
 A collection of personal Claude Code skills following the [skills.sh](https://skills.sh) ecosystem format.
 
@@ -45,14 +45,14 @@ Durable initiative markdown lives outside `.kit/`, as one evolving plan at `docs
 Bootstrap Claude Code configuration and install all repository skills:
 
 ```bash
-git clone git@github.com:therealtinhtute/skills.git ~/skills
-bash ~/skills/setup/install.sh
+git clone git@github.com:therealtinhtute/mono-harness.git ~/mono-harness
+bash ~/mono-harness/setup/install.sh
 ```
 
 Install the required harness CLI separately. The six workflow spine skills require `zharness >= 0.8.1`:
 
 ```bash
-bash ~/skills/scripts/install-zharness.sh
+bash ~/mono-harness/scripts/install-zharness.sh
 zharness --version
 ```
 
@@ -61,7 +61,7 @@ zharness --version
 **Skills only** (no config changes):
 
 ```bash
-npx skills add git@github.com:therealtinhtute/skills.git -a claude-code -g -y
+npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
 ```
 
 ### What `install.sh` installs

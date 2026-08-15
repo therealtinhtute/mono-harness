@@ -11,7 +11,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/../../../.." && pwd)"
 SKILLS_DIR="$HOME/.claude/skills"
-REMOTE="git@github.com:therealtinhtute/skills.git"
+REMOTE="git@github.com:therealtinhtute/mono-harness.git"
 
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1

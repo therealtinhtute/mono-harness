@@ -11,7 +11,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: what changed first, then the install proof. No filler.
 
-Run only from this repo. If `git remote get-url origin` does not end in `therealtinhtute/skills.git`, print `sync-skills: wrong repo` and STOP.
+Run only from this repo. If `git remote get-url origin` does not end in `therealtinhtute/mono-harness.git`, print `sync-skills: wrong repo` and STOP.
 
 ## Workflow
 
