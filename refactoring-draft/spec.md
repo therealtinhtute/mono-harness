@@ -1,8 +1,16 @@
 ---
 title: Harness Durability & Knowledge Contract
-status: draft
+status: draft — four open corrections
 interviewed: 2026-08-15
 ---
+
+> **Do not read this as settled.** Research after the interview put four items back in
+> play, listed in [`open-questions.md`](open-questions.md). Two touch this file directly:
+> the ≤1,000-token gate below is 2.2x tighter than the reference model it cites (Q1), and
+> the P2 promotion gate would flood `docs/decisions/` with task-local noise (Q2).
+> A third adds a phase this spec does not contain — **M8, work-shape gating**
+> ([`work-shape.md`](work-shape.md)), which the owner's reframed root cause puts ahead of
+> everything here (Q3).
 
 ## Outcome
 

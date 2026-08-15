@@ -1,7 +1,11 @@
 # Reference Models
 
-Two external repos read for structure. **Neither is adopted as a dependency** — the
+Three external sources read for structure. **None is adopted as a dependency** — the
 mechanisms are extracted, the code is not.
+
+- `harness-experimental` — local copy
+- `hoangnb24/repository-harness` — the same lineage, upstream and ahead (below)
+- `Houseofmvps/codesight` — generated knowledge base
 
 ---
 
@@ -46,6 +50,127 @@ Harness-Owned Process  -> WORKFLOW.md, plans/, templates/, patterns/
 
 `AGENTS.md` 1.6KB + `docs/WORKFLOW.md` 5KB = **~1.6k tokens**.
 Roughly 10x lighter than onedrive-cloud's ~6.6k.
+
+---
+
+## repository-harness (upstream)
+
+`github.com/hoangnb24/repository-harness` — Rust, public, `pushed_at 2026-08-13`.
+"Turn any repo into an agent-ready workspace." Same lineage as the local copy and
+**ahead of it**. Read on 2026-08-15; five mechanisms the local copy did not show.
+
+### A — The ADR template is 10 lines, and it carries `Status`
+
+`docs/templates/decision.md` is **331 bytes**:
+
+```
+# NNNN Decision Title      Date: YYYY-MM-DD
+## Status        Proposed | Accepted | Superseded | Rejected
+## Context       What problem, constraint, or ambiguity forced this decision?
+## Decision      ## Alternatives Considered   ## Consequences (Positive / Tradeoffs)
+## Follow-Up
+```
+
+`Status` is the mechanism that makes supersession work without deletion. The draft
+spec's P2 template omitted both `Status` and `Follow-Up`. Take them.
+
+### B — Promotion is filtered, not blanket
+
+`docs/decisions/README.md` states the trigger set outright:
+
+> **Add A Decision When** — a lasting product or architecture choice changes; public
+> compatibility or data ownership changes; security or recovery policy changes;
+> validation is materially added, removed, or weakened; or the source-of-truth
+> hierarchy changes.
+
+And the exclusion, in one line: **"Task-local choices stay in the active plan."**
+
+This is a direct correction to draft P2, which gates *completion* on promotion and
+would therefore flood `docs/decisions/` with task-local noise. See
+[`open-questions.md`](open-questions.md) Q2.
+
+Also: *"Installed consumers begin with an empty decision index and add only real
+consumer choices."* The scaffold ships the index and the criteria — never upstream's
+own ADRs.
+
+### C — Deliberate absence is a retrieval feature
+
+Both `docs/README.md` and `docs/decisions/README.md` carry a `## History` section
+whose entire job is to explain what is **missing** and why:
+
+> The former SQLite control plane, protocol v1, story packets, migration evidence, and
+> compatibility documentation are preserved by Git history and immutable
+> `harness-cli-v*` tags. They are intentionally absent from the current tree so search
+> and agent retrieval return current product authority.
+
+Removal is the point; git history and immutable tags are the provenance. Stronger than
+the draft's "plans stay disposable" — this makes *pruning* a named, explained act
+rather than a silent one. The draft spec has no equivalent.
+
+### D — A third knowledge kind: enforced invariants
+
+`docs/patterns/encoding-invariants.md` (4.4KB) + ADR `0028-authoritative-invariant-encoding`
+define a category the draft's two-way synthesis missed — a rule compiled into
+repository-native validation. It does not rot, because CI fails.
+
+The discipline is what makes it usable:
+
+| Step | Rule |
+|---|---|
+| **Authority gate** | An accepted document or explicit owner decision must state the rule. *"Code organization, repeated patterns, tests, tool defaults, configurable examples, and undocumented preferences show current behavior or convention; they do not authorize a new invariant."* Stop and ask if two boundaries fit the words. |
+| **Boundary table** | Authority · Scope · Allowed · Forbidden · Exceptions · Diagnostic — written before choosing a tool |
+| **Native owner** | Integrate into the repo's existing test/lint/validation command. Never add a framework to enforce one rule. |
+| **Both directions** | Positive proof (allowed case passes) *and* negative proof (forbidden fixture fails with the intended diagnostic). *"A passing repository with no exercised violation does not prove that the guard can detect recurrence."* |
+| **Enforcement ladder** | local validation → optional hook → checked-in CI → branch protection. **None proves another.** *"A checked-in CI job does not prove that it ran on the current revision. A green job does not prove branch protection requires it."* |
+
+The diagnostic standard is concrete:
+
+```text
+public/orders imports internal/storage: public packages must not import internal
+packages (docs/architecture.md). Depend on the public storage interface instead.
+```
+
+Violating item · broken rule · **authority pointer** · next action — not `validation failed`.
+
+Directly applicable to `zharness audit`, whose findings today make no distinction
+between "a check exists" and "a check ran and passed."
+
+### E — `CLAUDE.md` gets a managed block, not a one-time emit
+
+```markdown
+<!-- HARNESS:BEGIN -->
+## Harness
+Claude Code does not auto-load `AGENTS.md`. Import that single canonical
+project instruction source. Keep this bare `@` line outside backticks so the
+import remains active.
+
+@AGENTS.md
+<!-- HARNESS:END -->
+```
+
+258 bytes. It self-heals on update, where the draft's "emit when absent" does not.
+The backtick gotcha is encoded in the block itself.
+
+Note also `.agents/skills/` rather than `.claude/skills/`, each skill carrying an
+`agents/openai.yaml` adapter — vendor-neutral by layout.
+
+### F — Measured resident cost
+
+| File | Bytes | ~Tokens |
+|---|---|---|
+| `AGENTS.md` | 1,613 | 403 |
+| `docs/README.md` | 1,622 | 405 |
+| `docs/WORKFLOW.md` | 5,564 | 1,391 |
+| **Comparable to the draft's gate** | **8,799** | **~2,199** |
+| `docs/HARNESS.md` (on-demand, principles) | 1,900 | 475 |
+
+**The draft spec's ≤1,000-token gate is 2.2x tighter than the best-in-class reference
+it cites.** See [`open-questions.md`](open-questions.md) Q1 — this is the sharpest
+unresolved item in the draft.
+
+Worth noting the split: `WORKFLOW.md` is procedure and resident; `HARNESS.md` is
+principles and read on demand. Separating them is what keeps the resident path at
+~2.2k instead of ~2.7k.
 
 ---
 
