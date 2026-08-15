@@ -195,8 +195,8 @@ owner's complaint is the second one, so it should ship first.
 
 ## Consequence for the spec
 
-`spec.md` currently phases P1 durability → P2 decisions → P3 docs → P4 map. M8 is not
-in it. Recommended: **M8 becomes P0**, ahead of everything — it is the smallest change,
-it is felt immediately, and it needs none of P1–P4 to land.
+**Accepted 2026-08-15 as D15.** `spec.md` now phases P0 work-shape → P1 durability →
+P2 decisions → P3 docs → P4 map. M8 leads because it is the smallest change, it is felt
+immediately, and it needs none of P1–P4 to land.
 
-See [`open-questions.md`](open-questions.md) Q3.
+See [`open-questions.md`](open-questions.md) Q3 and [`decisions.md`](decisions.md) D15.

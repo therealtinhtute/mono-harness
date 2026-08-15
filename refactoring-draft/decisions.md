@@ -185,6 +185,103 @@ is about durability and navigation, so that number may barely move even on full 
 
 ---
 
+---
+
+# Post-Research Corrections
+
+Decided 2026-08-15, after research surfaced four contradictions with the drafted spec.
+Reasoning in [`open-questions.md`](open-questions.md).
+
+---
+
+## D13 — Resident cost is two gates, not one — supersedes D12.2
+
+**Chosen:** Entrypoint pair (`AGENTS.md` block + `docs/README.md`) ≤ **900** tokens;
+full resident path (+ `.harness/WORKFLOW.md`) ≤ **2,400**. Both benchmarked against
+`repository-harness`'s measured 808 / 2,199.
+
+**Why:** D12's ≤1,000 combined is 2.2x tighter than the reference model the spec cites as
+best-in-class. A gate that is expected to trip is not a gate. Two numbers are also more
+diagnostic than one — they separate "the map got bloated" from "the procedure got
+bloated." Still ~2.7x lighter than onedrive-cloud's measured 6.6k.
+
+**Also taken:** principles stay **out** of the resident path, loaded on demand. That
+separation is what holds upstream's procedure doc at 1,391 tokens.
+
+**Rejected:** Holding ≤1,000 as a forcing function — it would ship a router too thin to
+navigate with, and the spec's own Pause clause already predicted the trip.
+
+**Rejected:** A single ≤2,400 gate — simpler to check, but loses the diagnostic split.
+
+---
+
+## D14 — ADR promotion filters against triggers — refines D10
+
+**Chosen:** `zharness decision promote` presents candidates against five durability
+triggers and the human selects. The `handoff` gate asserts promotion was **considered**
+(non-empty candidate review), not that everything was promoted.
+
+Triggers: lasting product or architecture choice changes; public compatibility or data
+ownership changes; security or recovery policy changes; validation materially added,
+removed, or weakened; source-of-truth hierarchy changes.
+Exclusion: **task-local choices stay in the active plan.**
+
+**Why:** 78 changeset entries yielded 1 decision. A promote-everything gate would fill
+`docs/decisions/` with task-local noise — the exact failure mode ADRs exist to prevent.
+
+**Also taken:** `decision add --durable` marks intent at the call site. The ADR template
+gains `## Status` (Proposed | Accepted | Superseded | Rejected) and `## Follow-Up` —
+`Status` is what makes supersession work without deletion. `zharness init` scaffolds an
+**empty** decision index plus the trigger criteria, never mono-harness's own ADRs.
+
+**Rejected:** The completion gate as drafted — guarantees nothing is lost, at the cost of
+an ADR directory nobody can retrieve from.
+
+**Rejected:** Fully manual promotion with no handoff gate — lowest friction, but durable
+decisions would simply never get harvested. The measured ratio is the evidence.
+
+---
+
+## D15 — M8 work-shape gating becomes P0 — reorders D11
+
+**Owner reframe:** "khi cái onedrive chạy 1 task nhỏ cũng sinh quá lâu, quá nhiều files
+quá phức tạp … harness chưa chặt chẽ, chưa tận dụng được."
+
+**Chosen:** M8 ships **first**, ahead of P1–P4. `preflight` classifies work as
+read-only / bounded / durable and the playbook path follows; shapes escalate but never
+de-escalate; templates emit no empty sections.
+
+**Why:** it is the smallest change, it needs none of P1–P4 to land, and it is the pain
+actually reported. Durability (M1–M7) is the diagnosis; ceremony weight is the symptom
+being felt. Once the harness is cheap to run on small work, P1–P4 get exercised far more
+than they otherwise would.
+
+**Boundary:** M8 gates *which records get created*, never plan quality. The 186-line
+walter-theme plan is good work — the weight is in the record-keeping that surrounds every
+task regardless of size.
+
+**Rejected:** M8 as P5 after durability — preserves the drafted order but leaves the
+reported pain unaddressed longest.
+
+**Rejected:** M8 as a separate program — it shares `preflight`, the templates, and the
+record model with P1–P4; splitting it would duplicate all three.
+
+---
+
+## D16 — Q4's two mechanisms fold into P1 and P3
+
+**Chosen:** Pruning-as-a-named-act (`## History` sections recording what was removed and
+why) folds into P3. The enforcement ladder and diagnostic standard fold into P1 as
+`audit` hardening; the authority gate becomes spec Key Decision 9 and both-directions
+proof becomes a validation-loop rule.
+
+**Why:** neither is blocking, both are cheap, and carrying them as backlog would cost more
+than landing them inside phases that already touch the same code.
+
+**Rejected:** A fifth phase for enforced invariants — it is four disciplines, not a build.
+
+---
+
 ## Standing Constraint
 
 `onedrive-cloud`, `harness-experimental`, and `codesight` are **read-only reference
