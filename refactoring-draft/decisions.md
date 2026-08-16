@@ -537,6 +537,92 @@ later reader does not mistake D19 for a formalization of the status quo.
 
 ---
 
+## D27 — Authority is three tiers, not one — resolves the DB-vs-docs contradiction
+
+**Owner statement:** *"docs theo codesight, wiki là sự thật; còn trong harness thì 1 nửa là
+thật, 1 nửa là tạm thời được db quản lý."*
+
+**The contradiction it resolves.** `skills/workflow/README.md:9` declares the database the
+source of truth *"— not the markdown."* But Gate #1 asserts a fresh clone still holds every
+decision, plan, and ADR, and changesets are gitignored (D4, D23), so a fresh clone replays
+**zero** changesets into an **empty** database. Gate #1 therefore already assumed tracked
+markdown was authoritative while the architecture declared the opposite. One had to give.
+
+**Chosen — three tiers, each with its own authority and its own survival rule:**
+
+| Tier | Contents | Authority | Survives a fresh clone |
+|---|---|---|---|
+| **Generated map** | `docs/map/` | derived from code; never authored, always regenerable | tracked, and rebuildable in ~200 ms if not |
+| **Durable knowledge** | `docs/decisions/`, `docs/product/`, `.harness/plans/`, `.harness/playbooks/`, `.harness/WORKFLOW.md` | **the tracked markdown is the truth** | **yes — this is what Gate #1 proves** |
+| **Execution history** | story, trace, run, check, handoff, intake, managed_doc, meta | **the database is the truth**, and it is temporary | **no — permitted to vanish** |
+
+**Entity assignment**, against the measured 78 entries: `decision` is the only durable kind
+(promoted to an ADR under P2), plus plans. Every other entity — `story` 23, `managed_doc`
+15, `meta` 12, `trace` 8, `handoff` 7, `run` 5, `check` 5, `intake` 2 — is execution
+history and may be lost with the working copy. The 23 : 1 ceremony ratio is not a defect
+in this model; it is the temporary tier doing its job, as long as the one durable entry
+leaves for tracked markdown.
+
+**Consequences:**
+
+- `skills/workflow/README.md:9` must be rewritten. Its claim is true **only of the
+  execution-history tier**, and stating it unqualified is what licensed durable knowledge
+  to live in a gitignored path.
+- The source-of-truth hierarchy gets **declared in `docs/README.md`**, the way
+  repository-harness declares Consumer-Owned Truth vs Harness-Owned Process. mono-harness
+  today has no equivalent statement anywhere.
+- Gate #1 drops the vestigial `db rebuild` assertion. On a fresh clone an empty history is
+  the **correct** outcome, not a failure.
+
+**Rejected:** DB-as-authority throughout — would force committing changesets, which D4
+rejected for noisy diffs and near-certain merge conflicts on parallel branches.
+
+**Rejected:** markdown-as-authority throughout — would make every trace and run a tracked
+file, recreating the ceremony P0 exists to remove.
+
+---
+
+## D28 — `CLAUDE.md` gets a self-healing managed block
+
+**Chosen:** replace P3's *"emit `CLAUDE.md` when absent"* with repository-harness's managed
+block (`reference-models.md` mechanism E, 258 bytes):
+
+```markdown
+<!-- HARNESS:BEGIN -->
+@AGENTS.md
+<!-- HARNESS:END -->
+```
+
+**Why:** "emit when absent" never repairs. Anyone who deletes the `@AGENTS.md` line breaks
+the agent's only path to project instructions, silently and permanently. A managed block is
+re-synced on every update. The backtick gotcha — the import dies inside code fences — is
+encoded in the block's own comment.
+
+---
+
+## D29 — `audit` gains a docs-adherence check
+
+**Measured gap:** `audit` reports `PointerDrift`, `ContractViolations`, and
+`UnlinkedProofs` — all internal consistency of harness state. Nothing checks whether the
+documentation and the code agree.
+
+Evidence that this is the load-bearing gap:
+
+- `work.md:17` states a mechanical rule — over five files, roughly 100 changed lines —
+  and grep finds **no such threshold anywhere in the Go source**. Prose, unenforced.
+- 2 of 56 error messages mention a `docs/` path, and both are path references, not
+  authority pointers.
+
+**Chosen:** `audit` reports a finding when a playbook states a mechanical rule that no code
+enforces. This is the check that would have caught D24's `next.go` routing defect at the
+moment it was introduced, instead of two months later in a brainstorm.
+
+**Not taken this pass:** adding an `authority` field to the error envelope so every
+diagnostic names the rule and the document that authorizes it. Broader than the two items
+above; deferred by owner decision, recorded here so it is not lost.
+
+---
+
 ## Standing Constraint
 
 `onedrive-cloud`, `harness-experimental`, and `codesight` are **read-only reference

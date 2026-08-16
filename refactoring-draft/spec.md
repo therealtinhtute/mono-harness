@@ -28,15 +28,18 @@ Three hard gates, all mechanically checked:
    across a run doc and a check report. The walter-theme migration still classifies
    `durable` and keeps its plan intact.
 
-2. **Durability** — a test clones the repo fresh, runs `zharness db rebuild`, and asserts
-   every decision, plan, product doc, and ADR is present. Today this test fails: decisions
-   exist only in `harness.db` and `.kit/changesets/`, both gitignored.
+2. **Durability** — a test clones the repo fresh and asserts every item in the **durable
+   tier** (D27) is present **as a tracked file**: decisions, ADRs, plans, playbooks,
+   product docs. Today this fails — decisions exist only in `harness.db` and
+   `.kit/changesets/`, both gitignored.
 
-   Because `harness.db` lives outside `state/` (D23), the fresh-clone precondition is two
-   deletions rather than one. **The test must first assert `.harness/harness.db` and its
-   `-wal` / `-shm` sidecars do not exist**, then rebuild. Without that assertion the gate
-   goes green whenever the second deletion is forgotten — passing for the one reason it
-   was built to catch.
+   The test asserts `.harness/harness.db` and its `-wal` / `-shm` sidecars **do not exist**
+   before it begins (D23) — without that, the gate goes green whenever someone forgets the
+   second deletion, passing for the one reason it was built to catch.
+
+   It does **not** assert anything survives `db rebuild`. On a fresh clone there are no
+   changesets to replay, so an empty execution history is the **correct** outcome, not a
+   failure. Durable knowledge must not need the database to exist.
 
 3. **Resident cost** — two budgets, not one, both benchmarked against
    `repository-harness`'s measured numbers rather than an aspirational figure:
@@ -76,6 +79,8 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 - `skills/workflow/**` playbook triggers
 - `docs/plans/active/` in this repo
 - `CLAUDE.md` — the gate rule, scoped to durable work (D19)
+- `skills/workflow/README.md:9` — the source-of-truth claim, scoped to the
+  execution-history tier (D27)
 - **mono-harness's own layout** — `docs/playbooks/` → `.harness/playbooks/`, root
   `harness.db` + `.kit/changesets/` → `.harness/state/`, moved in P1 as the migration's
   proving ground (D21)
@@ -145,6 +150,12 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 9. **Authority flows one direction** — owner decision → accepted rule → mechanical check →
    observed fact → the work, and nothing invents authority from the layer below it.
    Conventions, tests, and tool defaults show behavior; they do not authorize a rule.
+10. **Three tiers of truth, declared in `docs/README.md`** (D27) — generated map
+    (`docs/map/`, regenerable), durable knowledge (tracked markdown **is** the truth),
+    execution history (the database is the truth, and it is temporary). Because
+    `skills/workflow/README.md:9` currently declares the database authoritative *"not the
+    markdown"*, which is true only of the history tier — and stating it unqualified is what
+    licensed the one irreplaceable decision in two months to live in a gitignored path.
 
 ## Phases
 
@@ -230,6 +241,11 @@ exercised at all.*
   every stage transition
 - `audit` detects legacy generations (`.kit/workflow-state.yml`, `.kit/planning/`,
   `.kit/runs/`, `.kit/reports/`) and reports each as a named finding with recovery text
+- **`audit` gains a docs-adherence check** (D29): report a finding when a playbook states a
+  mechanical rule that no code enforces. Today `work.md:17` states "over five files,
+  roughly 100 changed lines" and grep finds no such threshold anywhere in the Go source.
+  This is the check that would have caught P0's routing defect when it was introduced
+  rather than two months later
 - **`audit` hardening** (Q4): findings distinguish rungs on the enforcement ladder —
   local → optional hook → checked-in CI → branch protection — and **none proves another**,
   so "a check exists" is never reported as "a check ran and passed." Every finding uses
@@ -266,10 +282,16 @@ stops overclaiming.*
 ### P3 — Docs contract (M3 + M5 + M7)
 
 - Scaffold `docs/README.md` (router), `docs/product/README.md`, `docs/decisions/README.md`
+- **`docs/README.md` declares the three-tier source-of-truth hierarchy** (D27), the way
+  repository-harness declares Consumer-Owned Truth vs Harness-Owned Process. mono-harness
+  has no such statement today; its only equivalent (`skills/workflow/README.md:9`) says the
+  opposite and must be rewritten to scope its claim to the execution-history tier
 - `SyncManagedDocs` never overwrites a tracked file whose content differs from the
   previously installed version without `--force`; stages to
   `.harness/state/conflicts/*.upstream` and reports
-- Emit `CLAUDE.md` containing `@AGENTS.md` when absent
+- **`CLAUDE.md` gets a self-healing managed block** (D28), not a one-time emit:
+  `<!-- HARNESS:BEGIN -->` … `@AGENTS.md` … `<!-- HARNESS:END -->`, re-synced on every
+  update. "Emit when absent" never repairs a deleted import line
 - `audit` flags instruction files >4KB not referenced by `AGENTS.md`
 - **Pruning as a named act** (Q4): `docs/README.md` and `docs/decisions/README.md` each
   carry a `## History` section recording what was *removed* and why. Superseded material
