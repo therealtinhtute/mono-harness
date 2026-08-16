@@ -31,13 +31,15 @@ One harness directory. Tracked workflow docs at the top, machine state beneath:
 │   ├── active/          ✓ tracked
 │   └── completed/       ✓ tracked
 └── state/               ✗ gitignored
-    ├── harness.db
     ├── changesets/
     ├── log/
     └── conflicts/
 ```
 
 Also removes the root-level `harness.db` clutter.
+
+> **Refined by D23** — `harness.db` sits at `.harness/harness.db`, not inside
+> `state/`. The tree above is otherwise unchanged.
 
 ---
 
@@ -394,6 +396,62 @@ an executable plan. `to-plan` reads it and generates a separate plan under
 
 **Why:** the two artifacts have different lifecycles — the plan is disposable, this
 evidence is the record of why the plan looks the way it does.
+
+---
+
+## D23 — `harness.db` sits at `.harness/harness.db` — refines D2
+
+**Owner decision:** the database is the artifact everything reads through, so it belongs at
+the root of `.harness/`, not buried inside `state/` alongside logs and staged conflicts.
+
+**Layout:**
+
+```
+.harness/
+├── WORKFLOW.md          ✓ tracked
+├── playbooks/           ✓ tracked
+├── plans/               ✓ tracked
+├── harness.db           ✗ ignored  (+ -wal, -shm sidecars)
+└── state/               ✗ ignored
+    ├── changesets/
+    ├── conflicts/
+    └── log/
+```
+
+**Context:** today `dbPath = "harness.db"` sits at the repository root, so moving it into
+`.harness/state/` would demote it two levels at once. `.harness/harness.db` is a one-level
+move that keeps it visible.
+
+**Two costs, both accepted, both mitigated rather than ignored:**
+
+1. **The gitignore is two rules, not one.** `store.go:24` sets
+   `PRAGMA journal_mode=WAL`, so SQLite writes `harness.db-wal` and `harness.db-shm`
+   beside the database. Both are per-machine state:
+
+   ```gitignore
+   .harness/state/
+   .harness/harness.db*
+   ```
+
+   The glob now sits in a directory where everything else is tracked, so `audit` gains a
+   check: **fail if any `harness.db*` file is tracked by git.** A binary committed here
+   would produce merge conflicts on every stage transition.
+
+2. **Gate #1 can pass falsely.** The durability test's precondition was "delete
+   `.harness/state/`" — one directory, impossible to half-do. With the database outside
+   it, the precondition becomes two deletions, and forgetting the second leaves the test
+   green because the database was never actually gone.
+
+   **Mitigation, mandatory:** the fresh-clone test asserts `.harness/harness.db` and both
+   sidecars **do not exist** before it calls `db rebuild`. The assertion is the test, not
+   a convenience — without it the gate cannot fail for the reason it exists.
+
+**Rejected:** `.harness/state/harness.db` — one gitignore line and a clean single-directory
+precondition, but buries the primary artifact and inverts the dependency (the database is
+*derived* from `state/changesets/`, so it would sit beneath its own source).
+
+**Rejected:** `.harness/db/` as its own directory — keeps both rules directory-shaped with
+no glob, but Gate #1 still needs two deletions and it adds a directory holding one file.
 
 ---
 

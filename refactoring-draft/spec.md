@@ -28,10 +28,15 @@ Three hard gates, all mechanically checked:
    across a run doc and a check report. The walter-theme migration still classifies
    `durable` and keeps its plan intact.
 
-2. **Durability** — a test clones the repo fresh (no `.harness/state/`), runs
-   `zharness db rebuild`, and asserts every decision, plan, product doc, and ADR is
-   present. Today this test fails: decisions exist only in `harness.db` and
-   `.kit/changesets/`, both gitignored.
+2. **Durability** — a test clones the repo fresh, runs `zharness db rebuild`, and asserts
+   every decision, plan, product doc, and ADR is present. Today this test fails: decisions
+   exist only in `harness.db` and `.kit/changesets/`, both gitignored.
+
+   Because `harness.db` lives outside `state/` (D23), the fresh-clone precondition is two
+   deletions rather than one. **The test must first assert `.harness/harness.db` and its
+   `-wal` / `-shm` sidecars do not exist**, then rebuild. Without that assertion the gate
+   goes green whenever the second deletion is forgotten — passing for the one reason it
+   was built to catch.
 
 3. **Resident cost** — two budgets, not one, both benchmarked against
    `repository-harness`'s measured numbers rather than an aspirational figure:
@@ -181,14 +186,19 @@ exercised at all.*
 
 ### P1 — Durability core (M1 + M6)
 
-- `cli/internal/interfaces/paths.go`: `dbPath` → `.harness/state/harness.db`,
+- `cli/internal/interfaces/paths.go`: `dbPath` → `.harness/harness.db` (D23),
   `changesetDir` → `.harness/state/changesets`, `conflictDir` →
   `.harness/state/conflicts`; add `harnessDir = ".harness"`; `docsDir` stays `docs`
 - `preflight.go:24-30` playbook map → `.harness/playbooks/*.md`;
   plan globs in `preflight.go:20`, `next.go:33`, `db.go:20` → `.harness/plans/active/*.md`
 - Extend `MigrateLayout` with a v2→v3 path (`.kit/` + root `harness.db` → `.harness/`),
   reusing the existing snapshot, parity-check, and rollback machinery
-- `init.go:13` `gitignoreEntries` → `.harness/state/`
+- `init.go:13` `gitignoreEntries` → `.harness/state/` **and** `.harness/harness.db*` —
+  two rules, because WAL mode (`store.go:24`) writes `-wal` / `-shm` sidecars beside the
+  database (D23)
+- `audit` fails if any `harness.db*` file is tracked by git — the glob now sits in a
+  directory where everything else is committed, and a committed binary would conflict on
+  every stage transition
 - `audit` detects legacy generations (`.kit/workflow-state.yml`, `.kit/planning/`,
   `.kit/runs/`, `.kit/reports/`) and reports each as a named finding with recovery text
 - **`audit` hardening** (Q4): findings distinguish rungs on the enforcement ladder —
