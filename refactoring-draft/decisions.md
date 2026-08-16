@@ -623,6 +623,45 @@ above; deferred by owner decision, recorded here so it is not lost.
 
 ---
 
+## D30 — `zharness wiki` emits one file, not six — refines D7/D9
+
+**Owner instruction:** *"ở codesight có gì hay, như wiki, map → đưa vào dự án của tui. Tui
+muốn nó simple, KISS nhưng đủ thông tin, dữ liệu để chạy."*
+
+**Chosen:** `docs/map/index.md`, one file, five sections — Start here, Subsystems, Surface,
+Config, Change carefully. Roughly 800–1,500 tokens on a real repository.
+
+**Why one file:** the draft planned `index + routes + config + graph + coverage +
+subsystems/*` — six-plus files. Tiering only pays when there is enough content that you can
+skip most of it; below that, navigation between files costs more turns than reading one.
+codesight runs 18 files because it serves a 1,359-star repository with a 51.8KB README.
+Different scale, different answer.
+
+**Mechanical split rule:** above ~2,000 tokens the generator moves its largest section to
+`docs/map/{section}.md` and leaves a link. Simple by default, and it grows without needing
+a redesign.
+
+**KISS and determinism agree here.** The sections kept are exactly the facts a file walk
+plus regex extracts reliably — directory structure, App Router directory conventions,
+`process.env` reads, import statements. The parts dropped are the ones that would have
+needed an AST or test infrastructure. D8's no-AST constraint and this decision point the
+same way, which is a good sign for both.
+
+**Four mechanisms kept as non-optional**, because a generated map that omits them becomes
+something people trust *instead of* the source: the epistemic boundary in the header, the
+`Not covered` section, `[?]` on every regex-inferred fact, and a source path on every fact.
+
+**Dropped from codesight:** the full `CODESIGHT.md` dump (~5.8k tokens — precisely the cost
+P4 exists to avoid), the 8-article tier, the `libs`/`events`/`middleware`/`cicd` facets,
+`coverage.md` (needs test infrastructure — out until someone asks), and per-path token
+pricing (meaningless with one file).
+
+**Rejected:** keeping the six-file split for future-proofing — the split rule delivers the
+same outcome mechanically, when the size actually warrants it, instead of paying the
+navigation cost from day one.
+
+---
+
 ## Standing Constraint
 
 `onedrive-cloud`, `harness-experimental`, and `codesight` are **read-only reference

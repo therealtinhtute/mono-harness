@@ -303,12 +303,36 @@ stops overclaiming.*
 
 ### P4 — Knowledge map (M2)
 
-- `zharness wiki` → `docs/map/{index,routes,config,graph,coverage}.md` and
-  `docs/map/subsystems/*.md`
+**One file by default** (D30). `zharness wiki` → `docs/map/index.md`, with five sections:
+
+| Section | Holds | Derived by |
+|---|---|---|
+| Start here | entry points | filename convention |
+| Subsystems | directory → purpose, file count | directory walk |
+| Surface | routes (web) or commands (CLI) | App Router directory convention |
+| Config | env vars → the file:line reading each | regex |
+| Change carefully | most-imported files | import regex, counted |
+
+**Mechanical split rule:** above ~2,000 tokens the generator moves its largest section to
+`docs/map/{section}.md` and leaves a link. KISS by default; it grows without a redesign.
+
+**Four anti-lying mechanisms, none optional** — without them a generated map becomes
+something people trust *instead of* the source:
+
+1. Epistemic boundary in the header — states WHERE and WHAT, never logic; read the source
+   before changing anything
+2. An explicit `Not covered` section naming concrete blind spots
+3. `[?]` marks every regex-inferred fact — a guess must announce itself as a guess
+4. Every fact carries its source path, so the map is an index *into* the source
+
+Plus a DO-NOT-EDIT banner, a freshness stamp, and the regeneration command in the header.
+
+**Deliberately not taken from codesight:** the full `CODESIGHT.md` dump (~5.8k tokens — the
+cost P4 exists to avoid), the 8-article tier, the `libs`/`events`/`middleware`/`cicd`
+facets, `coverage.md` (needs test infrastructure; out until someone needs it), and
+per-path token pricing (only meaningful once there are several files to choose between).
+
 - Next.js App Router + TypeScript adapter first; adapter-shaped for other stacks
-- Every generated file carries: DO-NOT-EDIT banner, freshness stamp, regeneration
-  command, and an explicit negative-space section naming what it does not cover
-- Every fact carries its source path; `index.md` prices each navigation path in tokens
 
 *Ships alone: the derived tier exists and stops rotting by construction.*
 
