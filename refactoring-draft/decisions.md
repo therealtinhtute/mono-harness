@@ -31,13 +31,15 @@ One harness directory. Tracked workflow docs at the top, machine state beneath:
 │   ├── active/          ✓ tracked
 │   └── completed/       ✓ tracked
 └── state/               ✗ gitignored
-    ├── harness.db
     ├── changesets/
     ├── log/
     └── conflicts/
 ```
 
 Also removes the root-level `harness.db` clutter.
+
+> **Refined by D23** — `harness.db` sits at `.harness/harness.db`, not inside
+> `state/`. The tree above is otherwise unchanged.
 
 ---
 
@@ -182,6 +184,537 @@ None overlap the already-shipped R1–R9 token optimization
 
 **Rejected:** Reusing the R1–R9 per-stage cost model as the primary metric — this program
 is about durability and navigation, so that number may barely move even on full success.
+
+---
+
+---
+
+# Post-Research Corrections
+
+Decided 2026-08-15, after research surfaced four contradictions with the drafted spec.
+Reasoning in [`open-questions.md`](open-questions.md).
+
+---
+
+## D13 — Resident cost is two gates, not one — supersedes D12.2
+
+**Chosen:** Entrypoint pair (`AGENTS.md` block + `docs/README.md`) ≤ **900** tokens;
+full resident path (+ `.harness/WORKFLOW.md`) ≤ **2,400**. Both benchmarked against
+`repository-harness`'s measured 808 / 2,199.
+
+**Why:** D12's ≤1,000 combined is 2.2x tighter than the reference model the spec cites as
+best-in-class. A gate that is expected to trip is not a gate. Two numbers are also more
+diagnostic than one — they separate "the map got bloated" from "the procedure got
+bloated." Still ~2.7x lighter than onedrive-cloud's measured 6.6k.
+
+**Also taken:** principles stay **out** of the resident path, loaded on demand. That
+separation is what holds upstream's procedure doc at 1,391 tokens.
+
+**Rejected:** Holding ≤1,000 as a forcing function — it would ship a router too thin to
+navigate with, and the spec's own Pause clause already predicted the trip.
+
+**Rejected:** A single ≤2,400 gate — simpler to check, but loses the diagnostic split.
+
+---
+
+## D14 — ADR promotion filters against triggers — refines D10
+
+**Chosen:** `zharness decision promote` presents candidates against five durability
+triggers and the human selects. The `handoff` gate asserts promotion was **considered**
+(non-empty candidate review), not that everything was promoted.
+
+Triggers: lasting product or architecture choice changes; public compatibility or data
+ownership changes; security or recovery policy changes; validation materially added,
+removed, or weakened; source-of-truth hierarchy changes.
+Exclusion: **task-local choices stay in the active plan.**
+
+**Why:** 78 changeset entries yielded 1 decision. A promote-everything gate would fill
+`docs/decisions/` with task-local noise — the exact failure mode ADRs exist to prevent.
+
+**Also taken:** `decision add --durable` marks intent at the call site. The ADR template
+gains `## Status` (Proposed | Accepted | Superseded | Rejected) and `## Follow-Up` —
+`Status` is what makes supersession work without deletion. `zharness init` scaffolds an
+**empty** decision index plus the trigger criteria, never mono-harness's own ADRs.
+
+**Rejected:** The completion gate as drafted — guarantees nothing is lost, at the cost of
+an ADR directory nobody can retrieve from.
+
+**Rejected:** Fully manual promotion with no handoff gate — lowest friction, but durable
+decisions would simply never get harvested. The measured ratio is the evidence.
+
+---
+
+## D15 — M8 work-shape gating becomes P0 — reorders D11
+
+**Owner reframe:** "khi cái onedrive chạy 1 task nhỏ cũng sinh quá lâu, quá nhiều files
+quá phức tạp … harness chưa chặt chẽ, chưa tận dụng được."
+
+**Chosen:** M8 ships **first**, ahead of P1–P4. `preflight` classifies work as
+read-only / bounded / durable and the playbook path follows; shapes escalate but never
+de-escalate; templates emit no empty sections.
+
+**Why:** it is the smallest change, it needs none of P1–P4 to land, and it is the pain
+actually reported. Durability (M1–M7) is the diagnosis; ceremony weight is the symptom
+being felt. Once the harness is cheap to run on small work, P1–P4 get exercised far more
+than they otherwise would.
+
+**Boundary:** M8 gates *which records get created*, never plan quality. The 186-line
+walter-theme plan is good work — the weight is in the record-keeping that surrounds every
+task regardless of size.
+
+**Rejected:** M8 as P5 after durability — preserves the drafted order but leaves the
+reported pain unaddressed longest.
+
+**Rejected:** M8 as a separate program — it shares `preflight`, the templates, and the
+record model with P1–P4; splitting it would duplicate all three.
+
+---
+
+## D16 — Q4's two mechanisms fold into P1 and P3
+
+**Chosen:** Pruning-as-a-named-act (`## History` sections recording what was removed and
+why) folds into P3. The enforcement ladder and diagnostic standard fold into P1 as
+`audit` hardening; the authority gate becomes spec Key Decision 9 and both-directions
+proof becomes a validation-loop rule.
+
+**Why:** neither is blocking, both are cheap, and carrying them as backlog would cost more
+than landing them inside phases that already touch the same code.
+
+**Rejected:** A fifth phase for enforced invariants — it is four disciplines, not a build.
+
+---
+
+---
+
+# Acceptance Interview
+
+Conducted 2026-08-15 in Vietnamese, after the spec was accepted, to verify owner and
+agent share the same reading. Six ambiguities surfaced; all six resolved.
+
+---
+
+## D17 — Bounded work leaves no file, only a DB trace
+
+**Chosen:** Zero markdown. The trace row still lands in `harness.db` so `recap` / `watzup`
+can see the task happened in a later session; the agent still summarizes in chat. The real
+record of the work is **the git diff and the commit message**.
+
+**Rejected:** No trace at all — cheapest, but `watzup` would show a gap where work
+actually happened.
+
+**Rejected:** One minimal ~10-line file per bounded task — visible without the CLI, but
+100 small tasks means 100 files, which is the problem restated at smaller scale.
+
+---
+
+## D18 — The agent declares the shape; the CLI validates and records it
+
+**Chosen:** `preflight` returns the question and the criteria; the agent reads the request
+and declares — `zharness preflight --shape bounded`. The CLI validates the declaration
+against what it can see and records it. The owner is not asked, but can override in one
+sentence.
+
+**Why:** the CLI cannot read intent, and the escalation predicate ("can this resume from
+its diff?") is about work that has not happened yet — there is no diff to measure at
+declaration time.
+
+**Rejected:** Asking the owner every task — most accurate, but adds a question-and-answer
+round to exactly the small tasks P0 exists to make cheap.
+
+**Rejected:** A CLI heuristic over `git status` / file counts — fully mechanical, but it
+measures the past to classify the future.
+
+**Rejected:** Default-bounded with silent auto-escalation — cheapest, but the plan always
+arrives late.
+
+**Resolves** the spec's P0 Pause clause: shape classification is not mechanical, and it
+was never going to be. Declared-and-validated is the answer, not a better predicate.
+
+---
+
+## D19 — Bounded work skips the check gate as well as the check report
+
+**Owner decision:** for a bounded task, drop **both** — no `check` report file, and no
+`go test` / `verify-doc-links` run.
+
+**Concern raised, and overruled by the owner.** The measured enforcement ladder:
+
+| Gate | Local | CI |
+|---|---|---|
+| `go test ./...` | manual | ✅ `cli-ci.yml` — but only on `cli/**` paths |
+| `verify-doc-links.sh` | manual | ❌ none |
+
+So a bounded change under `cli/` is still caught by CI, while a bounded change under
+`docs/`, `skills/`, or `rules/` has **nothing** checking it once the local gate is gone.
+
+**The owner accepts this risk and declined all four compensations** — no CI addition, no
+pre-commit hook, no path-filter change. Rationale: a broken doc link is not a disaster,
+and it is cheap to fix once noticed.
+
+**Consequence, to be carried out in P0:** `CLAUDE.md`'s gate rule currently reads *"Both
+must pass before any commit"* with no exception. It must be scoped to durable work, or it
+contradicts this decision on its face.
+
+---
+
+## D20 — onedrive-cloud stays read-only; its cleanup is separate work
+
+**Chosen:** split into two pieces of work.
+
+1. **This plan** — builds the CLI inside mono-harness. Strictly read-only toward
+   onedrive-cloud, exactly as the Standing Constraint says.
+2. **A separate, separately-approved piece of work** — runs the real migration and legacy
+   cleanup on onedrive-cloud, once the CLI exists and its rollback is proven.
+
+**Why:** D1 said *"delete the legacy generation, rescuing real product authority first"*,
+but every path it named lives in onedrive-cloud, which the Standing Constraint declares
+untouchable. The two could not both be true. D1's deletion is now a **requirement on the
+CLI** (detect, report, rescue before removing), not an action this plan performs.
+
+---
+
+## D21 — mono-harness migrates its own layout inside P1
+
+**Chosen:** P1 moves this repo too — `docs/playbooks/` → `.harness/playbooks/`,
+root `harness.db` + `.kit/changesets/` → `.harness/state/`.
+
+**Why:** dogfooding. `MigrateLayout` gets proven on a real repository before it reaches
+onedrive-cloud, and if it has a bug the owner absorbs it rather than a repo doing real
+work. Pairs with D20: mono-harness is the migration's test subject precisely so
+onedrive-cloud does not have to be.
+
+**Rejected:** Code-only P1 proven by fixtures — smaller and easier to review, but ships an
+unexercised migration.
+
+---
+
+## D22 — `refactoring-draft/` stays where it is
+
+**Chosen:** leave it at the repository root. It is brainstorm evidence and reasoning, not
+an executable plan. `to-plan` reads it and generates a separate plan under
+`docs/plans/active/`.
+
+**Why:** the two artifacts have different lifecycles — the plan is disposable, this
+evidence is the record of why the plan looks the way it does.
+
+---
+
+## D23 — `harness.db` sits at `.harness/harness.db` — refines D2
+
+**Owner decision:** the database is the artifact everything reads through, so it belongs at
+the root of `.harness/`, not buried inside `state/` alongside logs and staged conflicts.
+
+**Layout:**
+
+```
+.harness/
+├── WORKFLOW.md          ✓ tracked
+├── playbooks/           ✓ tracked
+├── plans/               ✓ tracked
+├── harness.db           ✗ ignored  (+ -wal, -shm sidecars)
+└── state/               ✗ ignored
+    ├── changesets/
+    ├── conflicts/
+    └── log/
+```
+
+**Context:** today `dbPath = "harness.db"` sits at the repository root, so moving it into
+`.harness/state/` would demote it two levels at once. `.harness/harness.db` is a one-level
+move that keeps it visible.
+
+**Two costs, both accepted, both mitigated rather than ignored:**
+
+1. **The gitignore is two rules, not one.** `store.go:24` sets
+   `PRAGMA journal_mode=WAL`, so SQLite writes `harness.db-wal` and `harness.db-shm`
+   beside the database. Both are per-machine state:
+
+   ```gitignore
+   .harness/state/
+   .harness/harness.db*
+   ```
+
+   The glob now sits in a directory where everything else is tracked, so `audit` gains a
+   check: **fail if any `harness.db*` file is tracked by git.** A binary committed here
+   would produce merge conflicts on every stage transition.
+
+2. **Gate #1 can pass falsely.** The durability test's precondition was "delete
+   `.harness/state/`" — one directory, impossible to half-do. With the database outside
+   it, the precondition becomes two deletions, and forgetting the second leaves the test
+   green because the database was never actually gone.
+
+   **Mitigation, mandatory:** the fresh-clone test asserts `.harness/harness.db` and both
+   sidecars **do not exist** before it calls `db rebuild`. The assertion is the test, not
+   a convenience — without it the gate cannot fail for the reason it exists.
+
+**Rejected:** `.harness/state/harness.db` — one gitignore line and a clean single-directory
+precondition, but buries the primary artifact and inverts the dependency (the database is
+*derived* from `state/changesets/`, so it would sit beneath its own source).
+
+**Rejected:** `.harness/db/` as its own directory — keeps both rules directory-shaped with
+no glob, but Gate #1 still needs two deletions and it adds a directory holding one file.
+
+---
+
+## D24 — P0 is a routing fix, not a shape system — re-scopes D15
+
+**Found while brainstorming the process itself, 2026-08-15.** The mechanism M8 proposed to
+build **already exists in the repository**:
+
+- `docs/playbooks/work.md:15` — *"**Zero-write rule:** bounded/simple mode creates no
+  lifecycle rows, plans, reports, changesets, or markdown artifacts. It does not edit an
+  existing active plan. The Git diff plus captured executable/observable proof are its
+  durable evidence."* That is D17, verbatim, already shipped.
+- `work.md:17` — mechanical rejection criteria already stated: over five files, roughly 100
+  changed lines, unclear scope, unfamiliar subsystem, multi-phase, or no verification path.
+- `work.md:12` — the agent already declares `--mode {full|bounded}`. That is D18, already
+  the status quo — which is why D18 alone fixes nothing.
+
+**The actual defect is routing.** `cli/internal/application/next.go:56-93`:
+
+```go
+if mode == "simple" { return NextView{Mode: "simple"}, nil }
+plans, _ := findActivePlans()
+if len(plans) == 0 {
+    if mode == "auto" { return NextView{Mode: "simple"}, nil }
+}
+return resolveFullMode(db, plans[0], explicitPhase)
+```
+
+A bare `zharness next` parses to `auto`, and `auto` picks the light path **only when no
+plan is open**. Work size never enters the decision, so while any plan is open every task
+inherits full-mode ceremony regardless of size.
+
+Compounding it, **two resolution paths disagree**: `work.md` step 1 decides by work size,
+`zharness next` decides by plan existence, and the CLI carries more apparent authority than
+the playbook.
+
+**Chosen:** shrink P0 from "build a three-shape classification system" to four targeted
+fixes — auto-routing weighs work size; one resolution path instead of two; add the
+genuinely-new `read-only` shape; templates stop emitting empty sections. Same outcome, a
+fraction of the build.
+
+**Rejected:** keeping M8 as drafted and retiring `full`/`bounded` for the new vocabulary —
+conceptually cleaner and gives one vocabulary, but rewrites something that already works
+correctly and forces a migration of every playbook.
+
+**Rejected:** measuring first before deciding — the routing code is unambiguous on reading;
+a probe would confirm what `next.go:56-93` already states outright.
+
+**Limit of this finding:** the mechanism demonstrably produces this symptom. It is *not*
+proven to be the cause of the 2026-07-18 virtualizer run specifically — onedrive-cloud is
+read-only and out of reach from this environment.
+
+---
+
+## D25 — Each shape gets a stage chain, not just a record set
+
+**Gap found in the same pass:** the spec said which *records* each shape writes but never
+which *stages* it runs. With three shapes there are three chains, and none was drawn.
+
+| Shape | Stage chain | Records | Gates |
+|---|---|---|---|
+| read-only | none — answer in place; `watzup` only when the state *is* the question | none | none |
+| bounded | `work` (bounded) → `git` | DB trace only | none |
+| durable | `watzup → brainstorm → to-plan → work → check → git → handoff` | plan + trace + decisions | full `check` |
+
+Consistent with `work.md:17`, which already routes rejected-bounded work "through
+`brainstorm` and `to-plan`" — the durable chain.
+
+---
+
+## D26 — D19 removes an existing behavior, not only a proposed one
+
+**Recorded for honesty, not re-decided.** D19 was taken believing bounded work was being
+designed. It was not: bounded mode exists, and its zero-write rule ends *"The Git diff plus
+**captured executable/observable proof** are its durable evidence."* Today's bounded mode
+already skips the artifacts **but still captures proof**.
+
+D19 drops the proof capture as well. So its true effect is a **weakening of shipped
+behavior**, which is a materially different decision from the one presented at the time.
+
+The owner has been told and the decision stands unless they revisit it. Flagged here so a
+later reader does not mistake D19 for a formalization of the status quo.
+
+---
+
+## D27 — Authority is three tiers, not one — resolves the DB-vs-docs contradiction
+
+**Owner statement:** *"docs theo codesight, wiki là sự thật; còn trong harness thì 1 nửa là
+thật, 1 nửa là tạm thời được db quản lý."*
+
+**The contradiction it resolves.** `skills/workflow/README.md:9` declares the database the
+source of truth *"— not the markdown."* But Gate #1 asserts a fresh clone still holds every
+decision, plan, and ADR, and changesets are gitignored (D4, D23), so a fresh clone replays
+**zero** changesets into an **empty** database. Gate #1 therefore already assumed tracked
+markdown was authoritative while the architecture declared the opposite. One had to give.
+
+**Chosen — three tiers, each with its own authority and its own survival rule:**
+
+| Tier | Contents | Authority | Survives a fresh clone |
+|---|---|---|---|
+| **Generated map** | `docs/map/` | derived from code; never authored, always regenerable | tracked, and rebuildable in ~200 ms if not |
+| **Durable knowledge** | `docs/decisions/`, `docs/product/`, `.harness/plans/`, `.harness/playbooks/`, `.harness/WORKFLOW.md` | **the tracked markdown is the truth** | **yes — this is what Gate #1 proves** |
+| **Execution history** | story, trace, run, check, handoff, intake, managed_doc, meta | **the database is the truth**, and it is temporary | **no — permitted to vanish** |
+
+**Entity assignment**, against the measured 78 entries: `decision` is the only durable kind
+(promoted to an ADR under P2), plus plans. Every other entity — `story` 23, `managed_doc`
+15, `meta` 12, `trace` 8, `handoff` 7, `run` 5, `check` 5, `intake` 2 — is execution
+history and may be lost with the working copy. The 23 : 1 ceremony ratio is not a defect
+in this model; it is the temporary tier doing its job, as long as the one durable entry
+leaves for tracked markdown.
+
+**Consequences:**
+
+- `skills/workflow/README.md:9` must be rewritten. Its claim is true **only of the
+  execution-history tier**, and stating it unqualified is what licensed durable knowledge
+  to live in a gitignored path.
+- The source-of-truth hierarchy gets **declared in `docs/README.md`**, the way
+  repository-harness declares Consumer-Owned Truth vs Harness-Owned Process. mono-harness
+  today has no equivalent statement anywhere.
+- Gate #1 drops the vestigial `db rebuild` assertion. On a fresh clone an empty history is
+  the **correct** outcome, not a failure.
+
+**Rejected:** DB-as-authority throughout — would force committing changesets, which D4
+rejected for noisy diffs and near-certain merge conflicts on parallel branches.
+
+**Rejected:** markdown-as-authority throughout — would make every trace and run a tracked
+file, recreating the ceremony P0 exists to remove.
+
+---
+
+## D28 — `CLAUDE.md` gets a self-healing managed block
+
+**Chosen:** replace P3's *"emit `CLAUDE.md` when absent"* with repository-harness's managed
+block (`reference-models.md` mechanism E, 258 bytes):
+
+```markdown
+<!-- HARNESS:BEGIN -->
+@AGENTS.md
+<!-- HARNESS:END -->
+```
+
+**Why:** "emit when absent" never repairs. Anyone who deletes the `@AGENTS.md` line breaks
+the agent's only path to project instructions, silently and permanently. A managed block is
+re-synced on every update. The backtick gotcha — the import dies inside code fences — is
+encoded in the block's own comment.
+
+---
+
+## D29 — `audit` gains a docs-adherence check
+
+**Measured gap:** `audit` reports `PointerDrift`, `ContractViolations`, and
+`UnlinkedProofs` — all internal consistency of harness state. Nothing checks whether the
+documentation and the code agree.
+
+Evidence that this is the load-bearing gap:
+
+- `work.md:17` states a mechanical rule — over five files, roughly 100 changed lines —
+  and grep finds **no such threshold anywhere in the Go source**. Prose, unenforced.
+- 2 of 56 error messages mention a `docs/` path, and both are path references, not
+  authority pointers.
+
+**Chosen:** `audit` reports a finding when a playbook states a mechanical rule that no code
+enforces. This is the check that would have caught D24's `next.go` routing defect at the
+moment it was introduced, instead of two months later in a brainstorm.
+
+**Not taken this pass:** adding an `authority` field to the error envelope so every
+diagnostic names the rule and the document that authorizes it. Broader than the two items
+above; deferred by owner decision, recorded here so it is not lost.
+
+---
+
+## D30 — `zharness wiki` emits one file, not six — refines D7/D9
+
+**Owner instruction:** *"ở codesight có gì hay, như wiki, map → đưa vào dự án của tui. Tui
+muốn nó simple, KISS nhưng đủ thông tin, dữ liệu để chạy."*
+
+**Chosen:** `docs/map/index.md`, one file, five sections — Start here, Subsystems, Surface,
+Config, Change carefully. Roughly 800–1,500 tokens on a real repository.
+
+**Why one file:** the draft planned `index + routes + config + graph + coverage +
+subsystems/*` — six-plus files. Tiering only pays when there is enough content that you can
+skip most of it; below that, navigation between files costs more turns than reading one.
+codesight runs 18 files because it serves a 1,359-star repository with a 51.8KB README.
+Different scale, different answer.
+
+**Mechanical split rule:** above ~2,000 tokens the generator moves its largest section to
+`docs/map/{section}.md` and leaves a link. Simple by default, and it grows without needing
+a redesign.
+
+**KISS and determinism agree here.** The sections kept are exactly the facts a file walk
+plus regex extracts reliably — directory structure, App Router directory conventions,
+`process.env` reads, import statements. The parts dropped are the ones that would have
+needed an AST or test infrastructure. D8's no-AST constraint and this decision point the
+same way, which is a good sign for both.
+
+**Four mechanisms kept as non-optional**, because a generated map that omits them becomes
+something people trust *instead of* the source: the epistemic boundary in the header, the
+`Not covered` section, `[?]` on every regex-inferred fact, and a source path on every fact.
+
+**Dropped from codesight:** the full `CODESIGHT.md` dump (~5.8k tokens — precisely the cost
+P4 exists to avoid), the 8-article tier, the `libs`/`events`/`middleware`/`cicd` facets,
+`coverage.md` (needs test infrastructure — out until someone asks), and per-path token
+pricing (meaningless with one file).
+
+**Rejected:** keeping the six-file split for future-proofing — the split rule delivers the
+same outcome mechanically, when the size actually warrants it, instead of paying the
+navigation cost from day one.
+
+---
+
+## D31 — P4 is cut; the derived-fact *genre* is banned instead — supersedes D7/D8/D9/D30
+
+**Owner decision**, after asking whether the wiki could serve every stack. It could not,
+and the answer to that turned out to be to remove the phase rather than generalize it.
+
+**The flaw that surfaced it.** P4 shipped as *"Next.js App Router adapter first;
+adapter-shaped for other stacks"* — so on day one it works for exactly one stack.
+onedrive-cloud is Next.js; **mono-harness is Go**. The generator could not run on the
+repository that produced it. Every additional stack is a permanent adapter to maintain.
+
+**How the three models actually compare:**
+
+| | repository-harness | codesight | `zharness wiki` as drafted |
+|---|---|---|---|
+| Runs on | **any repo** | TS/JS | **Next.js only**, then one adapter at a time |
+| Method | parses nothing | AST | regex |
+| Knowledge from | humans write it | machine derives it | machine derives it |
+| Cost per new stack | **zero** | a parser | an adapter |
+
+repository-harness is stack-agnostic *because it generates nothing*. That is not a
+weakness in their design — it is the design.
+
+**Chosen: cut P4 entirely.** No generator. The code is its own map; an agent that needs the
+routes greps for them.
+
+**The rule that must ship with the cut — otherwise the cut causes the disease it was
+diagnosing.** `codebase-summary.md` did not rot because the repository lacked a generated
+map. It rotted because **someone hand-wrote a document full of derived facts.** Removing
+the generator without removing the genre just reopens the vacuum that document filled.
+
+So P3 gains: **no hand-maintained document may hold derived facts** — routes, env vars,
+file inventories, import graphs, directory listings. Those belong to the code. `docs/`
+holds intent (`product/`) and judgment (`decisions/`), the two things that cannot be
+re-derived. `audit` reports a violation with the recovery text *"delete it; grep the code
+instead."*
+
+**Consequences:**
+
+- D7, D8, D9, and D30 are superseded — codesight's method, the no-AST constraint, the
+  `docs/map/` location, and the one-file layout all described a thing that is no longer
+  being built. Their reasoning is kept as the record of why.
+- D27's first tier changes from "generated map, regenerable" to **"derivable facts — the
+  code is the truth, and nothing in `docs/` restates them."**
+- The program drops from five phases to four, and **loses its only phase with genuine
+  unknowns.** Everything remaining fixes something that has already caused loss or friction.
+
+**Rejected:** a stack-agnostic core plus optional stack packs — four of the five map
+sections (Subsystems, Config, Change-carefully, Start-here) need only a directory walk and
+about eleven regexes across five languages, so a map that runs on any repo was genuinely
+available. The owner chose removal over a smaller build.
+
+**Rejected:** keeping the Next.js-only generator — the tool would not run on the repository
+that produces it.
 
 ---
 
