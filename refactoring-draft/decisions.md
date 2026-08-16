@@ -282,6 +282,121 @@ than landing them inside phases that already touch the same code.
 
 ---
 
+---
+
+# Acceptance Interview
+
+Conducted 2026-08-15 in Vietnamese, after the spec was accepted, to verify owner and
+agent share the same reading. Six ambiguities surfaced; all six resolved.
+
+---
+
+## D17 — Bounded work leaves no file, only a DB trace
+
+**Chosen:** Zero markdown. The trace row still lands in `harness.db` so `recap` / `watzup`
+can see the task happened in a later session; the agent still summarizes in chat. The real
+record of the work is **the git diff and the commit message**.
+
+**Rejected:** No trace at all — cheapest, but `watzup` would show a gap where work
+actually happened.
+
+**Rejected:** One minimal ~10-line file per bounded task — visible without the CLI, but
+100 small tasks means 100 files, which is the problem restated at smaller scale.
+
+---
+
+## D18 — The agent declares the shape; the CLI validates and records it
+
+**Chosen:** `preflight` returns the question and the criteria; the agent reads the request
+and declares — `zharness preflight --shape bounded`. The CLI validates the declaration
+against what it can see and records it. The owner is not asked, but can override in one
+sentence.
+
+**Why:** the CLI cannot read intent, and the escalation predicate ("can this resume from
+its diff?") is about work that has not happened yet — there is no diff to measure at
+declaration time.
+
+**Rejected:** Asking the owner every task — most accurate, but adds a question-and-answer
+round to exactly the small tasks P0 exists to make cheap.
+
+**Rejected:** A CLI heuristic over `git status` / file counts — fully mechanical, but it
+measures the past to classify the future.
+
+**Rejected:** Default-bounded with silent auto-escalation — cheapest, but the plan always
+arrives late.
+
+**Resolves** the spec's P0 Pause clause: shape classification is not mechanical, and it
+was never going to be. Declared-and-validated is the answer, not a better predicate.
+
+---
+
+## D19 — Bounded work skips the check gate as well as the check report
+
+**Owner decision:** for a bounded task, drop **both** — no `check` report file, and no
+`go test` / `verify-doc-links` run.
+
+**Concern raised, and overruled by the owner.** The measured enforcement ladder:
+
+| Gate | Local | CI |
+|---|---|---|
+| `go test ./...` | manual | ✅ `cli-ci.yml` — but only on `cli/**` paths |
+| `verify-doc-links.sh` | manual | ❌ none |
+
+So a bounded change under `cli/` is still caught by CI, while a bounded change under
+`docs/`, `skills/`, or `rules/` has **nothing** checking it once the local gate is gone.
+
+**The owner accepts this risk and declined all four compensations** — no CI addition, no
+pre-commit hook, no path-filter change. Rationale: a broken doc link is not a disaster,
+and it is cheap to fix once noticed.
+
+**Consequence, to be carried out in P0:** `CLAUDE.md`'s gate rule currently reads *"Both
+must pass before any commit"* with no exception. It must be scoped to durable work, or it
+contradicts this decision on its face.
+
+---
+
+## D20 — onedrive-cloud stays read-only; its cleanup is separate work
+
+**Chosen:** split into two pieces of work.
+
+1. **This plan** — builds the CLI inside mono-harness. Strictly read-only toward
+   onedrive-cloud, exactly as the Standing Constraint says.
+2. **A separate, separately-approved piece of work** — runs the real migration and legacy
+   cleanup on onedrive-cloud, once the CLI exists and its rollback is proven.
+
+**Why:** D1 said *"delete the legacy generation, rescuing real product authority first"*,
+but every path it named lives in onedrive-cloud, which the Standing Constraint declares
+untouchable. The two could not both be true. D1's deletion is now a **requirement on the
+CLI** (detect, report, rescue before removing), not an action this plan performs.
+
+---
+
+## D21 — mono-harness migrates its own layout inside P1
+
+**Chosen:** P1 moves this repo too — `docs/playbooks/` → `.harness/playbooks/`,
+root `harness.db` + `.kit/changesets/` → `.harness/state/`.
+
+**Why:** dogfooding. `MigrateLayout` gets proven on a real repository before it reaches
+onedrive-cloud, and if it has a bug the owner absorbs it rather than a repo doing real
+work. Pairs with D20: mono-harness is the migration's test subject precisely so
+onedrive-cloud does not have to be.
+
+**Rejected:** Code-only P1 proven by fixtures — smaller and easier to review, but ships an
+unexercised migration.
+
+---
+
+## D22 — `refactoring-draft/` stays where it is
+
+**Chosen:** leave it at the repository root. It is brainstorm evidence and reasoning, not
+an executable plan. `to-plan` reads it and generates a separate plan under
+`docs/plans/active/`.
+
+**Why:** the two artifacts have different lifecycles — the plan is disposable, this
+evidence is the record of why the plan looks the way it does.
+
+---
+
 ## Standing Constraint
 
 `onedrive-cloud`, `harness-experimental`, and `codesight` are **read-only reference

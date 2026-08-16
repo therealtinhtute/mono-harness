@@ -66,10 +66,20 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 - New: `cli/internal/{application,interfaces}/wiki*.go`
 - `skills/workflow/**` playbook triggers
 - `docs/plans/active/` in this repo
+- `CLAUDE.md` — the gate rule, scoped to durable work (D19)
+- **mono-harness's own layout** — `docs/playbooks/` → `.harness/playbooks/`, root
+  `harness.db` + `.kit/changesets/` → `.harness/state/`, moved in P1 as the migration's
+  proving ground (D21)
 
 **Must not change**
 
 - `/Users/tinhtute/Personal/onedrive-cloud` — **read-only, zero writes.** Evidence only.
+  Its legacy cleanup is a **separate, separately-approved piece of work** that runs after
+  this program ships and its rollback is proven (D20). D1's "delete the legacy
+  generation" is a requirement *on the CLI* — detect, report, rescue before removing —
+  not an action this plan performs.
+- `refactoring-draft/` stays at the repository root (D22). It is evidence, not an
+  executable plan; `to-plan` reads it and writes a separate plan under `docs/plans/active/`.
 - `/Users/tinhtute/Lab/harness-experimental`, `hoangnb24/repository-harness`,
   `Houseofmvps/codesight` — read for structure, never adopted as dependencies
 - R1–R9 behavior: `query plan --section`, batched `trace add`, preflight `context`
@@ -137,17 +147,22 @@ next never lands.
 The smallest change in the program, it needs none of P1–P4 to land, and it is the pain
 actually reported. Full evidence in [`work-shape.md`](work-shape.md).
 
-- `preflight` returns a **shape** — `read-only` | `bounded` | `durable` — and the playbook
-  path follows from it:
+- Work carries a **shape** — `read-only` | `bounded` | `durable` — and the playbook path
+  follows from it:
 
-  | Shape | Trigger | Records created |
-  |---|---|---|
-  | read-only | answer, review, diagnose, status | none |
-  | bounded | single session, resumable from its diff | trace only |
-  | durable | spans sessions, has dependencies, needs recovery, or cannot resume from its diff | one plan + trace + decisions |
+  | Shape | Trigger | Records created | Gates run |
+  |---|---|---|---|
+  | read-only | answer, review, diagnose, status | none | none |
+  | bounded | single session, resumable from its diff | DB trace only — **0 markdown files** | none (D19) |
+  | durable | spans sessions, has dependencies, needs recovery, or cannot resume from its diff | one plan + trace + decisions | full `check` gate |
 
-- The escalation predicate is **"can this resume from its diff?"** — mechanical enough to
-  ask, and already the upstream test
+- **The agent declares the shape; the CLI validates and records it** (D18).
+  `preflight` returns the question and the criteria; the agent answers with
+  `zharness preflight --shape bounded`. The CLI cannot read intent, and the predicate
+  concerns work that has not happened yet — there is no diff to measure at declaration
+  time. The owner is never asked, but overrides in one sentence
+- The escalation predicate is **"can this resume from its diff?"** — already the upstream
+  test
 - A shape may **escalate mid-task, never de-escalate**. Bounded work that turns out to
   span sessions promotes to durable and writes its plan then — cheap, because nothing was
   written before
@@ -155,7 +170,11 @@ actually reported. Full evidence in [`work-shape.md`](work-shape.md).
   finding; a conditional commit is written only when its condition holds. Template
   rendering, not policy
 - `story`, `run`, and `check` records collapse into `trace` for bounded work. `story`'s 23
-  entries bought nothing a trace does not
+  entries bought nothing a trace does not. For bounded work the trace lives **only in
+  `harness.db`** so `recap` / `watzup` still see the task; the durable record of the work
+  is the git diff and the commit message (D17)
+- **`CLAUDE.md`'s gate rule must be scoped to durable work.** It currently reads *"Both
+  must pass before any commit"* with no exception, which contradicts D19 on its face
 
 *Ships alone: the harness becomes cheap to run on small work, which is what gets P1–P4
 exercised at all.*
@@ -234,11 +253,15 @@ stops overclaiming.*
 
 ## Validation Loop
 
-**During work**
+**During work** — this program is itself durable work, so the full gate applies to it:
 
 - `cd cli && go test ./...` after each change
 - `bash scripts/verify-doc-links.sh`
-- For P1: `zharness migrate layout --dry-run` against a fixture before any real move
+- For P1: `zharness migrate layout --dry-run` against a fixture before any real move,
+  then against **mono-harness itself** (D21) before the layout is moved for real
+
+*(Per D19, bounded work in consumer repos runs neither gate. That exception is what P0
+builds; it does not apply to building it.)*
 
 **Final proof**
 
@@ -264,10 +287,8 @@ proven.
 
 **Pause if**
 
-- shape classification cannot be made mechanical — if "can this resume from its diff?"
-  needs a judgment call the CLI cannot make, P0 needs a different predicate, not a
-  heuristic that guesses
-- the migration cannot guarantee parity on a repo with uncommitted changesets
+- the migration cannot guarantee parity on a repo with uncommitted changesets, or on
+  mono-harness itself
 - either resident budget forces the router below usefulness — report the real number
   rather than shipping a useless map
 - `zharness wiki` cannot reach determinism on a real repo without an AST, which means P4
