@@ -455,6 +455,88 @@ no glob, but Gate #1 still needs two deletions and it adds a directory holding o
 
 ---
 
+## D24 — P0 is a routing fix, not a shape system — re-scopes D15
+
+**Found while brainstorming the process itself, 2026-08-15.** The mechanism M8 proposed to
+build **already exists in the repository**:
+
+- `docs/playbooks/work.md:15` — *"**Zero-write rule:** bounded/simple mode creates no
+  lifecycle rows, plans, reports, changesets, or markdown artifacts. It does not edit an
+  existing active plan. The Git diff plus captured executable/observable proof are its
+  durable evidence."* That is D17, verbatim, already shipped.
+- `work.md:17` — mechanical rejection criteria already stated: over five files, roughly 100
+  changed lines, unclear scope, unfamiliar subsystem, multi-phase, or no verification path.
+- `work.md:12` — the agent already declares `--mode {full|bounded}`. That is D18, already
+  the status quo — which is why D18 alone fixes nothing.
+
+**The actual defect is routing.** `cli/internal/application/next.go:56-93`:
+
+```go
+if mode == "simple" { return NextView{Mode: "simple"}, nil }
+plans, _ := findActivePlans()
+if len(plans) == 0 {
+    if mode == "auto" { return NextView{Mode: "simple"}, nil }
+}
+return resolveFullMode(db, plans[0], explicitPhase)
+```
+
+A bare `zharness next` parses to `auto`, and `auto` picks the light path **only when no
+plan is open**. Work size never enters the decision, so while any plan is open every task
+inherits full-mode ceremony regardless of size.
+
+Compounding it, **two resolution paths disagree**: `work.md` step 1 decides by work size,
+`zharness next` decides by plan existence, and the CLI carries more apparent authority than
+the playbook.
+
+**Chosen:** shrink P0 from "build a three-shape classification system" to four targeted
+fixes — auto-routing weighs work size; one resolution path instead of two; add the
+genuinely-new `read-only` shape; templates stop emitting empty sections. Same outcome, a
+fraction of the build.
+
+**Rejected:** keeping M8 as drafted and retiring `full`/`bounded` for the new vocabulary —
+conceptually cleaner and gives one vocabulary, but rewrites something that already works
+correctly and forces a migration of every playbook.
+
+**Rejected:** measuring first before deciding — the routing code is unambiguous on reading;
+a probe would confirm what `next.go:56-93` already states outright.
+
+**Limit of this finding:** the mechanism demonstrably produces this symptom. It is *not*
+proven to be the cause of the 2026-07-18 virtualizer run specifically — onedrive-cloud is
+read-only and out of reach from this environment.
+
+---
+
+## D25 — Each shape gets a stage chain, not just a record set
+
+**Gap found in the same pass:** the spec said which *records* each shape writes but never
+which *stages* it runs. With three shapes there are three chains, and none was drawn.
+
+| Shape | Stage chain | Records | Gates |
+|---|---|---|---|
+| read-only | none — answer in place; `watzup` only when the state *is* the question | none | none |
+| bounded | `work` (bounded) → `git` | DB trace only | none |
+| durable | `watzup → brainstorm → to-plan → work → check → git → handoff` | plan + trace + decisions | full `check` |
+
+Consistent with `work.md:17`, which already routes rejected-bounded work "through
+`brainstorm` and `to-plan`" — the durable chain.
+
+---
+
+## D26 — D19 removes an existing behavior, not only a proposed one
+
+**Recorded for honesty, not re-decided.** D19 was taken believing bounded work was being
+designed. It was not: bounded mode exists, and its zero-write rule ends *"The Git diff plus
+**captured executable/observable proof** are its durable evidence."* Today's bounded mode
+already skips the artifacts **but still captures proof**.
+
+D19 drops the proof capture as well. So its true effect is a **weakening of shipped
+behavior**, which is a materially different decision from the one presented at the time.
+
+The owner has been told and the decision stands unless they revisit it. Flagged here so a
+later reader does not mistake D19 for a formalization of the status quo.
+
+---
+
 ## Standing Constraint
 
 `onedrive-cloud`, `harness-experimental`, and `codesight` are **read-only reference

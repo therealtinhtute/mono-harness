@@ -58,8 +58,12 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 
 **May change**
 
+- `cli/internal/application/next.go:56-93` — `Next` / `parseNextArgument`, the auto-routing
+  fix that is the whole of P0's first half
 - `cli/internal/domain/preflight.go`, `cli/internal/application/preflight.go`,
-  `cli/internal/interfaces/preflight.go` — work-shape classification and its JSON contract
+  `cli/internal/interfaces/preflight.go` — the `read-only` shape and its JSON contract
+- `docs/playbooks/work.md` + `cli/docs/embedded/playbooks/work.md` — one mode-resolution
+  path instead of two
 - `cli/docs/embedded/templates/{run,check}.md` — conditional section rendering
 - `cli/internal/application/{story_create,run_create,check_record}.go` — record collapse
   for bounded shape
@@ -111,10 +115,10 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 
 ## Key Decisions
 
-1. **Ceremony follows work shape** — `preflight` classifies read-only / bounded / durable
-   and the playbook path follows. Because the harness records ceremony over knowledge at
-   23 : 1, and a one-file fix acquired a wave log, a four-commit split plan, and a
-   three-severity finding taxonomy. See D13.
+1. **Ceremony follows work shape — by fixing routing, not by building a shape system.**
+   The zero-write mechanism already exists (`work.md:15`); what failed is that
+   `next.go` routes on plan *existence* rather than work *size*, so every task taken while
+   any plan is open inherits full-mode ceremony. See D24.
 2. **Two directories, by owner** — `.harness/` = workflow (CLI/skills), `docs/` = project
    knowledge. Because mixing them produced 68KB of `docs/` where product architecture sits
    beside stage playbooks.
@@ -147,39 +151,64 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 Each phase is independently mergeable: after it ships, the system is usable even if the
 next never lands.
 
-### P0 — Work-shape gating (M8)
+### P0 — Work-shape routing (M8, re-scoped)
 
-The smallest change in the program, it needs none of P1–P4 to land, and it is the pain
-actually reported. Full evidence in [`work-shape.md`](work-shape.md).
+> **The mechanism already exists.** `docs/playbooks/work.md:15` has carried the zero-write
+> rule since well before this program: bounded mode *"creates no lifecycle rows, plans,
+> reports, changesets, or markdown artifacts … The Git diff plus captured
+> executable/observable proof are its durable evidence."* `work.md:17` already states
+> mechanical rejection criteria — over five files, roughly 100 changed lines, unclear
+> scope, unfamiliar subsystem, multi-phase, or no verification path.
+>
+> **What failed is routing, not classification.** P0 is therefore four targeted fixes plus
+> a stage-chain definition, not a new subsystem. See D24.
 
-- Work carries a **shape** — `read-only` | `bounded` | `durable` — and the playbook path
-  follows from it:
+**Fix 1 — `next.go` routes on plan existence instead of work size.**
+`cli/internal/application/next.go:56-93`: a bare `zharness next` parses to `auto`; `auto`
+resolves to `simple` **only when `findActivePlans()` returns empty**, and otherwise falls
+through to `resolveFullMode`. Work size never enters the decision. The consequence is the
+reported symptom exactly: while any plan is open, a one-line change inherits story + run +
+trace + check + report. Auto must weigh the `work.md:17` criteria, not merely whether a
+plan file exists.
 
-  | Shape | Trigger | Records created | Gates run |
-  |---|---|---|---|
-  | read-only | answer, review, diagnose, status | none | none |
-  | bounded | single session, resumable from its diff | DB trace only — **0 markdown files** | none (D19) |
-  | durable | spans sessions, has dependencies, needs recovery, or cannot resume from its diff | one plan + trace + decisions | full `check` gate |
+**Fix 2 — two mode-resolution paths disagree, and the wrong one sounds authoritative.**
 
-- **The agent declares the shape; the CLI validates and records it** (D18).
-  `preflight` returns the question and the criteria; the agent answers with
-  `zharness preflight --shape bounded`. The CLI cannot read intent, and the predicate
-  concerns work that has not happened yet — there is no diff to measure at declaration
-  time. The owner is never asked, but overrides in one sentence
-- The escalation predicate is **"can this resume from its diff?"** — already the upstream
-  test
-- A shape may **escalate mid-task, never de-escalate**. Bounded work that turns out to
-  span sessions promotes to durable and writes its plan then — cheap, because nothing was
+| Path | Decides by | Lives in |
+|---|---|---|
+| `work.md` step 1 | work size — 5 files / 100 lines | playbook, agent judgment |
+| `zharness next` | whether a plan is open | CLI |
+
+Whichever the agent trusts wins, and the CLI carries more apparent authority. Collapse to
+one resolution path with one set of criteria; the playbook states them, the CLI applies
+them.
+
+**Fix 3 — add the `read-only` shape.** Genuinely new. Answers, explanations, reviews,
+diagnoses, and status reports create nothing at all. Today they have no declared mode, so
+they fall through whatever `next` returns.
+
+**Fix 4 — templates emit no empty sections.** `### Critical` is written whether or not a
+critical finding exists; `### Commit D` documents its own conditionality. A rendering
+change in `cli/docs/embedded/templates/{run,check}.md`, independent of routing and worth
+landing either way.
+
+**Stage chain per shape** (D25) — the shape decides which stages run, not only which
+records are written:
+
+| Shape | Stage chain | Records | Gates |
+|---|---|---|---|
+| read-only | none — answer in place; `watzup` only when the state *is* the question | none | none |
+| bounded | `work` (bounded) → `git` | DB trace only, **0 markdown files** | none (D19) |
+| durable | `watzup → brainstorm → to-plan → work → check → git → handoff` | plan + trace + decisions | full `check` |
+
+Supporting rules, unchanged from the original M8:
+
+- A shape may **escalate mid-task, never de-escalate**. Bounded work that turns out to span
+  sessions promotes to durable and writes its plan then — cheap, because nothing was
   written before
-- **Templates emit no empty sections.** `### Critical` appears only with a critical
-  finding; a conditional commit is written only when its condition holds. Template
-  rendering, not policy
-- `story`, `run`, and `check` records collapse into `trace` for bounded work. `story`'s 23
-  entries bought nothing a trace does not. For bounded work the trace lives **only in
-  `harness.db`** so `recap` / `watzup` still see the task; the durable record of the work
-  is the git diff and the commit message (D17)
-- **`CLAUDE.md`'s gate rule must be scoped to durable work.** It currently reads *"Both
-  must pass before any commit"* with no exception, which contradicts D19 on its face
+- For bounded work the trace lives **only in `harness.db`** so `recap` / `watzup` still see
+  the task; the durable record is the git diff and the commit message (D17)
+- **`CLAUDE.md`'s gate rule must be scoped to durable work.** It reads *"Both must pass
+  before any commit"* with no exception, which contradicts D19 on its face
 
 *Ships alone: the harness becomes cheap to run on small work, which is what gets P1–P4
 exercised at all.*
