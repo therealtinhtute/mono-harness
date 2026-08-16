@@ -1,6 +1,6 @@
 ---
 title: Harness Durability & Knowledge Contract
-status: accepted — Q1–Q3 resolved 2026-08-15
+status: accepted — D1–D31, P4 cut 2026-08-16
 interviewed: 2026-08-15
 ---
 
@@ -16,8 +16,9 @@ interviewed: 2026-08-15
 Ceremony scales with work shape, so a bounded task costs no markdown at all. Nothing an
 agent or human needs to remember survives only in a gitignored path, and a cold agent can
 orient in a consumer repo without loading the repo's documentation. `zharness` owns one
-directory (`.harness/`), project knowledge owns another (`docs/`), and the derived half of
-`docs/` is generated rather than maintained.
+directory (`.harness/`), project knowledge owns another (`docs/`), and **`docs/` holds only
+what cannot be derived** — intent and decisions, never an inventory of facts the code
+already states (D31).
 
 ## Success Condition
 
@@ -75,7 +76,7 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
 - `cli/internal/application/{init,layout_migration,managed_docs,audit,decision}.go`
 - `cli/internal/interfaces/{decision,audit}.go`
 - `cli/docs/embedded/**` — WORKFLOW, AGENTS block, playbooks, templates, new scaffolds
-- New: `cli/internal/{application,interfaces}/wiki*.go`
+- `cli/internal/application/audit.go` — the derived-fact check (D31)
 - `skills/workflow/**` playbook triggers
 - `docs/plans/active/` in this repo
 - `CLAUDE.md` — the gate rule, scoped to durable work (D19)
@@ -137,22 +138,24 @@ docs before reading any `src/`. See [`audit-onedrive-cloud.md`](audit-onedrive-c
    gate asserts promotion was *considered*, not that everything was promoted. Because 78
    changeset entries yielded 1 decision; promoting all of them is the noise ADRs exist to
    prevent. See D14. Depends on: decision 6.
-6. **`docs/` splits generated from written** — `docs/map/` generated, `docs/product/` and
-   `docs/decisions/` written. Because hand-maintaining derived facts is what rotted
-   `codebase-summary.md` for 8 months.
-7. **`zharness wiki` is deterministic** — file walk plus regex, no AST, no LLM, 0 tokens.
-   Reference codesight's method, not codesight as a dependency. Verified tractable: 15
-   routes, 11 env vars, and coverage JSON are all derivable without a TypeScript parser.
-   Depends on: decision 6.
+6. **`docs/` holds only what cannot be derived** — intent (`product/`) and judgment
+   (`decisions/`). No hand-maintained document may hold routes, env vars, file inventories,
+   or import graphs. Because hand-maintaining derived facts is what rotted
+   `codebase-summary.md` for 8 months, and the cure is removing the genre, not generating
+   it better. See D31.
+7. **No generator is built** — `zharness wiki` is cut. A generated map only stays honest
+   per stack, and each stack is a permanent adapter to maintain; the code is already its
+   own map, and an agent can grep it. See D31.
 8. **A CLI upgrade must never modify a tracked file** — stage to
    `.harness/state/conflicts/*.upstream` and report. Because it silently rewrote six
    playbooks in a live repo, byte-identical to the embedded versions.
 9. **Authority flows one direction** — owner decision → accepted rule → mechanical check →
    observed fact → the work, and nothing invents authority from the layer below it.
    Conventions, tests, and tool defaults show behavior; they do not authorize a rule.
-10. **Three tiers of truth, declared in `docs/README.md`** (D27) — generated map
-    (`docs/map/`, regenerable), durable knowledge (tracked markdown **is** the truth),
-    execution history (the database is the truth, and it is temporary). Because
+10. **Three tiers of truth, declared in `docs/README.md`** (D27) — derivable facts (**the
+    code is the truth**; nothing in `docs/` restates them — D31), durable knowledge
+    (tracked markdown **is** the truth), execution history (the database is the truth, and
+    it is temporary). Because
     `skills/workflow/README.md:9` currently declares the database authoritative *"not the
     markdown"*, which is true only of the history tier — and stating it unqualified is what
     licensed the one irreplaceable decision in two months to live in a gitignored path.
@@ -221,7 +224,7 @@ Supporting rules, unchanged from the original M8:
 - **`CLAUDE.md`'s gate rule must be scoped to durable work.** It reads *"Both must pass
   before any commit"* with no exception, which contradicts D19 on its face
 
-*Ships alone: the harness becomes cheap to run on small work, which is what gets P1–P4
+*Ships alone: the harness becomes cheap to run on small work, which is what gets P1–P3
 exercised at all.*
 
 ### P1 — Durability core (M1 + M6)
@@ -293,6 +296,10 @@ stops overclaiming.*
   `<!-- HARNESS:BEGIN -->` … `@AGENTS.md` … `<!-- HARNESS:END -->`, re-synced on every
   update. "Emit when absent" never repairs a deleted import line
 - `audit` flags instruction files >4KB not referenced by `AGENTS.md`
+- **`audit` flags derived-fact documents** (D31): a tracked markdown file under `docs/`
+  whose content is dominated by route tables, env-var inventories, file listings, or import
+  graphs is reported with the recovery text *"delete it; grep the code instead."* This is
+  what keeps P4's absence from being refilled by the next `codebase-summary.md`
 - **Pruning as a named act** (Q4): `docs/README.md` and `docs/decisions/README.md` each
   carry a `## History` section recording what was *removed* and why. Superseded material
   is pruned from the tree so retrieval returns current authority; git history and
@@ -301,40 +308,19 @@ stops overclaiming.*
 
 *Ships alone: navigation and upgrade drift are fixed.*
 
-### P4 — Knowledge map (M2)
+### ~~P4 — Knowledge map (M2)~~ — **cut** (D31)
 
-**One file by default** (D30). `zharness wiki` → `docs/map/index.md`, with five sections:
+`zharness wiki` is not built. The map tier is served by the code itself: an agent that
+needs the routes greps for them.
 
-| Section | Holds | Derived by |
-|---|---|---|
-| Start here | entry points | filename convention |
-| Subsystems | directory → purpose, file count | directory walk |
-| Surface | routes (web) or commands (CLI) | App Router directory convention |
-| Config | env vars → the file:line reading each | regex |
-| Change carefully | most-imported files | import regex, counted |
+**The rule that replaces it, landing in P3:** *no hand-maintained document may hold derived
+facts.* Routes, env vars, file inventories, import graphs, and directory listings belong to
+the code, not to `docs/`. `docs/` holds intent (`product/`) and judgment (`decisions/`) —
+the two things that cannot be re-derived.
 
-**Mechanical split rule:** above ~2,000 tokens the generator moves its largest section to
-`docs/map/{section}.md` and leaves a link. KISS by default; it grows without a redesign.
-
-**Four anti-lying mechanisms, none optional** — without them a generated map becomes
-something people trust *instead of* the source:
-
-1. Epistemic boundary in the header — states WHERE and WHAT, never logic; read the source
-   before changing anything
-2. An explicit `Not covered` section naming concrete blind spots
-3. `[?]` marks every regex-inferred fact — a guess must announce itself as a guess
-4. Every fact carries its source path, so the map is an index *into* the source
-
-Plus a DO-NOT-EDIT banner, a freshness stamp, and the regeneration command in the header.
-
-**Deliberately not taken from codesight:** the full `CODESIGHT.md` dump (~5.8k tokens — the
-cost P4 exists to avoid), the 8-article tier, the `libs`/`events`/`middleware`/`cicd`
-facets, `coverage.md` (needs test infrastructure; out until someone needs it), and
-per-path token pricing (only meaningful once there are several files to choose between).
-
-- Next.js App Router + TypeScript adapter first; adapter-shaped for other stacks
-
-*Ships alone: the derived tier exists and stops rotting by construction.*
+Without this rule, cutting P4 does not remove the rot, it only removes the cure: the
+vacuum is exactly the one `codebase-summary.md` filled before rotting for 8 months.
+`audit` enforces it — see P3.
 
 ## Validation Loop
 
@@ -356,7 +342,8 @@ builds; it does not apply to building it.)*
 - Fresh-clone durability test passes (new test, added in P2)
 - Resident-token measurement: entrypoint pair ≤ 900 **and** full resident path ≤ 2,400,
   using the existing `docs/audit/cost-model/` method
-- `zharness wiki` run twice produces byte-identical output
+- `audit` reports a derived-fact document planted in a fixture, and reports nothing on a
+  clean `docs/` tree (D31 — both directions)
 - A CLI version bump against a fixture repo with committed playbooks leaves
   `git status` clean
 - The embedded-docs projection-drift test stays green
@@ -366,7 +353,7 @@ the guard can detect recurrence. Every new gate ships with a fixture that trips 
 
 ## Stop / Pause
 
-**Done when** all five phases are merged, all three hard gates pass, and
+**Done when** all four phases (P0–P3) are merged, all three hard gates pass, and
 `zharness migrate layout` moves a v2 fixture to v3 with parity verified and rollback
 proven.
 
@@ -375,9 +362,10 @@ proven.
 - the migration cannot guarantee parity on a repo with uncommitted changesets, or on
   mono-harness itself
 - either resident budget forces the router below usefulness — report the real number
-  rather than shipping a useless map
-- `zharness wiki` cannot reach determinism on a real repo without an AST, which means P4
-  needs re-scoping rather than forcing
+  rather than shipping a useless router
+- the derived-fact check cannot separate an inventory from a legitimate document without
+  false positives — a check that flags real product docs is worse than no check, so report
+  the failure rather than shipping a noisy rule
 
 ## Risk Note
 
@@ -385,6 +373,12 @@ P0 is the smallest build and the highest-felt payoff; it carries one real risk, 
 mis-classifying durable work as bounded. Escalate-only (never de-escalate) is the
 mitigation: the cost of a wrong `bounded` call is writing the plan later, not losing it.
 
-P4 is the largest build and the only phase with genuine unknowns (stack adapters).
-P0–P3 fix everything that has already caused data loss, drift, or daily friction; P4
-prevents future rot. If scope must be cut, P4 is the clean cut line.
+**With P4 cut, this program has no phase with genuine unknowns left.** Every remaining
+phase fixes something that has already caused data loss, drift, or daily friction; none
+of them prevents a hypothetical. That is a materially safer program than the one drafted,
+and materially smaller — one CLI release rather than a build with stack adapters.
+
+The residual risk is P4's absence, not its content: nothing generates a map, so
+orientation depends on the code being greppable and `docs/product/` being written when
+intent matters. The derived-fact rule (D31) is what keeps that honest — without it, the
+gap refills with a document that rots.

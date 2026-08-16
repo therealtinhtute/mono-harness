@@ -662,6 +662,62 @@ navigation cost from day one.
 
 ---
 
+## D31 — P4 is cut; the derived-fact *genre* is banned instead — supersedes D7/D8/D9/D30
+
+**Owner decision**, after asking whether the wiki could serve every stack. It could not,
+and the answer to that turned out to be to remove the phase rather than generalize it.
+
+**The flaw that surfaced it.** P4 shipped as *"Next.js App Router adapter first;
+adapter-shaped for other stacks"* — so on day one it works for exactly one stack.
+onedrive-cloud is Next.js; **mono-harness is Go**. The generator could not run on the
+repository that produced it. Every additional stack is a permanent adapter to maintain.
+
+**How the three models actually compare:**
+
+| | repository-harness | codesight | `zharness wiki` as drafted |
+|---|---|---|---|
+| Runs on | **any repo** | TS/JS | **Next.js only**, then one adapter at a time |
+| Method | parses nothing | AST | regex |
+| Knowledge from | humans write it | machine derives it | machine derives it |
+| Cost per new stack | **zero** | a parser | an adapter |
+
+repository-harness is stack-agnostic *because it generates nothing*. That is not a
+weakness in their design — it is the design.
+
+**Chosen: cut P4 entirely.** No generator. The code is its own map; an agent that needs the
+routes greps for them.
+
+**The rule that must ship with the cut — otherwise the cut causes the disease it was
+diagnosing.** `codebase-summary.md` did not rot because the repository lacked a generated
+map. It rotted because **someone hand-wrote a document full of derived facts.** Removing
+the generator without removing the genre just reopens the vacuum that document filled.
+
+So P3 gains: **no hand-maintained document may hold derived facts** — routes, env vars,
+file inventories, import graphs, directory listings. Those belong to the code. `docs/`
+holds intent (`product/`) and judgment (`decisions/`), the two things that cannot be
+re-derived. `audit` reports a violation with the recovery text *"delete it; grep the code
+instead."*
+
+**Consequences:**
+
+- D7, D8, D9, and D30 are superseded — codesight's method, the no-AST constraint, the
+  `docs/map/` location, and the one-file layout all described a thing that is no longer
+  being built. Their reasoning is kept as the record of why.
+- D27's first tier changes from "generated map, regenerable" to **"derivable facts — the
+  code is the truth, and nothing in `docs/` restates them."**
+- The program drops from five phases to four, and **loses its only phase with genuine
+  unknowns.** Everything remaining fixes something that has already caused loss or friction.
+
+**Rejected:** a stack-agnostic core plus optional stack packs — four of the five map
+sections (Subsystems, Config, Change-carefully, Start-here) need only a directory walk and
+about eleven regexes across five languages, so a map that runs on any repo was genuinely
+available. The owner chose removal over a smaller build.
+
+**Rejected:** keeping the Next.js-only generator — the tool would not run on the repository
+that produces it.
+
+---
+
 ## Standing Constraint
 
 `onedrive-cloud`, `harness-experimental`, and `codesight` are **read-only reference
