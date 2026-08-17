@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/therealtinhtute/skills/cli/internal/application"
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
@@ -62,6 +63,15 @@ func mapValidationError(ve *domain.ValidationError) *cliError {
 		code = "invalid_input"
 	}
 	return newUserError(code, ve.Message)
+}
+
+// mapStop converts a shared active-plan resolver Stop (R2,
+// docs/audit/consumer-adoption-audit.md D1) into the same non-zero-exit
+// JSON envelope a ValidationError produces, so a Stop-based caller and a
+// ValidationError-based caller are indistinguishable at the process
+// boundary.
+func mapStop(stop *application.StopInfo) *cliError {
+	return newUserError(stop.Code, stop.Message)
 }
 
 // errNotImplemented marks a command stub not yet wired to the

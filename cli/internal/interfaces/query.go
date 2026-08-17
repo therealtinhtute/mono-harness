@@ -36,12 +36,15 @@ func newQueryCmd() *cobra.Command {
 
 func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID string, tail int, section string) error {
 	if view == "plan" {
-		v, err := application.QueryPlanSection(section, phaseFilter)
+		v, stop, err := application.QueryPlanSection(section, phaseFilter)
 		if err != nil {
 			if ve, ok := err.(*domain.ValidationError); ok {
 				return mapValidationError(ve)
 			}
 			return newSystemError("plan_unreadable", fmt.Sprintf("query plan: %v", err))
+		}
+		if stop != nil {
+			return mapStop(stop)
 		}
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 	}

@@ -43,40 +43,32 @@ var planPhaseListItem = regexp.MustCompile(`(?m)^([ \t]*)- phase_slug: ([a-zA-Z0
 
 // QueryPlanSection resolves the single active plan under
 // docs/plans/active/*.md and returns the requested slice. section is
-// "current-state" or "phase" ("phase" requires phase, a phase_slug).
-func QueryPlanSection(section, phase string) (PlanSectionView, error) {
+// "current-state" or "phase" ("phase" requires phase, a phase_slug). The
+// active-plan count is resolved via ResolveActivePlan (R2,
+// docs/audit/consumer-adoption-audit.md D1) — this function never raises
+// its own ambiguous/no-plan ValidationError; it surfaces the shared Stop
+// instead.
+func QueryPlanSection(section, phase string) (PlanSectionView, *StopInfo, error) {
 	if section != "current-state" && section != "phase" {
-		return PlanSectionView{}, &domain.ValidationError{
+		return PlanSectionView{}, nil, &domain.ValidationError{
 			Code:    "unknown_section",
 			Message: fmt.Sprintf("query plan: unknown section %q (want current-state|phase)", section),
 		}
 	}
 	if section == "phase" && phase == "" {
-		return PlanSectionView{}, &domain.ValidationError{
+		return PlanSectionView{}, nil, &domain.ValidationError{
 			Code:    "missing_required_field",
 			Message: "query plan --section phase requires --phase {slug}",
 		}
 	}
 
-	plans, err := findActivePlans()
+	plan, stop, err := ResolveActivePlan()
 	if err != nil {
-		return PlanSectionView{}, err
+		return PlanSectionView{}, nil, err
 	}
-	switch len(plans) {
-	case 0:
-		return PlanSectionView{}, &domain.ValidationError{
-			Code:    "no_active_plan",
-			Message: "query plan: no non-empty plan under docs/plans/active/*.md",
-		}
-	case 1:
-		// fall through
-	default:
-		return PlanSectionView{}, &domain.ValidationError{
-			Code:    "ambiguous_active_plan",
-			Message: fmt.Sprintf("query plan: %d active plans found; this command requires exactly one", len(plans)),
-		}
+	if stop != nil {
+		return PlanSectionView{}, stop, nil
 	}
-	plan := plans[0]
 
 	var body string
 	var found bool
@@ -90,10 +82,10 @@ func QueryPlanSection(section, phase string) (PlanSectionView, error) {
 	if !found {
 		view.Content = plan.content
 		view.Degraded = true
-		return view, nil
+		return view, nil, nil
 	}
 	view.Content = body
-	return view, nil
+	return view, nil, nil
 }
 
 // extractPlanSection returns the body of a `## {name}` heading — every line

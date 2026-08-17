@@ -38,6 +38,19 @@ func ScaffoldArtifact(templates fs.FS, kind, path string) ([]byte, error) {
 	if info, err := os.Stat(path); err == nil && info.Size() > 0 {
 		return nil, &domain.ValidationError{Code: "file_exists", Message: "scaffold: " + path + " already exists and is non-empty; refusing to overwrite"}
 	}
+	if kind == "plan" && isActivePlanDir(path) {
+		if existing, err := existingActivePlanPath(); err != nil {
+			return nil, err
+		} else if existing != "" {
+			return nil, &domain.ValidationError{
+				Code: "active_plan_exists",
+				Message: fmt.Sprintf(
+					"%s already exists: docs/plans/active/ may hold only one non-empty plan (docs/audit/consumer-adoption-audit.md, D1). Run `zharness plan complete` or `zharness plan abandon` on %s before scaffolding %s.",
+					existing, existing, path,
+				),
+			}
+		}
+	}
 	data, err := fs.ReadFile(templates, rel)
 	if err != nil {
 		return nil, fmt.Errorf("scaffold: read template %s: %w", rel, err)
@@ -51,4 +64,28 @@ func ScaffoldArtifact(templates fs.FS, kind, path string) ([]byte, error) {
 		return nil, fmt.Errorf("scaffold: write %s: %w", path, err)
 	}
 	return data, nil
+}
+
+// isActivePlanDir reports whether path's directory is docs/plans/active/
+// (R1, docs/audit/consumer-adoption-audit.md D1) — the guard below only
+// applies there, not to a "plan" kind scaffolded elsewhere (e.g. a test
+// fixture directory).
+func isActivePlanDir(path string) bool {
+	return filepath.Clean(filepath.Dir(path)) == filepath.Clean(filepath.Dir(nextActivePlansGlob))
+}
+
+// existingActivePlanPath returns the path of a non-empty plan already
+// under docs/plans/active/, or "" if none exists yet. Reuses
+// findActivePlans (plan_resolve.go) rather than a second glob, so the
+// creation guard and the runtime resolver can never disagree about what
+// counts as an active plan.
+func existingActivePlanPath() (string, error) {
+	plans, err := findActivePlans()
+	if err != nil {
+		return "", err
+	}
+	if len(plans) == 0 {
+		return "", nil
+	}
+	return plans[0].path, nil
 }

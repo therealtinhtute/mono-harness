@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -118,5 +119,31 @@ func TestQueryPlanNoActivePlanIsUserError(t *testing.T) {
 	_, err := runDBCommand(t, "query", "plan", "--section", "current-state", "--json")
 	if err == nil {
 		t.Fatalf("query plan with no active plan: want an error")
+	}
+}
+
+// TestQueryPlanAmbiguousActivePlanExitsNonZero proves the shared resolver's
+// Stop{Code:"ambiguous"} (R2, docs/audit/consumer-adoption-audit.md D1)
+// still surfaces through `query plan` as the same non-zero-exit JSON
+// envelope shape a ValidationError produced before this rewrite, so this
+// caller's process-boundary contract has not regressed.
+func TestQueryPlanAmbiguousActivePlanExitsNonZero(t *testing.T) {
+	t.Chdir(t.TempDir())
+	writeQueryPlanFixture(t)
+	path := filepath.Join("docs", "plans", "active", "other.md")
+	if err := os.WriteFile(path, []byte(queryPlanFixture), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	_, err := runDBCommand(t, "query", "plan", "--section", "current-state", "--json")
+	ce, ok := err.(*cliError)
+	if !ok {
+		t.Fatalf("query plan with two active plans: err = %v, want *cliError", err)
+	}
+	if ce.Code != "ambiguous" || ce.Exit != 1 {
+		t.Fatalf("cliError = %+v, want code=ambiguous exit=1", ce)
+	}
+	if !strings.Contains(ce.Message, "demo.md") || !strings.Contains(ce.Message, "other.md") {
+		t.Fatalf("message = %q, want it to name both candidate plans", ce.Message)
 	}
 }

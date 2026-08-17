@@ -3,10 +3,7 @@ package application
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
@@ -21,25 +18,9 @@ type NextView struct {
 	Stop        *StopInfo `json:"stop,omitempty"`
 }
 
-// StopInfo is one blocking state from work.md's former Full-Mode-Detection
-// table: a taxonomy code, a human message naming the specific blocker, and
-// the exact recovery command/action.
-type StopInfo struct {
-	Code     string `json:"code"`
-	Message  string `json:"message"`
-	Recovery string `json:"recovery"`
-}
-
-const nextActivePlansGlob = "docs/plans/active/*.md"
-
 var placeholderMarkers = []string{"TBD", "TODO", "similar to", "implement later"}
 
 var activePlanPhaseSlug = regexp.MustCompile(`(?m)^[ \t]*-[ \t]+phase_slug:[ \t]*([^ \t\r\n]+)[ \t]*$`)
-
-type activePlan struct {
-	path    string
-	content string
-}
 
 // Next resolves work.md's former Mode-Resolution + Full-Mode-Detection
 // tables in Go. Two rows are deliberately NOT encoded here and stay
@@ -65,22 +46,17 @@ func Next(db *sql.DB, argument string) (NextView, error) {
 		return NextView{Mode: "simple"}, nil
 	}
 
-	plans, err := findActivePlans()
+	plan, stop, err := ResolveActivePlan()
 	if err != nil {
 		return NextView{}, err
 	}
-	if len(plans) > 1 {
-		paths := make([]string, 0, len(plans))
-		for _, plan := range plans {
-			paths = append(paths, plan.path)
+	if stop != nil {
+		if stop.Code == "ambiguous" {
+			return NextView{Mode: mode, Stop: stop}, nil
 		}
-		return NextView{Mode: mode, Stop: &StopInfo{
-			Code:     "ambiguous",
-			Message:  fmt.Sprintf("More than one active initiative plan exists: %s.", strings.Join(paths, ", ")),
-			Recovery: "ask the user to select the initiative before continuing",
-		}}, nil
-	}
-	if len(plans) == 0 {
+		// stop.Code == "none": auto mode legitimately falls back to
+		// simple with no active plan; full mode keeps next's own
+		// historical no-plan code and message.
 		if mode == "auto" {
 			return NextView{Mode: "simple"}, nil
 		}
@@ -91,7 +67,7 @@ func Next(db *sql.DB, argument string) (NextView, error) {
 		}}, nil
 	}
 
-	return resolveFullMode(db, plans[0], explicitPhase)
+	return resolveFullMode(db, plan, explicitPhase)
 }
 
 func parseNextArgument(argument string) (mode, explicitPhase string, ok bool) {
@@ -123,28 +99,6 @@ func parseNextArgument(argument string) (mode, explicitPhase string, ok bool) {
 	default:
 		return "", "", false
 	}
-}
-
-func findActivePlans() ([]activePlan, error) {
-	matches, err := filepath.Glob(nextActivePlansGlob)
-	if err != nil {
-		return nil, fmt.Errorf("next: glob active plans: %w", err)
-	}
-	sort.Strings(matches)
-
-	plans := make([]activePlan, 0, len(matches))
-	for _, path := range matches {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("next: read %s: %w", path, err)
-		}
-		content := string(data)
-		if strings.TrimSpace(content) == "" {
-			continue
-		}
-		plans = append(plans, activePlan{path: path, content: content})
-	}
-	return plans, nil
 }
 
 func resolveFullMode(db *sql.DB, plan activePlan, explicitPhase string) (NextView, error) {

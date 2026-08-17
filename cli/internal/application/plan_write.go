@@ -8,21 +8,24 @@ import (
 )
 
 // activePlanForWrite resolves the single active plan a durable write
-// should append to, reusing findActivePlans (next.go, V3's parse
-// precedent). Zero or more than one active plan is not an error: a
-// bounded/simple write legitimately has no active plan, and an ambiguous
-// multi-plan repository is a drift condition this feature does not try to
-// resolve — both cases proceed DB-only, exactly as before this feature
-// existed.
-func activePlanForWrite() (path string, ok bool, err error) {
-	plans, err := findActivePlans()
+// should append to, reusing ResolveActivePlan (R2,
+// docs/audit/consumer-adoption-audit.md D1) so this caller never
+// reconstructs its own ok=false collapse of "zero" and "ambiguous" into one
+// indistinguishable state. Zero or more than one active plan is not a
+// hard error here: a bounded/simple write legitimately has no active plan,
+// and an ambiguous multi-plan repository is a drift condition this feature
+// does not try to resolve — both cases proceed DB-only, exactly as before
+// this feature existed, but the caller now receives the Stop naming which
+// case occurred instead of a bare boolean.
+func activePlanForWrite() (path string, stop *StopInfo, err error) {
+	plan, stop, err := ResolveActivePlan()
 	if err != nil {
-		return "", false, err
+		return "", nil, err
 	}
-	if len(plans) != 1 {
-		return "", false, nil
+	if stop != nil {
+		return "", stop, nil
 	}
-	return plans[0].path, true, nil
+	return plan.path, nil, nil
 }
 
 // preparePlanAppend resolves the active plan (if exactly one exists) and
@@ -37,11 +40,11 @@ func activePlanForWrite() (path string, ok bool, err error) {
 // and must only be called after the DB write has succeeded; when no
 // single active plan is resolvable, write is a no-op returning nil.
 func preparePlanAppend(section, entry string) (write func() error, err error) {
-	path, ok, err := activePlanForWrite()
+	path, stop, err := activePlanForWrite()
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
+	if stop != nil {
 		return func() error { return nil }, nil
 	}
 	data, err := os.ReadFile(path)
