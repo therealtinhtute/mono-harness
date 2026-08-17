@@ -211,7 +211,7 @@ updated: 2026-08-17
 
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none
+- `2026-08-17T15:05:48.456Z` — handoff recorded. handoff: `01M0843RN8RAH4P549K6TBXBPX`. next action: work full p0-single-active-plan. open items: P5 (durable-memory) and P6 (retrieval-router) are decision-complete and approved but not yet appended to the plan — run: to-plan phase p5-durable-memory, then to-plan phase p6-retrieval-router; P0 has no run yet; no implementation code has been written for this initiative; onedrive-cloud has two plans with status: active since 2026-08-16 — owner must call which is live (ui-ux-audit-remediation.md, ten phases shipped in 0b32adb) vs dead (check-review-remediation.md, untouched 18 days); consumer-side repair only, does not block P0; DB story goals for p1-cut-dead-surfaces and p3-retire-changesets carry pre-measurement LOC figures (147 and 1,715); the plan file holds the measured values (136 LOC across 3 files plus 6 reference sites, and 690 LOC core) — trust the plan file; P5 must follow P3: deleting a completed plan is only reversible through git once db rebuild works from committed content alone.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -227,7 +227,12 @@ updated: 2026-08-17
 - latest_run_id: none
 - latest_trace_ids: []
 - latest_check_id: none
-- latest_handoff_id: none
+- latest_handoff_id: 01M0843RN8RAH4P549K6TBXBPX
 - blockers: none
-- open_items: [onedrive-cloud's two active plans still need a live/dead call before the consumer-side repair can run — owner decision, does not block P0]
+- open_items:
+  - P5 (durable-memory) and P6 (retrieval-router) are decision-complete and approved but not yet appended — run `to-plan phase p5-durable-memory`, then `to-plan phase p6-retrieval-router`. P0–P4 stay immutable.
+  - P0 has no run yet; no implementation code has been written for this initiative.
+  - onedrive-cloud has two plans with `status: active` since 2026-08-16 — the owner must call which is live (`onedrive-cloud/docs/plans/active/ui-ux-audit-remediation.md`, ten phases shipped in commit 0b32adb) versus dead (`onedrive-cloud/docs/plans/active/check-review-remediation.md`, untouched 18 days). Consumer-side repair only; does not block P0.
+  - The DB story goals for `p1-cut-dead-surfaces` and `p3-retire-changesets` carry pre-measurement LOC figures (147 and 1,715). The measured values are in this file: 136 LOC across 3 files plus 6 reference sites, and 690 LOC core. Trust this file.
+  - P5 must follow P3 — deleting a completed plan is only reversible through git once `db rebuild` works from committed content alone.
 - exact_next_action: work full p0-single-active-plan
