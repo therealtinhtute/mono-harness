@@ -1,17 +1,21 @@
 # Reference Models
 
-Three external sources read for structure. **None is adopted as a dependency** — the
-mechanisms are extracted, the code is not.
+Three external sources read for structure, grouped by lineage. **None is adopted as a
+dependency** — the mechanisms are extracted, the code is not.
 
-- `harness-experimental` — local copy
-- `hoangnb24/repository-harness` — the same lineage, upstream and ahead (below)
+- `harness-experimental` (local copy) + `hoangnb24/repository-harness` (upstream, ahead)
+  — same lineage
 - `Houseofmvps/codesight` — generated knowledge base
 
 ---
 
-## harness-experimental
+## harness-experimental (local copy + upstream)
 
-`/Users/tinhtute/Lab/harness-experimental` — Rust, `harness-v0.1.10`.
+Same lineage, two snapshots: the local copy is behind, the public upstream is ahead.
+
+### Local copy — `/Users/tinhtute/Lab/harness-experimental`
+
+Rust, `harness-v0.1.10`.
 
 Notable: it **retired** the SQLite control plane (decision 0027, "End Protocol V1 And
 Focus The Repository Protocol") and moved to repository-as-system-of-record. mono-harness
@@ -46,20 +50,18 @@ Harness-Owned Process  -> WORKFLOW.md, plans/, templates/, patterns/
 
 > Start with the smallest authoritative surface.
 
-### Resident cost
+### Resident cost (local copy)
 
 `AGENTS.md` 1.6KB + `docs/WORKFLOW.md` 5KB = **~1.6k tokens**.
 Roughly 10x lighter than onedrive-cloud's ~6.6k.
 
----
-
-## repository-harness (upstream)
+### Upstream (ahead) — `hoangnb24/repository-harness`
 
 `github.com/hoangnb24/repository-harness` — Rust, public, `pushed_at 2026-08-13`.
-"Turn any repo into an agent-ready workspace." Same lineage as the local copy and
-**ahead of it**. Read on 2026-08-15; five mechanisms the local copy did not show.
+"Turn any repo into an agent-ready workspace." Read on 2026-08-15; five mechanisms
+the local copy did not show.
 
-### A — The ADR template is 10 lines, and it carries `Status`
+#### A — The ADR template is 10 lines, and it carries `Status`
 
 `docs/templates/decision.md` is **331 bytes**:
 
@@ -74,7 +76,7 @@ Roughly 10x lighter than onedrive-cloud's ~6.6k.
 `Status` is the mechanism that makes supersession work without deletion. The draft
 spec's P2 template omitted both `Status` and `Follow-Up`. Take them.
 
-### B — Promotion is filtered, not blanket
+#### B — Promotion is filtered, not blanket
 
 `docs/decisions/README.md` states the trigger set outright:
 
@@ -93,7 +95,7 @@ Also: *"Installed consumers begin with an empty decision index and add only real
 consumer choices."* The scaffold ships the index and the criteria — never upstream's
 own ADRs.
 
-### C — Deliberate absence is a retrieval feature
+#### C — Deliberate absence is a retrieval feature
 
 Both `docs/README.md` and `docs/decisions/README.md` carry a `## History` section
 whose entire job is to explain what is **missing** and why:
@@ -107,7 +109,7 @@ Removal is the point; git history and immutable tags are the provenance. Stronge
 the draft's "plans stay disposable" — this makes *pruning* a named, explained act
 rather than a silent one. The draft spec has no equivalent.
 
-### D — A third knowledge kind: enforced invariants
+#### D — A third knowledge kind: enforced invariants
 
 `docs/patterns/encoding-invariants.md` (4.4KB) + ADR `0028-authoritative-invariant-encoding`
 define a category the draft's two-way synthesis missed — a rule compiled into
@@ -135,7 +137,7 @@ Violating item · broken rule · **authority pointer** · next action — not `v
 Directly applicable to `zharness audit`, whose findings today make no distinction
 between "a check exists" and "a check ran and passed."
 
-### E — `CLAUDE.md` gets a managed block, not a one-time emit
+#### E — `CLAUDE.md` gets a managed block, not a one-time emit
 
 ```markdown
 <!-- HARNESS:BEGIN -->
@@ -154,7 +156,7 @@ The backtick gotcha is encoded in the block itself.
 Note also `.agents/skills/` rather than `.claude/skills/`, each skill carrying an
 `agents/openai.yaml` adapter — vendor-neutral by layout.
 
-### F — Measured resident cost
+#### F — Measured resident cost
 
 | File | Bytes | ~Tokens |
 |---|---|---|
