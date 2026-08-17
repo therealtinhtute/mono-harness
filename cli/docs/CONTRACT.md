@@ -51,7 +51,7 @@ Append-producing mutations allocate canonical changeset filenames strictly above
 - Creates the single ignored root `harness.db`, replays any existing `.kit/changesets/` before writing new docs metadata, projects `docs/WORKFLOW.md` + `docs/playbooks/**`, updates only the marked `AGENTS.md` block, and appends root DB/WAL/SHM plus `.kit/cache/`/`.kit/conflicts/` ignore entries
 - Managed file hashes and docs version live in `managed_docs`. Refresh updates untouched files, preserves local-only edits, and returns `docs_conflict` after staging upstream content under `.kit/conflicts/` when local and embedded content both changed.
 - Refuses to create a second database when legacy `.kit/harness.db` exists; recovery is `zharness migrate layout --to v2`
-- Playbooks are edited in `cli/docs/embedded/playbooks/` only; root managed docs are the projection checked by `TestProjectionDrift_RootDocsMatchEmbed`
+- Playbooks are edited in `cli/docs/embedded/playbooks/` only; root managed docs are generated projections created by `zharness init`
 - `--json`: `{"status": "created"|"exists", "db_path": "harness.db", "schema_version": N}`
 - Errors: `layout_migration_required` (1), `docs_conflict` (1), `db_not_writable` (2)
 - Consumer: durable workflow stages

@@ -40,7 +40,7 @@ skill, but you can run them directly:
 # Exceptions live in .claimignore and each one requires a `# reason`.
 bash scripts/verify-doc-links.sh
 
-# Go CLI test suite, including the embedded-docs projection-drift test.
+# Go CLI test suite.
 cd cli && go test ./...
 ```
 
