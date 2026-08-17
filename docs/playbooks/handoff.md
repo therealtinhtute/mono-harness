@@ -33,8 +33,7 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
 6. **Complete the initiative only after final phase closure**:
    - Before closing the final phase, require every prior phase to be `done` and the final phase's latest run to have a clean `check full` verdict — the initiative's one required complete Security, Performance, Architecture, and Code Quality review (R4, `docs/audit/sdlc-token-cache-audit.md`); a `check gate` verdict alone does not satisfy this, no matter how clean. There is no alternative or early-completion condition. `check record` does not yet persist which mode produced a verdict, so confirm this from the check's own `mode: full` output line (`check.md`'s Output Format) or the session's own record of having invoked `check full`; do not infer it from the verdict alone. If the final phase's latest check was only `gate`, invoke `check full` on it before closing.
    - Close the final phase through Step 5. Only after `zharness query phases --json` shows every phase `done`, update Current State with final IDs, `active_phase: none`, `blockers: none`, `open_items: none`, and an exact closure next action.
-   - Set frontmatter `status: completed` and refresh `updated`.
-   - Move the same file, without copying or rewriting its history, to `docs/plans/completed/{slug}.md`. Confirm the active path no longer exists and the completed path contains the same plan ID and content.
+   - Run `zharness plan complete --json` (R5, `docs/audit/consumer-adoption-audit.md` D1) — it refuses with `open_phase` unless every phase_slug the plan defines is a done story, otherwise it sets frontmatter `status: completed`, refreshes `updated`, records the transition, and moves the file to `docs/plans/completed/{slug}.md` itself. Do not set `status:` or move the file by hand. Confirm the returned `path` names `docs/plans/completed/{slug}.md`, the active path no longer exists, and the completed path contains the same plan ID.
 7. **Verify continuity quality** — branch captured, IDs match DB state, phase statuses match the plan, blockers are specific, one exact next action exists, sensitive data is absent, and exactly one plan file represents the initiative.
 
 ## Command Reference
@@ -45,6 +44,7 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
 - `zharness query phases --json` (steps 5/6 only — post-mutation re-verification; step 2 reads `context.position`/`context.phases` from preflight instead)
 - `zharness handoff record [--run-id {run-id}] [--check-id {check-id}] --open-items '[...]' --json`
 - `zharness handoff record --run-id {run-id} --check-id {check-id} --open-items '[]' --close-phase --json`
+- `zharness plan complete --json` (step 6 only — final phase closure; refuses with `open_phase` unless every phase is done)
 
 ## Exit Conditions
 

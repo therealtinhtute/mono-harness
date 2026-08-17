@@ -39,7 +39,7 @@ Preserve all later-stage content already present in the plan. Once `to-plan` has
 5. **Choose the stable slug** — use a short initiative slug. The canonical active path is `docs/plans/active/{slug}.md`; do not create a second durable initiative markdown for the same work.
 6. **Create a new lock**:
    - Run `zharness id --json` and keep the returned ID as the plan's own `id`.
-   - Run `zharness scaffold plan --path docs/plans/active/{slug}.md --json`.
+   - Run `zharness scaffold plan --path docs/plans/active/{slug}.md --json`. This refuses with `active_plan_exists` (R1, `docs/audit/consumer-adoption-audit.md` D1) when a non-empty plan already exists under `docs/plans/active/` — at most one may exist at a time. Its message names the existing path; run `zharness plan complete` or `zharness plan abandon` on it before locking a new initiative.
    - Run `zharness intake --type {input-type} --summary "{one-line summary}" --lane {lane} --plan-path docs/plans/active/{slug}.md --json`; keep the returned ID as `intake_id`.
    - Fill frontmatter with both IDs, `status: active`, lane, and dates, then fill the three owned sections.
    - Replace every unowned template placeholder with honest bootstrap state: `approach: not-planned`; `planning_status: not-planned`; phases, Progress, Decisions, and Validation as `none`; Current State IDs/blockers as `none`; and `exact_next_action: to-plan`.
