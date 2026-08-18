@@ -5,7 +5,7 @@ intake_id: 01M08297J2C9K64VB2E0VPJTKK
 lane: high-risk
 status: active
 created: 2026-08-17
-updated: 2026-08-17
+updated: 2026-08-18
 ---
 
 # Plan: Markdown as source of truth, SQLite as derived index
@@ -75,7 +75,7 @@ updated: 2026-08-17
 - phases:
   - phase_slug: p0-single-active-plan
     story_id: 01M082F6NKJQXZTC9E5KJBVT47
-    status: checked
+    status: done
     goal: Close both D1 entry paths — guard plan creation, unify the resolver behind one Stop contract, add the 3-tier disambiguation ladder, add plan complete/abandon, and give work.md a recovery branch.
     depends_on: none
     waves:
@@ -119,7 +119,7 @@ updated: 2026-08-17
           - check: `cd cli && go test ./... && cd .. && bash scripts/verify-doc-links.sh`
   - phase_slug: p1-cut-dead-surfaces
     story_id: 01M082F6NW6CQCT9EPR3WRYF1A
-    status: planned
+    status: done
     goal: Remove the intervention surface (136 LOC across 3 files plus 6 reference sites) and the dead next command, now that P0 owns the resolver.
     depends_on: p0-single-active-plan
     waves:
@@ -139,7 +139,7 @@ updated: 2026-08-17
           - check: `cd cli && go test ./... && cd .. && bash scripts/verify-doc-links.sh`
   - phase_slug: p2-derive-index
     story_id: 01M082F6P4KY7QN6TPCVW432P8
-    status: planned
+    status: done
     goal: Stop the six dual-writes — markdown becomes the write target and the DB row is derived from it — and add plan_index using the managed_docs SHA256 pattern.
     depends_on: p1-cut-dead-surfaces
     waves:
@@ -167,7 +167,7 @@ updated: 2026-08-17
           - check: `cd cli && go test ./... && cd .. && bash scripts/verify-doc-links.sh`
   - phase_slug: p3-retire-changesets
     story_id: 01M082F6PC49MBTSXMSVGMRCBD
-    status: planned
+    status: done
     goal: Retire the changeset layer, make db rebuild work from committed content alone, and repair the .gitignore contradiction so D5 dissolves.
     depends_on: p2-derive-index
     waves:
@@ -238,6 +238,7 @@ updated: 2026-08-17
 - `2026-08-17T15:28:37Z` — wave 5, task Rewrite docs/playbooks/handoff.md lines 36-37 to call zharness plan complete instead of instructing the agent to set status: and move the file by hand.. task_status: `DONE`. run: `01M084AAB3Y8MBBAHJ6HA6897J`. summary: Replaced the two manual status:/move bullets in step 6 with a single zharness plan complete --json call; added it to the Command Reference list..
 - `2026-08-17T15:28:37Z` — wave 5, task Update docs/playbooks/brainstorm.md step 6 to state that scaffold now refuses a second active plan, and name the two exits.. task_status: `DONE`. run: `01M084AAB3Y8MBBAHJ6HA6897J`. summary: Extended the scaffold plan bullet in step 6 to document the active_plan_exists refusal and name plan complete/plan abandon as the exits..
 - `2026-08-17T15:28:45Z` — wave 5. run: `01M084AAB3Y8MBBAHJ6HA6897J`. summary: Wave 5 done: 3-tier disambiguation ladder (Tier 1 frontmatter preview, Tier 2 bounded packet, R4 git-log fallback) implemented in plan_resolve.go; work.md/handoff.md/brainstorm.md playbooks updated; go test ./... and verify-doc-links.sh both green. Phase p0-single-active-plan waves 1-5 complete..
+- `2026-08-18T08:09:56Z` — handoff recorded. handoff: `01M09YQ0KCW6HWC7MWXRMGD0F8`. run: `01M084AAB3Y8MBBAHJ6HA6897J`. check: `01M085PYS31ZEN0RYJ6E8N7GX5`. phase closed.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -247,6 +248,7 @@ updated: 2026-08-17
 - `2026-08-18T03:11:32Z` — Amended P3 wave 1-2 task text before implementing (task list is normally immutable after to-plan; owner approved this deviation), task: wave 1. rationale: Wave 1 as originally written ("reconstruct every table from committed repository markdown plus plan_index, with no read of .kit/changesets/") assumed stories/runs/intakes/meta already had a markdown representation. Grepping story_create.go, run_create.go, intake.go, import.go, and init.go for preparePlanAppend/writeFileAtomically found none — only trace/decision/check/handoff became markdown-first in P2. Since wave 2 as originally written deletes the entire changeset layer and removes changeset writes from every lifecycle command, following the original text as-is would have left stories/runs/intakes/meta with no durable source of truth at all post-P3. Resolved by reframing rather than inventing new sections: stories piggyback on the existing per-phase story_id/status fields already in `## Phases and Verification` (only the write-back was missing); intakes are already fully derivable from every plan file's existing intake_id/lane frontmatter; runs are reconstructed only from backreferences (`run: `id`` in Progress/Validation entries) and a run with zero footprint is correctly dropped under this initiative's own markdown-is-truth philosophy, not a bug; meta pointers (current_phase/latest_run_id/latest_check_id/docs_version) are left unset post-rebuild, which is already a supported and tested state via the existing unknown_phase/out_of_order/stale_docs drift tolerance (TestResumeStaleDocsMissing and friends). Wave 1 and wave 2 task text updated to reflect this; R8-R12 and every other phase are unchanged..
 - `2026-08-18T06:33:19Z` — db rebuild reconstructs stories/intakes/checks/runs/traces/handoffs/decisions from committed plan markdown alone (docs/plans/{active,completed}/*.md), no read of .kit/changesets/, task: Rewrite zharness db rebuild (p3-retire-changesets) to reconstruct all tables from phase blocks and Progress/Decisions/Validation/frontmatter, no changeset read. rationale: markdown is the source of truth per P3; traces/decisions get freshly minted ids on rebuild since formatTraceProgressEntry/formatDecisionEntry never embed one; a run is only reconstructed when a Validation (check) entry backreferences it, since that is the only entry shape carrying story_slug (runs.story_slug NOT NULL); intakes.type/summary have no markdown home and are synthesized placeholders, while intakes.id/plan_id/lane are recovered exactly via a plan frontmatter's intake_id/id/lane fields; meta pointers are left unset since no committed markdown proves which run/check is latest..
 - `2026-08-18T07:50:16Z` — Completed P3 waves 2 and 3: retired the changeset write path (story/run/check/handoff/decision/trace/intake/import/layout-migration/init all write direct SQL now; infrastructure/changeset.go, application/changeset.go, `db changeset apply`/`db changeset status`, and ~30 dependent test files deleted or converted) and repaired the `.gitignore`/`CLAUDE.md` `.kit/` contradiction (D5), task: wave 2 and wave 3. rationale: This worktree's harness.db was again absent (same fresh-worktree gap P1/P2/wave-1 hit), so this entry is recorded directly in the plan rather than via `zharness decision add`, per the same owner-approved precedent. CreateRun/RecordCheck/RecordHandoff switched from changeset-derived ULID ordering to independent `ulid.Make()`+`time.Now()` minting, wrapped in explicit `db.Begin`/`tx.Exec`/`tx.Commit` to preserve the atomicity `ApplyChangeset`'s single transaction used to provide for each function's multi-row write (run+story+meta; check+story+meta; handoff+story). `db_status.go`'s `Pending`/`UnverifiedBelowFence`/`Fence` fields were dropped (changeset-only concepts with no successor); `import.go` dropped `changesetDir`/`ChangesetsWritten`; `CONTRACT.md` updated to match the real current `import`/`db status`/`migrate layout` JSON shapes. Converting layout_backfill.go/layout_migration.go off changeset-replay surfaced a real pre-existing data-loss bug — `migrate layout` was silently dropping `checks.judge`/`judge_model`, `traces.task`/`task_status`, and the entire `decisions` table during a v1→v2 layout migration — fixed as part of this wave, caught only because two tests' before/after DB comparisons started failing once the surrounding replay logic was converted. `.gitignore` line 2's bare `.kit/` was replaced with per-machine-state-only entries (`.kit/harness.db`, `.kit/cache/`, `.kit/conflicts/`, `.kit/log/`); the stale local `.kit/changesets/` directory this left untracked was moved to trash (never `rm`, per R-D's explicit mitigation). `docs/workflow-harness/migration.md` line 37 — the doc that stated the original `.gitignore` contradiction — could not be updated: the file was deleted by an earlier unrelated commit (655c6ac), part of the same pre-existing 16-broken-doc-link drift already documented in P1's decision entry; CLAUDE.md's `.kit/` paragraph was rewritten instead, and the dangling `docs/workflow-harness/migration.md` cross-reference in that same paragraph is left as-is, already covered by that drift baseline. `cd cli && go test ./... -count=1`, `go vet ./...`, and `bash scripts/verify-doc-links.sh` all pass; the pre-existing 16 broken doc cross-references are unchanged. P3 is now complete: all three waves shipped and verified..
+- `2026-08-18T08:11:05Z` — `/handoff` session close-out: initialized this worktree's absent `harness.db`, ran `db rebuild` (5 stories/24 traces/6 decisions/1 check/1 run/1 handoff/1 intake reconstructed from committed markdown, proving P3 wave 1's rebuild), closed `p0-single-active-plan` for real via `zharness handoff record --run-id 01M084AAB3Y8MBBAHJ6HA6897J --check-id 01M085PYS31ZEN0RYJ6E8N7GX5 --open-items '[]' --close-phase` (handoff `01M09YQ0KCW6HWC7MWXRMGD0F8`) — that command had been sitting as this file's `exact_next_action` since P0 closed but was never actually run. task: gate. rationale: `p1-cut-dead-surfaces`/`p2-derive-index`/`p3-retire-changesets` are all done in substance per their own Decisions entries (task lists executed, each phase's own check commands green) but never went through DB run/check/handoff ceremony (same fresh-worktree gap every phase in this plan hit); their `status:` fields were hand-set from `planned` to `done` in `## Phases and Verification` to match reality, then `db rebuild` re-derived `stories.status` from those fields (no fabricated run/check rows) — `zharness query phases --json` now shows p0-p3 `done`, p4 `planned`, DB and plan in agreement. Current State rewritten: `active_phase: p4-markdown-schema`, `exact_next_action: work full phase p4-markdown-schema`. First `db rebuild` attempt (run with cwd=`cli/` by mistake, `go -C cli run` chained after a `cd cli`) returned zero rows for every table — diagnosed as a cwd bug in my own invocation, not the rebuild logic: `docs/plans/{active,completed}/*.md` globs are relative to cwd, and `cli/` has no `docs/` subtree. Re-running from repo root fixed it. A stray `docs_conflict` on `docs/playbooks/{brainstorm,work,handoff}.md` followed (untracked scaffold left by that same wrong-cwd `init`, stale relative to the binary's embedded canonical content) — trashed and `init` re-ran clean. While cleaning up I mistakenly `trash`ed `cli/docs/` (real tracked source: `CONTRACT.md`/`SCHEMA.md`/`STATE.md`/`embedded/*`), caught immediately via `git status`, restored with `git checkout --`. `cd cli && go test ./... -count=1` and `bash scripts/verify-doc-links.sh` both pass after the plan edits; the pre-existing 16 broken doc cross-references are unchanged..
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
@@ -255,17 +257,18 @@ updated: 2026-08-17
   - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
 
 ## Current State and Next Action
-- active_phase: p0-single-active-plan
-- lifecycle_status: checked
+- active_phase: p4-markdown-schema
+- lifecycle_status: planned
 - latest_run_id: 01M084AAB3Y8MBBAHJ6HA6897J
 - latest_trace_ids: [01M085DSPJA6WQ9041AH0231H4]
 - latest_check_id: 01M085PYS31ZEN0RYJ6E8N7GX5
-- latest_handoff_id: 01M0843RN8RAH4P549K6TBXBPX
+- latest_handoff_id: 01M09YQ0KCW6HWC7MWXRMGD0F8
 - blockers: none
 - open_items:
-  - P5 (durable-memory) and P6 (retrieval-router) are decision-complete and approved but not yet appended — run `to-plan phase p5-durable-memory`, then `to-plan phase p6-retrieval-router`. P0–P4 stay immutable.
-  - onedrive-cloud has two plans with `status: active` since 2026-08-16 — the owner must call which is live (`onedrive-cloud/docs/plans/active/ui-ux-audit-remediation.md`, ten phases shipped in commit 0b32adb) versus dead (`onedrive-cloud/docs/plans/active/check-review-remediation.md`, untouched 18 days). Consumer-side repair only; does not block P0.
-  - The DB story goals for `p1-cut-dead-surfaces` and `p3-retire-changesets` carry pre-measurement LOC figures (147 and 1,715). The measured values are in this file: 136 LOC across 3 files plus 6 reference sites, and 690 LOC core. Trust this file.
-  - P5 must follow P3 — deleting a completed plan is only reversible through git once `db rebuild` works from committed content alone.
-  - check verdict `APPROVED` was same-session (I authored and gated the P0 diff); the complete manual Security/Performance/Architecture/Code Quality review (`check full`) was explicitly not performed here per `work.md` step 11 — it is deferred to the initiative's final phase as a `handoff` closure precondition.
-- exact_next_action: handoff — close phase p0-single-active-plan (checked in both DB and plan, clean APPROVED gate, no blockers) via `zharness handoff record --run-id 01M084AAB3Y8MBBAHJ6HA6897J --check-id 01M085PYS31ZEN0RYJ6E8N7GX5 --open-items '[]' --close-phase`, unlocking p1-cut-dead-surfaces
+  - p1-cut-dead-surfaces, p2-derive-index, and p3-retire-changesets are all done in substance (task lists executed, each phase's own check commands green, Decisions entries recorded) but never went through the full run/check/handoff DB ceremony — this worktree's `harness.db` was absent for all three (fresh-worktree gap, see their own Decisions entries). Their phase `status:` fields were hand-set to `done` in this handoff to match reality; there is no DB run/check backing them, so `zharness query phases --json` shows them `done` only after this handoff's `db rebuild` (which derives story status straight from this field), not through a `check`/`handoff record --close-phase` chain. p0-single-active-plan is the only phase with a real run/check/handoff trail.
+  - P4 (`p4-markdown-schema`) is the only remaining phase — two waves: (1) validate.go checks 9-12 (single active plan, frontmatter present, phase/story match, known section headings), (2) bound `QueryPlanSection`'s not-found degrade path in `plan_query.go` to under 500 tokens. Not yet started.
+  - P5 (durable-memory) and P6 (retrieval-router) are decision-complete and approved but not yet appended — run `to-plan phase p5-durable-memory`, then `to-plan phase p6-retrieval-router`, only after P4 closes this plan (P5 must follow P3 per the note below).
+  - onedrive-cloud has two plans with `status: active` since 2026-08-16 — the owner must call which is live (`onedrive-cloud/docs/plans/active/ui-ux-audit-remediation.md`, ten phases shipped in commit 0b32adb) versus dead (`onedrive-cloud/docs/plans/active/check-review-remediation.md`, untouched 18 days). Consumer-side repair only; does not block this plan.
+  - P5 must follow P3 — deleting a completed plan is only reversible through git once `db rebuild` works from committed content alone. P3 shipped this session (commits 17d591f, 1ea0f5c), so this is now unblocked once P4 also closes.
+  - `docs/playbooks/` and `docs/WORKFLOW.md` are untracked in this worktree (scaffolded fresh by `zharness init`, since the entire `docs/` tree was deleted upstream in commit `655c6ac` and never restored) — part of the same pre-existing 16-broken-doc-link drift documented in P1's Decisions entry, not touched by this handoff.
+- exact_next_action: `work full phase p4-markdown-schema` — the only remaining phase in this plan; p0-p3 are all done.
