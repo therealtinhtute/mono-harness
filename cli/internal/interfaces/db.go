@@ -96,10 +96,11 @@ func runDBRebuild(cmd *cobra.Command, yes bool) error {
 			"handoffs":       result.Handoffs,
 			"traces":         result.Traces,
 			"decisions":      result.Decisions,
+			"memories":       result.Memories,
 		})
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "rebuilt %s (schema_version=%d, stories=%d, intakes=%d, runs=%d, checks=%d, handoffs=%d, traces=%d, decisions=%d)\n",
-		dbPath, schemaVersion, result.Stories, result.Intakes, result.Runs, result.Checks, result.Handoffs, result.Traces, result.Decisions)
+	fmt.Fprintf(cmd.OutOrStdout(), "rebuilt %s (schema_version=%d, stories=%d, intakes=%d, runs=%d, checks=%d, handoffs=%d, traces=%d, decisions=%d, memories=%d)\n",
+		dbPath, schemaVersion, result.Stories, result.Intakes, result.Runs, result.Checks, result.Handoffs, result.Traces, result.Decisions, result.Memories)
 	return nil
 }
 

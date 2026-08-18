@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,6 +15,11 @@ import (
 
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
+
+// readOnlyMemoryFixtureID is a fixed (non-ULID-minted) id for the memory
+// fixture seeded by TestInspectionCommandsDoNotCreateWALSidecars, so the
+// static command-args table below can reference it directly.
+const readOnlyMemoryFixtureID = "01FIXTUREMEMORYENTRYIDXXXX"
 
 type readOnlyFileSnapshot struct {
 	exists  bool
@@ -43,6 +49,8 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 		{name: "resume", args: []string{"resume", "--json"}, wantFragment: `"current_phase":"beta"`},
 		{name: "validate", args: []string{"validate", "--json"}, wantFragment: `"valid":true`},
 		{name: "audit", args: []string{"audit", "--json"}, wantFragment: `"contract_violations":[]`},
+		{name: "memory get", args: []string{"memory", "get", "--id", readOnlyMemoryFixtureID, "--json"}, wantFragment: `"type":"gotcha"`},
+		{name: "memory query", args: []string{"memory", "query", "--type", "gotcha", "--json"}, wantFragment: `"type":"gotcha"`},
 	}
 
 	for _, command := range commands {
@@ -76,6 +84,7 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 					ulid.Make().String(), runID); err != nil {
 					t.Fatalf("seed decision: %v", err)
 				}
+				seedReadOnlyMemoryFixture(t, db)
 			})
 
 			output := executeReadOnlyJSONCommand(t, command.args...)
@@ -84,6 +93,28 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 			}
 			assertReadOnlyCommandState(t, before, captureReadOnlyCommandState(t))
 		})
+	}
+}
+
+// seedReadOnlyMemoryFixture writes a docs/memory/{id}.md entry and its
+// matching memories index row, mirroring CreateMemory's own markdown-first
+// output shape, so `memory get`/`memory query` have a real entry to read.
+func seedReadOnlyMemoryFixture(t *testing.T, db *sql.DB) {
+	t.Helper()
+	if err := os.MkdirAll("docs/memory", 0o755); err != nil {
+		t.Fatalf("MkdirAll docs/memory: %v", err)
+	}
+	content := "---\nid: " + readOnlyMemoryFixtureID + "\ntype: gotcha\nscope: global\ncreated: 2026-07-27T00:00:03Z\n---\n\nseeded memory for read-only inspection test\n"
+	path := "docs/memory/" + readOnlyMemoryFixtureID + ".md"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile %s: %v", path, err)
+	}
+	sha := sha256.Sum256([]byte(content))
+	if _, err := db.Exec(
+		`INSERT INTO memories (id, path, type, scope, plan_id, sha256, created_at) VALUES (?, ?, 'gotcha', 'global', NULL, ?, '2026-07-27T00:00:03Z')`,
+		readOnlyMemoryFixtureID, path, hex.EncodeToString(sha[:]),
+	); err != nil {
+		t.Fatalf("seed memory fixture: %v", err)
 	}
 }
 

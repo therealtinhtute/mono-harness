@@ -26,6 +26,7 @@ type RebuildResult struct {
 	Handoffs  int `json:"handoffs"`
 	Traces    int `json:"traces"`
 	Decisions int `json:"decisions"`
+	Memories  int `json:"memories"`
 }
 
 // rebuildPlanGlobs covers every plan a rebuild must scan — active and
@@ -124,6 +125,14 @@ func RebuildFromMarkdown(db *sql.DB) (RebuildResult, error) {
 		if err := rebuildDecisionsFromSection(db, contents[path], &result); err != nil {
 			return result, fmt.Errorf("db rebuild: decisions from %s: %w", path, err)
 		}
+	}
+
+	// Memories live outside docs/plans/{active,completed}/*.md entirely
+	// (docs/memory/*.md, one file per entry), so they're reconstructed in
+	// their own pass rather than folded into the plan-scanning loop above
+	// (R1/R4, docs/plans/active/durable-memory.md).
+	if err := rebuildMemoriesFromMarkdown(db, &result); err != nil {
+		return result, fmt.Errorf("db rebuild: memories: %w", err)
 	}
 
 	return result, nil
