@@ -32,6 +32,11 @@ const StaleDocsRecovery = "zharness init --refresh-docs"
 // unversioned, not an error.
 const docsVersionMinSchema = 2
 
+// planIndexMinSchema is the schema_version that introduced plan_index
+// (infrastructure migration 0011_plan_index). Below this, the table
+// doesn't exist yet — an un-migrated project has nothing to refresh.
+const planIndexMinSchema = 11
+
 // ResumeView mirrors CONTRACT.md's locked `resume --json` shape.
 type ResumeView struct {
 	Position        Position       `json:"position"`
@@ -137,6 +142,33 @@ func Resume(db *sql.DB, cliVersion string) (ResumeView, error) {
 				Detail:   fmt.Sprintf("docs written at version %q, CLI is version %q", written, cliVersion),
 				Recovery: StaleDocsRecovery,
 			})
+		}
+	}
+
+	// resume opens its db read-only (interfaces/resume.go), so this checks
+	// plan_index staleness without writing — planIndexStaleness only reads.
+	// The actual refresh happens inside preparePlanAppend's write closure
+	// (plan_write.go), the one place that already durably rewrites the plan
+	// with a writable db in scope (wave 3, R9). A stale_index finding here
+	// means the file changed by some path other than trace/decision/check/
+	// handoff (a hand edit, a branch switch) since the index last refreshed.
+	if state.SchemaVersion >= planIndexMinSchema {
+		plan, stop, err := ResolveActivePlan()
+		if err != nil {
+			return view, fmt.Errorf("resume: %w", err)
+		}
+		if stop == nil {
+			_, _, stale, _, err := planIndexStaleness(db, plan.path)
+			if err != nil {
+				return view, fmt.Errorf("resume: %w", err)
+			}
+			if stale {
+				view.Drift = append(view.Drift, DriftFinding{
+					Type:     "stale_index",
+					Detail:   fmt.Sprintf("plan_index for %s is missing or out of date against the file's current content (R9 requires plan_index.sha256 to track the plan's on-disk hash, docs/plans/active/harness-markdown-truth.md)", plan.path),
+					Recovery: "record any trace/decision/check/handoff to refresh plan_index, or confirm the file changed outside the CLI (hand edit, branch switch)",
+				})
+			}
 		}
 	}
 

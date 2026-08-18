@@ -206,6 +206,24 @@ ALTER TABLE traces ADD COLUMN task_status TEXT;
 		Name:    "0010_drop_interventions",
 		SQL:     `DROP TABLE interventions;`,
 	},
+	{
+		// Copies the managed_docs column shape (id/path/hash/updated_at) —
+		// plan_index is a derived index over docs/plans/active/*.md, not a
+		// changeset entity: no command writes it directly, the read path
+		// refreshes it when the on-disk hash and indexed hash disagree (P2
+		// wave 3, docs/plans/active/harness-markdown-truth.md R9).
+		Version: 11,
+		Name:    "0011_plan_index",
+		SQL: `
+CREATE TABLE plan_index (
+	id TEXT PRIMARY KEY,
+	path TEXT UNIQUE NOT NULL,
+	sha256 TEXT NOT NULL,
+	status TEXT NOT NULL,
+	updated_at TEXT NOT NULL
+);
+`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

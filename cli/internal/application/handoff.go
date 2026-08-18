@@ -110,57 +110,57 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, 
 
 	// handoff record targets `## Progress`, not `## Current State and Next
 	// Action` — Current State is a snapshot (last-write-wins), not an
-	// append-only log, and the plan_section appender (P3 wave 1) only knows
-	// how to append after the last line of a section, so a handoff entry
-	// joins Progress's event log alongside trace/decision/check entries
-	// instead. Same deferred-id-minting workaround check_record uses:
-	// pre-check writability now, format the real entry with entryAt after.
-	if err := planSectionWritable("Progress"); err != nil {
-		return "", "", err
-	}
-
-	var entryAt string
-	id, path, _, err = AppendNewEntityAndApply(db, changesetDir, func(id string) []infrastructure.ChangesetLine {
-		at := orderedChangesetTime(id)
-		entryAt = at
-		anchors := map[string]any{"open_items": openItems}
-		if runID != "" {
-			anchors["latest_run_id"] = runID
-		}
-		if checkID != "" {
-			anchors["latest_check_id"] = checkID
-		}
-		if nextAction != "" {
-			anchors["exact_next_action"] = nextAction
-		}
-		fields := map[string]any{
-			"anchors":    anchors,
-			"created_at": at,
-		}
-		if runID != "" {
-			fields["run_id"] = runID
-		}
-		if checkID != "" {
-			fields["check_id"] = checkID
-		}
-		lines := []infrastructure.ChangesetLine{{Op: "create", Entity: "handoff", ID: id, Fields: fields, At: at}}
-		if closePhase {
-			lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: closingStoryID, Fields: map[string]any{"status": domain.StoryDone}, At: at})
-		}
-		return lines
-	})
+	// append-only log, and the plan_section appender only knows how to
+	// append after the last line of a section, so a handoff entry joins
+	// Progress's event log alongside trace/decision/check entries instead.
+	// id is minted from the changeset ULID up front (same value
+	// AppendNewEntityAndApply used to mint inside its DB-write callback),
+	// so the Progress entry text is knowable before anything is written.
+	// Markdown is the write target: writePlan below runs before the DB
+	// write, so a failed markdown write leaves zero DB rows behind it (R8,
+	// docs/plans/active/harness-markdown-truth.md).
+	id, err = prepareChangesetAppend(db, changesetDir)
 	if err != nil {
 		return "", "", err
 	}
+	at := orderedChangesetTime(id)
 
-	writePlan, err := preparePlanAppend("Progress", formatHandoffProgressEntry(entryAt, id, runID, checkID, nextAction, openItems, closePhase))
+	writePlan, err := preparePlanAppend(db, "Progress", formatHandoffProgressEntry(at, id, runID, checkID, nextAction, openItems, closePhase))
 	if err != nil {
-		// The pre-check above already proved the section exists; a failure
-		// here is a race (the plan changed mid-command) or an I/O error.
-		return id, path, fmt.Errorf("handoff %s recorded, but plan markdown update failed: %w", id, err)
+		return "", "", err
 	}
 	if err := writePlan(); err != nil {
-		return id, path, fmt.Errorf("handoff %s recorded, but plan markdown update failed: %w", id, err)
+		return "", "", fmt.Errorf("plan write failed: %w", err)
+	}
+
+	anchors := map[string]any{"open_items": openItems}
+	if runID != "" {
+		anchors["latest_run_id"] = runID
+	}
+	if checkID != "" {
+		anchors["latest_check_id"] = checkID
+	}
+	if nextAction != "" {
+		anchors["exact_next_action"] = nextAction
+	}
+	fields := map[string]any{
+		"anchors":    anchors,
+		"created_at": at,
+	}
+	if runID != "" {
+		fields["run_id"] = runID
+	}
+	if checkID != "" {
+		fields["check_id"] = checkID
+	}
+	lines := []infrastructure.ChangesetLine{{Op: "create", Entity: "handoff", ID: id, Fields: fields, At: at}}
+	if closePhase {
+		lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: closingStoryID, Fields: map[string]any{"status": domain.StoryDone}, At: at})
+	}
+
+	path, _, err = writeAndApplyPreparedChangeset(db, changesetDir, id, lines)
+	if err != nil {
+		return "", "", fmt.Errorf("handoff %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
 	return id, path, nil
 }

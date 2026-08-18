@@ -120,6 +120,17 @@ Re-created by migration `0007_decisions`, which re-adds a table `0003_drop_dead_
 
 The writable database is the ignored root `harness.db`. Tracked replay deltas remain under `.kit/changesets/`; no baseline or second database exists.
 
+#### `plan_index`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | ULID minted when the path is first indexed |
+| `path` | TEXT UNIQUE | active plan path (`docs/plans/active/{slug}.md`) |
+| `sha256` | TEXT | hash of plan content as of the last index refresh |
+| `status` | TEXT | plan frontmatter `status` as of the last index refresh |
+| `updated_at` | TEXT | last index refresh time |
+
+Not a changeset entity — no command writes `plan_index` directly. The read path refreshes a row whenever the on-disk hash differs from the indexed `sha256`, so staleness is a comparison against the file's real content, never a timestamp guess (R9, `docs/plans/active/harness-markdown-truth.md`).
+
 ## Table ↔ Changeset Entity Type
 
 Every table maps to exactly one changeset `entity` string (the value in `{op, entity, id, fields, at}`). Table names are plural (SQL convention, SPEC R13's own wording); entity strings are singular, matching the CONTRACT.md command that produces them.

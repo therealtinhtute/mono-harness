@@ -233,10 +233,8 @@ func TestCheckRecordWritesPlanValidationEntry(t *testing.T) {
 }
 
 // TestCheckRecordMalformedPlanBlocksDBWrite is check record's version of
-// the atomicity proof: since its entry text isn't computable until after
-// the id/at mint (AppendNewEntityAndApply's clock-precision design), the
-// pre-check (planSectionWritable) must still catch a missing section
-// before the DB write, not just after.
+// the atomicity proof: a missing section must fail preparePlanAppend
+// before anything is written, not just after.
 func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	chdirFixture(t)
 	planPath := writeActivePlanFixture(t, "demo")
@@ -253,8 +251,8 @@ func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
 
 	// A proof command with an observable side effect: if it never ran,
-	// the marker never appears. Proves planSectionWritable is checked
-	// before proof verification, not after -- a check doomed to fail here
+	// the marker never appears. Proves the plan-section check runs before
+	// proof verification, not after -- a check doomed to fail here
 	// shouldn't pay for re-running every proof command first.
 	marker := filepath.Join(t.TempDir(), "ran")
 	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
@@ -275,5 +273,28 @@ func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	}
 	if string(after) != corrupted {
 		t.Fatal("plan file changed despite the failed write")
+	}
+}
+
+// TestCheckRecordReadOnlyPlanBlocksDBWrite is R8's forced-failure proof: a
+// markdown write that fails at the filesystem level (not just a malformed
+// section) must still leave zero DB rows behind it
+// (docs/plans/active/harness-markdown-truth.md).
+func TestCheckRecordReadOnlyPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	makeDirReadOnly(t, filepath.Dir(planPath))
+
+	db, changesetDir := freshDB(t)
+	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+
+	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+		{Command: "true", OutputRef: "ok"},
+	})
+	if err == nil {
+		t.Fatal("RecordCheck = nil error, want a read-only plan write failure")
+	}
+	if got := countRows(t, db, "checks"); got != 0 {
+		t.Fatalf("checks rows = %d, want 0 — DB write must not proceed when the plan write fails", got)
 	}
 }

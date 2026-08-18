@@ -2,6 +2,7 @@ package application
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -238,5 +239,27 @@ func TestHandoffRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	}
 	if string(after) != corrupted {
 		t.Fatal("plan file changed despite the failed write")
+	}
+}
+
+// TestHandoffRecordReadOnlyPlanBlocksDBWrite is R8's forced-failure proof: a
+// markdown write that fails at the filesystem level (not just a malformed
+// section) must still leave zero DB rows behind it
+// (docs/plans/active/harness-markdown-truth.md).
+func TestHandoffRecordReadOnlyPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	makeDirReadOnly(t, filepath.Dir(planPath))
+
+	db, changesetDir := freshDB(t)
+	runID := seedRun(t, db, changesetDir)
+	checkID := seedCheck(t, db, changesetDir)
+
+	_, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
+	if err == nil {
+		t.Fatal("RecordHandoff = nil error, want a read-only plan write failure")
+	}
+	if got := countRows(t, db, "handoffs"); got != 0 {
+		t.Fatalf("handoffs rows = %d, want 0 — DB write must not proceed when the plan write fails", got)
 	}
 }

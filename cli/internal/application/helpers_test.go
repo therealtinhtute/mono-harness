@@ -21,6 +21,24 @@ func chdirFixture(t *testing.T) {
 	t.Chdir(t.TempDir())
 }
 
+// makeDirReadOnly chmods dir to read-only (no write/create permission),
+// restoring it before the test's TempDir cleanup runs so that cleanup can
+// still remove files inside it. Used to force a plan markdown write to
+// fail without touching the file being written (writeFileAtomically writes
+// a sibling temp file into dir, so removing dir's write permission is what
+// actually blocks the write).
+func makeDirReadOnly(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.Chmod(dir, 0o555); err != nil {
+		t.Fatalf("Chmod(%s, 0o555): %v", dir, err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chmod(dir, 0o755); err != nil {
+			t.Fatalf("Chmod(%s, 0o755) restore: %v", dir, err)
+		}
+	})
+}
+
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

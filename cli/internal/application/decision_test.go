@@ -2,6 +2,7 @@ package application
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -201,5 +202,25 @@ func TestRecordDecisionsAtomicityIncludesPlanWrite(t *testing.T) {
 	}
 	if string(after) != corrupted {
 		t.Fatal("plan file changed despite the failed write")
+	}
+}
+
+// TestRecordDecisionsReadOnlyPlanBlocksDBWrite is R8's forced-failure proof:
+// a markdown write that fails at the filesystem level (not just a malformed
+// section) must still leave zero DB rows behind it
+// (docs/plans/active/harness-markdown-truth.md).
+func TestRecordDecisionsReadOnlyPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	makeDirReadOnly(t, filepath.Dir(planPath))
+
+	db, changesetDir := freshDB(t)
+
+	_, _, err := RecordDecisions(db, changesetDir, "", []domain.Decision{{Decision: "d", Rationale: "r"}})
+	if err == nil {
+		t.Fatal("RecordDecisions = nil error, want a read-only plan write failure")
+	}
+	if got := countRows(t, db, "decisions"); got != 0 {
+		t.Fatalf("decisions rows = %d, want 0 — DB write must not proceed when the plan write fails", got)
 	}
 }

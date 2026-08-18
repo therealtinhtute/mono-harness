@@ -68,26 +68,37 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		return "", "", &domain.ValidationError{Code: "independent_judge_required", Message: "check record: lane is high-risk, --judge must be independent"}
 	}
 
-	// AppendNewEntityAndApply mints id/at internally (from the changeset
-	// ULID, for clock-precision "latest check" ordering — see its own
-	// doc comment), so the Validation entry's exact text isn't knowable
-	// until after. Pre-validate the section is writable now, with
-	// placeholder content, so the common failure mode (missing section)
-	// still fails before the DB write — same "index and markdown cannot
-	// diverge" guarantee trace/decision get from computing their entry
-	// text upfront, just reached by checking writability instead. Checked
-	// before proof verification below: both are preconditions with no side
-	// effects of their own, and this one is microseconds against
-	// verification's up-to-5-minutes-per-command, so a check doomed to
-	// fail here shouldn't pay for re-running every proof command first.
-	if err := planSectionWritable("Validation"); err != nil {
+	// id is minted from the changeset ULID up front (same value
+	// AppendNewEntityAndApply used to mint inside its DB-write callback),
+	// so the Validation entry text — and therefore the writability of the
+	// section itself — is knowable before anything is written. Markdown is
+	// the write target: writePlan below runs before the DB write, so a
+	// failed markdown write (missing section, read-only file, race) leaves
+	// zero DB rows behind it (R8, docs/plans/active/harness-markdown-truth.md).
+	id, err = prepareChangesetAppend(db, changesetDir)
+	if err != nil {
+		return "", "", err
+	}
+	at := orderedChangesetTime(id)
+
+	writePlan, err := preparePlanAppend(db, "Validation", formatCheckValidationEntry(at, id, storySlug, runID, verdict, judge, judgeModel, proofLinks))
+	if err != nil {
 		return "", "", err
 	}
 
+	// Checked before proof verification: both are preconditions with no
+	// side effects of their own, and the section check above is
+	// microseconds against verification's up-to-5-minutes-per-command, so
+	// a check doomed to fail on a missing section shouldn't pay for
+	// re-running every proof command first.
 	if verdict == domain.VerdictApproved || verdict == domain.VerdictApproveWithRequests {
 		if err := verifyProofLinks(proofLinks); err != nil {
 			return "", "", err
 		}
+	}
+
+	if err := writePlan(); err != nil {
+		return "", "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	proofLinksAny := make([]any, len(proofLinks))
@@ -98,55 +109,32 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 			"artifact_path": pl.ArtifactPath,
 		}
 	}
-	var entryAt string
-	id, path, _, err = AppendNewEntityAndApply(db, changesetDir, func(id string) []infrastructure.ChangesetLine {
-		at := orderedChangesetTime(id)
-		entryAt = at
-		lines := []infrastructure.ChangesetLine{
-			{
-				Op:     "create",
-				Entity: "check",
-				ID:     id,
-				Fields: map[string]any{
-					"run_id":      runID,
-					"verdict":     verdict,
-					"judge":       judge,
-					"judge_model": judgeModel,
-					"proof_links": proofLinksAny,
-					"created_at":  at,
-				},
-				At: at,
+	lines := []infrastructure.ChangesetLine{
+		{
+			Op:     "create",
+			Entity: "check",
+			ID:     id,
+			Fields: map[string]any{
+				"run_id":      runID,
+				"verdict":     verdict,
+				"judge":       judge,
+				"judge_model": judgeModel,
+				"proof_links": proofLinksAny,
+				"created_at":  at,
 			},
-		}
-		if verdict != domain.VerdictRequestChanges {
-			lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryChecked}, At: at})
-		}
-		return append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at})
-	})
-	if err != nil {
-		return "", "", err
+			At: at,
+		},
 	}
+	if verdict != domain.VerdictRequestChanges {
+		lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryChecked}, At: at})
+	}
+	lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at})
 
-	writePlan, err := preparePlanAppend("Validation", formatCheckValidationEntry(entryAt, id, storySlug, runID, verdict, judge, judgeModel, proofLinks))
+	path, _, err = writeAndApplyPreparedChangeset(db, changesetDir, id, lines)
 	if err != nil {
-		// The pre-check above already proved the section exists; a failure
-		// here is a race (the plan changed mid-command) or an I/O error,
-		// not the ordinary missing-section case.
-		return id, path, fmt.Errorf("check %s recorded, but plan markdown update failed: %w", id, err)
-	}
-	if err := writePlan(); err != nil {
-		return id, path, fmt.Errorf("check %s recorded, but plan markdown update failed: %w", id, err)
+		return "", "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
 	return id, path, nil
-}
-
-// planSectionWritable checks whether the active plan (if exactly one
-// exists) currently has the named section, without needing final entry
-// content — for callers (check record) whose entry text isn't computable
-// until after the DB write that mints its id/timestamp.
-func planSectionWritable(section string) error {
-	_, err := preparePlanAppend(section, "")
-	return err
 }
 
 // formatCheckValidationEntry renders a `## Validation` line using only the

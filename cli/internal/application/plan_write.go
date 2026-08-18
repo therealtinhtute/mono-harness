@@ -1,6 +1,7 @@
 package application
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
@@ -30,16 +31,23 @@ func activePlanForWrite() (path string, stop *StopInfo, err error) {
 
 // preparePlanAppend resolves the active plan (if exactly one exists) and
 // validates that entry can be appended to section, without writing
-// anything yet. Callers run this BEFORE their changeset/DB write: a
-// malformed or missing section then fails with zero side effects, which
-// is how P3 wave 2's "index and markdown cannot diverge" requirement is
-// actually achieved — a SQL transaction and a text-file write have no
-// shared atomic commit, so the honest guarantee is that the common
-// failure mode (a plan the CLI cannot safely write to) never reaches the
-// DB write at all. The returned write func performs the real file write
-// and must only be called after the DB write has succeeded; when no
-// single active plan is resolvable, write is a no-op returning nil.
-func preparePlanAppend(section, entry string) (write func() error, err error) {
+// anything yet. Every durable-write caller (trace, decision, check
+// record, handoff) calls the returned write func BEFORE its changeset/DB
+// write, not after: markdown is the write target, and the DB row is
+// derived from what was actually written to it (R8,
+// docs/plans/active/harness-markdown-truth.md). A SQL transaction and a
+// text-file write still have no shared atomic commit, but the ordering
+// guarantee is real in the direction that matters — a failed markdown
+// write (missing section, read-only file, race) always leaves zero DB
+// rows behind it; a DB write failure after a successful markdown write
+// leaves the markdown line as the durable fact, with no row to derive
+// from it yet. When no single active plan is resolvable, write is a
+// no-op returning nil. The returned write func also refreshes plan_index
+// against the content it just wrote (wave 3, R9) — these are the only
+// callers that both read and durably rewrite the plan, so refreshing here
+// is the one place the index can track every real change with no
+// speculative caller wiring elsewhere.
+func preparePlanAppend(db *sql.DB, section, entry string) (write func() error, err error) {
 	path, stop, err := activePlanForWrite()
 	if err != nil {
 		return nil, err
@@ -55,7 +63,15 @@ func preparePlanAppend(section, entry string) (write func() error, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("append to active plan %s: %w", path, err)
 	}
-	return func() error { return writeFileAtomically(path, []byte(newContent)) }, nil
+	return func() error {
+		if err := writeFileAtomically(path, []byte(newContent)); err != nil {
+			return err
+		}
+		if _, err := refreshPlanIndex(db, path, newContent); err != nil {
+			return fmt.Errorf("refresh plan_index for %s: %w", path, err)
+		}
+		return nil
+	}, nil
 }
 
 // writeFileAtomically writes data to a sibling temp file and renames it

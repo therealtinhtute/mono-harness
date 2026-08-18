@@ -57,9 +57,16 @@ func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task
 	at := time.Now().UTC().Format(time.RFC3339)
 	id = ulid.Make().String()
 
-	writePlan, err := preparePlanAppend("Progress", formatTraceProgressEntry(at, wave, summary, runID, task, taskStatus))
+	writePlan, err := preparePlanAppend(db, "Progress", formatTraceProgressEntry(at, wave, summary, runID, task, taskStatus))
 	if err != nil {
 		return "", "", err
+	}
+
+	// Markdown is the write target: writePlan runs before the DB write, so
+	// a failed markdown write (e.g. a read-only plan file) leaves zero DB
+	// rows behind it (R8, docs/plans/active/harness-markdown-truth.md).
+	if err := writePlan(); err != nil {
+		return "", "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	fields := map[string]any{
@@ -80,11 +87,7 @@ func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task
 		{Op: "create", Entity: "trace", ID: id, Fields: fields, At: at},
 	})
 	if err != nil {
-		return "", "", err
-	}
-
-	if err := writePlan(); err != nil {
-		return id, path, fmt.Errorf("trace %s recorded, but plan markdown update failed: %w", id, err)
+		return "", "", fmt.Errorf("trace %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
 	return id, path, nil
 }
@@ -128,9 +131,14 @@ func CreateTraces(db *sql.DB, changesetDir string, wave int, runID string, tasks
 	for i, t := range tasks {
 		entryLines[i] = formatTraceProgressEntry(at, wave, t.Summary, runID, t.Task, t.TaskStatus)
 	}
-	writePlan, err := preparePlanAppend("Progress", strings.Join(entryLines, "\n"))
+	writePlan, err := preparePlanAppend(db, "Progress", strings.Join(entryLines, "\n"))
 	if err != nil {
 		return nil, "", err
+	}
+
+	// Markdown first: see CreateTrace's comment on the same ordering.
+	if err := writePlan(); err != nil {
+		return nil, "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	lines := make([]infrastructure.ChangesetLine, 0, len(tasks))
@@ -149,11 +157,7 @@ func CreateTraces(db *sql.DB, changesetDir string, wave int, runID string, tasks
 
 	path, _, err = AppendAndApply(db, changesetDir, lines)
 	if err != nil {
-		return nil, "", err
-	}
-
-	if err := writePlan(); err != nil {
-		return ids, path, fmt.Errorf("traces %v recorded, but plan markdown update failed: %w", ids, err)
+		return nil, "", fmt.Errorf("traces %v: plan markdown recorded, but db write failed: %w", ids, err)
 	}
 	return ids, path, nil
 }

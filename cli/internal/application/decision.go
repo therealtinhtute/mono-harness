@@ -59,9 +59,16 @@ func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.
 	for i, d := range decisions {
 		entryLines[i] = formatDecisionEntry(at, d)
 	}
-	writePlan, err := preparePlanAppend("Decisions", strings.Join(entryLines, "\n"))
+	writePlan, err := preparePlanAppend(db, "Decisions", strings.Join(entryLines, "\n"))
 	if err != nil {
 		return nil, "", err
+	}
+
+	// Markdown is the write target: writePlan runs before the DB write, so
+	// a failed markdown write leaves zero DB rows behind it (R8,
+	// docs/plans/active/harness-markdown-truth.md).
+	if err := writePlan(); err != nil {
+		return nil, "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	lines := make([]infrastructure.ChangesetLine, 0, len(decisions))
@@ -86,11 +93,7 @@ func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.
 
 	path, _, err = AppendAndApply(db, changesetDir, lines)
 	if err != nil {
-		return nil, "", err
-	}
-
-	if err := writePlan(); err != nil {
-		return ids, path, fmt.Errorf("decisions %v recorded, but plan markdown update failed: %w", ids, err)
+		return nil, "", fmt.Errorf("decisions %v: plan markdown recorded, but db write failed: %w", ids, err)
 	}
 	return ids, path, nil
 }
