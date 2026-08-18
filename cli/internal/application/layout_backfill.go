@@ -63,7 +63,6 @@ func layoutBackfillLines(db *sql.DB) ([]infrastructure.ChangesetLine, error) {
 		{`SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY created_at, id`, "run", []string{"story_slug", "plan_id", "trace_ids", "artifact_path", "created_at"}},
 		{`SELECT id, run_id, verdict, proof_links, artifact_path, created_at FROM checks ORDER BY created_at, id`, "check", []string{"run_id", "verdict", "proof_links", "artifact_path", "created_at"}},
 		{`SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY created_at, id`, "handoff", []string{"run_id", "check_id", "anchors", "created_at"}},
-		{`SELECT id, verdict_id, reason, created_at FROM interventions ORDER BY created_at, id`, "intervention", []string{"verdict_id", "reason", "created_at"}},
 		{`SELECT id, run_id, wave, summary, created_at FROM traces ORDER BY created_at, id`, "trace", []string{"run_id", "wave", "summary", "created_at"}},
 	} {
 		rowLines, err := queryBackfillRows(db, table.query, table.entity, at, table.fields)

@@ -275,7 +275,6 @@ func captureLifecycleRows(db *sql.DB) (map[string][][]any, error) {
 		"runs":          `SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY id`,
 		"checks":        `SELECT id, run_id, verdict, proof_links, artifact_path, created_at FROM checks ORDER BY id`,
 		"handoffs":      `SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY id`,
-		"interventions": `SELECT id, verdict_id, reason, created_at FROM interventions ORDER BY id`,
 		"traces":        `SELECT id, run_id, wave, summary, created_at FROM traces ORDER BY id`,
 		"meta":          `SELECT current_phase, entry_phase, latest_run_id, latest_check_id, docs_version FROM meta`,
 	}

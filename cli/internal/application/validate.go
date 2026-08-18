@@ -72,7 +72,6 @@ func validateEntityIDs(db *sql.DB, findings *[]ValidateFinding) error {
 			UNION ALL SELECT 'HANDOFF', id FROM handoffs
 			UNION ALL SELECT 'INTAKE', id FROM intakes
 			UNION ALL SELECT 'TRACE', id FROM traces
-			UNION ALL SELECT 'INTERVENTION', id FROM interventions
 		)
 		ORDER BY entity, id
 	`)

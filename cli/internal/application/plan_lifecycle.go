@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,6 +13,36 @@ import (
 )
 
 const activePlanCompletedDir = "docs/plans/completed"
+
+var activePlanPhaseSlug = regexp.MustCompile(`(?m)^[ \t]*-[ \t]+phase_slug:[ \t]*([^ \t\r\n]+)[ \t]*$`)
+
+func parseActivePlanPhaseOrder(content string) []string {
+	matches := activePlanPhaseSlug.FindAllStringSubmatch(content, -1)
+	slugs := make([]string, 0, len(matches))
+	for _, match := range matches {
+		slugs = append(slugs, match[1])
+	}
+	return slugs
+}
+
+// selectActivePhase returns the first plan-ordered phase whose story is not
+// done. A phase with no story row yet counts as incomplete. Without a DB, the
+// first plan phase is the only deterministic candidate.
+func selectActivePhase(db *sql.DB, slugs []string) (string, error) {
+	if db == nil {
+		return slugs[0], nil
+	}
+	for _, slug := range slugs {
+		_, status, exists, err := storyByExactSlug(db, slug)
+		if err != nil {
+			return "", err
+		}
+		if !exists || status != domain.StoryDone {
+			return slug, nil
+		}
+	}
+	return "", nil
+}
 
 // PlanComplete resolves the single active plan (R2,
 // docs/audit/consumer-adoption-audit.md D1), refuses when any phase it

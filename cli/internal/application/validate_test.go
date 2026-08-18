@@ -34,23 +34,18 @@ func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string)
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
-	interventionID, _, err := CreateIntervention(db, changesetDir, checkID, "validate retained entity IDs")
-	if err != nil {
-		t.Fatalf("CreateIntervention: %v", err)
-	}
 	handoffID, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
 
 	return map[string]string{
-		"story":        storyID,
-		"run":          runID,
-		"check":        checkID,
-		"handoff":      handoffID,
-		"intake":       intakeID,
-		"trace":        traceID,
-		"intervention": interventionID,
+		"story":   storyID,
+		"run":     runID,
+		"check":   checkID,
+		"handoff": handoffID,
+		"intake":  intakeID,
+		"trace":   traceID,
 	}
 }
 
@@ -110,7 +105,6 @@ func TestValidateReportsInvalidIDsForRetainedTables(t *testing.T) {
 	}{
 		{name: "intake", table: "intakes", link: "DB->INTAKE"},
 		{name: "trace", table: "traces", link: "DB->TRACE"},
-		{name: "intervention", table: "interventions", link: "DB->INTERVENTION"},
 	}
 
 	for _, invalid := range invalidIDs {

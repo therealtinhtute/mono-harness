@@ -21,7 +21,6 @@ var exclusiveMutationCommandPaths = map[string]struct{}{
 	"db rebuild":         {},
 	"intake":             {},
 	"story":              {},
-	"intervention":       {},
 	"trace add":          {},
 	"decision add":       {},
 	"run create":         {},

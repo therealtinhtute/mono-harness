@@ -8,6 +8,18 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
+func checkExists(db *sql.DB, id string) (bool, error) {
+	var found string
+	err := db.QueryRow(`SELECT id FROM checks WHERE id = ?`, id).Scan(&found)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("query check %q: %w", id, err)
+	}
+	return true, nil
+}
+
 // RecordCheck validates and records a new check (gate verdict) entity
 // (CONTRACT.md `check record`), changeset-first, and atomically points
 // meta.latest_check_id at it in the same changeset/tx — the hand-authored

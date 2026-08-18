@@ -201,6 +201,11 @@ ALTER TABLE traces ADD COLUMN task_status TEXT;
 		Name:    "0009_intake_plan_id",
 		SQL:     `ALTER TABLE intakes ADD COLUMN plan_id TEXT;`,
 	},
+	{
+		Version: 10,
+		Name:    "0010_drop_interventions",
+		SQL:     `DROP TABLE interventions;`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

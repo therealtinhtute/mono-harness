@@ -2,14 +2,59 @@ package application
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
+
+// chdirFixture creates a fresh temp dir and chdirs the test into it (t.Chdir
+// restores the original cwd on cleanup) — every plan/phase path under test
+// is cwd-relative.
+func chdirFixture(t *testing.T) {
+	t.Helper()
+	t.Chdir(t.TempDir())
+}
+
+func writeFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s): %v", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile(%s): %v", path, err)
+	}
+}
+
+func writeActivePlan(t *testing.T, name string, slugs ...string) string {
+	t.Helper()
+	var content strings.Builder
+	content.WriteString("# Active plan\n\n## Phases and Verification\n")
+	for i, slug := range slugs {
+		fmt.Fprintf(&content, "### Phase %d: %s\n- phase_slug: %s\n- goal: goal\n\n", i+1, slug, slug)
+	}
+	path := filepath.Join("docs", "plans", "active", name+".md")
+	writeFile(t, path, content.String())
+	return path
+}
+
+// seedStory writes a story row with an explicit slug + status, since seedRun
+// always hardcodes the "cli-domain" slug.
+func seedStory(t *testing.T, db *sql.DB, changesetDir, slug, status string) {
+	t.Helper()
+	if _, _, err := AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
+		{Op: "create", Entity: "story", ID: ulid.Make().String(), Fields: map[string]any{
+			"slug": slug, "goal": "goal", "status": status, "created_at": "2026-07-22T00:00:00Z",
+		}, At: "2026-07-22T00:00:00Z"},
+	}); err != nil {
+		t.Fatalf("seed story %s: %v", slug, err)
+	}
+}
 
 // scaffoldedPlanFixture is a minimal plan with every append-only section
 // in its bootstrap ("- none") state, matching scaffold.go's real template
@@ -135,7 +180,7 @@ func seedRun(t *testing.T, db *sql.DB, changesetDir string) (runID string) {
 	return runID
 }
 
-// seedCheck extends seedRun with a checks row, for intervention fixtures.
+// seedCheck extends seedRun with a checks row.
 func seedCheck(t *testing.T, db *sql.DB, changesetDir string) (checkID string) {
 	t.Helper()
 	runID := seedRun(t, db, changesetDir)

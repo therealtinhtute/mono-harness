@@ -90,42 +90,6 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 	}
 }
 
-func TestNextOpensDatabaseReadOnly(t *testing.T) {
-	t.Chdir(t.TempDir())
-	if err := os.MkdirAll(filepath.Join("docs", "plans", "active"), 0o755); err != nil {
-		t.Fatalf("MkdirAll active plans: %v", err)
-	}
-	plan := "# Active plan\n\n## Phases and Verification\n" +
-		"### Phase 1: Alpha\n- phase_slug: alpha\n- goal: goal\n\n" +
-		"### Phase 2: Beta\n- phase_slug: beta\n- goal: goal\n"
-	if err := os.WriteFile(filepath.Join("docs", "plans", "active", "initiative.md"), []byte(plan), 0o644); err != nil {
-		t.Fatalf("WriteFile active plan: %v", err)
-	}
-
-	before := prepareReadOnlyCommandDatabase(t, func(db *sql.DB) {
-		if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at) VALUES
-			(?, 'alpha', 'goal', 'done', '2026-07-27T00:00:00Z'),
-			(?, 'beta', 'goal', 'planned', '2026-07-27T00:00:00Z')`, ulid.Make().String(), ulid.Make().String()); err != nil {
-			t.Fatalf("seed next stories: %v", err)
-		}
-	})
-
-	output := executeReadOnlyJSONCommand(t, "next", "full", "--json")
-	var got struct {
-		Mode        string          `json:"mode"`
-		ActivePhase *string         `json:"active_phase"`
-		Stop        json.RawMessage `json:"stop"`
-	}
-	if err := json.Unmarshal(output, &got); err != nil {
-		t.Fatalf("decode next output %q: %v", output, err)
-	}
-	if got.Mode != "full" || got.ActivePhase == nil || *got.ActivePhase != "beta" || len(got.Stop) != 0 {
-		t.Fatalf("next output = %s, want DB-backed active_phase beta without stop", output)
-	}
-
-	assertReadOnlyCommandState(t, before, captureReadOnlyCommandState(t))
-}
-
 func TestChangesetStatusOpensDatabaseReadOnly(t *testing.T) {
 	t.Chdir(t.TempDir())
 	var appliedPath, pendingPath string
