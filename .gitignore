@@ -7,6 +7,4 @@ harness.db-shm
 .kit/cache/
 .kit/conflicts/
 .kit/log/
-docs/playbooks/
-docs/WORKFLOW.md
 __pycache__/
