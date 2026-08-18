@@ -51,6 +51,7 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 		{name: "audit", args: []string{"audit", "--json"}, wantFragment: `"contract_violations":[]`},
 		{name: "memory get", args: []string{"memory", "get", "--id", readOnlyMemoryFixtureID, "--json"}, wantFragment: `"type":"gotcha"`},
 		{name: "memory query", args: []string{"memory", "query", "--type", "gotcha", "--json"}, wantFragment: `"type":"gotcha"`},
+		{name: "memory query ranked", args: []string{"memory", "query", "--keywords", "seeded inspection", "--json"}, wantFragment: `"type":"gotcha"`},
 	}
 
 	for _, command := range commands {

@@ -47,18 +47,23 @@ func newMemoryCmd() *cobra.Command {
 
 	query := &cobra.Command{
 		Use:   "query",
-		Short: "List memory entries by type, optionally filtered by scope/plan-id",
+		Short: "List memory entries by type, optionally filtered by scope/plan-id, or ranked by --keywords",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			memType, _ := cmd.Flags().GetString("type")
 			scope, _ := cmd.Flags().GetString("scope")
 			planID, _ := cmd.Flags().GetString("plan-id")
+			keywords, _ := cmd.Flags().GetString("keywords")
+			if keywords != "" {
+				return runMemoryQueryRanked(cmd, keywords, memType, scope, planID)
+			}
 			return runMemoryQuery(cmd, memType, scope, planID)
 		},
 	}
-	query.Flags().String("type", "", "memory type filter (required)")
+	query.Flags().String("type", "", "memory type filter (required unless --keywords is set)")
 	query.Flags().String("scope", "", "plan|global (optional)")
 	query.Flags().String("plan-id", "", "initiative plan ulid (optional)")
+	query.Flags().String("keywords", "", "rank results by keyword match against type+body instead of exact filtering (optional; --type becomes optional too)")
 
 	memory.AddCommand(add, get, query)
 	return memory
@@ -129,6 +134,31 @@ func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string) error {
 	defer db.Close()
 
 	views, err := application.MemoryQuery(db.Raw(), memType, scope, planID)
+	if err != nil {
+		if ve, ok := err.(*domain.ValidationError); ok {
+			return mapValidationError(ve)
+		}
+		return newSystemError("db_unreadable", fmt.Sprintf("memory query: %v", err))
+	}
+
+	if jsonOutput {
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(views)
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", views)
+	return nil
+}
+
+func runMemoryQueryRanked(cmd *cobra.Command, keywords, memType, scope, planID string) error {
+	db, err := infrastructure.OpenReadOnly(dbPath)
+	if infrastructure.IsDatabaseNotFound(err) {
+		return newSystemError("db_unreadable", "memory query: no db at "+dbPath+"; run `zharness init` first")
+	}
+	if err != nil {
+		return mapReadOnlyOpenError("memory query", err)
+	}
+	defer db.Close()
+
+	views, err := application.MemoryQueryRanked(db.Raw(), keywords, memType, scope, planID)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

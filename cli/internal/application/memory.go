@@ -188,6 +188,99 @@ func MemoryQuery(db *sql.DB, memType, scope, planID string) ([]MemoryListView, e
 	return views, nil
 }
 
+// MemoryScoredView is one row of the `memory query --keywords` ranked view:
+// MemoryListView's fields plus the keyword-match Score that produced its
+// rank (R1, docs/plans/active/retrieval-router.md — keyword ranking, not
+// semantic search).
+type MemoryScoredView struct {
+	ID        string  `json:"id"`
+	Path      string  `json:"path"`
+	Type      string  `json:"type"`
+	Scope     string  `json:"scope"`
+	PlanID    *string `json:"plan_id"`
+	CreatedAt string  `json:"created_at"`
+	Score     int     `json:"score"`
+}
+
+// MemoryQueryRanked lists memories index rows ranked by case-insensitive
+// keyword-token match count against each entry's type and markdown body,
+// optionally narrowed first by the same type/scope/plan_id filters
+// MemoryQuery accepts. Zero-score entries are dropped; the rest are
+// ordered by score descending, then created_at descending as a tiebreak
+// (R1/R5, docs/plans/active/retrieval-router.md). No new external
+// dependency and no schema change — scoring runs entirely in Go over
+// markdown already read via the same path MemoryGet uses.
+func MemoryQueryRanked(db *sql.DB, keywords, memType, scope, planID string) ([]MemoryScoredView, error) {
+	if strings.TrimSpace(keywords) == "" {
+		return nil, &domain.ValidationError{Code: "missing_required_field", Message: "memory query: --keywords is required for ranked mode"}
+	}
+	if scope != "" && !domain.IsValidMemoryScope(scope) {
+		return nil, &domain.ValidationError{Code: "invalid_scope", Message: "memory query: invalid scope " + scope + " (want plan|global)"}
+	}
+
+	q := `SELECT id, path, type, scope, plan_id, created_at FROM memories WHERE 1 = 1`
+	args := []any{}
+	if memType != "" {
+		q += ` AND type = ?`
+		args = append(args, memType)
+	}
+	if scope != "" {
+		q += ` AND scope = ?`
+		args = append(args, scope)
+	}
+	if planID != "" {
+		q += ` AND plan_id = ?`
+		args = append(args, planID)
+	}
+	q += ` ORDER BY created_at DESC, id DESC`
+
+	rows, err := db.Query(q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("memory query: %w", err)
+	}
+	defer rows.Close()
+
+	candidates := []MemoryListView{}
+	for rows.Next() {
+		var v MemoryListView
+		var planIDCol sql.NullString
+		if err := rows.Scan(&v.ID, &v.Path, &v.Type, &v.Scope, &planIDCol, &v.CreatedAt); err != nil {
+			return nil, fmt.Errorf("memory query: scan row: %w", err)
+		}
+		v.PlanID = nullableString(planIDCol)
+		candidates = append(candidates, v)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("memory query: %w", err)
+	}
+
+	// Scored in the same descending created_at/id order the SELECT already
+	// produced, so the stable sort below preserves that order as the
+	// tiebreak for equal scores without a second ORDER BY key.
+	tokens := strings.Fields(strings.ToLower(keywords))
+	scored := make([]MemoryScoredView, 0, len(candidates))
+	for _, c := range candidates {
+		content, err := os.ReadFile(c.Path)
+		if err != nil {
+			return nil, fmt.Errorf("memory query: read %s: %w", c.Path, err)
+		}
+		haystack := strings.ToLower(c.Type + " " + extractMemoryBody(string(content)))
+		score := 0
+		for _, token := range tokens {
+			score += strings.Count(haystack, token)
+		}
+		if score == 0 {
+			continue
+		}
+		scored = append(scored, MemoryScoredView{
+			ID: c.ID, Path: c.Path, Type: c.Type, Scope: c.Scope,
+			PlanID: c.PlanID, CreatedAt: c.CreatedAt, Score: score,
+		})
+	}
+	sort.SliceStable(scored, func(i, j int) bool { return scored[i].Score > scored[j].Score })
+	return scored, nil
+}
+
 // rebuildMemoriesFromMarkdown reconstructs the memories index from every
 // committed docs/memory/*.md entry, with no read of any non-committed
 // state (R4, docs/plans/active/durable-memory.md). Unlike plan_index,

@@ -247,3 +247,111 @@ func TestRebuildMemoriesFromMarkdownRoundTrip(t *testing.T) {
 		t.Fatalf("post-rebuild plan view = %+v, want %+v", postPlan, prePlan)
 	}
 }
+
+func TestMemoryQueryRankedOrdersByMatchCount(t *testing.T) {
+	chdirFixture(t)
+	db := freshDB(t)
+
+	lowID, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "sqlite WAL sidecars are tricky")
+	if err != nil {
+		t.Fatalf("CreateMemory (low): %v", err)
+	}
+	highID, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "sqlite WAL sidecars, sqlite WAL journal mode, sqlite WAL checkpoint")
+	if err != nil {
+		t.Fatalf("CreateMemory (high): %v", err)
+	}
+	if _, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "unrelated entry about markdown frontmatter"); err != nil {
+		t.Fatalf("CreateMemory (unrelated): %v", err)
+	}
+
+	results, err := MemoryQueryRanked(db, "sqlite WAL", "", "", "")
+	if err != nil {
+		t.Fatalf("MemoryQueryRanked: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("MemoryQueryRanked len = %d, want 2 (unrelated entry excluded), got %+v", len(results), results)
+	}
+	if results[0].ID != highID || results[1].ID != lowID {
+		t.Fatalf("MemoryQueryRanked order = [%s, %s], want [%s, %s] (higher match count first)", results[0].ID, results[1].ID, highID, lowID)
+	}
+	if results[0].Score <= results[1].Score {
+		t.Fatalf("MemoryQueryRanked scores = [%d, %d], want first > second", results[0].Score, results[1].Score)
+	}
+}
+
+func TestMemoryQueryRankedExcludesZeroMatches(t *testing.T) {
+	chdirFixture(t)
+	db := freshDB(t)
+
+	if _, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "nothing relevant here"); err != nil {
+		t.Fatalf("CreateMemory: %v", err)
+	}
+
+	results, err := MemoryQueryRanked(db, "unmatchedkeyword", "", "", "")
+	if err != nil {
+		t.Fatalf("MemoryQueryRanked: %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("MemoryQueryRanked len = %d, want 0, got %+v", len(results), results)
+	}
+}
+
+func TestMemoryQueryRankedTiebreaksOnCreatedAtDesc(t *testing.T) {
+	chdirFixture(t)
+	db := freshDB(t)
+
+	firstID, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "keyword match one")
+	if err != nil {
+		t.Fatalf("CreateMemory (first): %v", err)
+	}
+	secondID, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "keyword match two")
+	if err != nil {
+		t.Fatalf("CreateMemory (second): %v", err)
+	}
+
+	results, err := MemoryQueryRanked(db, "keyword", "", "", "")
+	if err != nil {
+		t.Fatalf("MemoryQueryRanked: %v", err)
+	}
+	if len(results) != 2 || results[0].Score != results[1].Score {
+		t.Fatalf("MemoryQueryRanked = %+v, want two equal-score entries", results)
+	}
+	if results[0].ID != secondID || results[1].ID != firstID {
+		t.Fatalf("MemoryQueryRanked tiebreak order = [%s, %s], want [%s, %s] (most recent first)", results[0].ID, results[1].ID, secondID, firstID)
+	}
+}
+
+func TestMemoryQueryRankedCombinesWithFilters(t *testing.T) {
+	chdirFixture(t)
+	db := freshDB(t)
+
+	planID, err := CreateMemory(db, "gotcha", domain.MemoryScopePlan, "01PLANIDFIXTUREXXXXXXXXXX", "shared keyword body")
+	if err != nil {
+		t.Fatalf("CreateMemory (plan): %v", err)
+	}
+	if _, err := CreateMemory(db, "gotcha", domain.MemoryScopeGlobal, "", "shared keyword body"); err != nil {
+		t.Fatalf("CreateMemory (global): %v", err)
+	}
+	if _, err := CreateMemory(db, "decision", domain.MemoryScopePlan, "01PLANIDFIXTUREXXXXXXXXXX", "shared keyword body"); err != nil {
+		t.Fatalf("CreateMemory (decision, plan): %v", err)
+	}
+
+	results, err := MemoryQueryRanked(db, "keyword", "gotcha", domain.MemoryScopePlan, "01PLANIDFIXTUREXXXXXXXXXX")
+	if err != nil {
+		t.Fatalf("MemoryQueryRanked: %v", err)
+	}
+	if len(results) != 1 || results[0].ID != planID {
+		t.Fatalf("MemoryQueryRanked filtered = %+v, want just %q", results, planID)
+	}
+}
+
+func TestMemoryQueryRankedMissingKeywords(t *testing.T) {
+	chdirFixture(t)
+	db := freshDB(t)
+
+	_, err := MemoryQueryRanked(db, "", "gotcha", "", "")
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "missing_required_field" {
+		t.Fatalf("err = %v, want *domain.ValidationError{Code: missing_required_field}", err)
+	}
+}

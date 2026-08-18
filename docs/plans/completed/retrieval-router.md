@@ -3,7 +3,7 @@ id: 01M0AP2DKHY99R9CXQNQBA8WR1
 type: plan
 intake_id: 01M0AP2JB9WVAJETZHV7MZ4KS8
 lane: normal
-status: active
+status: completed
 created: 2026-08-18
 updated: 2026-08-18
 ---
@@ -54,7 +54,7 @@ updated: 2026-08-18
 - phases:
   - phase_slug: p6-retrieval-router
     story_id: 01M0APETYJAF2BPA6NBVT1B2VZ
-    status: planned
+    status: done
     goal: Add keyword/relevance ranking to `zharness memory query` over the existing `memories` index, CLI-only, no new table or dependency.
     depends_on: none
     waves:
@@ -93,23 +93,32 @@ updated: 2026-08-18
 
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none
+- 2026-08-18 — phase p6-retrieval-router started (in-progress). run_id: 01M0APY1G67SZSN28DR2JNK7PJ. task_status: in-progress.
+- `2026-08-18T15:14:39Z` — wave 1, task Add MemoryQueryRanked(db, keywords, memType, scope, planID) to cli/internal/application/memory.go. task_status: `DONE`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: MemoryScoredView + MemoryQueryRanked added: reuses the existing filtered SELECT (type/scope/plan_id all now optional here), reads each candidate body via os.ReadFile+extractMemoryBody, scores by case-insensitive strings.Count per keyword token against type+body, drops zero-score rows, stable-sorts by score desc (SELECT already orders created_at DESC, id DESC for the tiebreak). go build ./... and go vet ./... clean..
+- `2026-08-18T15:14:39Z` — wave 1, task Wire --keywords flag onto memory query cobra command in cli/internal/interfaces/memory.go. task_status: `DONE`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: query.Flags().String("keywords", ...) added; RunE branches to new runMemoryQueryRanked when --keywords is non-empty (type becomes optional in that branch), otherwise unchanged runMemoryQuery path (R5). cd cli && go test ./internal/application/... ./internal/interfaces/... -run Memory passes..
+- `2026-08-18T15:14:43Z` — wave 1. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: Wave 1 (ranked query — application layer + CLI flag) complete: MemoryQueryRanked + --keywords flag added, go build/vet clean, cd cli && go test ./internal/application/... ./internal/interfaces/... -run Memory passes..
+- `2026-08-18T15:15:55Z` — wave 2, task Add unit tests to cli/internal/application/memory_test.go covering ranked ordering, zero-match exclusion, created_at tiebreak, and combined filters. task_status: `DONE`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: 5 new tests added (TestMemoryQueryRanked{OrdersByMatchCount,ExcludesZeroMatches,TiebreaksOnCreatedAtDesc,CombinesWithFilters,MissingKeywords}); cd cli && go test ./internal/application/... -run TestMemoryQueryRanked -v: 5/5 pass..
+- `2026-08-18T15:15:55Z` — wave 2, task Add memory query --keywords row to read_only_commands_test.go TestInspectionCommandsDoNotCreateWALSidecars. task_status: `DONE`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: New memory_query_ranked table row added; cd cli && go test ./internal/interfaces/... -run TestInspectionCommandsDoNotCreateWALSidecars -v passes (11/11 subtests), proving the ranked path creates no WAL/SHM sidecars..
+- `2026-08-18T15:15:55Z` — wave 2, task Document memory add/get/query (including --keywords) in cli/docs/CONTRACT.md. task_status: `DONE`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: New ### memory section added under Domain (Phase 4) after decision, documenting all three subcommands, MemoryScoredView shape, error codes, the keyword-only-ranking limitation note, and the CLI-opt-in-only consumer boundary. Closes the gap identified during to-plan..
+- `2026-08-18T15:15:58Z` — wave 2. run: `01M0APY1G67SZSN28DR2JNK7PJ`. summary: Wave 2 (coverage, read-only contract, CONTRACT.md) complete: 5 new memory_test.go tests, read_only_commands_test.go extended with a memory query --keywords row, cli/docs/CONTRACT.md documents memory add/get/query. cd cli && go test ./... passes (all packages ok). scripts/verify-doc-links.sh: same 16 pre-existing failures, no new ones introduced by this phase. Phase p6-retrieval-router (both waves) complete..
+- `2026-08-18T15:26:06Z` — handoff recorded. handoff: `01M0AQNN2CMK0RYHM4W0FGP3VX`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. check: `01M0AQC3HFSS6QMTV0CBSDWM6H`. phase closed.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
-- none
+- `2026-08-18T15:26:11Z` — plan completed. rationale: every phase_slug is a done story.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
-- none
+- `2026-08-18T15:20:53Z` — check. verdict: `APPROVED`. check: `01M0AQC3HFSS6QMTV0CBSDWM6H`. run: `01M0APY1G67SZSN28DR2JNK7PJ`. phase: `p6-retrieval-router`. judge: `same-session` (claude-sonnet-5).
+  - `cd cli && go build ./... && go vet ./... && go test ./...` → all packages ok (cached), zero vet findings
 
 ## Current State and Next Action
 - active_phase: p6-retrieval-router
-- lifecycle_status: planned
-- latest_run_id: none
-- latest_trace_ids: []
-- latest_check_id: none
+- lifecycle_status: checked
+- latest_run_id: 01M0APY1G67SZSN28DR2JNK7PJ
+- latest_trace_ids: [01M0AQ0P2RJM7PE5SQV76CN172, 01M0AQ0P2RJM7PE5SQV7S7PY1T, 01M0AQ0TGCM50ZA1NF42RGX585, 01M0AQ300SG4G647T275R2C8EQ, 01M0AQ300SG4G647T2797BZN1V, 01M0AQ300SG4G647T27CSTX6FZ, 01M0AQ33ATCDMBJ852K653P2G1]
+- latest_check_id: 01M0AQC3HFSS6QMTV0CBSDWM6H
 - latest_handoff_id: none
 - blockers: none
-- open_items: [cli/docs/CONTRACT.md does not yet document memory add/get/query — closed by phase p6-retrieval-router wave 2]
-- exact_next_action: work full phase p6-retrieval-router
+- open_items: none
+- exact_next_action: handoff record --close-phase (this is the initiative's only phase; check full APPROVED)

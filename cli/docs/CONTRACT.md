@@ -142,6 +142,31 @@ Every lifecycle write goes directly to `harness.db` inside one transaction — t
 - Atomic side effect: when exactly one plan is `active` under `docs/plans/active/`, appends one formatted line per batch element to its `## Decisions` section in the same operation as the DB write; with zero or multiple active plans, the markdown write is a no-op (P3, same "one writer" pattern as `trace add`)
 - Consumer: `work`/`to-plan`/`check` (recording a plan gap, trade-off, deviation, or wrong assumption discovered during execution — the compressed-index counterpart of a plan's `## Decisions` markdown section, re-adding the `decisions` table migration `0003_drop_dead_surface` dropped as unwritten dead surface; see `docs/audit/workflow-harness-ceremony-audit.md`)
 
+### `memory`
+Durable, cross-session agent memory: a markdown-first `docs/memory/{id}.md` write path with a derived `memories` index in `harness.db`, reconstructible via `db rebuild` from committed markdown alone (P5, `docs/plans/completed/durable-memory.md`).
+
+- `memory add --type "..." --scope plan|global [--plan-id {ulid}] --summary "..."`
+  - `--type` (free text), `--scope`, and `--summary` are required; `--plan-id` is required when `--scope=plan` and disallowed when `--scope=global`
+  - `--json`: `{"id": "ulid"}`
+  - Errors: `missing_required_field` (1, missing `--type`/`--scope`/`--summary`, or missing `--plan-id` with `--scope=plan`), `invalid_scope` (1, `--scope` not `plan`/`global`), `db_not_writable` (2)
+  - Markdown-first: writes `docs/memory/{id}.md` before inserting the derived `memories` row — a failed markdown write leaves zero DB rows, mirroring `trace add`'s ordering
+  - Exclusive mutation command (repository lock)
+- `memory get --id {ulid}`
+  - `--json`: `MemoryView` — `id`, `path`, `type`, `scope`, `plan_id` (nullable), `created_at`, `body`
+  - Errors: `missing_required_field` (1, missing `--id`), `unknown_memory_id` (1, no such entry), `db_unreadable` (2)
+  - Read-only: resolves `id` to its indexed path and reads the markdown file itself, not the DB row — markdown is the source of truth, the index is derived
+- `memory query --type "..." [--scope plan|global] [--plan-id {ulid}]`
+  - `--type` is required in this mode; lists `memories` index rows (path + metadata, no body) filtered by type and optionally scope/plan-id, ordered `created_at DESC, id DESC`
+  - `--json`: `[MemoryListView, ...]` — same fields as `MemoryView` minus `body`
+  - Errors: `missing_required_field` (1, missing `--type`), `invalid_scope` (1), `db_unreadable` (2)
+- `memory query --keywords "..." [--type "..."] [--scope plan|global] [--plan-id {ulid}]` (P6, `docs/plans/active/retrieval-router.md` — additive ranked mode, R5: the plain filter mode above is unchanged)
+  - `--keywords` switches the command to ranked mode: `--type` becomes optional (still narrows candidates when given, same as `--scope`/`--plan-id`); each surviving candidate's stored `type` plus markdown body is scored by case-insensitive keyword-token match count, zero-score entries are dropped, and the rest are ordered by score descending then `created_at DESC` as a tiebreak
+  - `--json`: `[MemoryScoredView, ...]` — `MemoryListView`'s fields plus `score` (int)
+  - Errors: `missing_required_field` (1, `--keywords` present but blank), `invalid_scope` (1), `db_unreadable` (2)
+  - Keyword-only ranking, not semantic search: a keyword appearing in unrelated context can outrank a more relevant but differently-worded entry — no embeddings or vector store in this phase (R4)
+  - Read-only, both `memory get` and every `memory query` mode: uses `infrastructure.OpenReadOnly`, creates no WAL/SHM sidecars
+- Consumer: any agent opt-in only — no spine playbook (`brainstorm`, `to-plan`, `work`, `check`, `git`, `handoff`, `watzup`) calls `memory` as a required step (P5 NG3 / P6 NG2)
+
 ## Domain — workflow additions (Phase 4 — cli-domain)
 
 ### `run create`
