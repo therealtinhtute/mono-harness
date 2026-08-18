@@ -19,16 +19,19 @@ import (
 // docs/audit/workflow-harness-ceremony-audit.md).
 //
 // Degraded is true when the requested section or phase block could not be
-// found — Content then carries the full plan file instead of failing the
-// call, so a malformed hand-edited plan degrades an agent's read to what
-// it already had to do before this command existed, rather than blocking
-// it outright.
+// found — Content then names the requested section/phase plus what the
+// plan actually defines instead of failing the call, so a malformed
+// hand-edited plan degrades an agent's read to a bounded pointer rather
+// than blocking it outright or dumping the whole plan file (P4 wave 2,
+// docs/plans/active/harness-markdown-truth.md). Omitted names what that
+// bounded response left out, mirroring StopInfo.OmittedField.
 type PlanSectionView struct {
 	Path     string `json:"path"`
 	Section  string `json:"section"`
 	Phase    string `json:"phase,omitempty"`
 	Content  string `json:"content"`
 	Degraded bool   `json:"degraded"`
+	Omitted  string `json:"omitted,omitempty"`
 }
 
 var planPhaseHeading = regexp.MustCompile("(?m)^### phase_slug: `([^`\r\n]+)`[ \t]*\r?$")
@@ -80,12 +83,61 @@ func QueryPlanSection(section, phase string) (PlanSectionView, *StopInfo, error)
 
 	view := PlanSectionView{Path: plan.path, Section: section, Phase: phase}
 	if !found {
-		view.Content = plan.content
 		view.Degraded = true
+		view.Omitted = "plan body"
+		if section == "current-state" {
+			view.Content = fmt.Sprintf("no %q section found in %s; available sections: %s",
+				"## Current State and Next Action", plan.path, joinOrNone(availablePlanSections(plan.content)))
+		} else {
+			view.Content = fmt.Sprintf("no phase %q found in %s; available phases: %s",
+				phase, plan.path, joinOrNone(availablePlanPhaseSlugs(plan.content)))
+		}
 		return view, nil, nil
 	}
 	view.Content = body
 	return view, nil, nil
+}
+
+// availablePlanSections lists the `## {name}` headings a plan actually
+// defines, reusing validate.go's planHeadingPattern so the not-found degrade
+// message can never name a section validate itself wouldn't recognize.
+func availablePlanSections(content string) []string {
+	matches := planHeadingPattern.FindAllStringSubmatch(normalizeLineEndings(content), -1)
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		names = append(names, m[1])
+	}
+	return names
+}
+
+// availablePlanPhaseSlugs lists the phase_slugs a plan actually defines,
+// trying both the heading form and the scaffold template's list form (a plan
+// may use either — see extractPlanPhaseBlock) and deduplicating in
+// first-seen order.
+func availablePlanPhaseSlugs(content string) []string {
+	normalized := normalizeLineEndings(content)
+	seen := make(map[string]bool)
+	slugs := make([]string, 0)
+	for _, m := range planPhaseHeading.FindAllStringSubmatch(normalized, -1) {
+		if !seen[m[1]] {
+			seen[m[1]] = true
+			slugs = append(slugs, m[1])
+		}
+	}
+	for _, m := range planPhaseListItem.FindAllStringSubmatch(normalized, -1) {
+		if !seen[m[2]] {
+			seen[m[2]] = true
+			slugs = append(slugs, m[2])
+		}
+	}
+	return slugs
+}
+
+func joinOrNone(items []string) string {
+	if len(items) == 0 {
+		return "(none defined)"
+	}
+	return strings.Join(items, ", ")
 }
 
 // extractPlanSection returns the body of a `## {name}` heading — every line

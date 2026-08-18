@@ -79,7 +79,11 @@ func seedStory(t *testing.T, db *sql.DB, slug, status string) {
 const scaffoldedPlanFixture = `---
 id: 01TESTPLANFIXTUREXULIDXXX
 type: plan
+intake_id: 01TESTINTAKEFIXTUREXULIDX
+lane: normal
 status: active
+created: 2026-07-22
+updated: 2026-07-22
 ---
 
 # Plan: Fixture

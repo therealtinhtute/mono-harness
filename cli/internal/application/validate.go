@@ -3,6 +3,7 @@ package application
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/oklog/ulid/v2"
@@ -57,6 +58,9 @@ func Validate(db *sql.DB) (ValidateResult, error) {
 		return ValidateResult{}, err
 	}
 	if err := validateMetaLinks(db, &findings); err != nil {
+		return ValidateResult{}, err
+	}
+	if err := validateActivePlanMarkdown(db, &findings); err != nil {
 		return ValidateResult{}, err
 	}
 
@@ -402,6 +406,134 @@ func validateMetaLinks(db *sql.DB, findings *[]ValidateFinding) error {
 		}
 	}
 	return nil
+}
+
+// activePlanFrontmatterKeys are the required keys in a plan's frontmatter
+// block, per the scaffold template (cli/docs/embedded/templates/plan.md).
+var activePlanFrontmatterKeys = []string{"id", "type", "intake_id", "lane", "status", "created", "updated"}
+
+// activePlanKnownStructuralHeadings are the `## ` headings to-plan/
+// brainstorm own — written once, before execution begins.
+var activePlanKnownStructuralHeadings = map[string]bool{
+	"Outcome":                    true,
+	"Authority and Requirements": true,
+	"Non-goals":                  true,
+	"Approach and Risks":         true,
+	"Phases and Verification":    true,
+}
+
+// activePlanKnownAppendOnlyHeadings are the four `## ` headings work/check/
+// handoff append to or refresh (check 12) — see docs/playbooks/work.md and
+// check.md's Owned Plan Sections.
+var activePlanKnownAppendOnlyHeadings = map[string]bool{
+	"Progress":                      true,
+	"Decisions":                     true,
+	"Validation":                    true,
+	"Current State and Next Action": true,
+}
+
+var planHeadingPattern = regexp.MustCompile(`(?m)^## (.+?)[ \t]*\r?$`)
+
+// validateActivePlanMarkdown adds checks 9-12 (P4 wave 1,
+// docs/plans/active/harness-markdown-truth.md): at most one active plan
+// (check 9, R13 — zero is a valid idle state, only ambiguity is a
+// finding), its frontmatter is present and parseable (check 10), every
+// phase it defines has a matching story row (check 11), and every heading
+// past the structural section is one of the four known append-only
+// headings (check 12). Reuses ResolveActivePlan (R2) so this can never
+// disagree with the runtime resolver about what plan is live.
+func validateActivePlanMarkdown(db *sql.DB, findings *[]ValidateFinding) error {
+	plan, stop, err := ResolveActivePlan()
+	if err != nil {
+		return fmt.Errorf("validate active plan: %w", err)
+	}
+	if stop != nil {
+		if stop.Code == "ambiguous" {
+			*findings = append(*findings, ValidateFinding{Link: "DOCS->PLAN", Issue: "invalid_value", Detail: stop.Message})
+		}
+		return nil
+	}
+
+	validateActivePlanFrontmatter(plan, findings)
+	if err := validateActivePlanPhaseStories(db, plan, findings); err != nil {
+		return err
+	}
+	validateActivePlanSections(plan, findings)
+	return nil
+}
+
+// validateActivePlanFrontmatter is check 10: the plan's frontmatter block
+// must parse (R4's frontmatterPreview) and every key in
+// activePlanFrontmatterKeys must carry a non-empty value.
+func validateActivePlanFrontmatter(plan activePlan, findings *[]ValidateFinding) {
+	lines, ok := frontmatterPreview(plan.content, frontmatterPreviewLines)
+	if !ok {
+		*findings = append(*findings, ValidateFinding{
+			Link:  "DOCS->PLAN",
+			Issue: "missing_key",
+			Detail: fmt.Sprintf(
+				"%s has no parseable `---`-delimited frontmatter block: every plan requires one carrying %s (docs/plans/active/harness-markdown-truth.md R9). Restore the block, e.g. from git history.",
+				plan.path, strings.Join(activePlanFrontmatterKeys, ", "),
+			),
+		})
+		return
+	}
+	for _, key := range activePlanFrontmatterKeys {
+		if value, ok := frontmatterPreviewField(lines, key); ok && strings.TrimSpace(value) != "" {
+			continue
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:  "DOCS->PLAN",
+			Issue: "missing_key",
+			Detail: fmt.Sprintf(
+				"%s frontmatter has no value for %q: every plan requires %s (docs/plans/active/harness-markdown-truth.md R9). Add `%s: ...` to the frontmatter block.",
+				plan.path, key, strings.Join(activePlanFrontmatterKeys, ", "), key,
+			),
+		})
+	}
+}
+
+// validateActivePlanPhaseStories is check 11: every phase_slug the plan
+// defines in `## Phases and Verification` must have a matching `stories`
+// row, mirroring to-plan.md step 4's "create story rows once".
+func validateActivePlanPhaseStories(db *sql.DB, plan activePlan, findings *[]ValidateFinding) error {
+	for _, slug := range parseActivePlanPhaseOrder(plan.content) {
+		_, _, exists, err := storyByExactSlug(db, slug)
+		if err != nil {
+			return fmt.Errorf("validate active plan phase %s: %w", slug, err)
+		}
+		if exists {
+			continue
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:  "STORY->PLAN",
+			Issue: "broken_link",
+			Detail: fmt.Sprintf(
+				"%s defines phase_slug %q, but no story row exists for it: to-plan creates one story row per phase (docs/playbooks/to-plan.md step 4). Run `zharness story --slug %s --goal \"...\"`.",
+				plan.path, slug, slug,
+			),
+		})
+	}
+	return nil
+}
+
+// validateActivePlanSections is check 12: every `## ` heading past the
+// structural section must be one of the four known append-only headings.
+func validateActivePlanSections(plan activePlan, findings *[]ValidateFinding) {
+	for _, match := range planHeadingPattern.FindAllStringSubmatch(normalizeLineEndings(plan.content), -1) {
+		name := strings.TrimSpace(match[1])
+		if activePlanKnownStructuralHeadings[name] || activePlanKnownAppendOnlyHeadings[name] {
+			continue
+		}
+		*findings = append(*findings, ValidateFinding{
+			Link:  "DOCS->PLAN",
+			Issue: "invalid_value",
+			Detail: fmt.Sprintf(
+				"%s has an unrecognized `## %s` heading: a plan's sections past `## Phases and Verification` are limited to Progress, Decisions, Validation, and Current State and Next Action (docs/playbooks/work.md, check.md Owned Plan Sections). Rename or remove the heading.",
+				plan.path, name,
+			),
+		})
+	}
 }
 
 func looksLikeULID(s string) bool {
