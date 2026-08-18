@@ -46,7 +46,7 @@ type activePlan struct {
 func findActivePlans() ([]activePlan, error) {
 	matches, err := filepath.Glob(nextActivePlansGlob)
 	if err != nil {
-		return nil, fmt.Errorf("next: glob active plans: %w", err)
+		return nil, fmt.Errorf("resolve plan: glob active plans: %w", err)
 	}
 	sort.Strings(matches)
 
@@ -54,7 +54,7 @@ func findActivePlans() ([]activePlan, error) {
 	for _, path := range matches {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return nil, fmt.Errorf("next: read %s: %w", path, err)
+			return nil, fmt.Errorf("resolve plan: read %s: %w", path, err)
 		}
 		content := string(data)
 		if strings.TrimSpace(content) == "" {
