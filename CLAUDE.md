@@ -71,7 +71,7 @@ npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g
 # Exceptions live in .claimignore and each one requires a `# reason`.
 bash scripts/verify-doc-links.sh
 
-# Go CLI test suite, including the embedded-docs projection-drift test.
+# Go CLI test suite.
 cd cli && go test ./...
 ```
 
