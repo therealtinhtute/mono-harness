@@ -7,4 +7,5 @@ harness.db-shm
 .kit/cache/
 .kit/conflicts/
 .kit/log/
+.kit/changesets/
 __pycache__/
