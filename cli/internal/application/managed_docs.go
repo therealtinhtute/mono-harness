@@ -40,7 +40,7 @@ type managedDocAction struct {
 	Write        bool
 }
 
-func SyncManagedDocs(db *sql.DB, changesetDir, docsRoot, conflictRoot string, docsFS fs.FS, docsVersion string, refresh, force bool) (ManagedDocsResult, error) {
+func SyncManagedDocs(db *sql.DB, docsRoot, conflictRoot string, docsFS fs.FS, docsVersion string, refresh, force bool) (ManagedDocsResult, error) {
 	states, err := loadManagedDocStates(db)
 	if err != nil {
 		return ManagedDocsResult{}, err
@@ -79,14 +79,8 @@ func SyncManagedDocs(db *sql.DB, changesetDir, docsRoot, conflictRoot string, do
 		result.DocsWritten = true
 	}
 
-	lines, err := managedDocChangesetLines(db, actions, docsVersion)
-	if err != nil {
-		return result, err
-	}
-	if len(lines) > 0 {
-		if _, _, err := AppendAndApply(db, changesetDir, lines); err != nil {
-			return result, fmt.Errorf("record managed docs: %w", err)
-		}
+	if err := applyManagedDocActions(db, actions, docsVersion); err != nil {
+		return result, fmt.Errorf("record managed docs: %w", err)
 	}
 	return result, nil
 }
@@ -181,33 +175,51 @@ func planManagedDocActions(states map[string]managedDocState, docsRoot string, d
 	return actions, conflicts, err
 }
 
-func managedDocChangesetLines(db *sql.DB, actions []managedDocAction, docsVersion string) ([]infrastructure.ChangesetLine, error) {
+// applyManagedDocActions records the plan built by planManagedDocActions —
+// id and path are the same value by convention (see managedDocAction's
+// RelativePath) — plus meta.docs_version when it differs, all in one
+// transaction.
+func applyManagedDocActions(db *sql.DB, actions []managedDocAction, docsVersion string) error {
+	if len(actions) == 0 {
+		return nil
+	}
 	at := time.Now().UTC().Format(time.RFC3339)
-	lines := make([]infrastructure.ChangesetLine, 0, len(actions)+1)
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
 	for _, action := range actions {
-		fields := map[string]any{
-			"installed_sha256": action.SHA256,
-			"docs_version":     docsVersion,
-			"updated_at":       at,
+		switch action.Op {
+		case "create":
+			if _, err := tx.Exec(
+				`INSERT OR IGNORE INTO managed_docs (id, path, installed_sha256, docs_version, updated_at) VALUES (?, ?, ?, ?, ?)`,
+				action.RelativePath, action.RelativePath, action.SHA256, docsVersion, at,
+			); err != nil {
+				return fmt.Errorf("insert managed doc %s: %w", action.RelativePath, err)
+			}
+		case "update":
+			if _, err := tx.Exec(
+				`UPDATE managed_docs SET installed_sha256 = ?, docs_version = ?, updated_at = ? WHERE id = ?`,
+				action.SHA256, docsVersion, at, action.RelativePath,
+			); err != nil {
+				return fmt.Errorf("update managed doc %s: %w", action.RelativePath, err)
+			}
 		}
-		if action.Op == "create" {
-			fields["path"] = action.RelativePath
-		}
-		lines = append(lines, infrastructure.ChangesetLine{
-			Op: action.Op, Entity: "managed_doc", ID: action.RelativePath, Fields: fields, At: at,
-		})
 	}
 
 	var current sql.NullString
-	if err := db.QueryRow(`SELECT docs_version FROM meta LIMIT 1`).Scan(&current); err != nil {
-		return nil, fmt.Errorf("read meta.docs_version: %w", err)
+	if err := tx.QueryRow(`SELECT docs_version FROM meta LIMIT 1`).Scan(&current); err != nil {
+		return fmt.Errorf("read meta.docs_version: %w", err)
 	}
 	if current.String != docsVersion {
-		lines = append(lines, infrastructure.ChangesetLine{
-			Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"docs_version": docsVersion}, At: at,
-		})
+		if _, err := tx.Exec(`UPDATE meta SET docs_version = ?`, docsVersion); err != nil {
+			return fmt.Errorf("update meta.docs_version: %w", err)
+		}
 	}
-	return lines, nil
+	return tx.Commit()
 }
 
 func writeManagedFile(path string, content []byte) error {

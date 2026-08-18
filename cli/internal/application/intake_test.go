@@ -7,14 +7,14 @@ import (
 )
 
 func TestCreateIntake(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
 	planPath := "docs/plans/active/harness.md"
-	id, path, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "add zharness domain commands", domain.LaneNormal, planPath, "")
+	id, err := CreateIntake(db, domain.IntakeNewSpec, "add zharness domain commands", domain.LaneNormal, planPath, "")
 	if err != nil {
 		t.Fatalf("CreateIntake: %v", err)
 	}
-	assertChangesetBeforeRow(t, db, path, "intakes", id, "intake")
+	assertRowExists(t, db, "intakes", id)
 	if got := countRows(t, db, "intakes"); got != 1 {
 		t.Fatalf("intakes rows = %d, want 1", got)
 	}
@@ -28,9 +28,9 @@ func TestCreateIntake(t *testing.T) {
 }
 
 func TestCreateIntakeInvalidType(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateIntake(db, changesetDir, "not-a-type", "summary", domain.LaneNormal, "", "")
+	_, err := CreateIntake(db, "not-a-type", "summary", domain.LaneNormal, "", "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_type" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_type}", err)
@@ -41,9 +41,9 @@ func TestCreateIntakeInvalidType(t *testing.T) {
 }
 
 func TestCreateIntakeInvalidLane(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "summary", "urgent", "", "")
+	_, err := CreateIntake(db, domain.IntakeNewSpec, "summary", "urgent", "", "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_lane" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_lane}", err)

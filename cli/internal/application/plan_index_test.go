@@ -8,7 +8,7 @@ import (
 
 func TestPlanIndexStalenessNeverIndexed(t *testing.T) {
 	chdirFixture(t)
-	db, _ := freshDB(t)
+	db := freshDB(t)
 	path := writeActivePlanFixture(t, "fixture-plan")
 
 	onDisk, indexed, stale, row, err := planIndexStaleness(db, path)
@@ -31,7 +31,7 @@ func TestPlanIndexStalenessNeverIndexed(t *testing.T) {
 
 func TestPlanIndexStalenessMatchesIndexedHash(t *testing.T) {
 	chdirFixture(t)
-	db, _ := freshDB(t)
+	db := freshDB(t)
 	path := writeActivePlanFixture(t, "fixture-plan")
 
 	onDisk, _, _, _, err := planIndexStaleness(db, path)
@@ -61,7 +61,7 @@ func TestPlanIndexStalenessMatchesIndexedHash(t *testing.T) {
 
 func TestPlanIndexStalenessDiffersFromIndexedHash(t *testing.T) {
 	chdirFixture(t)
-	db, _ := freshDB(t)
+	db := freshDB(t)
 	path := writeActivePlanFixture(t, "fixture-plan")
 
 	id := ulid.Make().String()

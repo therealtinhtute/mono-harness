@@ -2,10 +2,13 @@ package application
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 func checkExists(db *sql.DB, id string) (bool, error) {
@@ -21,16 +24,16 @@ func checkExists(db *sql.DB, id string) (bool, error) {
 }
 
 // RecordCheck validates and records a new check (gate verdict) entity
-// (CONTRACT.md `check record`), changeset-first, and atomically points
-// meta.latest_check_id at it in the same changeset/tx — the hand-authored
-// meta changeset check.md's playbook previously required is now owned by
-// the CLI. unknown_run_id is DB-lookup-dependent, so it's enforced here
-// rather than in domain.Check.Validate() (invalid_verdict, invalid_judge,
-// and empty_proof_links are already covered there).
-func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink) (id, path string, err error) {
+// (CONTRACT.md `check record`), and atomically points meta.latest_check_id
+// at it in the same transaction — the hand-authored meta changeset check.md's
+// playbook previously required is now owned by the CLI. unknown_run_id is
+// DB-lookup-dependent, so it's enforced here rather than in
+// domain.Check.Validate() (invalid_verdict, invalid_judge, and
+// empty_proof_links are already covered there).
+func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink) (id string, err error) {
 	entity := domain.Check{RunID: runID, Verdict: verdict, Judge: judge, JudgeModel: judgeModel, ProofLinks: proofLinks}
 	if err := entity.Validate(); err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	var storyID, storySlug, storyStatus, latestRunID string
@@ -48,42 +51,38 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		WHERE runs.id = ?
 	`, runID).Scan(&storyID, &storySlug, &storyStatus, &latestRunID)
 	if err == sql.ErrNoRows {
-		return "", "", &domain.ValidationError{Code: "unknown_run_id", Message: "check record: run_id " + runID + " not found"}
+		return "", &domain.ValidationError{Code: "unknown_run_id", Message: "check record: run_id " + runID + " not found"}
 	}
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	if storyStatus != domain.StoryInProgress {
-		return "", "", &domain.ValidationError{Code: "story_not_checkable", Message: "check record: story must be in-progress"}
+		return "", &domain.ValidationError{Code: "story_not_checkable", Message: "check record: story must be in-progress"}
 	}
 	if latestRunID != runID {
-		return "", "", &domain.ValidationError{Code: "run_not_latest", Message: "check record: run_id is not the latest run for its story"}
+		return "", &domain.ValidationError{Code: "run_not_latest", Message: "check record: run_id is not the latest run for its story"}
 	}
 
 	lane, laneResolved, err := resolveLaneForRun(db, runID)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	if laneResolved && lane == domain.LaneHighRisk && judge != domain.JudgeIndependent {
-		return "", "", &domain.ValidationError{Code: "independent_judge_required", Message: "check record: lane is high-risk, --judge must be independent"}
+		return "", &domain.ValidationError{Code: "independent_judge_required", Message: "check record: lane is high-risk, --judge must be independent"}
 	}
 
-	// id is minted from the changeset ULID up front (same value
-	// AppendNewEntityAndApply used to mint inside its DB-write callback),
-	// so the Validation entry text — and therefore the writability of the
-	// section itself — is knowable before anything is written. Markdown is
-	// the write target: writePlan below runs before the DB write, so a
-	// failed markdown write (missing section, read-only file, race) leaves
-	// zero DB rows behind it (R8, docs/plans/active/harness-markdown-truth.md).
-	id, err = prepareChangesetAppend(db, changesetDir)
-	if err != nil {
-		return "", "", err
-	}
-	at := orderedChangesetTime(id)
+	// id is minted up front so the Validation entry text — and therefore
+	// the writability of the section itself — is knowable before anything
+	// is written. Markdown is the write target: writePlan below runs
+	// before the DB write, so a failed markdown write (missing section,
+	// read-only file, race) leaves zero DB rows behind it (R8,
+	// docs/plans/active/harness-markdown-truth.md).
+	at := time.Now().UTC().Format(time.RFC3339)
+	id = ulid.Make().String()
 
 	writePlan, err := preparePlanAppend(db, "Validation", formatCheckValidationEntry(at, id, storySlug, runID, verdict, judge, judgeModel, proofLinks))
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	// Checked before proof verification: both are preconditions with no
@@ -93,21 +92,21 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 	// re-running every proof command first.
 	if verdict == domain.VerdictApproved || verdict == domain.VerdictApproveWithRequests {
 		if err := verifyProofLinks(proofLinks); err != nil {
-			return "", "", err
+			return "", err
 		}
 	}
 
 	if err := writePlan(); err != nil {
-		return "", "", fmt.Errorf("plan write failed: %w", err)
+		return "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	if verdict != domain.VerdictRequestChanges {
 		writeStatus, err := preparePlanPhaseStatus(db, storySlug, domain.StoryChecked)
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		if err := writeStatus(); err != nil {
-			return "", "", fmt.Errorf("plan write failed: %w", err)
+			return "", fmt.Errorf("plan write failed: %w", err)
 		}
 	}
 
@@ -119,32 +118,35 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 			"artifact_path": pl.ArtifactPath,
 		}
 	}
-	lines := []infrastructure.ChangesetLine{
-		{
-			Op:     "create",
-			Entity: "check",
-			ID:     id,
-			Fields: map[string]any{
-				"run_id":      runID,
-				"verdict":     verdict,
-				"judge":       judge,
-				"judge_model": judgeModel,
-				"proof_links": proofLinksAny,
-				"created_at":  at,
-			},
-			At: at,
-		},
+	proofLinksJSON, err := json.Marshal(proofLinksAny)
+	if err != nil {
+		return "", fmt.Errorf("check %s: marshal proof_links: %w", id, err)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return "", fmt.Errorf("check %s: plan markdown recorded, but db begin tx failed: %w", id, err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	if _, err := tx.Exec(
+		`INSERT INTO checks (id, run_id, verdict, judge, judge_model, proof_links, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		id, runID, verdict, judge, judgeModel, string(proofLinksJSON), at,
+	); err != nil {
+		return "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
 	if verdict != domain.VerdictRequestChanges {
-		lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "story", ID: storyID, Fields: map[string]any{"status": domain.StoryChecked}, At: at})
+		if _, err := tx.Exec(`UPDATE stories SET status = ? WHERE id = ?`, domain.StoryChecked, storyID); err != nil {
+			return "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
+		}
 	}
-	lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: map[string]any{"latest_check_id": id}, At: at})
-
-	path, _, err = writeAndApplyPreparedChangeset(db, changesetDir, id, lines)
-	if err != nil {
-		return "", "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
+	if _, err := tx.Exec(`UPDATE meta SET latest_check_id = ?`, id); err != nil {
+		return "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
-	return id, path, nil
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("check %s: plan markdown recorded, but db commit failed: %w", id, err)
+	}
+	return id, nil
 }
 
 // formatCheckValidationEntry renders a `## Validation` line using only the

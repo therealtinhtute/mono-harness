@@ -9,8 +9,8 @@ import (
 )
 
 func TestAuditCleanState(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	seedRun(t, db)
 
 	report, err := Audit(db, "dev")
 	if err != nil {
@@ -22,8 +22,8 @@ func TestAuditCleanState(t *testing.T) {
 }
 
 func TestAuditSurfacesInvalidLifecycleEnums(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	ids := createValidRetainedLifecycle(t, db, changesetDir)
+	db := freshDB(t)
+	ids := createValidRetainedLifecycle(t, db)
 	if _, err := db.Exec(`UPDATE stories SET status = 'bogus' WHERE id = ?`, ids["story"]); err != nil {
 		t.Fatalf("corrupt story status: %v", err)
 	}
@@ -47,13 +47,13 @@ func TestAuditSurfacesInvalidLifecycleEnums(t *testing.T) {
 }
 
 func TestAuditIgnoresLegacyProofArtifactPaths(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 	proofLinks := []domain.ProofLink{
 		{Command: "true", OutputRef: "PASS"},
 		{Command: "true", OutputRef: "PASS", ArtifactPath: filepath.Join(t.TempDir(), "missing-report.md")},
 	}
-	if _, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", proofLinks); err != nil {
+	if _, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", proofLinks); err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 
@@ -70,9 +70,9 @@ func TestAuditIgnoresLegacyProofArtifactPaths(t *testing.T) {
 }
 
 func TestAuditDeterministic(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
-	if _, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}}); err != nil {
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
+	if _, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}}); err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 

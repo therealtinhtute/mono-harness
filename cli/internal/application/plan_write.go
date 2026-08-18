@@ -32,7 +32,7 @@ func activePlanForWrite() (path string, stop *StopInfo, err error) {
 // preparePlanAppend resolves the active plan (if exactly one exists) and
 // validates that entry can be appended to section, without writing
 // anything yet. Every durable-write caller (trace, decision, check
-// record, handoff) calls the returned write func BEFORE its changeset/DB
+// record, handoff) calls the returned write func BEFORE its DB
 // write, not after: markdown is the write target, and the DB row is
 // derived from what was actually written to it (R8,
 // docs/plans/active/harness-markdown-truth.md). A SQL transaction and a
@@ -77,7 +77,7 @@ func preparePlanAppend(db *sql.DB, section, entry string) (write func() error, e
 // preparePlanPhaseStatus mirrors preparePlanAppend's read-now/write-later
 // split, but for a phase block's `status:` line instead of a section
 // append — the write closure story create/run create/check record/handoff
-// call before their changeset/DB write, so stories stay markdown-first the
+// call before their DB write, so stories stay markdown-first the
 // same way trace/decision/check/handoff did in P2 (R8, P3 wave 1,
 // docs/plans/active/harness-markdown-truth.md). found is false when slug
 // has no phase block in `## Phases and Verification`, or the block has no

@@ -3,7 +3,6 @@ package application
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -36,7 +35,7 @@ import (
 // so the comparison is exact rather than skipped).
 func TestRebuildFromMarkdownRoundTrip(t *testing.T) {
 	chdirFixture(t)
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
 	planID := ulid.Make().String()
 	intakeID := ulid.Make().String()
@@ -85,7 +84,7 @@ func TestRebuildFromMarkdownRoundTrip(t *testing.T) {
 	planPath := filepath.Join("docs", "plans", "active", "rebuild-fixture.md")
 	writeFile(t, planPath, planContent)
 
-	seedRebuildFixtureRows(t, db, changesetDir, rebuildFixtureRows{
+	seedRebuildFixtureRows(t, db, rebuildFixtureRows{
 		planID: planID, intakeID: intakeID, lane: lane,
 		storyID: storyID, slug: slug, status: domain.StoryChecked,
 		runID: runID,
@@ -168,7 +167,7 @@ func TestRebuildFromMarkdownDropsUncheckedRun(t *testing.T) {
 		formatTraceProgressEntry("2026-07-01T10:00:00Z", 1, "orphan trace", runID, "", "") + "\n"
 	writeFile(t, filepath.Join("docs", "plans", "active", "orphan.md"), planContent)
 
-	db, _ := freshDB(t)
+	db := freshDB(t)
 	result, err := RebuildFromMarkdown(db)
 	if err != nil {
 		t.Fatalf("RebuildFromMarkdown: %v", err)
@@ -202,52 +201,71 @@ type rebuildFixtureRows struct {
 	decisionPhase, decisionTask string
 }
 
-func seedRebuildFixtureRows(t *testing.T, db *sql.DB, changesetDir string, f rebuildFixtureRows) {
+func seedRebuildFixtureRows(t *testing.T, db *sql.DB, f rebuildFixtureRows) {
 	t.Helper()
 	const at = "2026-07-01T09:00:00Z"
 
-	mustApply(t, db, changesetDir, "story", f.storyID, map[string]any{
-		"slug": f.slug, "goal": "exercise the round trip", "status": f.status, "created_at": at,
-	}, at)
-	mustApply(t, db, changesetDir, "run", f.runID, map[string]any{
-		"story_slug": f.slug, "artifact_path": "", "created_at": at,
-	}, at)
-	mustApply(t, db, changesetDir, "intake", f.intakeID, map[string]any{
-		"type": "reconstructed", "summary": "seeded for round-trip fixture", "lane": f.lane, "plan_id": f.planID, "created_at": at,
-	}, at)
-
-	proofLinksAny := make([]any, len(f.proofLinks))
-	for i, pl := range f.proofLinks {
-		proofLinksAny[i] = map[string]any{"command": pl.Command, "output_ref": pl.OutputRef}
+	if _, err := db.Exec(
+		`INSERT INTO stories (id, slug, goal, status, created_at) VALUES (?, ?, ?, ?, ?)`,
+		f.storyID, f.slug, "exercise the round trip", f.status, at,
+	); err != nil {
+		t.Fatalf("seed story: %v", err)
 	}
-	mustApply(t, db, changesetDir, "check", f.checkID, map[string]any{
-		"run_id": f.runID, "verdict": domain.VerdictApproved, "judge": domain.JudgeIndependent, "judge_model": "sonnet-5",
-		"proof_links": proofLinksAny, "created_at": f.checkAt,
-	}, f.checkAt)
+	if _, err := db.Exec(
+		`INSERT INTO runs (id, story_slug, artifact_path, created_at) VALUES (?, ?, ?, ?)`,
+		f.runID, f.slug, "", at,
+	); err != nil {
+		t.Fatalf("seed run: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO intakes (id, type, summary, lane, plan_path, plan_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		f.intakeID, "reconstructed", "seeded for round-trip fixture", f.lane, "", f.planID, at,
+	); err != nil {
+		t.Fatalf("seed intake: %v", err)
+	}
+
+	proofLinksAny := make([]map[string]string, len(f.proofLinks))
+	for i, pl := range f.proofLinks {
+		proofLinksAny[i] = map[string]string{"command": pl.Command, "output_ref": pl.OutputRef}
+	}
+	proofLinksJSON, err := json.Marshal(proofLinksAny)
+	if err != nil {
+		t.Fatalf("marshal proof_links: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO checks (id, run_id, verdict, judge, judge_model, proof_links, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		f.checkID, f.runID, domain.VerdictApproved, domain.JudgeIndependent, "sonnet-5", string(proofLinksJSON), f.checkAt,
+	); err != nil {
+		t.Fatalf("seed check: %v", err)
+	}
 
 	anchors := map[string]any{
 		"latest_run_id": f.runID, "latest_check_id": f.checkID,
 		"exact_next_action": f.nextAction, "open_items": f.openItems,
 	}
-	mustApply(t, db, changesetDir, "handoff", f.handoffID, map[string]any{
-		"run_id": f.runID, "check_id": f.checkID, "anchors": anchors, "created_at": f.handoffAt,
-	}, f.handoffAt)
+	anchorsJSON, err := json.Marshal(anchors)
+	if err != nil {
+		t.Fatalf("marshal anchors: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO handoffs (id, run_id, check_id, anchors, created_at) VALUES (?, ?, ?, ?, ?)`,
+		f.handoffID, f.runID, f.checkID, string(anchorsJSON), f.handoffAt,
+	); err != nil {
+		t.Fatalf("seed handoff: %v", err)
+	}
 
-	mustApply(t, db, changesetDir, "trace", ulid.Make().String(), map[string]any{
-		"run_id": f.runID, "wave": 1, "summary": "seeded the fixture", "task": "seed the fixture", "task_status": domain.TaskStatusDone, "created_at": f.traceAt,
-	}, f.traceAt)
+	if _, err := db.Exec(
+		`INSERT INTO traces (id, run_id, wave, summary, task, task_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		ulid.Make().String(), f.runID, 1, "seeded the fixture", "seed the fixture", domain.TaskStatusDone, f.traceAt,
+	); err != nil {
+		t.Fatalf("seed trace: %v", err)
+	}
 
-	mustApply(t, db, changesetDir, "decision", ulid.Make().String(), map[string]any{
-		"phase": f.decisionPhase, "task": f.decisionTask, "decision": "use a hand-seeded fixture", "rationale": "keeps the round trip exact", "created_at": f.decisionAt,
-	}, f.decisionAt)
-}
-
-func mustApply(t *testing.T, db *sql.DB, changesetDir, entity, id string, fields map[string]any, at string) {
-	t.Helper()
-	if _, _, err := AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
-		{Op: "create", Entity: entity, ID: id, Fields: fields, At: at},
-	}); err != nil {
-		t.Fatalf("seed %s %s: %v", entity, id, err)
+	if _, err := db.Exec(
+		`INSERT INTO decisions (id, phase, task, decision, rationale, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		ulid.Make().String(), f.decisionPhase, f.decisionTask, "use a hand-seeded fixture", "keeps the round trip exact", f.decisionAt,
+	); err != nil {
+		t.Fatalf("seed decision: %v", err)
 	}
 }
 
@@ -353,5 +371,3 @@ func jsonEqual(t *testing.T, a, b string) bool {
 	}
 	return reflect.DeepEqual(av, bv)
 }
-
-var _ = fmt.Sprintf // keep fmt import if unused paths change

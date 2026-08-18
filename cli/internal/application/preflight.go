@@ -61,7 +61,7 @@ func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version str
 		view.Stop = &StopInfo{
 			Code:     "db_unreadable",
 			Message:  "The harness database exists but cannot be read safely.",
-			Recovery: "restore or rebuild harness.db from .kit/changesets before continuing",
+			Recovery: "restore harness.db from backup, or run `zharness db rebuild` to reconstruct it from docs/plans/*.md, before continuing",
 		}
 		return view, nil
 	}

@@ -7,13 +7,13 @@ import (
 )
 
 func TestCreateStory(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	id, path, err := CreateStory(db, changesetDir, "cli-domain", "ported domain commands work", "")
+	id, err := CreateStory(db, "cli-domain", "ported domain commands work", "")
 	if err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	assertChangesetBeforeRow(t, db, path, "stories", id, "story")
+	assertRowExists(t, db, "stories", id)
 
 	var status string
 	if err := db.QueryRow(`SELECT status FROM stories WHERE id = ?`, id).Scan(&status); err != nil {
@@ -25,14 +25,14 @@ func TestCreateStory(t *testing.T) {
 }
 
 func TestCreateStoryWithDependsOn(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateStory(db, changesetDir, "cli-core", "working zharness core", "")
+	_, err := CreateStory(db, "cli-core", "working zharness core", "")
 	if err != nil {
 		t.Fatalf("CreateStory (prereq): %v", err)
 	}
 
-	id, _, err := CreateStory(db, changesetDir, "cli-domain", "ported domain commands work", "cli-core")
+	id, err := CreateStory(db, "cli-domain", "ported domain commands work", "cli-core")
 	if err != nil {
 		t.Fatalf("CreateStory (dependent): %v", err)
 	}
@@ -47,13 +47,13 @@ func TestCreateStoryWithDependsOn(t *testing.T) {
 }
 
 func TestCreateStoryDuplicateSlug(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	if _, _, err := CreateStory(db, changesetDir, "cli-domain", "first goal", ""); err != nil {
+	if _, err := CreateStory(db, "cli-domain", "first goal", ""); err != nil {
 		t.Fatalf("CreateStory (first): %v", err)
 	}
 
-	_, _, err := CreateStory(db, changesetDir, "cli-domain", "second goal", "")
+	_, err := CreateStory(db, "cli-domain", "second goal", "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "duplicate_slug" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: duplicate_slug}", err)
@@ -64,9 +64,9 @@ func TestCreateStoryDuplicateSlug(t *testing.T) {
 }
 
 func TestCreateStoryUnknownDependency(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateStory(db, changesetDir, "cli-domain", "ported domain commands work", "does-not-exist")
+	_, err := CreateStory(db, "cli-domain", "ported domain commands work", "does-not-exist")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_dependency" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_dependency}", err)

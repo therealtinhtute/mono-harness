@@ -9,32 +9,32 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
-func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string) map[string]string {
+func createValidRetainedLifecycle(t *testing.T, db *sql.DB) map[string]string {
 	t.Helper()
 
-	intakeID, _, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "", "")
+	intakeID, err := CreateIntake(db, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "", "")
 	if err != nil {
 		t.Fatalf("CreateIntake: %v", err)
 	}
-	storyID, _, err := CreateStory(db, changesetDir, "retained-entity-ids", "validate retained entity IDs", "")
+	storyID, err := CreateStory(db, "retained-entity-ids", "validate retained entity IDs", "")
 	if err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	runID, _, err := CreateRun(db, changesetDir, "retained-entity-ids", ".kit/runs/work/legacy.md", "")
+	runID, err := CreateRun(db, "retained-entity-ids", ".kit/runs/work/legacy.md", "")
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
-	traceID, _, err := CreateTrace(db, changesetDir, 1, "validate retained entity IDs", runID, "", "")
+	traceID, err := CreateTrace(db, 1, "validate retained entity IDs", runID, "", "")
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
-	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	checkID, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "PASS"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
-	handoffID, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
+	handoffID, err := RecordHandoff(db, runID, checkID, "", nil, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
@@ -63,8 +63,8 @@ func TestValidateWithoutDatabaseIsInvalid(t *testing.T) {
 }
 
 func TestValidateReportsOverflowLifecycleID(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	storyID, _, err := CreateStory(db, changesetDir, "overflow-id", "reject an overflowing ULID", "")
+	db := freshDB(t)
+	storyID, err := CreateStory(db, "overflow-id", "reject an overflowing ULID", "")
 	if err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
@@ -110,8 +110,8 @@ func TestValidateReportsInvalidIDsForRetainedTables(t *testing.T) {
 	for _, invalid := range invalidIDs {
 		for _, entity := range entities {
 			t.Run(invalid.name+"/"+entity.name, func(t *testing.T) {
-				db, changesetDir := freshDB(t)
-				ids := createValidRetainedLifecycle(t, db, changesetDir)
+				db := freshDB(t)
+				ids := createValidRetainedLifecycle(t, db)
 				if _, err := db.Exec("UPDATE "+entity.table+" SET id = ? WHERE id = ?", invalid.id, ids[entity.name]); err != nil {
 					t.Fatalf("update %s id: %v", entity.name, err)
 				}
@@ -137,8 +137,8 @@ func TestValidateReportsInvalidIDsForRetainedTables(t *testing.T) {
 }
 
 func TestValidateReportsInvalidLifecycleEnums(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	ids := createValidRetainedLifecycle(t, db, changesetDir)
+	db := freshDB(t)
+	ids := createValidRetainedLifecycle(t, db)
 	if _, err := db.Exec(`UPDATE stories SET status = 'bogus' WHERE id = ?`, ids["story"]); err != nil {
 		t.Fatalf("corrupt story status: %v", err)
 	}
@@ -168,8 +168,8 @@ func TestValidateReportsInvalidLifecycleEnums(t *testing.T) {
 }
 
 func TestValidateCleanDatabaseIgnoresLegacyArtifactPaths(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	createValidRetainedLifecycle(t, db, changesetDir)
+	db := freshDB(t)
+	createValidRetainedLifecycle(t, db)
 
 	result, err := Validate(db)
 	if err != nil {
@@ -181,7 +181,7 @@ func TestValidateCleanDatabaseIgnoresLegacyArtifactPaths(t *testing.T) {
 }
 
 func TestValidateReportsBrokenDatabaseLink(t *testing.T) {
-	db, _ := freshDB(t)
+	db := freshDB(t)
 	db.SetMaxOpenConns(1)
 	if _, err := db.Exec(`PRAGMA foreign_keys=OFF`); err != nil {
 		t.Fatalf("disable foreign keys: %v", err)
@@ -207,9 +207,9 @@ func TestValidateReportsBrokenDatabaseLink(t *testing.T) {
 }
 
 func TestValidateReportsHandoffRunCheckMismatch(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	checkRunID := createLifecycleRun(t, db, changesetDir, "cli-domain")
-	checkID, _, err := RecordCheck(db, changesetDir, checkRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}})
+	db := freshDB(t)
+	checkRunID := createLifecycleRun(t, db, "cli-domain")
+	checkID, err := RecordCheck(db, checkRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}

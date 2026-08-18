@@ -2,7 +2,6 @@ package interfaces
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/therealtinhtute/skills/cli/internal/application"
-	"github.com/therealtinhtute/skills/cli/internal/domain"
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
@@ -22,37 +20,12 @@ const dbStatusActivePlanGlob = "docs/plans/active/*.md"
 func newDBCmd() *cobra.Command {
 	db := &cobra.Command{
 		Use:   "db",
-		Short: "Database and changeset operations",
+		Short: "Database operations",
 	}
-
-	changeset := &cobra.Command{
-		Use:   "changeset",
-		Short: "Changeset apply/status operations",
-	}
-
-	changeset.AddCommand(&cobra.Command{
-		Use:   "apply <path>",
-		Short: "Apply a .jsonl changeset file to the db (idempotent)",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDBChangesetApply(cmd, args[0])
-		},
-	})
-
-	changeset.AddCommand(&cobra.Command{
-		Use:   "status",
-		Short: "Show pending/applied changeset status",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDBChangesetStatus(cmd)
-		},
-	})
-
-	db.AddCommand(changeset)
 
 	rebuild := &cobra.Command{
 		Use:   "rebuild",
-		Short: "Delete the database and rebuild it from committed changesets alone",
+		Short: "Delete the database and rebuild it from committed plan markdown alone",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			yes, _ := cmd.Flags().GetBool("yes")
@@ -64,7 +37,7 @@ func newDBCmd() *cobra.Command {
 
 	statusCmd := &cobra.Command{
 		Use:   "status",
-		Short: "Report schema version, fence, per-table row counts, and true pending changesets",
+		Short: "Report schema version and per-table row counts",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDBStatus(cmd)
@@ -75,76 +48,9 @@ func newDBCmd() *cobra.Command {
 	return db
 }
 
-func runDBChangesetApply(cmd *cobra.Command, path string) error {
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "db changeset apply: no db at "+dbPath+"; run `zharness init` first")
-	}
-
-	db, err := infrastructure.Open(dbPath)
-	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("db changeset apply: %v", err))
-	}
-	defer db.Close()
-
-	applied, skipped, err := application.ApplyChangesetForRecovery(db, changesetDir, path)
-	if err != nil {
-		if ve, ok := err.(*domain.ValidationError); ok {
-			return mapValidationError(ve)
-		}
-		var outOfOrder *infrastructure.ErrOutOfOrder
-		if errors.As(err, &outOfOrder) {
-			return newUserError("changeset_out_of_order", fmt.Sprintf("db changeset apply: %v", outOfOrder))
-		}
-		return newUserError("changeset_malformed", fmt.Sprintf("db changeset apply: %v", err))
-	}
-
-	if jsonOutput {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
-			"applied":                 applied,
-			"skipped_already_applied": skipped,
-		})
-	}
-	fmt.Fprintf(cmd.OutOrStdout(), "applied=%d skipped_already_applied=%d\n", applied, skipped)
-	return nil
-}
-
-func runDBChangesetStatus(cmd *cobra.Command) error {
-	db, err := infrastructure.OpenReadOnly(dbPath)
-	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "db changeset status: no db at "+dbPath+"; run `zharness init` first")
-	}
-	if err != nil {
-		return mapReadOnlyOpenError("db changeset status", err)
-	}
-	defer db.Close()
-
-	pending, appliedCount, lastApplied, unverifiedBelowFence, err := infrastructure.ChangesetStatus(db.Raw(), changesetDir)
-	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("db changeset status: %v", err))
-	}
-	if pending == nil {
-		pending = []string{}
-	}
-	if unverifiedBelowFence == nil {
-		unverifiedBelowFence = []string{}
-	}
-
-	if jsonOutput {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
-			"pending":                pending,
-			"applied_count":          appliedCount,
-			"last_applied":           lastApplied,
-			"unverified_below_fence": unverifiedBelowFence,
-		})
-	}
-	fmt.Fprintf(cmd.OutOrStdout(), "pending=%v applied_count=%d last_applied=%q unverified_below_fence=%v\n",
-		pending, appliedCount, lastApplied, unverifiedBelowFence)
-	return nil
-}
-
 // runDBRebuild deletes harness.db and its WAL/SHM sidecars, then
 // re-migrates and reconstructs every table from committed plan markdown
-// under docs/plans/{active,completed}/*.md alone — no read of changesetDir
+// under docs/plans/{active,completed}/*.md alone
 // (P3, docs/plans/active/harness-markdown-truth.md: markdown is the
 // source of truth, the db is a rebuildable derived index). It touches
 // nothing under docs/ — unlike `init`, this is a database-only operation,
@@ -207,7 +113,7 @@ func runDBStatus(cmd *cobra.Command) error {
 	}
 	defer db.Close()
 
-	view, err := application.QueryDBStatus(db.Raw(), changesetDir, filepath.Join(docsDir, "playbooks"), dbStatusActivePlanGlob)
+	view, err := application.QueryDBStatus(db.Raw(), filepath.Join(docsDir, "playbooks"), dbStatusActivePlanGlob)
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("db status: %v", err))
 	}
@@ -215,7 +121,6 @@ func runDBStatus(cmd *cobra.Command) error {
 	if jsonOutput {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(view)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "schema_version=%d fence=%q rows=%v pending=%v unverified_below_fence=%v\n",
-		view.SchemaVersion, view.Fence, view.Rows, view.Pending, view.UnverifiedBelowFence)
+	fmt.Fprintf(cmd.OutOrStdout(), "schema_version=%d rows=%v\n", view.SchemaVersion, view.Rows)
 	return nil
 }

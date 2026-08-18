@@ -6,8 +6,8 @@ import "testing"
 // stage-shaped (R4): watzup's playbook never calls `query phases`, so its
 // packet must not carry a Phases field at all.
 func TestBuildContextPacketWatzupOmitsPhases(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
 	pkg, err := BuildContextPacket(db, "watzup", "dev")
 	if err != nil {
@@ -28,9 +28,9 @@ func TestBuildContextPacketWatzupOmitsPhases(t *testing.T) {
 // and check (R6) all get the phases list — the packet replacing their
 // separate `query phases`/`resume` calls.
 func TestBuildContextPacketWorkAndHandoffIncludePhases(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	createLifecycleRun(t, db, changesetDir, "cli-domain")
-	if _, _, err := CreateStory(db, changesetDir, "next-phase", "goal", "cli-domain"); err != nil {
+	db := freshDB(t)
+	createLifecycleRun(t, db, "cli-domain")
+	if _, err := CreateStory(db, "next-phase", "goal", "cli-domain"); err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
 
@@ -49,20 +49,20 @@ func TestBuildContextPacketWorkAndHandoffIncludePhases(t *testing.T) {
 // policy (P4 wave 2): the packet's Traces are the current phase's own
 // traces, not another phase's, and not the whole table.
 func TestBuildContextPacketTracesWindowedToCurrentPhase(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runA := createLifecycleRun(t, db, changesetDir, "phase-a")
-	if _, _, err := CreateTrace(db, changesetDir, 1, "phase-a wave 1", runA, "", ""); err != nil {
+	db := freshDB(t)
+	runA := createLifecycleRun(t, db, "phase-a")
+	if _, err := CreateTrace(db, 1, "phase-a wave 1", runA, "", ""); err != nil {
 		t.Fatalf("CreateTrace phase-a: %v", err)
 	}
 
-	if _, _, err := CreateStory(db, changesetDir, "phase-b", "goal", "phase-a"); err != nil {
+	if _, err := CreateStory(db, "phase-b", "goal", "phase-a"); err != nil {
 		t.Fatalf("CreateStory phase-b: %v", err)
 	}
-	runB, _, err := CreateRun(db, changesetDir, "phase-b", "", "")
+	runB, err := CreateRun(db, "phase-b", "", "")
 	if err != nil {
 		t.Fatalf("CreateRun phase-b: %v", err)
 	}
-	if _, _, err := CreateTrace(db, changesetDir, 1, "phase-b wave 1", runB, "", ""); err != nil {
+	if _, err := CreateTrace(db, 1, "phase-b wave 1", runB, "", ""); err != nil {
 		t.Fatalf("CreateTrace phase-b: %v", err)
 	}
 
@@ -85,11 +85,11 @@ func TestBuildContextPacketTracesWindowedToCurrentPhase(t *testing.T) {
 // phase's trace history exceeds the window, the packet still returns the
 // capped set but also declares what it left out and how to fetch it.
 func TestBuildContextPacketTracesCappedDeclaresOmitted(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 	const total = contextTraceTail + 5
 	for i := 0; i < total; i++ {
-		if _, _, err := CreateTrace(db, changesetDir, 1, "wave note", runID, "", ""); err != nil {
+		if _, err := CreateTrace(db, 1, "wave note", runID, "", ""); err != nil {
 			t.Fatalf("CreateTrace #%d: %v", i, err)
 		}
 	}
@@ -112,7 +112,7 @@ func TestBuildContextPacketTracesCappedDeclaresOmitted(t *testing.T) {
 // TestBuildContextPacketNoCurrentPhaseHasEmptyTraces proves a fresh repo
 // (no current_phase yet) gets an empty, not nil-panicking, Traces window.
 func TestBuildContextPacketNoCurrentPhaseHasEmptyTraces(t *testing.T) {
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	pkg, err := BuildContextPacket(db, "watzup", "dev")
 	if err != nil {
@@ -130,8 +130,8 @@ func TestBuildContextPacketNoCurrentPhaseHasEmptyTraces(t *testing.T) {
 // position/drift/readiness fields are Resume's own derivation, not a
 // second independent computation that could disagree with `resume --json`.
 func TestBuildContextPacketReusesResumeDrift(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	createLifecycleRun(t, db, "cli-domain")
 	if _, err := db.Exec(`UPDATE meta SET docs_version = 'stale-version'`); err != nil {
 		t.Fatalf("seed stale docs_version: %v", err)
 	}

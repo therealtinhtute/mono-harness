@@ -125,7 +125,7 @@ func TestPreparePlanPhaseStatusWritesThroughToDisk(t *testing.T) {
 	chdirFixture(t)
 	path := "docs/plans/active/fixture-plan.md"
 	writeFile(t, path, phasesListFormFixture)
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	write, err := preparePlanPhaseStatus(db, "p1-first", "in-progress")
 	if err != nil {
@@ -156,7 +156,7 @@ func TestPreparePlanPhaseStatusNoMatchingPhaseIsNoop(t *testing.T) {
 	chdirFixture(t)
 	path := "docs/plans/active/fixture-plan.md"
 	writeFile(t, path, phasesListFormFixture)
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	before, err := os.ReadFile(path)
 	if err != nil {

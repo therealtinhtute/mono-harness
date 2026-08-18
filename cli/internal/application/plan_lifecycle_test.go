@@ -53,8 +53,8 @@ func assertActiveDirEmpty(t *testing.T) {
 func TestPlanCompleteMovesCleanPlan(t *testing.T) {
 	chdirFixture(t)
 	writePlanLifecycleFixture(t)
-	db, changesetDir := freshDB(t)
-	seedStory(t, db, changesetDir, "p0-only", domain.StoryDone)
+	db := freshDB(t)
+	seedStory(t, db, "p0-only", domain.StoryDone)
 
 	dest, stop, err := PlanComplete(db)
 	if err != nil {
@@ -87,8 +87,8 @@ func TestPlanCompleteMovesCleanPlan(t *testing.T) {
 func TestPlanCompleteRefusedWithOpenPhase(t *testing.T) {
 	chdirFixture(t)
 	path := writePlanLifecycleFixture(t)
-	db, changesetDir := freshDB(t)
-	seedStory(t, db, changesetDir, "p0-only", domain.StoryPlanned)
+	db := freshDB(t)
+	seedStory(t, db, "p0-only", domain.StoryPlanned)
 
 	_, _, err := PlanComplete(db)
 	ve, ok := err.(*domain.ValidationError)

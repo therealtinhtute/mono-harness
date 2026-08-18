@@ -12,17 +12,14 @@ import (
 )
 
 func TestCheckRecord(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok", ArtifactPath: ".kit/runs/work/x.md"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
-	}
-	if path == "" {
-		t.Fatal("changeset path is empty, want a written .jsonl file")
 	}
 
 	var verdict, proofLinks string
@@ -49,11 +46,11 @@ func TestCheckRecord(t *testing.T) {
 }
 
 func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	if _, _, err := CreateStory(db, changesetDir, "cli-domain", "ported domain commands work", ""); err != nil {
+	db := freshDB(t)
+	if _, err := CreateStory(db, "cli-domain", "ported domain commands work", ""); err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	runID, _, err := CreateRun(db, changesetDir, "cli-domain", "", "")
+	runID, err := CreateRun(db, "cli-domain", "", "")
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
@@ -61,7 +58,7 @@ func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
 		t.Fatalf("pre-check story status = %q, want in-progress", got)
 	}
 
-	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", nil)
+	_, err = RecordCheck(db, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", nil)
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -71,10 +68,10 @@ func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
 }
 
 func TestCheckRecordEmptyProofLinks(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", nil)
+	_, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", nil)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "empty_proof_links" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: empty_proof_links}", err)
@@ -82,10 +79,10 @@ func TestCheckRecordEmptyProofLinks(t *testing.T) {
 }
 
 func TestCheckRecordInvalidVerdict(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	_, _, err := RecordCheck(db, changesetDir, runID, "MAYBE", domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
+	_, err := RecordCheck(db, runID, "MAYBE", domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_verdict" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_verdict}", err)
@@ -93,9 +90,9 @@ func TestCheckRecordInvalidVerdict(t *testing.T) {
 }
 
 func TestCheckRecordUnknownRunID(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := RecordCheck(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
+	_, err := RecordCheck(db, "01HZZZZZZZZZZZZZZZZZZZZZZZ", domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_run_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)
@@ -111,20 +108,20 @@ func TestCheckRecordUnknownRunID(t *testing.T) {
 // must be judged independent — same-session is rejected, but the identical
 // run still checks out cleanly once the judge is independent.
 func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	planID := ulid.Make().String()
-	if _, _, err := CreateIntake(db, changesetDir, domain.IntakeHarnessImprovement, "high risk change", domain.LaneHighRisk, "", planID); err != nil {
+	if _, err := CreateIntake(db, domain.IntakeHarnessImprovement, "high risk change", domain.LaneHighRisk, "", planID); err != nil {
 		t.Fatalf("CreateIntake: %v", err)
 	}
-	if _, _, err := CreateStory(db, changesetDir, "hr-phase", "goal", ""); err != nil {
+	if _, err := CreateStory(db, "hr-phase", "goal", ""); err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	runID, _, err := CreateRun(db, changesetDir, "hr-phase", "", planID)
+	runID, err := CreateRun(db, "hr-phase", "", planID)
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
 
-	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
+	_, err = RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 	})
 	ve, ok := err.(*domain.ValidationError)
@@ -135,7 +132,7 @@ func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
 		t.Fatalf("checks rows = %d, want 0 (rejected check must not be written)", got)
 	}
 
-	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
@@ -151,10 +148,10 @@ func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
 // playbooks start passing --plan-id) behaves exactly as before this
 // feature existed — same-session is accepted.
 func TestCheckRecordAllowsSameSessionJudgeWhenLaneUnresolvable(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "no-plan-id-trail")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "no-plan-id-trail")
 
-	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
@@ -169,20 +166,20 @@ func TestCheckRecordAllowsSameSessionJudgeWhenLaneUnresolvable(t *testing.T) {
 // is lane-specific: a resolvable but non-high-risk lane does not restrict
 // the judge.
 func TestCheckRecordAllowsSameSessionJudgeForNonHighRiskLane(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	planID := ulid.Make().String()
-	if _, _, err := CreateIntake(db, changesetDir, domain.IntakeMaintenance, "tiny change", domain.LaneTiny, "", planID); err != nil {
+	if _, err := CreateIntake(db, domain.IntakeMaintenance, "tiny change", domain.LaneTiny, "", planID); err != nil {
 		t.Fatalf("CreateIntake: %v", err)
 	}
-	if _, _, err := CreateStory(db, changesetDir, "tiny-phase", "goal", ""); err != nil {
+	if _, err := CreateStory(db, "tiny-phase", "goal", ""); err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	runID, _, err := CreateRun(db, changesetDir, "tiny-phase", "", planID)
+	runID, err := CreateRun(db, "tiny-phase", "", planID)
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
 
-	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
@@ -199,10 +196,10 @@ func TestCheckRecordAllowsSameSessionJudgeForNonHighRiskLane(t *testing.T) {
 func TestCheckRecordWritesPlanValidationEntry(t *testing.T) {
 	chdirFixture(t)
 	planPath := writeActivePlanFixture(t, "demo")
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 		{Command: "echo checked", OutputRef: "0 findings"},
 	})
@@ -247,15 +244,15 @@ func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
 	// A proof command with an observable side effect: if it never ran,
 	// the marker never appears. Proves the plan-section check runs before
 	// proof verification, not after -- a check doomed to fail here
 	// shouldn't pay for re-running every proof command first.
 	marker := filepath.Join(t.TempDir(), "ran")
-	_, _, err = RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	_, err = RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "touch " + marker, OutputRef: "ok"},
 	})
 	if err == nil {
@@ -285,10 +282,10 @@ func TestCheckRecordReadOnlyPlanBlocksDBWrite(t *testing.T) {
 	planPath := writeActivePlanFixture(t, "demo")
 	makeDirReadOnly(t, filepath.Dir(planPath))
 
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	_, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 	})
 	if err == nil {

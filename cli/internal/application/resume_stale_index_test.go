@@ -14,7 +14,7 @@ import (
 func TestResumeStaleIndexNeverIndexed(t *testing.T) {
 	chdirFixture(t)
 	writeActivePlanFixture(t, "fixture-plan")
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	view, err := Resume(db, "dev")
 	if err != nil {
@@ -35,7 +35,7 @@ func TestResumeStaleIndexNeverIndexed(t *testing.T) {
 func TestResumeStaleIndexOutOfDate(t *testing.T) {
 	chdirFixture(t)
 	path := writeActivePlanFixture(t, "fixture-plan")
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	id := ulid.Make().String()
 	if _, err := db.Exec(`INSERT INTO plan_index (id, path, sha256, status, updated_at) VALUES (?, ?, ?, ?, ?)`,
@@ -59,7 +59,7 @@ func TestResumeStaleIndexOutOfDate(t *testing.T) {
 func TestResumeStaleIndexMatchesIndexedHash(t *testing.T) {
 	chdirFixture(t)
 	path := writeActivePlanFixture(t, "fixture-plan")
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	onDisk, _, _, _, err := planIndexStaleness(db, path)
 	if err != nil {
@@ -89,7 +89,7 @@ func TestResumeStaleIndexMatchesIndexedHash(t *testing.T) {
 // couldn't resolve one.
 func TestResumeStaleIndexNoActivePlan(t *testing.T) {
 	chdirFixture(t)
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	view, err := Resume(db, "dev")
 	if err != nil {

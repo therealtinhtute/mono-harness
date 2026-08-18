@@ -15,8 +15,7 @@ type LayoutMigrationResult struct {
 	Status        string `json:"status"`
 	SourceDB      string `json:"source_db"`
 	TargetDB      string `json:"target_db"`
-	Replayed      int    `json:"replayed"`
-	Backfilled    int    `json:"backfilled"`
+	Copied        int    `json:"copied"`
 	Parity        bool   `json:"parity"`
 	DocsWritten   bool   `json:"docs_written"`
 	DryRun        bool   `json:"dry_run"`
@@ -39,10 +38,9 @@ type fileSnapshot struct {
 	Mode   fs.FileMode
 }
 
-func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, docsFS fs.FS, version string, dryRun bool) (LayoutMigrationResult, error) {
+func MigrateLayout(root, legacyPath, targetPath, kitDir string, docsFS fs.FS, version string, dryRun bool) (LayoutMigrationResult, error) {
 	legacyPath = rootedPath(root, legacyPath)
 	targetPath = rootedPath(root, targetPath)
-	changesetDir = rootedPath(root, changesetDir)
 
 	result := LayoutMigrationResult{
 		SourceDB: filepath.ToSlash(legacyPath),
@@ -100,29 +98,12 @@ func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, do
 		return result, err
 	}
 	result.SchemaVersion = schemaVersion
-	result.Replayed, err = infrastructure.Replay(tempDB, changesetDir)
+	result.Copied, err = copyLifecycleRows(legacyDB.Raw(), tempDB)
 	if err != nil {
 		tempDB.Close()
 		legacyDB.Close()
-		return result, fmt.Errorf("layout migration replay: %w", err)
+		return result, fmt.Errorf("layout migration copy: %w", err)
 	}
-
-	stageParent := ""
-	if !dryRun {
-		stageParent = rootedPath(root, filepath.Join(kitDir, "cache"))
-		if err := os.MkdirAll(stageParent, 0o755); err != nil {
-			tempDB.Close()
-			legacyDB.Close()
-			return result, fmt.Errorf("create staged changeset parent: %w", err)
-		}
-	}
-	stageChangesets, err := os.MkdirTemp(stageParent, "zharness-layout-changesets-")
-	if err != nil {
-		tempDB.Close()
-		legacyDB.Close()
-		return result, fmt.Errorf("create staged changeset dir: %w", err)
-	}
-	defer os.RemoveAll(stageChangesets)
 
 	after, err := captureLayoutSnapshot(tempDB, version)
 	if err != nil {
@@ -132,35 +113,12 @@ func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, do
 	}
 	before.State.SchemaVersion = 0
 	after.State.SchemaVersion = 0
-	parityErr := compareLayoutSnapshots(before, after)
-	if parityErr != nil {
-		backfill, backfillErr := layoutBackfillLines(legacyDB.Raw())
-		if backfillErr != nil {
-			tempDB.Close()
-			legacyDB.Close()
-			return result, backfillErr
-		}
-		_, result.Backfilled, backfillErr = AppendAndApply(tempDB, stageChangesets, backfill)
-		if backfillErr != nil {
-			tempDB.Close()
-			legacyDB.Close()
-			return result, fmt.Errorf("layout migration backfill: %w", backfillErr)
-		}
-		after, backfillErr = captureLayoutSnapshot(tempDB, version)
-		if backfillErr != nil {
-			tempDB.Close()
-			legacyDB.Close()
-			return result, backfillErr
-		}
-		after.State.SchemaVersion = 0
-		parityErr = compareLayoutSnapshots(before, after)
-	}
-	result.Parity = parityErr == nil
-	if parityErr != nil {
+	if parityErr := compareLayoutSnapshots(before, after); parityErr != nil {
 		tempDB.Close()
 		legacyDB.Close()
-		return result, fmt.Errorf("layout migration: replayed state does not match legacy state after semantic backfill: %w", parityErr)
+		return result, fmt.Errorf("layout migration: copied state does not match legacy state: %w", parityErr)
 	}
+	result.Parity = true
 	if dryRun {
 		result.Status = "dry-run"
 		tempDB.Close()
@@ -174,7 +132,7 @@ func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, do
 		legacyDB.Close()
 		return result, err
 	}
-	scaffold, err := ScaffoldDocs(tempDB, stageChangesets, root, kitDir, docsFS, version, true, false)
+	scaffold, err := ScaffoldDocs(tempDB, root, kitDir, docsFS, version, true, false)
 	if err != nil {
 		tempDB.Close()
 		legacyDB.Close()
@@ -198,45 +156,35 @@ func MigrateLayout(root, legacyPath, targetPath, changesetDir, kitDir string, do
 		return result, err
 	}
 
-	movedChangesets, err := activateStagedChangesets(stageChangesets, changesetDir)
-	if err != nil {
-		_ = restoreFileSnapshots(snapshots)
-		return result, err
-	}
-	rollback := func() {
-		_ = rollbackActivatedChangesets(movedChangesets, stageChangesets)
-		_ = restoreFileSnapshots(snapshots)
-	}
-
 	legacyWritable, err := infrastructure.Open(legacyPath)
 	if err != nil {
-		rollback()
+		_ = restoreFileSnapshots(snapshots)
 		return result, err
 	}
 	if _, err := legacyWritable.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
 		legacyWritable.Close()
-		rollback()
+		_ = restoreFileSnapshots(snapshots)
 		return result, fmt.Errorf("checkpoint legacy db: %w", err)
 	}
 	if err := legacyWritable.Close(); err != nil {
-		rollback()
+		_ = restoreFileSnapshots(snapshots)
 		return result, err
 	}
 
 	backupPath := legacyPath + ".layout-v1-backup"
 	if err := os.Rename(legacyPath, backupPath); err != nil {
-		rollback()
+		_ = restoreFileSnapshots(snapshots)
 		return result, fmt.Errorf("backup legacy db: %w", err)
 	}
 	if err := os.Rename(tempPath, targetPath); err != nil {
 		_ = os.Rename(backupPath, legacyPath)
-		rollback()
+		_ = restoreFileSnapshots(snapshots)
 		return result, fmt.Errorf("activate root db: %w", err)
 	}
 	if err := os.Remove(backupPath); err != nil {
 		cleanupSQLiteFiles(targetPath)
 		_ = os.Rename(backupPath, legacyPath)
-		rollback()
+		_ = restoreFileSnapshots(snapshots)
 		return result, fmt.Errorf("remove legacy db backup: %w", err)
 	}
 	cleanupSQLiteFiles(legacyPath)
@@ -270,13 +218,14 @@ func captureLayoutSnapshot(db *sql.DB, version string) (layoutSnapshot, error) {
 
 func captureLifecycleRows(db *sql.DB) (map[string][][]any, error) {
 	queries := map[string]string{
-		"intakes":       `SELECT id, type, summary, lane, created_at FROM intakes ORDER BY id`,
-		"stories":       `SELECT id, slug, goal, status, depends_on, created_at FROM stories ORDER BY id`,
-		"runs":          `SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY id`,
-		"checks":        `SELECT id, run_id, verdict, proof_links, artifact_path, created_at FROM checks ORDER BY id`,
-		"handoffs":      `SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY id`,
-		"traces":        `SELECT id, run_id, wave, summary, created_at FROM traces ORDER BY id`,
-		"meta":          `SELECT current_phase, entry_phase, latest_run_id, latest_check_id, docs_version FROM meta`,
+		"intakes":   `SELECT id, type, summary, lane, created_at FROM intakes ORDER BY id`,
+		"stories":   `SELECT id, slug, goal, status, depends_on, created_at FROM stories ORDER BY id`,
+		"runs":      `SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY id`,
+		"checks":    `SELECT id, run_id, verdict, judge, judge_model, proof_links, artifact_path, created_at FROM checks ORDER BY id`,
+		"handoffs":  `SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY id`,
+		"traces":    `SELECT id, run_id, wave, summary, task, task_status, created_at FROM traces ORDER BY id`,
+		"decisions": `SELECT id, run_id, phase, task, decision, rationale, created_at FROM decisions ORDER BY id`,
+		"meta":      `SELECT current_phase, entry_phase, latest_run_id, latest_check_id, docs_version FROM meta`,
 	}
 	captured := make(map[string][][]any, len(queries))
 	for name, query := range queries {
@@ -391,50 +340,6 @@ func restoreFileSnapshots(snapshots []fileSnapshot) error {
 		}
 		if err := os.WriteFile(snapshot.Path, snapshot.Data, snapshot.Mode.Perm()); err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-type movedChangeset struct {
-	From string
-	To   string
-}
-
-func activateStagedChangesets(stageDir, targetDir string) ([]movedChangeset, error) {
-	names, err := infrastructure.ListChangesets(stageDir)
-	if err != nil {
-		return nil, err
-	}
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		return nil, err
-	}
-	moved := make([]movedChangeset, 0, len(names))
-	for _, name := range names {
-		from := filepath.Join(stageDir, name)
-		to := filepath.Join(targetDir, name)
-		if infrastructure.Exists(to) {
-			_ = rollbackActivatedChangesets(moved, stageDir)
-			return nil, fmt.Errorf("activate changeset: %s already exists", to)
-		}
-		if err := os.Rename(from, to); err != nil {
-			_ = rollbackActivatedChangesets(moved, stageDir)
-			return nil, err
-		}
-		moved = append(moved, movedChangeset{From: from, To: to})
-	}
-	return moved, nil
-}
-
-func rollbackActivatedChangesets(moved []movedChangeset, stageDir string) error {
-	if err := os.MkdirAll(stageDir, 0o755); err != nil {
-		return err
-	}
-	for i := len(moved) - 1; i >= 0; i-- {
-		if infrastructure.Exists(moved[i].To) {
-			if err := os.Rename(moved[i].To, moved[i].From); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

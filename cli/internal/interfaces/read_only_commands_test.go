@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -27,7 +25,6 @@ type readOnlyFileSnapshot struct {
 type readOnlyCommandSnapshot struct {
 	database      readOnlyFileSnapshot
 	journalHeader [2]byte
-	changesets    map[string]readOnlyFileSnapshot
 	wal           readOnlyFileSnapshot
 	shm           readOnlyFileSnapshot
 }
@@ -90,51 +87,6 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 	}
 }
 
-func TestChangesetStatusOpensDatabaseReadOnly(t *testing.T) {
-	t.Chdir(t.TempDir())
-	var appliedPath, pendingPath string
-	before := prepareReadOnlyCommandDatabase(t, func(db *sql.DB) {
-		storyID := ulid.Make().String()
-		var err error
-		appliedPath, err = infrastructure.WriteChangeset(changesetDir, []infrastructure.ChangesetLine{{
-			Op: "create", Entity: "story", ID: storyID,
-			Fields: map[string]any{"slug": "status-fixture", "goal": "goal", "status": "planned", "created_at": "2026-07-27T00:00:00Z"},
-			At:     "2026-07-27T00:00:00Z",
-		}})
-		if err != nil {
-			t.Fatalf("write applied changeset: %v", err)
-		}
-		if _, _, err := infrastructure.ApplyChangeset(db, appliedPath); err != nil {
-			t.Fatalf("apply changeset: %v", err)
-		}
-		pendingPath, err = infrastructure.WriteChangeset(changesetDir, []infrastructure.ChangesetLine{{
-			Op: "update", Entity: "story", ID: storyID,
-			Fields: map[string]any{"status": "done"},
-			At:     "2026-07-27T00:01:00Z",
-		}})
-		if err != nil {
-			t.Fatalf("write pending changeset: %v", err)
-		}
-	})
-
-	output := executeReadOnlyJSONCommand(t, "db", "changeset", "status", "--json")
-	var got struct {
-		Pending      []string `json:"pending"`
-		AppliedCount int      `json:"applied_count"`
-		LastApplied  string   `json:"last_applied"`
-	}
-	if err := json.Unmarshal(output, &got); err != nil {
-		t.Fatalf("decode changeset status output %q: %v", output, err)
-	}
-	wantPending := []string{filepath.Base(pendingPath)}
-	wantLastApplied := strings.TrimSuffix(filepath.Base(appliedPath), ".changeset.jsonl")
-	if !reflect.DeepEqual(got.Pending, wantPending) || got.AppliedCount != 1 || got.LastApplied != wantLastApplied {
-		t.Fatalf("changeset status output = %s, want pending=%v applied_count=1 last_applied=%q", output, wantPending, wantLastApplied)
-	}
-
-	assertReadOnlyCommandState(t, before, captureReadOnlyCommandState(t))
-}
-
 func prepareReadOnlyCommandDatabase(t *testing.T, setup func(*sql.DB)) readOnlyCommandSnapshot {
 	t.Helper()
 	db, err := infrastructure.Open(dbPath)
@@ -188,18 +140,9 @@ func captureReadOnlyCommandState(t *testing.T) readOnlyCommandSnapshot {
 	if len(data) < 20 {
 		t.Fatalf("database header is %d bytes, want at least 20", len(data))
 	}
-	changesetNames, err := infrastructure.ListChangesets(changesetDir)
-	if err != nil {
-		t.Fatalf("ListChangesets: %v", err)
-	}
-	changesets := make(map[string]readOnlyFileSnapshot, len(changesetNames))
-	for _, name := range changesetNames {
-		changesets[name] = captureReadOnlyFileSnapshot(t, filepath.Join(changesetDir, name))
-	}
 	return readOnlyCommandSnapshot{
 		database:      database,
 		journalHeader: [2]byte{data[18], data[19]},
-		changesets:    changesets,
 		wal:           captureReadOnlyFileSnapshot(t, dbPath+"-wal"),
 		shm:           captureReadOnlyFileSnapshot(t, dbPath+"-shm"),
 	}

@@ -19,7 +19,6 @@ import (
 func TestInit_FreshScratchDir_FullIntegration(t *testing.T) {
 	root := t.TempDir()
 	kitDir := filepath.Join(root, ".kit")
-	changesetDir := filepath.Join(kitDir, "changesets")
 
 	if err := os.MkdirAll(kitDir, 0o755); err != nil {
 		t.Fatalf("MkdirAll(%s): %v", kitDir, err)
@@ -34,7 +33,7 @@ func TestInit_FreshScratchDir_FullIntegration(t *testing.T) {
 		t.Fatalf("Migrate: %v", err)
 	}
 
-	scaffold, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "test-integration", false, false)
+	scaffold, err := ScaffoldDocs(db, root, kitDir, embedded.FS, "test-integration", false, false)
 	if err != nil {
 		t.Fatalf("ScaffoldDocs: %v", err)
 	}

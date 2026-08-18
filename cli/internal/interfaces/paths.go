@@ -5,7 +5,6 @@ const (
 	legacyDBPath = ".kit/harness.db"
 	kitDir       = ".kit"
 	kitRoot      = ".kit"
-	changesetDir = ".kit/changesets"
 	docsDir      = "docs"
 	conflictDir  = ".kit/conflicts"
 )

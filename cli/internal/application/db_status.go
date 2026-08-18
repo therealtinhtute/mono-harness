@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // contextCostStages are the six spine playbooks whose preconditions read
@@ -36,25 +34,20 @@ type ContextCostEstimate struct {
 }
 
 // DBStatusView is the `db status` payload: schema position, per-table row
-// counts, true changeset coverage (see ChangesetStatus), and the context-
-// cost estimate.
+// counts, and the context-cost estimate.
 type DBStatusView struct {
-	SchemaVersion        int                 `json:"schema_version"`
-	Fence                string              `json:"fence"`
-	Rows                 map[string]int      `json:"rows"`
-	Pending              []string            `json:"pending"`
-	UnverifiedBelowFence []string            `json:"unverified_below_fence"`
-	ContextCost          ContextCostEstimate `json:"context_cost_estimate"`
+	SchemaVersion int                 `json:"schema_version"`
+	Rows          map[string]int      `json:"rows"`
+	ContextCost   ContextCostEstimate `json:"context_cost_estimate"`
 }
 
 // QueryDBStatus assembles the `db status` view. playbooksDir and
 // activePlanGlob are passed in rather than hardcoded so this stays
 // path-agnostic like the rest of the application layer; interfaces/db.go
 // supplies the real repository-relative values.
-func QueryDBStatus(db *sql.DB, changesetDir, playbooksDir, activePlanGlob string) (DBStatusView, error) {
+func QueryDBStatus(db *sql.DB, playbooksDir, activePlanGlob string) (DBStatusView, error) {
 	var schemaVersion int
-	var fence sql.NullString
-	if err := db.QueryRow(`SELECT schema_version, last_applied_changeset FROM meta LIMIT 1`).Scan(&schemaVersion, &fence); err != nil {
+	if err := db.QueryRow(`SELECT schema_version FROM meta LIMIT 1`).Scan(&schemaVersion); err != nil {
 		return DBStatusView{}, fmt.Errorf("db status: read meta: %w", err)
 	}
 
@@ -72,29 +65,15 @@ func QueryDBStatus(db *sql.DB, changesetDir, playbooksDir, activePlanGlob string
 		rows[table] = n
 	}
 
-	pending, _, _, unverified, err := infrastructure.ChangesetStatus(db, changesetDir)
-	if err != nil {
-		return DBStatusView{}, fmt.Errorf("db status: changeset status: %w", err)
-	}
-	if pending == nil {
-		pending = []string{}
-	}
-	if unverified == nil {
-		unverified = []string{}
-	}
-
 	cost, err := estimateContextCost(db, playbooksDir, activePlanGlob)
 	if err != nil {
 		return DBStatusView{}, err
 	}
 
 	return DBStatusView{
-		SchemaVersion:        schemaVersion,
-		Fence:                fence.String,
-		Rows:                 rows,
-		Pending:              pending,
-		UnverifiedBelowFence: unverified,
-		ContextCost:          cost,
+		SchemaVersion: schemaVersion,
+		Rows:          rows,
+		ContextCost:   cost,
 	}, nil
 }
 

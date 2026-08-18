@@ -21,23 +21,11 @@ var fixtureDocsFSV2 = fstest.MapFS{
 	"playbooks/work.md": {Data: []byte("# Work\n\nrun safely\n")},
 }
 
-func countChangesets(t *testing.T, changesetDir string) int {
-	t.Helper()
-	entries, err := os.ReadDir(changesetDir)
-	if os.IsNotExist(err) {
-		return 0
-	}
-	if err != nil {
-		t.Fatalf("ReadDir(%s): %v", changesetDir, err)
-	}
-	return len(entries)
-}
-
 func TestScaffoldDocsFreshRootProjection(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
 
-	result, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false)
+	result, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false)
 	if err != nil {
 		t.Fatalf("ScaffoldDocs() error = %v", err)
 	}
@@ -95,34 +83,29 @@ func TestScaffoldDocsFreshRootProjection(t *testing.T) {
 }
 
 func TestScaffoldDocsSecondRunIsNoop(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
 		t.Fatalf("first ScaffoldDocs() error = %v", err)
 	}
-	before := countChangesets(t, changesetDir)
-
-	result, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false)
+	result, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false)
 	if err != nil {
 		t.Fatalf("second ScaffoldDocs() error = %v", err)
 	}
 	if result.DocsWritten || result.AgentsShimWritten || result.GitignoreUpdated {
 		t.Fatalf("second ScaffoldDocs() result = %+v, want no writes", result)
 	}
-	if after := countChangesets(t, changesetDir); after != before {
-		t.Fatalf("changeset count = %d, want %d", after, before)
-	}
 }
 
 func TestScaffoldDocsPreservesAgentsContentOutsideManagedBlock(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
 	local := "# Local rules\n\nkeep this byte-for-byte\n"
 	if err := os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte(local), 0o644); err != nil {
 		t.Fatalf("seed AGENTS.md: %v", err)
 	}
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
 		t.Fatalf("ScaffoldDocs() error = %v", err)
 	}
 	got, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
@@ -134,7 +117,7 @@ func TestScaffoldDocsPreservesAgentsContentOutsideManagedBlock(t *testing.T) {
 	}
 
 	before := string(got)
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false); err != nil {
 		t.Fatalf("refresh ScaffoldDocs() error = %v", err)
 	}
 	after, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
@@ -147,13 +130,13 @@ func TestScaffoldDocsPreservesAgentsContentOutsideManagedBlock(t *testing.T) {
 }
 
 func TestScaffoldDocsRefreshUpdatesUntouchedFile(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
 		t.Fatalf("initial ScaffoldDocs() error = %v", err)
 	}
 
-	result, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false)
+	result, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false)
 	if err != nil {
 		t.Fatalf("refresh ScaffoldDocs() error = %v", err)
 	}
@@ -170,9 +153,9 @@ func TestScaffoldDocsRefreshUpdatesUntouchedFile(t *testing.T) {
 }
 
 func TestScaffoldDocsRefreshPreservesLocalOnlyEdit(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
 		t.Fatalf("initial ScaffoldDocs() error = %v", err)
 	}
 	path := filepath.Join(root, "docs", "WORKFLOW.md")
@@ -181,7 +164,7 @@ func TestScaffoldDocsRefreshPreservesLocalOnlyEdit(t *testing.T) {
 		t.Fatalf("write local edit: %v", err)
 	}
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.7.0", true, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.7.0", true, false); err != nil {
 		t.Fatalf("refresh ScaffoldDocs() error = %v", err)
 	}
 	got, err := os.ReadFile(path)
@@ -194,9 +177,9 @@ func TestScaffoldDocsRefreshPreservesLocalOnlyEdit(t *testing.T) {
 }
 
 func TestScaffoldDocsRefreshStagesConflictWithoutOverwrite(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
 		t.Fatalf("initial ScaffoldDocs() error = %v", err)
 	}
 	path := filepath.Join(root, "docs", "WORKFLOW.md")
@@ -204,9 +187,7 @@ func TestScaffoldDocsRefreshStagesConflictWithoutOverwrite(t *testing.T) {
 	if err := os.WriteFile(path, local, 0o644); err != nil {
 		t.Fatalf("write local edit: %v", err)
 	}
-	beforeChangesets := countChangesets(t, changesetDir)
-
-	_, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false)
+	_, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false)
 	var conflict *ManagedDocsConflictError
 	if !errors.As(err, &conflict) {
 		t.Fatalf("ScaffoldDocs() error = %v, want ManagedDocsConflictError", err)
@@ -225,15 +206,19 @@ func TestScaffoldDocsRefreshStagesConflictWithoutOverwrite(t *testing.T) {
 	if string(staged) != string(fixtureDocsFSV2["WORKFLOW.md"].Data) {
 		t.Fatalf("staged upstream = %q", staged)
 	}
-	if after := countChangesets(t, changesetDir); after != beforeChangesets {
-		t.Fatalf("conflict wrote changeset: before=%d after=%d", beforeChangesets, after)
+	var docsVersion string
+	if err := db.QueryRow(`SELECT docs_version FROM meta`).Scan(&docsVersion); err != nil {
+		t.Fatalf("read meta.docs_version: %v", err)
+	}
+	if docsVersion != "0.6.0" {
+		t.Fatalf("conflict updated docs_version = %q, want unchanged 0.6.0", docsVersion)
 	}
 }
 
 func TestScaffoldDocsForceOverwritesConflict(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
 		t.Fatalf("initial ScaffoldDocs() error = %v", err)
 	}
 	path := filepath.Join(root, "docs", "WORKFLOW.md")
@@ -241,7 +226,7 @@ func TestScaffoldDocsForceOverwritesConflict(t *testing.T) {
 		t.Fatalf("write local edit: %v", err)
 	}
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, ".kit", fixtureDocsFSV2, "0.7.0", true, true); err != nil {
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, true); err != nil {
 		t.Fatalf("forced ScaffoldDocs() error = %v", err)
 	}
 	got, err := os.ReadFile(path)

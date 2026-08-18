@@ -25,11 +25,11 @@ func TestMigrateLayoutDryRunThenApply(t *testing.T) {
 		t.Fatalf("close legacy db: %v", err)
 	}
 
-	dry, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit/changesets", ".kit", fixtureDocsFS, "0.6.0", true)
+	dry, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit", fixtureDocsFS, "0.6.0", true)
 	if err != nil {
 		t.Fatalf("MigrateLayout(dry-run) error = %v", err)
 	}
-	if dry.Status != "dry-run" || !dry.Parity || dry.Replayed == 0 || dry.Backfilled == 0 {
+	if dry.Status != "dry-run" || !dry.Parity || dry.Copied == 0 {
 		t.Fatalf("dry-run result = %+v", dry)
 	}
 	if _, err := os.Stat(filepath.Join(root, "harness.db")); !os.IsNotExist(err) {
@@ -42,7 +42,7 @@ func TestMigrateLayoutDryRunThenApply(t *testing.T) {
 		t.Fatal("dry-run created repository cache state")
 	}
 
-	result, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit/changesets", ".kit", fixtureDocsFS, "0.6.0", false)
+	result, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit", fixtureDocsFS, "0.6.0", false)
 	if err != nil {
 		t.Fatalf("MigrateLayout() error = %v", err)
 	}
@@ -92,7 +92,7 @@ func TestMigrateLayoutDocsConflictRollsBackActivation(t *testing.T) {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
-	_, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit/changesets", ".kit", fixtureDocsFS, "0.6.0", false)
+	_, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit", fixtureDocsFS, "0.6.0", false)
 	var conflict *ManagedDocsConflictError
 	if !errors.As(err, &conflict) {
 		t.Fatalf("MigrateLayout() error = %v, want ManagedDocsConflictError", err)
@@ -118,7 +118,6 @@ func TestMigrateLayoutDocsConflictRollsBackActivation(t *testing.T) {
 func seedLegacyLayout(t *testing.T, root string) (runID, checkID string) {
 	t.Helper()
 	legacyPath := filepath.Join(root, ".kit", "harness.db")
-	changesets := filepath.Join(root, ".kit", "changesets")
 	if err := os.MkdirAll(filepath.Dir(legacyPath), 0o755); err != nil {
 		t.Fatalf("MkdirAll() error = %v", err)
 	}
@@ -130,7 +129,7 @@ func seedLegacyLayout(t *testing.T, root string) (runID, checkID string) {
 		db.Close()
 		t.Fatalf("Migrate(legacy) error = %v", err)
 	}
-	if _, _, err := CreateStory(db, changesets, "layout", "migrate layout", ""); err != nil {
+	if _, err := CreateStory(db, "layout", "migrate layout", ""); err != nil {
 		db.Close()
 		t.Fatalf("CreateStory() error = %v", err)
 	}
@@ -139,17 +138,17 @@ func seedLegacyLayout(t *testing.T, root string) (runID, checkID string) {
 		db.Close()
 		t.Fatalf("write run artifact: %v", err)
 	}
-	runID, _, err = CreateRun(db, changesets, "layout", artifactPath, "")
+	runID, err = CreateRun(db, "layout", artifactPath, "")
 	if err != nil {
 		db.Close()
 		t.Fatalf("CreateRun() error = %v", err)
 	}
-	checkID, _, err = RecordCheck(db, changesets, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", ArtifactPath: artifactPath}})
+	checkID, err = RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", ArtifactPath: artifactPath}})
 	if err != nil {
 		db.Close()
 		t.Fatalf("RecordCheck() error = %v", err)
 	}
-	setMeta(t, db, changesets, map[string]any{"current_phase": "layout", "entry_phase": "layout"})
+	setMeta(t, db, map[string]any{"current_phase": "layout", "entry_phase": "layout"})
 	if err := db.Close(); err != nil {
 		t.Fatalf("close legacy db: %v", err)
 	}

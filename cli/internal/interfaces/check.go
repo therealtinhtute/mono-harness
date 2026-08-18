@@ -55,7 +55,7 @@ func runCheckRecord(cmd *cobra.Command, verdict, runID, judge, judgeModel, proof
 	}
 	defer db.Close()
 
-	id, _, err := application.RecordCheck(db, changesetDir, runID, verdict, judge, judgeModel, proofLinks)
+	id, err := application.RecordCheck(db, runID, verdict, judge, judgeModel, proofLinks)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

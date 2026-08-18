@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"testing"
 
@@ -33,16 +32,6 @@ func decodePreflight(t *testing.T, output string) application.PreflightView {
 		t.Fatalf("unmarshal preflight output %q: %v", output, err)
 	}
 	return view
-}
-
-func listPreflightChangesets(t *testing.T) []string {
-	t.Helper()
-	matches, err := filepath.Glob(filepath.Join(".kit", "changesets", "*.jsonl"))
-	if err != nil {
-		t.Fatalf("Glob() changesets error = %v", err)
-	}
-	sort.Strings(matches)
-	return matches
 }
 
 func listBoundedLifecycleMarkdown(t *testing.T) []string {
@@ -258,7 +247,6 @@ func TestPreflightCommandReadsReadyStateWithoutMutation(t *testing.T) {
 		t.Fatalf("ReadFile() db error = %v", err)
 	}
 	beforeHash := sha256.Sum256(beforeDB)
-	beforeChangesets := listPreflightChangesets(t)
 	if beforeMarkdown := listBoundedLifecycleMarkdown(t); len(beforeMarkdown) != 0 {
 		t.Fatalf("bounded lifecycle markdown fixture = %v, want none", beforeMarkdown)
 	}
@@ -285,13 +273,6 @@ func TestPreflightCommandReadsReadyStateWithoutMutation(t *testing.T) {
 	afterHash := sha256.Sum256(afterDB)
 	if beforeHash != afterHash {
 		t.Fatalf("preflight mutated closed db: before=%x after=%x", beforeHash, afterHash)
-	}
-	afterChangesets := listPreflightChangesets(t)
-	if len(beforeChangesets) != len(afterChangesets) {
-		t.Fatalf("preflight changeset count = %d, want %d", len(afterChangesets), len(beforeChangesets))
-	}
-	if !slices.Equal(beforeChangesets, afterChangesets) {
-		t.Fatalf("preflight changesets = %v, want %v", afterChangesets, beforeChangesets)
 	}
 	if afterMarkdown := listBoundedLifecycleMarkdown(t); len(afterMarkdown) != 0 {
 		t.Fatalf("preflight created bounded lifecycle markdown = %v", afterMarkdown)
