@@ -43,7 +43,7 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, 
 		}
 	}
 
-	var closingStoryID string
+	var closingStoryID, closingStorySlug string
 	if closePhase {
 		if runID == "" || checkID == "" {
 			return "", "", &domain.ValidationError{Code: "missing_required_field", Message: "handoff record: --close-phase requires run_id and check_id"}
@@ -64,7 +64,7 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, 
 
 		var storyStatus, latestRunID string
 		err = db.QueryRow(`
-			SELECT stories.id, stories.status,
+			SELECT stories.id, stories.slug, stories.status,
 				(
 					SELECT latest.id
 					FROM runs AS latest
@@ -75,7 +75,7 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, 
 			FROM runs
 			JOIN stories ON stories.slug = runs.story_slug
 			WHERE runs.id = ?
-		`, runID).Scan(&closingStoryID, &storyStatus, &latestRunID)
+		`, runID).Scan(&closingStoryID, &closingStorySlug, &storyStatus, &latestRunID)
 		if err == sql.ErrNoRows {
 			return "", "", &domain.ValidationError{Code: "unknown_run_id", Message: "handoff record: run_id " + runID + " not found"}
 		}
@@ -131,6 +131,16 @@ func RecordHandoff(db *sql.DB, changesetDir, runID, checkID, nextAction string, 
 	}
 	if err := writePlan(); err != nil {
 		return "", "", fmt.Errorf("plan write failed: %w", err)
+	}
+
+	if closePhase {
+		writeStatus, err := preparePlanPhaseStatus(db, closingStorySlug, domain.StoryDone)
+		if err != nil {
+			return "", "", err
+		}
+		if err := writeStatus(); err != nil {
+			return "", "", fmt.Errorf("plan write failed: %w", err)
+		}
 	}
 
 	anchors := map[string]any{"open_items": openItems}

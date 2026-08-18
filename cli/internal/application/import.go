@@ -141,6 +141,18 @@ func ensureStory(db *sql.DB, changesetDir, slug, wantStatus, roadmapPath, at str
 		if existingStatus == wantStatus {
 			return false, "", nil
 		}
+		// Markdown is the write target for the story's phase-block status,
+		// same as story create/run create/check record/handoff (R8, P3
+		// wave 1, docs/plans/active/harness-markdown-truth.md) — a no-op
+		// when slug has no matching phase block, which is the common case
+		// for a legacy import predating this plan format.
+		writeStatus, err := preparePlanPhaseStatus(db, slug, wantStatus)
+		if err != nil {
+			return false, "", err
+		}
+		if err := writeStatus(); err != nil {
+			return false, "", fmt.Errorf("plan write failed: %w", err)
+		}
 		path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
 			{Op: "update", Entity: "story", ID: id, Fields: map[string]any{"status": wantStatus}, At: at},
 		})
@@ -150,6 +162,14 @@ func ensureStory(db *sql.DB, changesetDir, slug, wantStatus, roadmapPath, at str
 	goal, ok := parseRoadmapGoal(roadmapPath, slug)
 	if !ok {
 		goal = fmt.Sprintf("imported from legacy workflow-state.yml (no roadmap goal found for %s)", slug)
+	}
+
+	writeStatus, err := preparePlanPhaseStatus(db, slug, wantStatus)
+	if err != nil {
+		return false, "", err
+	}
+	if err := writeStatus(); err != nil {
+		return false, "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{

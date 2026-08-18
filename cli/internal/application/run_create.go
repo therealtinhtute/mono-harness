@@ -2,6 +2,7 @@ package application
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/oklog/ulid/v2"
 
@@ -37,6 +38,17 @@ func CreateRun(db *sql.DB, changesetDir, storySlug, artifactPath, planID string)
 	}
 	if storyStatus != domain.StoryPlanned && storyStatus != domain.StoryInProgress {
 		return "", "", &domain.ValidationError{Code: "story_not_runnable", Message: "run create: story must be planned or in-progress"}
+	}
+
+	// Markdown is the write target for the story's phase-block status,
+	// same as story create (R8, P3 wave 1,
+	// docs/plans/active/harness-markdown-truth.md).
+	writePlan, err := preparePlanPhaseStatus(db, storySlug, domain.StoryInProgress)
+	if err != nil {
+		return "", "", err
+	}
+	if err := writePlan(); err != nil {
+		return "", "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	id, path, _, err = AppendNewEntityAndApply(db, changesetDir, func(id string) []infrastructure.ChangesetLine {

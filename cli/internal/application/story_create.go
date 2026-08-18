@@ -2,6 +2,7 @@ package application
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -37,6 +38,19 @@ func CreateStory(db *sql.DB, changesetDir, slug, goal, dependsOn string) (id, pa
 		if !depExists {
 			return "", "", &domain.ValidationError{Code: "unknown_dependency", Message: "story: depends-on slug " + dependsOn + " not found"}
 		}
+	}
+
+	// Markdown is the write target for the story's phase-block status the
+	// same way trace/decision/check/handoff already are (R8, P3 wave 1,
+	// docs/plans/active/harness-markdown-truth.md): a slug with no matching
+	// phase block (an ad hoc story, not part of `## Phases and
+	// Verification`) is not an error — writePlan is then a no-op.
+	writePlan, err := preparePlanPhaseStatus(db, slug, domain.StoryPlanned)
+	if err != nil {
+		return "", "", err
+	}
+	if err := writePlan(); err != nil {
+		return "", "", fmt.Errorf("plan write failed: %w", err)
 	}
 
 	at := time.Now().UTC().Format(time.RFC3339)

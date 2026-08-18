@@ -85,10 +85,10 @@ Append-producing mutations allocate canonical changeset filenames strictly above
 
 ### `db rebuild --yes`
 - Args: `--yes` required — without it, the command refuses with `confirmation_required` and mutates nothing
-- Deletes `harness.db` and its `-wal`/`-shm` sidecars if present, re-migrates to the current schema, then replays every changeset under `.kit/changesets/` in ULID order from empty. Database-only: unlike `init`, it never touches `docs/`, `AGENTS.md`, or `.gitignore`.
-- `--json`: `{"status":"rebuilt","schema_version":N,"replayed":N}`
-- Errors: `confirmation_required` (1), `db_not_writable` (2), `changeset_replay_failed` (2)
-- Consumer: recovery after `db changeset status`/`db status` reports `unverified_below_fence`, or after any suspected DB/changeset divergence
+- Deletes `harness.db` and its `-wal`/`-shm` sidecars if present, re-migrates to the current schema, then reconstructs `stories`, `intakes`, `checks`, their backing `runs`, `traces`, `handoffs`, and `decisions` from every committed plan under `docs/plans/{active,completed}/*.md` alone — no read of `.kit/changesets/` (P3, `docs/plans/active/harness-markdown-truth.md`: markdown is the source of truth, the db is a rebuildable derived index). `meta` pointers (`current_phase`, `latest_run_id`, `latest_check_id`, `docs_version`) are left unset — nothing in committed markdown proves which run/check is "latest". A `runs` row is only reconstructed when a Validation (check) entry backreferences it, since that is the only entry shape carrying the run's story slug; `traces`/`decisions` get freshly minted ids (markdown never recorded their own); `intakes.type`/`summary` are synthesized placeholders (a plan's frontmatter carries `intake_id` and `lane`, never the original type/summary). Database-only: unlike `init`, it never touches `docs/`, `AGENTS.md`, or `.gitignore`.
+- `--json`: `{"status":"rebuilt","schema_version":N,"stories":N,"intakes":N,"runs":N,"checks":N,"handoffs":N,"traces":N,"decisions":N}`
+- Errors: `confirmation_required` (1), `db_not_writable` (2), `markdown_rebuild_failed` (2)
+- Consumer: recovery after `db changeset status`/`db status` reports `unverified_below_fence`, or after any suspected DB/markdown divergence
 
 ### `db status`
 - Args: none

@@ -143,16 +143,18 @@ func runDBChangesetStatus(cmd *cobra.Command) error {
 }
 
 // runDBRebuild deletes harness.db and its WAL/SHM sidecars, then
-// re-migrates and replays every changeset under changesetDir from empty.
-// It touches nothing under docs/ — unlike `init`, this is a database-only
-// operation, so it never re-scaffolds managed docs as a side effect.
-// Requires --yes: rebuilding is safe by construction only to the extent
-// changesets are actually the source of truth for what the database holds,
-// which is an open question this initiative does not decide (NG4).
+// re-migrates and reconstructs every table from committed plan markdown
+// under docs/plans/{active,completed}/*.md alone — no read of changesetDir
+// (P3, docs/plans/active/harness-markdown-truth.md: markdown is the
+// source of truth, the db is a rebuildable derived index). It touches
+// nothing under docs/ — unlike `init`, this is a database-only operation,
+// so it never re-scaffolds managed docs as a side effect. Requires --yes:
+// rebuilding is destructive to any DB-only state that never made it into
+// markdown (NG4).
 func runDBRebuild(cmd *cobra.Command, yes bool) error {
 	if !yes {
 		return newUserError("confirmation_required",
-			"db rebuild: pass --yes to confirm deleting harness.db (and its -wal/-shm sidecars) and rebuilding it from "+changesetDir+" alone")
+			"db rebuild: pass --yes to confirm deleting harness.db (and its -wal/-shm sidecars) and rebuilding it from committed plan markdown alone")
 	}
 
 	for _, path := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
@@ -172,19 +174,26 @@ func runDBRebuild(cmd *cobra.Command, yes bool) error {
 		return newSystemError("db_not_writable", fmt.Sprintf("db rebuild: %v", err))
 	}
 
-	replayed, err := infrastructure.Replay(db, changesetDir)
+	result, err := application.RebuildFromMarkdown(db)
 	if err != nil {
-		return newSystemError("changeset_replay_failed", fmt.Sprintf("db rebuild: %v", err))
+		return newSystemError("markdown_rebuild_failed", fmt.Sprintf("db rebuild: %v", err))
 	}
 
 	if jsonOutput {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
 			"status":         "rebuilt",
 			"schema_version": schemaVersion,
-			"replayed":       replayed,
+			"stories":        result.Stories,
+			"intakes":        result.Intakes,
+			"runs":           result.Runs,
+			"checks":         result.Checks,
+			"handoffs":       result.Handoffs,
+			"traces":         result.Traces,
+			"decisions":      result.Decisions,
 		})
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "rebuilt %s (schema_version=%d, replayed=%d)\n", dbPath, schemaVersion, replayed)
+	fmt.Fprintf(cmd.OutOrStdout(), "rebuilt %s (schema_version=%d, stories=%d, intakes=%d, runs=%d, checks=%d, handoffs=%d, traces=%d, decisions=%d)\n",
+		dbPath, schemaVersion, result.Stories, result.Intakes, result.Runs, result.Checks, result.Handoffs, result.Traces, result.Decisions)
 	return nil
 }
 

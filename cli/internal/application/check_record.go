@@ -101,6 +101,16 @@ func RecordCheck(db *sql.DB, changesetDir, runID, verdict, judge, judgeModel str
 		return "", "", fmt.Errorf("plan write failed: %w", err)
 	}
 
+	if verdict != domain.VerdictRequestChanges {
+		writeStatus, err := preparePlanPhaseStatus(db, storySlug, domain.StoryChecked)
+		if err != nil {
+			return "", "", err
+		}
+		if err := writeStatus(); err != nil {
+			return "", "", fmt.Errorf("plan write failed: %w", err)
+		}
+	}
+
 	proofLinksAny := make([]any, len(proofLinks))
 	for i, pl := range proofLinks {
 		proofLinksAny[i] = map[string]any{
