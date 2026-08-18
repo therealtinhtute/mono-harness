@@ -3,8 +3,8 @@
 **Date:** 2026-08-17
 **Scope:** the `zharness` harness (`cli`, `skills/workflow`, `docs/playbooks`) as adopted by one real consumer repository, `onedrive-cloud` (private, read-only for this audit — cited as evidence, never edited).
 **Method:** live measurement against the consumer's own committed state and its `harness.db` at HEAD `0b32adb`. Every `zharness` invocation was run in that repository and its stdout measured in bytes. No session transcript was replayed; where a number is inferred rather than observed, it is labelled so.
-**Primary metric:** tokens resident in context at the moment a stage begins work — the "cold entry cost" of a stage. Ceremony (operation count) is not re-measured here; `docs/audit/workflow-harness-ceremony-audit.md` owns it.
-**Relationship to prior audits.** Extends `docs/audit/sdlc-token-cache-audit.md` with the dimension it could not see: what happens to a harness after months of real adoption, once lifecycle state has accumulated and an invariant has silently broken. That audit measured a clean throwaway repository. This one measures a dirty one.
+**Primary metric:** tokens resident in context at the moment a stage begins work — the "cold entry cost" of a stage. Ceremony (operation count) is not re-measured here; docs/audit/workflow-harness-ceremony-audit.md (since removed) owns it.
+**Relationship to prior audits.** Extends docs/audit/sdlc-token-cache-audit.md (since removed) with the dimension it could not see: what happens to a harness after months of real adoption, once lifecycle state has accumulated and an invariant has silently broken. That audit measured a clean throwaway repository. This one measures a dirty one.
 
 ### Caveats
 
@@ -50,7 +50,7 @@ Recorded first, because the defect list below is longer and would otherwise misr
 
 **The bounded-packet policy exists and is well specified.** `cli/internal/application/context.go` defines `contextTraceTail = 30` and an `OmittedField{Field, Reason, Fetch}` contract requiring any bounded packet to declare what it cut and how to retrieve it. The design is right; D2 is that it was applied to one field and not its neighbour.
 
-**The prompt-cache finding from the prior audit shipped correctly.** `docs/playbooks/work.md` step 11 now performs the phase gate in-session rather than dispatching to the `check` skill, with the reasoning recorded inline: caches are model-scoped, and `check` pins `model: opus`, so a per-phase dispatch paid a cold cache every phase. This is the audit-to-fix loop working as intended.
+**The prompt-cache finding from the prior audit shipped correctly.** docs/playbooks/work.md (since removed) step 11 now performs the phase gate in-session rather than dispatching to the `check` skill, with the reasoning recorded inline: caches are model-scoped, and `check` pins `model: opus`, so a per-phase dispatch paid a cold cache every phase. This is the audit-to-fix loop working as intended.
 
 ---
 
@@ -64,11 +64,11 @@ Consumer repository, `zharness` 0.9.1, before a single line of product code is r
 | Consumer `CLAUDE.md` (349 lines) | 3,169 | every turn | **D4** |
 | `skills/workflow/work/SKILL.md` | 344 | per stage | correct by design |
 | `zharness preflight work --json` | 2,595 | per stage | **D2** (1,075 of it) |
-| `docs/playbooks/work.md` | 2,746 | per stage | acceptable |
+| docs/playbooks/work.md (since removed) | 2,746 | per stage | acceptable |
 | Whole-plan fallback read after `query plan` fails | 26,365 | per stage | **D1** (inferred) |
 | **Total** | **~37,500** | | |
 
-Add `docs/playbooks/check.md` when step 11's in-session gate runs and the figure reaches roughly 40,000 tokens of resident context before productive work begins.
+Add docs/playbooks/check.md (since removed) when step 11's in-session gate runs and the figure reaches roughly 40,000 tokens of resident context before productive work begins.
 
 Recoverable without touching playbook content: approximately 29,500 tokens, or 78%.
 
@@ -124,7 +124,7 @@ Two files under the consumer's active-plan directory carry `status: active`:
 
 An invariant that one command depends on, that no other component checks, is a latent failure waiting for the first user who starts a second initiative before closing the first. That is ordinary usage, not misuse.
 
-**Second: the playbook defines recovery for the wrong failure.** `docs/playbooks/work.md` step 1 instructs:
+**Second: the playbook defines recovery for the wrong failure.** docs/playbooks/work.md (since removed) step 1 instructs:
 
 > If `query plan` reports `degraded: true`, read the plan file directly for this phase's definition.
 
@@ -194,7 +194,7 @@ The first has been open for 18 days and belongs to the stale plan in D1.
 
 **Drift is detected but unresolved.** `zharness resume --json` returns `readiness: "drifted"` with one `out_of_order` finding: the latest check belongs to run `01M059KMWVKF87DC865PX9ZP14` while `latest_run_id` is `01M05FMSTHNPXJ1PTYQA3YNSYR`. The recovery string is present and correct. It has not been run.
 
-Because `docs/playbooks/work.md` step 1 treats DB-versus-plan disagreement as "a stop requiring reconciliation", every stage entry now begins with an investigation the harness already diagnosed and offered to fix.
+Because docs/playbooks/work.md (since removed) step 1 treats DB-versus-plan disagreement as "a stop requiring reconciliation", every stage entry now begins with an investigation the harness already diagnosed and offered to fix.
 
 **Stale state file.** `.kit/workflow-state.yml` remains in the consumer with `last_updated: 2026-07-18`, pointing at a `.kit/planning/phases/...` layout the harness no longer uses. This repository's own `CLAUDE.md` states state is "not a hand-edited `workflow-state.yml` pointer file". The file is gitignored and inert, but it is a second, contradictory answer to "where is lifecycle state" for any agent that reads it.
 
@@ -206,7 +206,7 @@ Because `docs/playbooks/work.md` step 1 treats DB-versus-plan disagreement as "a
 
 Section headings, verbatim: Development Commands, Architecture Overview, Key Directories, API Routes (App Router), State Management (Zustand), Authentication & Security, Component Architecture, Component Patterns, API Route Best Practices, Configuration Files, Configuration Management, Code Style & Conventions, Styling Best Practices, File Handling Features, Development Workflow, Testing (When Implemented), Important Notes, Project-Specific Patterns, Design System Deviations.
 
-Roughly half describe what the repository already discloses to anyone with `Read` and `Glob`: commands live in `package.json`, directories are visible, App Router routes are the directory tree. `docs/prompt-engineering-principles.md` in this repository already states the rule this violates — spend the budget on gotchas, not on what the filesystem shows.
+Roughly half describe what the repository already discloses to anyone with `Read` and `Glob`: commands live in `package.json`, directories are visible, App Router routes are the directory tree. docs/prompt-engineering-principles.md (since removed) in this repository already states the rule this violates — spend the budget on gotchas, not on what the filesystem shows.
 
 The genuinely non-derivable sections — Design System Deviations, Project-Specific Patterns, Important Notes — are the ones worth keeping and the ones a reader has to scroll past everything else to reach.
 
@@ -214,7 +214,7 @@ The genuinely non-derivable sections — Design System Deviations, Project-Speci
 
 ## 8. Residue from the previous audit
 
-`skills/workflow/to-plan/references/` is an empty directory. F5 in `docs/audit/sdlc-token-cache-audit.md` removed the orphaned reference files; the directory itself survived. Zero token cost, but it makes the skill tree misreport which skills carry references.
+`skills/workflow/to-plan/references/` is an empty directory. F5 in docs/audit/sdlc-token-cache-audit.md (since removed) removed the orphaned reference files; the directory itself survived. Zero token cost, but it makes the skill tree misreport which skills carry references.
 
 ---
 
