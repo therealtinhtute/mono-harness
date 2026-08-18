@@ -2,6 +2,7 @@ package application
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -9,11 +10,11 @@ import (
 )
 
 func TestRecordDecisionsBatchAndQueryRoundTrip(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
-	seedStory(t, db, changesetDir, "p1", "planned")
+	db := freshDB(t)
+	runID := seedRun(t, db)
+	seedStory(t, db, "p1", "planned")
 
-	ids, path, err := RecordDecisions(db, changesetDir, runID, []domain.Decision{
+	ids, err := RecordDecisions(db, runID, []domain.Decision{
 		{Decision: "batch one decision", Rationale: "reason one", Phase: "p1", Task: "wave 1 task"},
 		{Decision: "batch two decision", Rationale: "reason two"},
 	})
@@ -25,9 +26,6 @@ func TestRecordDecisionsBatchAndQueryRoundTrip(t *testing.T) {
 	}
 	if ids[0] == ids[1] {
 		t.Fatalf("RecordDecisions minted duplicate ids: %v", ids)
-	}
-	if path == "" {
-		t.Fatal("RecordDecisions path is empty, want a written changeset")
 	}
 	if got := countRows(t, db, "decisions"); got != 2 {
 		t.Fatalf("decisions rows = %d, want 2", got)
@@ -74,9 +72,9 @@ func TestRecordDecisionsBatchAndQueryRoundTrip(t *testing.T) {
 }
 
 func TestRecordDecisionsEmptyBatch(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := RecordDecisions(db, changesetDir, "", nil)
+	_, err := RecordDecisions(db, "", nil)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "empty_decisions" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: empty_decisions}", err)
@@ -87,9 +85,9 @@ func TestRecordDecisionsEmptyBatch(t *testing.T) {
 }
 
 func TestRecordDecisionsUnknownRunID(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := RecordDecisions(db, changesetDir, "01HZZZZZZZZZZZZZZZZZZZZZZZ", []domain.Decision{
+	_, err := RecordDecisions(db, "01HZZZZZZZZZZZZZZZZZZZZZZZ", []domain.Decision{
 		{Decision: "d", Rationale: "r"},
 	})
 	ve, ok := err.(*domain.ValidationError)
@@ -102,9 +100,9 @@ func TestRecordDecisionsUnknownRunID(t *testing.T) {
 }
 
 func TestRecordDecisionsUnknownPhase(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := RecordDecisions(db, changesetDir, "", []domain.Decision{
+	_, err := RecordDecisions(db, "", []domain.Decision{
 		{Decision: "d", Rationale: "r", Phase: "no-such-phase"},
 	})
 	ve, ok := err.(*domain.ValidationError)
@@ -118,12 +116,12 @@ func TestRecordDecisionsUnknownPhase(t *testing.T) {
 
 // TestRecordDecisionsBatchIsAtomicOnValidationFailure proves a batch with
 // one invalid element writes nothing — not a partial batch — matching the
-// changeset-first, all-or-nothing shape of every other multi-line writer
-// in this package (e.g. check record's status+meta update lines).
+// all-or-nothing shape of every other multi-row writer in this package
+// (e.g. check record's status+meta update).
 func TestRecordDecisionsBatchIsAtomicOnValidationFailure(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := RecordDecisions(db, changesetDir, "", []domain.Decision{
+	_, err := RecordDecisions(db, "", []domain.Decision{
 		{Decision: "valid first element", Rationale: "reason"},
 		{Decision: "second element", Rationale: ""},
 	})
@@ -142,10 +140,10 @@ func TestRecordDecisionsBatchIsAtomicOnValidationFailure(t *testing.T) {
 func TestRecordDecisionsWritesPlanDecisionsEntryPerElement(t *testing.T) {
 	chdirFixture(t)
 	planPath := writeActivePlanFixture(t, "demo")
-	db, changesetDir := freshDB(t)
-	seedStory(t, db, changesetDir, "p1", "planned")
+	db := freshDB(t)
+	seedStory(t, db, "p1", "planned")
 
-	ids, _, err := RecordDecisions(db, changesetDir, "", []domain.Decision{
+	ids, err := RecordDecisions(db, "", []domain.Decision{
 		{Decision: "picked A over B", Rationale: "matched constraint", Phase: "p1", Task: "wave 1 task"},
 		{Decision: "deferred C", Rationale: "out of scope"},
 	})
@@ -187,8 +185,8 @@ func TestRecordDecisionsAtomicityIncludesPlanWrite(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	db, changesetDir := freshDB(t)
-	_, _, err = RecordDecisions(db, changesetDir, "", []domain.Decision{{Decision: "d", Rationale: "r"}})
+	db := freshDB(t)
+	_, err = RecordDecisions(db, "", []domain.Decision{{Decision: "d", Rationale: "r"}})
 	if err == nil {
 		t.Fatal("RecordDecisions = nil error, want a plan-section-not-found failure")
 	}
@@ -201,5 +199,25 @@ func TestRecordDecisionsAtomicityIncludesPlanWrite(t *testing.T) {
 	}
 	if string(after) != corrupted {
 		t.Fatal("plan file changed despite the failed write")
+	}
+}
+
+// TestRecordDecisionsReadOnlyPlanBlocksDBWrite is R8's forced-failure proof:
+// a markdown write that fails at the filesystem level (not just a malformed
+// section) must still leave zero DB rows behind it
+// (docs/plans/active/harness-markdown-truth.md).
+func TestRecordDecisionsReadOnlyPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	makeDirReadOnly(t, filepath.Dir(planPath))
+
+	db := freshDB(t)
+
+	_, err := RecordDecisions(db, "", []domain.Decision{{Decision: "d", Rationale: "r"}})
+	if err == nil {
+		t.Fatal("RecordDecisions = nil error, want a read-only plan write failure")
+	}
+	if got := countRows(t, db, "decisions"); got != 0 {
+		t.Fatalf("decisions rows = %d, want 0 — DB write must not proceed when the plan write fails", got)
 	}
 }

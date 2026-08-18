@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"testing"
 )
 
@@ -207,7 +206,6 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 
 	beforeDB := mustReadFile(t, filepath.Join(root, "harness.db"))
 	beforePlan := mustReadFile(t, planPath)
-	beforeChangesets := listLifecycleChangesets(t, root)
 	for _, mode := range []string{"review", "bounded"} {
 		out := runZ(t, bin, root, 0, "preflight", "check", "--mode", mode, "--json")
 		var view struct {
@@ -226,9 +224,6 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 	}
 	if afterPlan := mustReadFile(t, planPath); !bytes.Equal(afterPlan, beforePlan) {
 		t.Fatal("check review/bounded preflight mutated the active plan")
-	}
-	if afterChangesets := listLifecycleChangesets(t, root); !slices.Equal(afterChangesets, beforeChangesets) {
-		t.Fatalf("check review/bounded changesets = %v, want %v", afterChangesets, beforeChangesets)
 	}
 
 	runA := createLifecycleRun(t, bin, root, "phase-a", planIDResp.ID)
@@ -593,16 +588,6 @@ func mustReadFile(t *testing.T, path string) []byte {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	return data
-}
-
-func listLifecycleChangesets(t *testing.T, root string) []string {
-	t.Helper()
-	matches, err := filepath.Glob(filepath.Join(root, ".kit", "changesets", "*.jsonl"))
-	if err != nil {
-		t.Fatalf("glob changesets: %v", err)
-	}
-	slices.Sort(matches)
-	return matches
 }
 
 func assertNoLegacyLifecycleMarkdown(t *testing.T, root string) {

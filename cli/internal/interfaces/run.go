@@ -46,7 +46,7 @@ func runRunCreate(cmd *cobra.Command, slug, artifactPath, planID string) error {
 	}
 	defer db.Close()
 
-	id, _, err := application.CreateRun(db, changesetDir, slug, artifactPath, planID)
+	id, err := application.CreateRun(db, slug, artifactPath, planID)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

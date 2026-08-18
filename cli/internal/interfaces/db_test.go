@@ -76,82 +76,68 @@ func TestDBRebuildDoesNotTouchDocs(t *testing.T) {
 	}
 }
 
-// TestDBRebuildRecoversInterleavedMachineChangeset is the CLI-level
-// counterpart of TestChangesetStatusFlagsInterleavedMachineChangesetNeverApplied:
-// it reproduces the same two-machine data-loss scenario and proves `db
-// rebuild --yes` — not just detection — actually recovers the row that
-// direct incremental apply could not (docs/audit/workflow-harness-ceremony-audit.md, F5).
-func TestDBRebuildRecoversInterleavedMachineChangeset(t *testing.T) {
+// TestDBRebuildRecoversFromMarkdownNotChangesets is the CLI-level successor
+// to the old changeset-replay recovery test (P3,
+// docs/plans/active/harness-markdown-truth.md, Wave 1 Task 2): `db rebuild
+// --yes` now reconstructs from committed plan markdown alone, so a story
+// whose only committed record is a phase block in docs/plans/active/*.md —
+// even if the DB row backing it was lost (e.g. an interleaved-machine
+// changeset that was written but never applied, docs/audit/workflow-harness-ceremony-audit.md
+// F5) — is recovered; a story that exists only as an applied DB row, with
+// no phase block anywhere in committed markdown, is correctly NOT recovered
+// (NG4: rebuild is destructive to DB-only state that never made it into
+// markdown, by design).
+func TestDBRebuildRecoversFromMarkdownNotChangesets(t *testing.T) {
 	t.Chdir(t.TempDir())
 	if _, err := runDBCommand(t, "init"); err != nil {
 		t.Fatalf("init: %v", err)
 	}
 
-	// init already advanced the fence to a real "now" ULID (managed_docs
-	// scaffold), so ids must be minted above that floor rather than
-	// hardcoded — NextChangesetID reads both the DB fence and any existing
-	// file in dir, guaranteeing id1 < id2 < id3 regardless of wall-clock time.
+	if err := os.MkdirAll(filepath.Join("docs", "plans", "active"), 0o755); err != nil {
+		t.Fatalf("MkdirAll active plans: %v", err)
+	}
+	a1ID, b1ID, dbOnlyID := ulid.Make().String(), ulid.Make().String(), ulid.Make().String()
+	plan := "---\nid: " + ulid.Make().String() + "\ntype: plan\nstatus: active\n---\n\n" +
+		"# Plan: Rebuild recovery fixture\n\n" +
+		"## Phases and Verification\n" +
+		"- phases:\n" +
+		"  - phase_slug: a1\n" +
+		"    story_id: " + a1ID + "\n" +
+		"    status: planned\n" +
+		"    goal: machine A wave 1\n" +
+		"  - phase_slug: b1\n" +
+		"    story_id: " + b1ID + "\n" +
+		"    status: planned\n" +
+		"    goal: machine B wave 1\n\n" +
+		"## Progress\n- none\n"
+	if err := os.WriteFile(filepath.Join("docs", "plans", "active", "demo.md"), []byte(plan), 0o644); err != nil {
+		t.Fatalf("WriteFile active plan: %v", err)
+	}
+
 	db, err := infrastructure.Open(dbPath)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	var initialFence string
-	if err := db.QueryRow(`SELECT last_applied_changeset FROM meta`).Scan(&initialFence); err != nil {
-		t.Fatalf("read initial fence: %v", err)
+	// a1 was applied normally; b1's changeset never made it into the db
+	// (the interleaved-machine loss scenario) even though its phase block
+	// is committed; dbOnly has a DB row with no markdown counterpart at all.
+	if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at) VALUES (?, 'a1', 'machine A wave 1', 'planned', '2026-08-07T08:00:00Z')`, a1ID); err != nil {
+		t.Fatalf("seed a1: %v", err)
 	}
-	id1, err := infrastructure.NextChangesetID(changesetDir, initialFence) // machine A, wave 1
-	if err != nil {
-		t.Fatalf("NextChangesetID id1: %v", err)
-	}
-	a1ID, a2ID, b1ID := ulid.Make().String(), ulid.Make().String(), ulid.Make().String()
-
-	path1, err := infrastructure.WriteChangesetWithID(changesetDir, id1, []infrastructure.ChangesetLine{{
-		Op: "create", Entity: "story", ID: a1ID,
-		Fields: map[string]any{"slug": "a1", "goal": "machine A wave 1", "status": "planned", "created_at": "2026-08-07T08:00:00Z"},
-		At:     "2026-08-07T08:00:00Z",
-	}})
-	if err != nil {
-		t.Fatalf("WriteChangesetWithID id1: %v", err)
-	}
-	if _, _, err := infrastructure.ApplyChangeset(db, path1); err != nil {
-		t.Fatalf("ApplyChangeset id1: %v", err)
-	}
-
-	id2, err := infrastructure.NextChangesetID(changesetDir, "") // machine B — merged in, never applied
-	if err != nil {
-		t.Fatalf("NextChangesetID id2: %v", err)
-	}
-	if _, err := infrastructure.WriteChangesetWithID(changesetDir, id2, []infrastructure.ChangesetLine{{
-		Op: "create", Entity: "story", ID: b1ID,
-		Fields: map[string]any{"slug": "b1", "goal": "machine B wave 1", "status": "planned", "created_at": "2026-08-07T08:00:30Z"},
-		At:     "2026-08-07T08:00:30Z",
-	}}); err != nil {
-		t.Fatalf("WriteChangesetWithID id2: %v", err)
-	}
-
-	id3, err := infrastructure.NextChangesetID(changesetDir, "") // machine A, wave 2
-	if err != nil {
-		t.Fatalf("NextChangesetID id3: %v", err)
-	}
-	path3, err := infrastructure.WriteChangesetWithID(changesetDir, id3, []infrastructure.ChangesetLine{{
-		Op: "create", Entity: "story", ID: a2ID,
-		Fields: map[string]any{"slug": "a2", "goal": "machine A wave 2", "status": "planned", "created_at": "2026-08-07T08:01:00Z"},
-		At:     "2026-08-07T08:01:00Z",
-	}})
-	if err != nil {
-		t.Fatalf("WriteChangesetWithID id3: %v", err)
-	}
-	if _, _, err := infrastructure.ApplyChangeset(db, path3); err != nil {
-		t.Fatalf("ApplyChangeset id3: %v", err)
+	if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at) VALUES (?, 'db-only', 'never committed to markdown', 'planned', '2026-08-07T08:00:30Z')`, dbOnlyID); err != nil {
+		t.Fatalf("seed db-only: %v", err)
 	}
 	if err := db.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 
-	// Before rebuild: b1 is missing, exactly the loss the audit measured.
+	// Before rebuild: b1 is missing (the loss), db-only is present.
 	slugs := queryStorySlugs(t)
 	if contains(slugs, "b1") {
 		t.Fatalf("story b1 present before rebuild = %v, want it missing (setup did not reproduce the loss)", slugs)
+	}
+	if !contains(slugs, "db-only") {
+		t.Fatalf("story db-only present before rebuild = %v, want it present (setup did not seed it)", slugs)
 	}
 
 	out, err := runDBCommand(t, "db", "rebuild", "--yes", "--json")
@@ -161,24 +147,25 @@ func TestDBRebuildRecoversInterleavedMachineChangeset(t *testing.T) {
 	var result struct {
 		Status        string `json:"status"`
 		SchemaVersion int    `json:"schema_version"`
-		Replayed      int    `json:"replayed"`
+		Stories       int    `json:"stories"`
 	}
 	if err := json.Unmarshal([]byte(out), &result); err != nil {
 		t.Fatalf("decode db rebuild output %q: %v", out, err)
 	}
-	// Replayed also counts init's own managed-docs changesets, not just the
-	// three story creates this test wrote — the story presence check below
-	// is the real assertion.
-	if result.Status != "rebuilt" || result.Replayed < 3 {
-		t.Fatalf("db rebuild result = %+v, want status=rebuilt replayed>=3", result)
+	if result.Status != "rebuilt" || result.Stories != 2 {
+		t.Fatalf("db rebuild result = %+v, want status=rebuilt stories=2 (a1, b1)", result)
 	}
 
-	// After rebuild: all three stories are present, replayed in ULID order.
+	// After rebuild: a1 and b1 (both markdown-backed) are present; db-only
+	// (no markdown counterpart) is correctly gone.
 	slugs = queryStorySlugs(t)
-	for _, want := range []string{"a1", "b1", "a2"} {
+	for _, want := range []string{"a1", "b1"} {
 		if !contains(slugs, want) {
 			t.Fatalf("story %s missing after rebuild; slugs = %v", want, slugs)
 		}
+	}
+	if contains(slugs, "db-only") {
+		t.Fatalf("story db-only present after rebuild = %v, want it gone (no markdown backing it, per NG4)", slugs)
 	}
 }
 

@@ -8,14 +8,14 @@ import (
 )
 
 func TestRecordCheckRejectsApprovedVerdictWithFailingProof(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "false", OutputRef: "should not be accepted"},
 	})
-	if id != "" || path != "" {
-		t.Fatalf("RecordCheck returned id=%q path=%q, want empty on verification failure", id, path)
+	if id != "" {
+		t.Fatalf("RecordCheck returned id=%q, want empty on verification failure", id)
 	}
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "proof_verification_failed" {
@@ -30,10 +30,10 @@ func TestRecordCheckRejectsApprovedVerdictWithFailingProof(t *testing.T) {
 }
 
 func TestRecordCheckRejectsApproveWithRequestsVerdictWithFailingProof(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	_, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproveWithRequests, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	_, err := RecordCheck(db, runID, domain.VerdictApproveWithRequests, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "false", OutputRef: "should not be accepted"},
 	})
 	ve, ok := err.(*domain.ValidationError)
@@ -43,10 +43,10 @@ func TestRecordCheckRejectsApproveWithRequestsVerdictWithFailingProof(t *testing
 }
 
 func TestRecordCheckAcceptsApprovedVerdictWithPassingProof(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 	})
 	if err != nil {
@@ -62,10 +62,10 @@ func TestRecordCheckAcceptsApprovedVerdictWithPassingProof(t *testing.T) {
 // the evidence of the problem it's reporting, so requiring exit 0 there
 // would reject exactly the proof a REQUEST_CHANGES verdict needs to carry.
 func TestRecordCheckDoesNotVerifyRequestChangesProof(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
-	id, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	id, err := RecordCheck(db, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "false", OutputRef: "reproduces the bug"},
 	})
 	if err != nil {

@@ -2,8 +2,6 @@ package application
 
 import (
 	"database/sql"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -23,10 +21,9 @@ type lifecycleSnapshot struct {
 	latestRunID        sql.NullString
 	latestCheckID      sql.NullString
 	lastAppliedChanges sql.NullString
-	changesets         int
 }
 
-func takeLifecycleSnapshot(t *testing.T, db *sql.DB, changesetDir, storySlug string) lifecycleSnapshot {
+func takeLifecycleSnapshot(t *testing.T, db *sql.DB, storySlug string) lifecycleSnapshot {
 	t.Helper()
 
 	snapshot := lifecycleSnapshot{
@@ -35,7 +32,6 @@ func takeLifecycleSnapshot(t *testing.T, db *sql.DB, changesetDir, storySlug str
 		checks:      countRows(t, db, "checks"),
 		handoffs:    countRows(t, db, "handoffs"),
 		storyStatus: queryStoryStatus(t, db, storySlug),
-		changesets:  countLifecycleChangesets(t, changesetDir),
 	}
 	if err := db.QueryRow(`
 		SELECT schema_version, current_phase, entry_phase, latest_run_id, latest_check_id, last_applied_changeset
@@ -52,25 +48,6 @@ func takeLifecycleSnapshot(t *testing.T, db *sql.DB, changesetDir, storySlug str
 		t.Fatalf("query lifecycle meta: %v", err)
 	}
 	return snapshot
-}
-
-func countLifecycleChangesets(t *testing.T, changesetDir string) int {
-	t.Helper()
-	entries, err := os.ReadDir(changesetDir)
-	if os.IsNotExist(err) {
-		return 0
-	}
-	if err != nil {
-		t.Fatalf("read changeset dir: %v", err)
-	}
-
-	count := 0
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".changeset.jsonl") {
-			count++
-		}
-	}
-	return count
 }
 
 func assertLifecycleUnchanged(t *testing.T, before, after lifecycleSnapshot) {
@@ -91,21 +68,21 @@ func assertLifecycleValidationError(t *testing.T, err error, code, message strin
 	}
 }
 
-func createLifecycleRun(t *testing.T, db *sql.DB, changesetDir, storySlug string) string {
+func createLifecycleRun(t *testing.T, db *sql.DB, storySlug string) string {
 	t.Helper()
-	if _, _, err := CreateStory(db, changesetDir, storySlug, "exercise lifecycle guards", ""); err != nil {
+	if _, err := CreateStory(db, storySlug, "exercise lifecycle guards", ""); err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	runID, _, err := CreateRun(db, changesetDir, storySlug, "", "")
+	runID, err := CreateRun(db, storySlug, "", "")
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
 	return runID
 }
 
-func recordCleanLifecycleCheck(t *testing.T, db *sql.DB, changesetDir, runID string) string {
+func recordCleanLifecycleCheck(t *testing.T, db *sql.DB, runID string) string {
 	t.Helper()
-	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
+	checkID, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -115,46 +92,46 @@ func recordCleanLifecycleCheck(t *testing.T, db *sql.DB, changesetDir, runID str
 func TestLifecycleGuardRunCreateRejectsCheckedAndDone(t *testing.T) {
 	for _, status := range []string{domain.StoryChecked, domain.StoryDone} {
 		t.Run(status, func(t *testing.T) {
-			db, changesetDir := freshDB(t)
+			db := freshDB(t)
 			storySlug := "terminal-run-create"
-			runID := createLifecycleRun(t, db, changesetDir, storySlug)
-			checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
+			runID := createLifecycleRun(t, db, storySlug)
+			checkID := recordCleanLifecycleCheck(t, db, runID)
 			if status == domain.StoryDone {
-				if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
+				if _, err := RecordHandoff(db, runID, checkID, "", nil, true); err != nil {
 					t.Fatalf("RecordHandoff: %v", err)
 				}
 			}
 
-			before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-			id, path, err := CreateRun(db, changesetDir, storySlug, "", "")
+			before := takeLifecycleSnapshot(t, db, storySlug)
+			id, err := CreateRun(db, storySlug, "", "")
 			assertLifecycleValidationError(t, err, "story_not_runnable", "run create: story must be planned or in-progress")
-			if id != "" || path != "" {
-				t.Fatalf("rejected CreateRun returned id=%q path=%q, want empty values", id, path)
+			if id != "" {
+				t.Fatalf("rejected CreateRun returned id=%q, want empty value", id)
 			}
-			after := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
+			after := takeLifecycleSnapshot(t, db, storySlug)
 			assertLifecycleUnchanged(t, before, after)
 		})
 	}
 }
 
 func TestLifecycleGuardCheckUsesLatestInProgressRun(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "latest-run-check"
-	olderRunID := createLifecycleRun(t, db, changesetDir, storySlug)
-	latestRunID, _, err := CreateRun(db, changesetDir, storySlug, "", "")
+	olderRunID := createLifecycleRun(t, db, storySlug)
+	latestRunID, err := CreateRun(db, storySlug, "", "")
 	if err != nil {
 		t.Fatalf("second CreateRun: %v", err)
 	}
 
-	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordCheck(db, changesetDir, olderRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
+	before := takeLifecycleSnapshot(t, db, storySlug)
+	id, err := RecordCheck(db, olderRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
 	assertLifecycleValidationError(t, err, "run_not_latest", "check record: run_id is not the latest run for its story")
-	if id != "" || path != "" {
-		t.Fatalf("rejected RecordCheck returned id=%q path=%q, want empty values", id, path)
+	if id != "" {
+		t.Fatalf("rejected RecordCheck returned id=%q, want empty value", id)
 	}
-	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 
-	if _, _, err := RecordCheck(db, changesetDir, latestRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}); err != nil {
+	if _, err := RecordCheck(db, latestRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}); err != nil {
 		t.Fatalf("RecordCheck(latest run): %v", err)
 	}
 	if got := queryStoryStatus(t, db, storySlug); got != domain.StoryChecked {
@@ -165,32 +142,32 @@ func TestLifecycleGuardCheckUsesLatestInProgressRun(t *testing.T) {
 func TestLifecycleGuardCheckRejectsCheckedAndDoneStory(t *testing.T) {
 	for _, status := range []string{domain.StoryChecked, domain.StoryDone} {
 		t.Run(status, func(t *testing.T) {
-			db, changesetDir := freshDB(t)
+			db := freshDB(t)
 			storySlug := "terminal-check"
-			runID := createLifecycleRun(t, db, changesetDir, storySlug)
-			checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
+			runID := createLifecycleRun(t, db, storySlug)
+			checkID := recordCleanLifecycleCheck(t, db, runID)
 			if status == domain.StoryDone {
-				if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
+				if _, err := RecordHandoff(db, runID, checkID, "", nil, true); err != nil {
 					t.Fatalf("RecordHandoff: %v", err)
 				}
 			}
 
-			before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-			id, path, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
+			before := takeLifecycleSnapshot(t, db, storySlug)
+			id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
 			assertLifecycleValidationError(t, err, "story_not_checkable", "check record: story must be in-progress")
-			if id != "" || path != "" {
-				t.Fatalf("rejected RecordCheck returned id=%q path=%q, want empty values", id, path)
+			if id != "" {
+				t.Fatalf("rejected RecordCheck returned id=%q, want empty value", id)
 			}
-			assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+			assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 		})
 	}
 }
 
 func TestLifecycleGuardClosingHandoffRejectsNonLatestRun(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "stale-run-close"
-	olderRunID := createLifecycleRun(t, db, changesetDir, storySlug)
-	checkID := recordCleanLifecycleCheck(t, db, changesetDir, olderRunID)
+	olderRunID := createLifecycleRun(t, db, storySlug)
+	checkID := recordCleanLifecycleCheck(t, db, olderRunID)
 	if _, err := db.Exec(`
 		INSERT INTO runs (id, story_slug, artifact_path, created_at)
 		VALUES (?, ?, '', '9999-01-01T00:00:00Z')
@@ -198,20 +175,20 @@ func TestLifecycleGuardClosingHandoffRejectsNonLatestRun(t *testing.T) {
 		t.Fatalf("insert newer legacy run: %v", err)
 	}
 
-	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, olderRunID, checkID, "", nil, true)
+	before := takeLifecycleSnapshot(t, db, storySlug)
+	id, err := RecordHandoff(db, olderRunID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "run_not_latest", "handoff record: run_id is not the latest run for its story")
-	if id != "" || path != "" {
-		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
+	if id != "" {
+		t.Fatalf("rejected RecordHandoff returned id=%q, want empty value", id)
 	}
-	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 }
 
 func TestLifecycleGuardClosingHandoffRejectsNonLatestCheck(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "stale-check-close"
-	runID := createLifecycleRun(t, db, changesetDir, storySlug)
-	olderCheckID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
+	runID := createLifecycleRun(t, db, storySlug)
+	olderCheckID := recordCleanLifecycleCheck(t, db, runID)
 	if _, err := db.Exec(`
 		INSERT INTO checks (id, run_id, verdict, created_at)
 		VALUES (?, ?, ?, '9999-01-01T00:00:00Z')
@@ -219,19 +196,19 @@ func TestLifecycleGuardClosingHandoffRejectsNonLatestCheck(t *testing.T) {
 		t.Fatalf("insert newer legacy check: %v", err)
 	}
 
-	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, runID, olderCheckID, "", nil, true)
+	before := takeLifecycleSnapshot(t, db, storySlug)
+	id, err := RecordHandoff(db, runID, olderCheckID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_not_latest", "handoff record: check_id is not the latest check for its run")
-	if id != "" || path != "" {
-		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
+	if id != "" {
+		t.Fatalf("rejected RecordHandoff returned id=%q, want empty value", id)
 	}
-	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 }
 
 func TestLifecycleGuardClosingHandoffRequiresCheckedStory(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "unchecked-close"
-	runID := createLifecycleRun(t, db, changesetDir, storySlug)
+	runID := createLifecycleRun(t, db, storySlug)
 	checkID := ulid.Make().String()
 	if _, err := db.Exec(`
 		INSERT INTO checks (id, run_id, verdict, created_at)
@@ -240,19 +217,19 @@ func TestLifecycleGuardClosingHandoffRequiresCheckedStory(t *testing.T) {
 		t.Fatalf("insert legacy check without status transition: %v", err)
 	}
 
-	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true)
+	before := takeLifecycleSnapshot(t, db, storySlug)
+	id, err := RecordHandoff(db, runID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "phase_not_checked", "handoff record: story must be checked before phase close")
-	if id != "" || path != "" {
-		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
+	if id != "" {
+		t.Fatalf("rejected RecordHandoff returned id=%q, want empty value", id)
 	}
-	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 }
 
 func TestLifecycleGuardClosingHandoffRejectsUnknownVerdict(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "unknown-verdict-close"
-	runID := createLifecycleRun(t, db, changesetDir, storySlug)
+	runID := createLifecycleRun(t, db, storySlug)
 	checkID := ulid.Make().String()
 	if _, err := db.Exec(`
 		INSERT INTO checks (id, run_id, verdict, created_at)
@@ -261,20 +238,20 @@ func TestLifecycleGuardClosingHandoffRejectsUnknownVerdict(t *testing.T) {
 		t.Fatalf("insert legacy check with unknown verdict: %v", err)
 	}
 
-	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true)
+	before := takeLifecycleSnapshot(t, db, storySlug)
+	id, err := RecordHandoff(db, runID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_not_clean", "handoff record: cannot close a phase with REQUEST_CHANGES")
-	if id != "" || path != "" {
-		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
+	if id != "" {
+		t.Fatalf("rejected RecordHandoff returned id=%q, want empty value", id)
 	}
-	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 }
 
 func TestLifecycleGuardClosingHandoffRejectsCheckRunMismatch(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "mismatched-check-close"
-	checkedRunID := createLifecycleRun(t, db, changesetDir, storySlug)
-	checkID := recordCleanLifecycleCheck(t, db, changesetDir, checkedRunID)
+	checkedRunID := createLifecycleRun(t, db, storySlug)
+	checkID := recordCleanLifecycleCheck(t, db, checkedRunID)
 	otherRunID := ulid.Make().String()
 	if _, err := db.Exec(`
 		INSERT INTO runs (id, story_slug, artifact_path, created_at)
@@ -283,20 +260,20 @@ func TestLifecycleGuardClosingHandoffRejectsCheckRunMismatch(t *testing.T) {
 		t.Fatalf("insert mismatched legacy run: %v", err)
 	}
 
-	before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-	id, path, err := RecordHandoff(db, changesetDir, otherRunID, checkID, "", nil, true)
+	before := takeLifecycleSnapshot(t, db, storySlug)
+	id, err := RecordHandoff(db, otherRunID, checkID, "", nil, true)
 	assertLifecycleValidationError(t, err, "check_run_mismatch", "handoff record: check does not gate the supplied run")
-	if id != "" || path != "" {
-		t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
+	if id != "" {
+		t.Fatalf("rejected RecordHandoff returned id=%q, want empty value", id)
 	}
-	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 }
 
 func TestLifecycleGuardClosingHandoffRequiresBothAnchors(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "missing-close-anchors"
-	runID := createLifecycleRun(t, db, changesetDir, storySlug)
-	checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
+	runID := createLifecycleRun(t, db, storySlug)
+	checkID := recordCleanLifecycleCheck(t, db, runID)
 
 	for _, tc := range []struct {
 		name    string
@@ -308,24 +285,24 @@ func TestLifecycleGuardClosingHandoffRequiresBothAnchors(t *testing.T) {
 		{name: "check missing", runID: runID},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			before := takeLifecycleSnapshot(t, db, changesetDir, storySlug)
-			id, path, err := RecordHandoff(db, changesetDir, tc.runID, tc.checkID, "", nil, true)
+			before := takeLifecycleSnapshot(t, db, storySlug)
+			id, err := RecordHandoff(db, tc.runID, tc.checkID, "", nil, true)
 			assertLifecycleValidationError(t, err, "missing_required_field", "handoff record: --close-phase requires run_id and check_id")
-			if id != "" || path != "" {
-				t.Fatalf("rejected RecordHandoff returned id=%q path=%q, want empty values", id, path)
+			if id != "" {
+				t.Fatalf("rejected RecordHandoff returned id=%q, want empty value", id)
 			}
-			assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, changesetDir, storySlug))
+			assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 		})
 	}
 }
 
 func TestLifecycleGuardLatestCleanCloseReachesDone(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	storySlug := "clean-close"
-	runID := createLifecycleRun(t, db, changesetDir, storySlug)
-	checkID := recordCleanLifecycleCheck(t, db, changesetDir, runID)
+	runID := createLifecycleRun(t, db, storySlug)
+	checkID := recordCleanLifecycleCheck(t, db, runID)
 
-	if _, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, true); err != nil {
+	if _, err := RecordHandoff(db, runID, checkID, "", nil, true); err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
 	if got := queryStoryStatus(t, db, storySlug); got != domain.StoryDone {

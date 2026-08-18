@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 const validRunPlanID = "01ARZ3NDEKTSV4RRFFQ69G5FAV"
@@ -20,16 +19,14 @@ type runCreateSnapshot struct {
 	latestCheckID        sql.NullString
 	lastAppliedChangeset sql.NullString
 	docsVersion          sql.NullString
-	changesets           int
 }
 
-func takeRunCreateSnapshot(t *testing.T, db *sql.DB, changesetDir, storySlug string) runCreateSnapshot {
+func takeRunCreateSnapshot(t *testing.T, db *sql.DB, storySlug string) runCreateSnapshot {
 	t.Helper()
 
 	snapshot := runCreateSnapshot{
 		runRows:     countRows(t, db, "runs"),
 		storyStatus: queryStoryStatus(t, db, storySlug),
-		changesets:  countLifecycleChangesets(t, changesetDir),
 	}
 	if err := db.QueryRow(`
 		SELECT schema_version, current_phase, entry_phase, latest_run_id, latest_check_id,
@@ -51,31 +48,14 @@ func takeRunCreateSnapshot(t *testing.T, db *sql.DB, changesetDir, storySlug str
 }
 
 func TestRunCreate(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	if _, _, err := CreateStory(db, changesetDir, "write-boundary", "add run create", ""); err != nil {
+	db := freshDB(t)
+	if _, err := CreateStory(db, "write-boundary", "add run create", ""); err != nil {
 		t.Fatalf("CreateStory (prereq): %v", err)
 	}
 
-	id, path, err := CreateRun(db, changesetDir, "write-boundary", "", validRunPlanID)
+	id, err := CreateRun(db, "write-boundary", "", validRunPlanID)
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
-	}
-
-	lines, err := infrastructure.ReadChangeset(path)
-	if err != nil {
-		t.Fatalf("read changeset: %v", err)
-	}
-	if len(lines) != 3 {
-		t.Fatalf("changeset %s has %d lines, want 3 (run + story status + meta)", path, len(lines))
-	}
-	if lines[0].ID != id || lines[0].Entity != "run" || lines[0].Op != "create" {
-		t.Fatalf("changeset line 0 = %+v", lines[0])
-	}
-	if lines[1].Entity != "story" || lines[1].Fields["status"] != domain.StoryInProgress {
-		t.Fatalf("changeset line 1 = %+v, want story in-progress", lines[1])
-	}
-	if lines[2].Entity != "meta" || lines[2].Fields["latest_run_id"] != id || lines[2].Fields["current_phase"] != "write-boundary" {
-		t.Fatalf("changeset line 2 = %+v, want latest run/current phase", lines[2])
 	}
 
 	var storySlug, artifactPath, planID string
@@ -88,20 +68,27 @@ func TestRunCreate(t *testing.T) {
 	if got := queryStoryStatus(t, db, "write-boundary"); got != domain.StoryInProgress {
 		t.Fatalf("story status = %q, want in-progress", got)
 	}
+	var latestRunID, currentPhase string
+	if err := db.QueryRow(`SELECT latest_run_id, current_phase FROM meta`).Scan(&latestRunID, &currentPhase); err != nil {
+		t.Fatalf("query meta: %v", err)
+	}
+	if latestRunID != id || currentPhase != "write-boundary" {
+		t.Fatalf("meta = (latest_run_id=%q, current_phase=%q), want (%q, write-boundary)", latestRunID, currentPhase, id)
+	}
 }
 
 func TestRunCreateAcceptsEmptyPlanID(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	if _, _, err := CreateStory(db, changesetDir, "empty-plan-id", "allow a run without a plan ID", ""); err != nil {
+	db := freshDB(t)
+	if _, err := CreateStory(db, "empty-plan-id", "allow a run without a plan ID", ""); err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
 
-	id, path, err := CreateRun(db, changesetDir, "empty-plan-id", "", "")
+	id, err := CreateRun(db, "empty-plan-id", "", "")
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
-	if id == "" || path == "" {
-		t.Fatalf("CreateRun returned id=%q path=%q, want persisted run", id, path)
+	if id == "" {
+		t.Fatal("CreateRun returned empty id, want persisted run")
 	}
 	var planID sql.NullString
 	if err := db.QueryRow(`SELECT plan_id FROM runs WHERE id = ?`, id).Scan(&planID); err != nil {
@@ -124,19 +111,19 @@ func TestRunCreateRejectsInvalidPlanIDWithoutWrites(t *testing.T) {
 		{name: "overflow", planID: "ZZZZZZZZZZZZZZZZZZZZZZZZZZ"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, changesetDir := freshDB(t)
+			db := freshDB(t)
 			storySlug := "invalid-plan-id-" + tc.name
-			if _, _, err := CreateStory(db, changesetDir, storySlug, "reject invalid plan IDs", ""); err != nil {
+			if _, err := CreateStory(db, storySlug, "reject invalid plan IDs", ""); err != nil {
 				t.Fatalf("CreateStory: %v", err)
 			}
 
-			before := takeRunCreateSnapshot(t, db, changesetDir, storySlug)
-			id, path, err := CreateRun(db, changesetDir, storySlug, "", tc.planID)
+			before := takeRunCreateSnapshot(t, db, storySlug)
+			id, err := CreateRun(db, storySlug, "", tc.planID)
 			assertLifecycleValidationError(t, err, "invalid_plan_id", "run create: plan_id must be a valid ULID")
-			if id != "" || path != "" {
-				t.Fatalf("rejected CreateRun returned id=%q path=%q, want empty values", id, path)
+			if id != "" {
+				t.Fatalf("rejected CreateRun returned id=%q, want empty", id)
 			}
-			after := takeRunCreateSnapshot(t, db, changesetDir, storySlug)
+			after := takeRunCreateSnapshot(t, db, storySlug)
 			if before != after {
 				t.Fatalf("run-create state changed after invalid plan ID:\nbefore = %+v\nafter  = %+v", before, after)
 			}
@@ -145,9 +132,9 @@ func TestRunCreateRejectsInvalidPlanIDWithoutWrites(t *testing.T) {
 }
 
 func TestRunCreateUnknownStory(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateRun(db, changesetDir, "does-not-exist", "", "")
+	_, err := CreateRun(db, "does-not-exist", "", "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_story" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_story}", err)

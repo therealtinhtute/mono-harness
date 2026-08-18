@@ -3,9 +3,7 @@ package application
 import (
 	"database/sql"
 	"fmt"
-	"time"
-
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
+	"strings"
 )
 
 type legacyStory struct {
@@ -17,102 +15,112 @@ type legacyStory struct {
 	CreatedAt string
 }
 
-func layoutBackfillLines(db *sql.DB) ([]infrastructure.ChangesetLine, error) {
-	at := time.Now().UTC().Format(time.RFC3339)
-	var lines []infrastructure.ChangesetLine
-
+// copyLifecycleRows copies every lifecycle row directly from legacyDB into
+// tempDB (freshly migrated, empty). It replaces the old changeset-replay
+// path: the legacy database's own rows are the source of truth now, not a
+// changeset log (P3 wave 2, docs/plans/active/harness-markdown-truth.md).
+func copyLifecycleRows(legacyDB, tempDB *sql.DB) (copied int, err error) {
 	intakeQuery := `SELECT id, type, summary, lane, created_at FROM intakes ORDER BY created_at, id`
-	intakeFields := []string{"type", "summary", "lane", "created_at"}
-	hasPlanPath, err := tableHasColumn(db, "intakes", "plan_path")
+	intakeCols := []string{"id", "type", "summary", "lane", "created_at"}
+	hasPlanPath, err := tableHasColumn(legacyDB, "intakes", "plan_path")
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	if hasPlanPath {
 		intakeQuery = `SELECT id, type, summary, lane, plan_path, created_at FROM intakes ORDER BY created_at, id`
-		intakeFields = []string{"type", "summary", "lane", "plan_path", "created_at"}
+		intakeCols = []string{"id", "type", "summary", "lane", "plan_path", "created_at"}
 	}
-	intakeLines, err := queryBackfillRows(db, intakeQuery, "intake", at, intakeFields)
+	n, err := copyRows(legacyDB, tempDB, intakeQuery, "intakes", intakeCols)
 	if err != nil {
-		return nil, err
+		return copied, err
 	}
-	lines = append(lines, intakeLines...)
+	copied += n
 
-	stories, err := queryLegacyStories(db)
+	stories, err := queryLegacyStories(legacyDB)
 	if err != nil {
-		return nil, err
+		return copied, err
 	}
-	orderedStories, err := orderLegacyStories(stories)
+	ordered, err := orderLegacyStories(stories)
 	if err != nil {
-		return nil, err
+		return copied, err
 	}
-	for _, story := range orderedStories {
-		fields := map[string]any{
-			"slug": story.Slug, "goal": story.Goal, "status": story.Status, "created_at": story.CreatedAt,
-		}
+	for _, story := range ordered {
+		var dependsOn any
 		if story.DependsOn.Valid {
-			fields["depends_on"] = story.DependsOn.String
+			dependsOn = story.DependsOn.String
 		}
-		lines = appendCreateAndUpdate(lines, "story", story.ID, fields, at)
+		if _, err := tempDB.Exec(
+			`INSERT INTO stories (id, slug, goal, status, depends_on, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+			story.ID, story.Slug, story.Goal, story.Status, dependsOn, story.CreatedAt,
+		); err != nil {
+			return copied, fmt.Errorf("copy story %s: %w", story.ID, err)
+		}
+		copied++
 	}
 
 	for _, table := range []struct {
-		query  string
-		entity string
-		fields []string
+		query string
+		table string
+		cols  []string
 	}{
-		{`SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY created_at, id`, "run", []string{"story_slug", "plan_id", "trace_ids", "artifact_path", "created_at"}},
-		{`SELECT id, run_id, verdict, proof_links, artifact_path, created_at FROM checks ORDER BY created_at, id`, "check", []string{"run_id", "verdict", "proof_links", "artifact_path", "created_at"}},
-		{`SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY created_at, id`, "handoff", []string{"run_id", "check_id", "anchors", "created_at"}},
-		{`SELECT id, verdict_id, reason, created_at FROM interventions ORDER BY created_at, id`, "intervention", []string{"verdict_id", "reason", "created_at"}},
-		{`SELECT id, run_id, wave, summary, created_at FROM traces ORDER BY created_at, id`, "trace", []string{"run_id", "wave", "summary", "created_at"}},
+		{`SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY created_at, id`, "runs", []string{"id", "story_slug", "plan_id", "trace_ids", "artifact_path", "created_at"}},
+		{`SELECT id, run_id, verdict, judge, judge_model, proof_links, artifact_path, created_at FROM checks ORDER BY created_at, id`, "checks", []string{"id", "run_id", "verdict", "judge", "judge_model", "proof_links", "artifact_path", "created_at"}},
+		{`SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY created_at, id`, "handoffs", []string{"id", "run_id", "check_id", "anchors", "created_at"}},
+		{`SELECT id, run_id, wave, summary, task, task_status, created_at FROM traces ORDER BY created_at, id`, "traces", []string{"id", "run_id", "wave", "summary", "task", "task_status", "created_at"}},
+		{`SELECT id, run_id, phase, task, decision, rationale, created_at FROM decisions ORDER BY created_at, id`, "decisions", []string{"id", "run_id", "phase", "task", "decision", "rationale", "created_at"}},
 	} {
-		rowLines, err := queryBackfillRows(db, table.query, table.entity, at, table.fields)
+		n, err := copyRows(legacyDB, tempDB, table.query, table.table, table.cols)
 		if err != nil {
-			return nil, err
+			return copied, err
 		}
-		lines = append(lines, rowLines...)
+		copied += n
 	}
 
 	var currentPhase, entryPhase, latestRunID, latestCheckID, docsVersion sql.NullString
-	if err := db.QueryRow(`SELECT current_phase, entry_phase, latest_run_id, latest_check_id, docs_version FROM meta LIMIT 1`).Scan(&currentPhase, &entryPhase, &latestRunID, &latestCheckID, &docsVersion); err != nil {
-		return nil, fmt.Errorf("read legacy meta for backfill: %w", err)
+	if err := legacyDB.QueryRow(`SELECT current_phase, entry_phase, latest_run_id, latest_check_id, docs_version FROM meta LIMIT 1`).Scan(&currentPhase, &entryPhase, &latestRunID, &latestCheckID, &docsVersion); err != nil {
+		return copied, fmt.Errorf("read legacy meta: %w", err)
 	}
-	meta := map[string]any{}
-	addNullableString(meta, "current_phase", currentPhase)
-	addNullableString(meta, "entry_phase", entryPhase)
-	addNullableString(meta, "latest_run_id", latestRunID)
-	addNullableString(meta, "latest_check_id", latestCheckID)
-	addNullableString(meta, "docs_version", docsVersion)
-	lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: "meta", ID: "meta", Fields: meta, At: at})
-	return lines, nil
+	if _, err := tempDB.Exec(
+		`UPDATE meta SET current_phase = ?, entry_phase = ?, latest_run_id = ?, latest_check_id = ?, docs_version = ?`,
+		currentPhase, entryPhase, latestRunID, latestCheckID, docsVersion,
+	); err != nil {
+		return copied, fmt.Errorf("copy meta: %w", err)
+	}
+	return copied, nil
 }
 
-func queryBackfillRows(db *sql.DB, query, entity, at string, fieldNames []string) ([]infrastructure.ChangesetLine, error) {
-	rows, err := db.Query(query)
+// copyRows reads every row of query from legacyDB and inserts it into
+// tempDB's table verbatim, in cols order (cols[0] must be "id").
+func copyRows(legacyDB, tempDB *sql.DB, query, table string, cols []string) (int, error) {
+	rows, err := legacyDB.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("query legacy %s rows: %w", entity, err)
+		return 0, fmt.Errorf("read legacy %s: %w", table, err)
 	}
 	defer rows.Close()
 
-	var lines []infrastructure.ChangesetLine
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(cols)), ",")
+	insert := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, strings.Join(cols, ", "), placeholders) //nolint:gosec // table/cols are literal call-site constants, not user input
+
+	count := 0
 	for rows.Next() {
-		var id string
-		values := make([]any, len(fieldNames))
-		dest := make([]any, 0, len(fieldNames)+1)
-		dest = append(dest, &id)
+		values := make([]any, len(cols))
+		dest := make([]any, len(cols))
 		for i := range values {
-			dest = append(dest, &values[i])
+			dest[i] = &values[i]
 		}
 		if err := rows.Scan(dest...); err != nil {
-			return nil, fmt.Errorf("scan legacy %s row: %w", entity, err)
+			return count, fmt.Errorf("scan legacy %s row: %w", table, err)
 		}
-		fields := make(map[string]any, len(fieldNames))
-		for i, name := range fieldNames {
-			fields[name] = normalizeSQLValue(values[i])
+		args := make([]any, len(values))
+		for i, v := range values {
+			args[i] = normalizeSQLValue(v)
 		}
-		lines = appendCreateAndUpdate(lines, entity, id, fields, at)
+		if _, err := tempDB.Exec(insert, args...); err != nil {
+			return count, fmt.Errorf("copy %s row: %w", table, err)
+		}
+		count++
 	}
-	return lines, rows.Err()
+	return count, rows.Err()
 }
 
 func queryLegacyStories(db *sql.DB) ([]legacyStory, error) {
@@ -173,12 +181,6 @@ func orderLegacyStories(stories []legacyStory) ([]legacyStory, error) {
 	return ordered, nil
 }
 
-func appendCreateAndUpdate(lines []infrastructure.ChangesetLine, entity, id string, fields map[string]any, at string) []infrastructure.ChangesetLine {
-	lines = append(lines, infrastructure.ChangesetLine{Op: "create", Entity: entity, ID: id, Fields: fields, At: at})
-	lines = append(lines, infrastructure.ChangesetLine{Op: "update", Entity: entity, ID: id, Fields: fields, At: at})
-	return lines
-}
-
 func normalizeSQLValue(value any) any {
 	switch typed := value.(type) {
 	case nil:
@@ -209,12 +211,4 @@ func tableHasColumn(db *sql.DB, table, column string) (bool, error) {
 		}
 	}
 	return false, rows.Err()
-}
-
-func addNullableString(fields map[string]any, key string, value sql.NullString) {
-	if value.Valid {
-		fields[key] = value.String
-	} else {
-		fields[key] = nil
-	}
 }

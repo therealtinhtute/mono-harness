@@ -9,7 +9,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/therealtinhtute/skills/cli/internal/embedded"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift proves
@@ -19,7 +18,7 @@ import (
 // clears the drift; and lifecycle rows/pointers remain byte-stable while
 // managed root docs and their hash records advance.
 func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 	root := t.TempDir()
 	kitDir := filepath.Join(root, ".kit")
 
@@ -34,21 +33,23 @@ func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 	at := "2026-07-18T12:00:00Z"
 	storyID := ulid.Make().String()
 	runID := ulid.Make().String()
-	if _, _, err := AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
-		{Op: "create", Entity: "story", ID: storyID, Fields: map[string]any{
-			"slug": "cli-domain", "goal": "test fixture", "status": "done", "created_at": at,
-		}, At: at},
-		{Op: "create", Entity: "run", ID: runID, Fields: map[string]any{
-			"story_slug": "cli-domain", "artifact_path": runArtifact, "created_at": at,
-		}, At: at},
-	}); err != nil {
-		t.Fatalf("seed story + run: %v", err)
+	if _, err := db.Exec(
+		`INSERT INTO stories (id, slug, goal, status, created_at) VALUES (?, ?, ?, ?, ?)`,
+		storyID, "cli-domain", "test fixture", "done", at,
+	); err != nil {
+		t.Fatalf("seed story: %v", err)
 	}
-	setMeta(t, db, changesetDir, map[string]any{
+	if _, err := db.Exec(
+		`INSERT INTO runs (id, story_slug, artifact_path, created_at) VALUES (?, ?, ?, ?)`,
+		runID, "cli-domain", runArtifact, at,
+	); err != nil {
+		t.Fatalf("seed run: %v", err)
+	}
+	setMeta(t, db, map[string]any{
 		"current_phase": "cli-domain", "entry_phase": "cli-domain", "latest_run_id": runID,
 	})
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "0.2.0", false, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, kitDir, embedded.FS, "0.2.0", false, false); err != nil {
 		t.Fatalf("initial ScaffoldDocs: %v", err)
 	}
 
@@ -76,7 +77,7 @@ func TestClearingSemantics_RefreshDocsResolvesStaleDocsDrift(t *testing.T) {
 	preRefreshStoryStatus := queryStoryStatus(t, db, "cli-domain")
 	preRefreshRunArtifact := queryRunArtifactPath(t, db, runID)
 
-	if _, err := ScaffoldDocs(db, changesetDir, root, kitDir, embedded.FS, "0.3.0", true, false); err != nil {
+	if _, err := ScaffoldDocs(db, root, kitDir, embedded.FS, "0.3.0", true, false); err != nil {
 		t.Fatalf("refresh ScaffoldDocs: %v", err)
 	}
 

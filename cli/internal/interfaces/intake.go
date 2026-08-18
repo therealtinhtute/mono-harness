@@ -43,7 +43,7 @@ func runIntake(cmd *cobra.Command, typ, summary, lane, planPath, planID string) 
 	}
 	defer db.Close()
 
-	id, _, err := application.CreateIntake(db, changesetDir, typ, summary, lane, planPath, planID)
+	id, err := application.CreateIntake(db, typ, summary, lane, planPath, planID)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

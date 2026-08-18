@@ -9,7 +9,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 const maxTraceTasksPerBatch = 20
@@ -34,59 +33,58 @@ func runExists(db *sql.DB, id string) (bool, error) {
 // 7, addressing G1 — docs/audit/workflow-harness-ceremony-audit.md) sets
 // both, so a mid-wave interruption still leaves a queryable index entry
 // for every task actually completed.
-func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task, taskStatus string) (id, path string, err error) {
+func CreateTrace(db *sql.DB, wave int, summary, runID, task, taskStatus string) (id string, err error) {
 	var taskStatusPtr *string
 	if taskStatus != "" {
 		taskStatusPtr = &taskStatus
 	}
 	entity := domain.Trace{Wave: wave, Summary: summary, TaskStatus: taskStatusPtr}
 	if err := entity.Validate(); err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	if runID != "" {
 		exists, err := runExists(db, runID)
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		if !exists {
-			return "", "", &domain.ValidationError{Code: "unknown_run_id", Message: "trace: run_id " + runID + " not found"}
+			return "", &domain.ValidationError{Code: "unknown_run_id", Message: "trace: run_id " + runID + " not found"}
 		}
 	}
 
 	at := time.Now().UTC().Format(time.RFC3339)
 	id = ulid.Make().String()
 
-	writePlan, err := preparePlanAppend("Progress", formatTraceProgressEntry(at, wave, summary, runID, task, taskStatus))
+	writePlan, err := preparePlanAppend(db, "Progress", formatTraceProgressEntry(at, wave, summary, runID, task, taskStatus))
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	fields := map[string]any{
-		"wave":       wave,
-		"summary":    summary,
-		"created_at": at,
+	// Markdown is the write target: writePlan runs before the DB write, so
+	// a failed markdown write (e.g. a read-only plan file) leaves zero DB
+	// rows behind it (R8, docs/plans/active/harness-markdown-truth.md).
+	if err := writePlan(); err != nil {
+		return "", fmt.Errorf("plan write failed: %w", err)
 	}
+
+	var runIDArg, taskArg, taskStatusArg any
 	if runID != "" {
-		fields["run_id"] = runID
+		runIDArg = runID
 	}
 	if task != "" {
-		fields["task"] = task
+		taskArg = task
 	}
 	if taskStatus != "" {
-		fields["task_status"] = taskStatus
+		taskStatusArg = taskStatus
 	}
-	path, _, err = AppendAndApply(db, changesetDir, []infrastructure.ChangesetLine{
-		{Op: "create", Entity: "trace", ID: id, Fields: fields, At: at},
-	})
-	if err != nil {
-		return "", "", err
+	if _, err := db.Exec(
+		`INSERT INTO traces (id, run_id, wave, summary, task, task_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		id, runIDArg, wave, summary, taskArg, taskStatusArg, at,
+	); err != nil {
+		return "", fmt.Errorf("trace %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
-
-	if err := writePlan(); err != nil {
-		return id, path, fmt.Errorf("trace %s recorded, but plan markdown update failed: %w", id, err)
-	}
-	return id, path, nil
+	return id, nil
 }
 
 // CreateTraces validates and records a batch of task-level trace entities in
@@ -96,29 +94,29 @@ func CreateTrace(db *sql.DB, changesetDir string, wave int, summary, runID, task
 // `## Progress` line, one per element, so a mid-wave interruption leaves the
 // same queryable per-task granularity CreateTrace's single-call form
 // already provides — batching removes the round trips, not the index rows.
-func CreateTraces(db *sql.DB, changesetDir string, wave int, runID string, tasks []domain.TraceTask) (ids []string, path string, err error) {
+func CreateTraces(db *sql.DB, wave int, runID string, tasks []domain.TraceTask) (ids []string, err error) {
 	if len(tasks) == 0 {
-		return nil, "", &domain.ValidationError{Code: "empty_tasks", Message: "trace add: at least one task is required"}
+		return nil, &domain.ValidationError{Code: "empty_tasks", Message: "trace add: at least one task is required"}
 	}
 	if len(tasks) > maxTraceTasksPerBatch {
-		return nil, "", &domain.ValidationError{Code: "too_many_tasks", Message: fmt.Sprintf("trace add: at most %d tasks per batch", maxTraceTasksPerBatch)}
+		return nil, &domain.ValidationError{Code: "too_many_tasks", Message: fmt.Sprintf("trace add: at most %d tasks per batch", maxTraceTasksPerBatch)}
 	}
 	for _, t := range tasks {
 		if err := t.Validate(); err != nil {
-			return nil, "", err
+			return nil, err
 		}
 	}
 	if wave < 0 {
-		return nil, "", &domain.ValidationError{Message: "trace: wave must be >= 0"}
+		return nil, &domain.ValidationError{Message: "trace: wave must be >= 0"}
 	}
 
 	if runID != "" {
 		exists, err := runExists(db, runID)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		if !exists {
-			return nil, "", &domain.ValidationError{Code: "unknown_run_id", Message: "trace: run_id " + runID + " not found"}
+			return nil, &domain.ValidationError{Code: "unknown_run_id", Message: "trace: run_id " + runID + " not found"}
 		}
 	}
 
@@ -128,34 +126,40 @@ func CreateTraces(db *sql.DB, changesetDir string, wave int, runID string, tasks
 	for i, t := range tasks {
 		entryLines[i] = formatTraceProgressEntry(at, wave, t.Summary, runID, t.Task, t.TaskStatus)
 	}
-	writePlan, err := preparePlanAppend("Progress", strings.Join(entryLines, "\n"))
+	writePlan, err := preparePlanAppend(db, "Progress", strings.Join(entryLines, "\n"))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	lines := make([]infrastructure.ChangesetLine, 0, len(tasks))
+	// Markdown first: see CreateTrace's comment on the same ordering.
+	if err := writePlan(); err != nil {
+		return nil, fmt.Errorf("plan write failed: %w", err)
+	}
+
 	ids = make([]string, 0, len(tasks))
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("traces: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
 	for _, t := range tasks {
 		id := ulid.Make().String()
-		fields := map[string]any{
-			"wave": wave, "summary": t.Summary, "task": t.Task, "task_status": t.TaskStatus, "created_at": at,
-		}
+		var runIDArg any
 		if runID != "" {
-			fields["run_id"] = runID
+			runIDArg = runID
 		}
-		lines = append(lines, infrastructure.ChangesetLine{Op: "create", Entity: "trace", ID: id, Fields: fields, At: at})
+		if _, err := tx.Exec(
+			`INSERT INTO traces (id, run_id, wave, summary, task, task_status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			id, runIDArg, wave, t.Summary, t.Task, t.TaskStatus, at,
+		); err != nil {
+			return nil, fmt.Errorf("traces %v: plan markdown recorded, but db write failed: %w", ids, err)
+		}
 		ids = append(ids, id)
 	}
-
-	path, _, err = AppendAndApply(db, changesetDir, lines)
-	if err != nil {
-		return nil, "", err
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("traces %v: plan markdown recorded, but db commit failed: %w", ids, err)
 	}
-
-	if err := writePlan(); err != nil {
-		return ids, path, fmt.Errorf("traces %v recorded, but plan markdown update failed: %w", ids, err)
-	}
-	return ids, path, nil
+	return ids, nil
 }
 
 // formatTraceProgressEntry renders a `## Progress` line using only the

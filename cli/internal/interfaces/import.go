@@ -15,7 +15,7 @@ import (
 func newImportCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "import [path]",
-		Short: "Parse legacy .kit/ state into changesets + DB rows (defaults to .kit/)",
+		Short: "Parse legacy .kit/ state into DB rows (defaults to .kit/)",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			legacyDir := ".kit/"
@@ -38,7 +38,7 @@ func runImport(cmd *cobra.Command, legacyDir string) error {
 	}
 	defer db.Close()
 
-	result, err := application.Import(db, legacyDir, changesetDir)
+	result, err := application.Import(db, legacyDir)
 	if err != nil {
 		var validation *domain.ValidationError
 		if errors.As(err, &validation) {
@@ -54,7 +54,6 @@ func runImport(cmd *cobra.Command, legacyDir string) error {
 	if jsonOutput {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "imported=%d skipped=%d changesets_written=%v\n",
-		result.Imported, result.Skipped, result.ChangesetsWritten)
+	fmt.Fprintf(cmd.OutOrStdout(), "imported=%d skipped=%d\n", result.Imported, result.Skipped)
 	return nil
 }

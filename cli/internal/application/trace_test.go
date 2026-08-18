@@ -2,6 +2,7 @@ package application
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -9,30 +10,30 @@ import (
 )
 
 func TestCreateTrace(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	id, path, err := CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "", "")
+	id, err := CreateTrace(db, 1, "wave 1 done", runID, "", "")
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
-	assertChangesetBeforeRow(t, db, path, "traces", id, "trace")
+	assertRowExists(t, db, "traces", id)
 }
 
 func TestCreateTraceNoRunID(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	id, path, err := CreateTrace(db, changesetDir, 2, "standalone trace", "", "", "")
+	id, err := CreateTrace(db, 2, "standalone trace", "", "", "")
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
-	assertChangesetBeforeRow(t, db, path, "traces", id, "trace")
+	assertRowExists(t, db, "traces", id)
 }
 
 func TestCreateTraceUnknownRunID(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateTrace(db, changesetDir, 1, "wave 1 done", "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", "")
+	_, err := CreateTrace(db, 1, "wave 1 done", "01HZZZZZZZZZZZZZZZZZZZZZZZ", "", "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_run_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)
@@ -47,14 +48,14 @@ func TestCreateTraceUnknownRunID(t *testing.T) {
 // records task and task_status, matching docs/playbooks/work.md's
 // per-task Progress entries rather than only wave-level summaries.
 func TestCreateTraceTaskGranularity(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	id, path, err := CreateTrace(db, changesetDir, 1, "task done", runID, "wave 1 task 2", domain.TaskStatusDone)
+	id, err := CreateTrace(db, 1, "task done", runID, "wave 1 task 2", domain.TaskStatusDone)
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
-	assertChangesetBeforeRow(t, db, path, "traces", id, "trace")
+	assertRowExists(t, db, "traces", id)
 
 	var task, taskStatus string
 	if err := db.QueryRow(`SELECT task, task_status FROM traces WHERE id = ?`, id).Scan(&task, &taskStatus); err != nil {
@@ -66,10 +67,10 @@ func TestCreateTraceTaskGranularity(t *testing.T) {
 }
 
 func TestCreateTraceInvalidTaskStatus(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	_, _, err := CreateTrace(db, changesetDir, 1, "task done", runID, "task", "BOGUS")
+	_, err := CreateTrace(db, 1, "task done", runID, "task", "BOGUS")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_task_status" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_task_status}", err)
@@ -85,10 +86,10 @@ func TestCreateTraceInvalidTaskStatus(t *testing.T) {
 func TestCreateTraceWritesPlanProgressEntry(t *testing.T) {
 	chdirFixture(t)
 	planPath := writeActivePlanFixture(t, "demo")
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	id, _, err := CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "task A", domain.TaskStatusDone)
+	id, err := CreateTrace(db, 1, "wave 1 done", runID, "task A", domain.TaskStatusDone)
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
@@ -118,10 +119,10 @@ func TestCreateTraceWritesPlanProgressEntry(t *testing.T) {
 // succeeds and nothing is written to disk.
 func TestCreateTraceNoActivePlanSkipsMarkdownWrite(t *testing.T) {
 	chdirFixture(t)
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	id, _, err := CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "", "")
+	id, err := CreateTrace(db, 1, "wave 1 done", runID, "", "")
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
@@ -137,10 +138,10 @@ func TestCreateTraceNoActivePlanSkipsMarkdownWrite(t *testing.T) {
 // (docs/audit/sdlc-token-cache-audit.md): a batch of task-level entries
 // lands as separate, individually queryable trace rows in one call.
 func TestCreateTracesBatchAndQueryRoundTrip(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	ids, path, err := CreateTraces(db, changesetDir, 1, runID, []domain.TraceTask{
+	ids, err := CreateTraces(db, 1, runID, []domain.TraceTask{
 		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
 		{Task: "task B", TaskStatus: domain.TaskStatusDoneWithConcerns, Summary: "did B, minor concern"},
 	})
@@ -152,9 +153,6 @@ func TestCreateTracesBatchAndQueryRoundTrip(t *testing.T) {
 	}
 	if ids[0] == ids[1] {
 		t.Fatalf("CreateTraces minted duplicate ids: %v", ids)
-	}
-	if path == "" {
-		t.Fatal("CreateTraces path is empty, want a written changeset")
 	}
 	if got := countRows(t, db, "traces"); got != 2 {
 		t.Fatalf("traces rows = %d, want 2", got)
@@ -176,9 +174,9 @@ func TestCreateTracesBatchAndQueryRoundTrip(t *testing.T) {
 }
 
 func TestCreateTracesEmptyBatch(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateTraces(db, changesetDir, 1, "", nil)
+	_, err := CreateTraces(db, 1, "", nil)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "empty_tasks" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: empty_tasks}", err)
@@ -189,13 +187,13 @@ func TestCreateTracesEmptyBatch(t *testing.T) {
 }
 
 func TestCreateTracesTooManyTasks(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
 	tasks := make([]domain.TraceTask, 21)
 	for i := range tasks {
 		tasks[i] = domain.TraceTask{Task: "t", TaskStatus: domain.TaskStatusDone, Summary: "s"}
 	}
-	_, _, err := CreateTraces(db, changesetDir, 1, "", tasks)
+	_, err := CreateTraces(db, 1, "", tasks)
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "too_many_tasks" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: too_many_tasks}", err)
@@ -209,9 +207,9 @@ func TestCreateTracesTooManyTasks(t *testing.T) {
 // invalid element writes nothing — not a partial batch — matching
 // RecordDecisions's precedent (decision_test.go).
 func TestCreateTracesBatchIsAtomicOnValidationFailure(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateTraces(db, changesetDir, 1, "", []domain.TraceTask{
+	_, err := CreateTraces(db, 1, "", []domain.TraceTask{
 		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
 		{Task: "task B", TaskStatus: "BOGUS", Summary: "did B"},
 	})
@@ -225,9 +223,9 @@ func TestCreateTracesBatchIsAtomicOnValidationFailure(t *testing.T) {
 }
 
 func TestCreateTracesUnknownRunID(t *testing.T) {
-	db, changesetDir := freshDB(t)
+	db := freshDB(t)
 
-	_, _, err := CreateTraces(db, changesetDir, 1, "01HZZZZZZZZZZZZZZZZZZZZZZZ", []domain.TraceTask{
+	_, err := CreateTraces(db, 1, "01HZZZZZZZZZZZZZZZZZZZZZZZ", []domain.TraceTask{
 		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
 	})
 	ve, ok := err.(*domain.ValidationError)
@@ -245,10 +243,10 @@ func TestCreateTracesUnknownRunID(t *testing.T) {
 func TestCreateTracesWritesPlanProgressEntryPerElement(t *testing.T) {
 	chdirFixture(t)
 	planPath := writeActivePlanFixture(t, "demo")
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	ids, _, err := CreateTraces(db, changesetDir, 1, runID, []domain.TraceTask{
+	ids, err := CreateTraces(db, 1, runID, []domain.TraceTask{
 		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
 		{Task: "task B", TaskStatus: domain.TaskStatusDoneWithConcerns, Summary: "did B, minor concern"},
 	})
@@ -290,8 +288,8 @@ func TestCreateTracesAtomicityIncludesPlanWrite(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	db, changesetDir := freshDB(t)
-	_, _, err = CreateTraces(db, changesetDir, 1, "", []domain.TraceTask{
+	db := freshDB(t)
+	_, err = CreateTraces(db, 1, "", []domain.TraceTask{
 		{Task: "task A", TaskStatus: domain.TaskStatusDone, Summary: "did A"},
 	})
 	if err == nil {
@@ -326,10 +324,10 @@ func TestCreateTraceMalformedPlanBlocksDBWrite(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
-	_, _, err = CreateTrace(db, changesetDir, 1, "wave 1 done", runID, "", "")
+	_, err = CreateTrace(db, 1, "wave 1 done", runID, "", "")
 	if err == nil {
 		t.Fatal("CreateTrace = nil error, want a plan-section-not-found failure")
 	}
@@ -342,5 +340,26 @@ func TestCreateTraceMalformedPlanBlocksDBWrite(t *testing.T) {
 	}
 	if string(after) != corrupted {
 		t.Fatalf("plan file changed despite the failed write:\nbefore=%s\nafter=%s", corrupted, string(after))
+	}
+}
+
+// TestCreateTraceReadOnlyPlanBlocksDBWrite is R8's forced-failure proof: a
+// markdown write that fails at the filesystem level (not just a malformed
+// section) must still leave zero DB rows behind it
+// (docs/plans/active/harness-markdown-truth.md).
+func TestCreateTraceReadOnlyPlanBlocksDBWrite(t *testing.T) {
+	chdirFixture(t)
+	planPath := writeActivePlanFixture(t, "demo")
+	makeDirReadOnly(t, filepath.Dir(planPath))
+
+	db := freshDB(t)
+	runID := seedRun(t, db)
+
+	_, err := CreateTrace(db, 1, "wave 1 done", runID, "", "")
+	if err == nil {
+		t.Fatal("CreateTrace = nil error, want a read-only plan write failure")
+	}
+	if got := countRows(t, db, "traces"); got != 0 {
+		t.Fatalf("traces rows = %d, want 0 — DB write must not proceed when the plan write fails", got)
 	}
 }

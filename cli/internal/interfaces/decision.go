@@ -19,7 +19,7 @@ func newDecisionCmd() *cobra.Command {
 
 	add := &cobra.Command{
 		Use:   "add",
-		Short: "Record one or more decisions in one changeset",
+		Short: "Record one or more decisions in one transaction",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			decisionsRaw, _ := cmd.Flags().GetString("decisions")
@@ -49,7 +49,7 @@ func runDecisionAdd(cmd *cobra.Command, decisionsRaw, runID string) error {
 	}
 	defer db.Close()
 
-	ids, _, err := application.RecordDecisions(db, changesetDir, runID, decisions)
+	ids, err := application.RecordDecisions(db, runID, decisions)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

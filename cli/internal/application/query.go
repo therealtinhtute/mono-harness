@@ -111,8 +111,7 @@ type CheckView struct {
 
 // QueryLatestCheck reads the most recently created check row, joined to
 // its run's story_slug. Independent of import (which never creates
-// checks rows itself) — any check row applied via `db changeset apply`
-// is visible here.
+// checks rows itself).
 func QueryLatestCheck(db *sql.DB) (CheckView, bool, error) {
 	var v CheckView
 	var judge, judgeModel sql.NullString

@@ -25,12 +25,11 @@ type ScaffoldResult struct {
 	DocsVersion          string
 }
 
-func ScaffoldDocs(db *sql.DB, changesetDir, root, kitDir string, docsFS fs.FS, docsVersion string, refresh, forceDocs bool) (ScaffoldResult, error) {
+func ScaffoldDocs(db *sql.DB, root, kitDir string, docsFS fs.FS, docsVersion string, refresh, forceDocs bool) (ScaffoldResult, error) {
 	result := ScaffoldResult{DocsVersion: docsVersion}
 
 	managed, err := SyncManagedDocs(
 		db,
-		changesetDir,
 		filepath.Join(root, "docs"),
 		filepath.Join(root, kitDir, "conflicts"),
 		docsFS,

@@ -53,20 +53,15 @@ func TestImportRoundTrip(t *testing.T) {
 		t.Fatalf("Migrate: %v", err)
 	}
 
-	changesetDir := filepath.Join(repoRoot, ".kit", "changesets")
-
-	result, err := Import(db, ".kit/", changesetDir)
+	result, err := Import(db, ".kit/")
 	if err != nil {
 		t.Fatalf("Import (first): %v", err)
 	}
 	// 3 stories (cli-core, harness-concept, harness-contracts) + 1 run
 	// (harness-contracts' latest_cook_run) + 1 meta update = 5.
 	if result.Imported != 5 || result.Skipped != 0 {
-		t.Fatalf("first import = (imported=%d, skipped=%d), want (5, 0); changesets=%v",
-			result.Imported, result.Skipped, result.ChangesetsWritten)
-	}
-	if len(result.ChangesetsWritten) != 5 {
-		t.Fatalf("first import changesets_written = %d files, want 5", len(result.ChangesetsWritten))
+		t.Fatalf("first import = (imported=%d, skipped=%d), want (5, 0)",
+			result.Imported, result.Skipped)
 	}
 
 	state, err := QueryState(db)
@@ -118,13 +113,12 @@ func TestImportRoundTrip(t *testing.T) {
 
 	// Re-running import against unchanged legacy input must be a pure
 	// no-op: every entity re-examined, nothing rewritten.
-	result2, err := Import(db, ".kit/", changesetDir)
+	result2, err := Import(db, ".kit/")
 	if err != nil {
 		t.Fatalf("Import (second): %v", err)
 	}
-	if result2.Imported != 0 || len(result2.ChangesetsWritten) != 0 {
-		t.Fatalf("second import = (imported=%d, changesets=%v), want (0, [])",
-			result2.Imported, result2.ChangesetsWritten)
+	if result2.Imported != 0 {
+		t.Fatalf("second import imported=%d, want 0", result2.Imported)
 	}
 	if result2.Skipped != 5 {
 		t.Fatalf("second import skipped=%d, want 5", result2.Skipped)

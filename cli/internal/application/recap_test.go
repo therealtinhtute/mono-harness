@@ -158,12 +158,12 @@ func TestRenderRecapNoHarnessBranch(t *testing.T) {
 // the same way next_test.go's freshDB-based cases do.
 func TestRenderRecapAgainstRealResumeStates(t *testing.T) {
 	t.Run("clean", func(t *testing.T) {
-		db, changesetDir := freshDB(t)
-		seedRun(t, db, changesetDir)
+		db := freshDB(t)
+		seedRun(t, db)
 		if _, err := db.Exec(`UPDATE stories SET status = ? WHERE slug = ?`, domain.StoryDone, "cli-domain"); err != nil {
 			t.Fatalf("seed story status: %v", err)
 		}
-		setMeta(t, db, changesetDir, map[string]any{"current_phase": "cli-domain"})
+		setMeta(t, db, map[string]any{"current_phase": "cli-domain"})
 
 		view, err := Resume(db, "dev")
 		if err != nil {
@@ -179,7 +179,7 @@ func TestRenderRecapAgainstRealResumeStates(t *testing.T) {
 	})
 
 	t.Run("drifted", func(t *testing.T) {
-		db, _ := freshDB(t)
+		db := freshDB(t)
 		db.SetMaxOpenConns(1)
 		if _, err := db.Exec(`PRAGMA foreign_keys=OFF;`); err != nil {
 			t.Fatalf("disable foreign_keys: %v", err)

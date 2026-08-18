@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/json"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +15,11 @@ import (
 
 	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
+
+// readOnlyMemoryFixtureID is a fixed (non-ULID-minted) id for the memory
+// fixture seeded by TestInspectionCommandsDoNotCreateWALSidecars, so the
+// static command-args table below can reference it directly.
+const readOnlyMemoryFixtureID = "01FIXTUREMEMORYENTRYIDXXXX"
 
 type readOnlyFileSnapshot struct {
 	exists  bool
@@ -27,7 +31,6 @@ type readOnlyFileSnapshot struct {
 type readOnlyCommandSnapshot struct {
 	database      readOnlyFileSnapshot
 	journalHeader [2]byte
-	changesets    map[string]readOnlyFileSnapshot
 	wal           readOnlyFileSnapshot
 	shm           readOnlyFileSnapshot
 }
@@ -46,6 +49,9 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 		{name: "resume", args: []string{"resume", "--json"}, wantFragment: `"current_phase":"beta"`},
 		{name: "validate", args: []string{"validate", "--json"}, wantFragment: `"valid":true`},
 		{name: "audit", args: []string{"audit", "--json"}, wantFragment: `"contract_violations":[]`},
+		{name: "memory get", args: []string{"memory", "get", "--id", readOnlyMemoryFixtureID, "--json"}, wantFragment: `"type":"gotcha"`},
+		{name: "memory query", args: []string{"memory", "query", "--type", "gotcha", "--json"}, wantFragment: `"type":"gotcha"`},
+		{name: "memory query ranked", args: []string{"memory", "query", "--keywords", "seeded inspection", "--json"}, wantFragment: `"type":"gotcha"`},
 	}
 
 	for _, command := range commands {
@@ -79,6 +85,7 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 					ulid.Make().String(), runID); err != nil {
 					t.Fatalf("seed decision: %v", err)
 				}
+				seedReadOnlyMemoryFixture(t, db)
 			})
 
 			output := executeReadOnlyJSONCommand(t, command.args...)
@@ -90,85 +97,26 @@ func TestInspectionCommandsDoNotCreateWALSidecars(t *testing.T) {
 	}
 }
 
-func TestNextOpensDatabaseReadOnly(t *testing.T) {
-	t.Chdir(t.TempDir())
-	if err := os.MkdirAll(filepath.Join("docs", "plans", "active"), 0o755); err != nil {
-		t.Fatalf("MkdirAll active plans: %v", err)
+// seedReadOnlyMemoryFixture writes a docs/memory/{id}.md entry and its
+// matching memories index row, mirroring CreateMemory's own markdown-first
+// output shape, so `memory get`/`memory query` have a real entry to read.
+func seedReadOnlyMemoryFixture(t *testing.T, db *sql.DB) {
+	t.Helper()
+	if err := os.MkdirAll("docs/memory", 0o755); err != nil {
+		t.Fatalf("MkdirAll docs/memory: %v", err)
 	}
-	plan := "# Active plan\n\n## Phases and Verification\n" +
-		"### Phase 1: Alpha\n- phase_slug: alpha\n- goal: goal\n\n" +
-		"### Phase 2: Beta\n- phase_slug: beta\n- goal: goal\n"
-	if err := os.WriteFile(filepath.Join("docs", "plans", "active", "initiative.md"), []byte(plan), 0o644); err != nil {
-		t.Fatalf("WriteFile active plan: %v", err)
+	content := "---\nid: " + readOnlyMemoryFixtureID + "\ntype: gotcha\nscope: global\ncreated: 2026-07-27T00:00:03Z\n---\n\nseeded memory for read-only inspection test\n"
+	path := "docs/memory/" + readOnlyMemoryFixtureID + ".md"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("WriteFile %s: %v", path, err)
 	}
-
-	before := prepareReadOnlyCommandDatabase(t, func(db *sql.DB) {
-		if _, err := db.Exec(`INSERT INTO stories (id, slug, goal, status, created_at) VALUES
-			(?, 'alpha', 'goal', 'done', '2026-07-27T00:00:00Z'),
-			(?, 'beta', 'goal', 'planned', '2026-07-27T00:00:00Z')`, ulid.Make().String(), ulid.Make().String()); err != nil {
-			t.Fatalf("seed next stories: %v", err)
-		}
-	})
-
-	output := executeReadOnlyJSONCommand(t, "next", "full", "--json")
-	var got struct {
-		Mode        string          `json:"mode"`
-		ActivePhase *string         `json:"active_phase"`
-		Stop        json.RawMessage `json:"stop"`
+	sha := sha256.Sum256([]byte(content))
+	if _, err := db.Exec(
+		`INSERT INTO memories (id, path, type, scope, plan_id, sha256, created_at) VALUES (?, ?, 'gotcha', 'global', NULL, ?, '2026-07-27T00:00:03Z')`,
+		readOnlyMemoryFixtureID, path, hex.EncodeToString(sha[:]),
+	); err != nil {
+		t.Fatalf("seed memory fixture: %v", err)
 	}
-	if err := json.Unmarshal(output, &got); err != nil {
-		t.Fatalf("decode next output %q: %v", output, err)
-	}
-	if got.Mode != "full" || got.ActivePhase == nil || *got.ActivePhase != "beta" || len(got.Stop) != 0 {
-		t.Fatalf("next output = %s, want DB-backed active_phase beta without stop", output)
-	}
-
-	assertReadOnlyCommandState(t, before, captureReadOnlyCommandState(t))
-}
-
-func TestChangesetStatusOpensDatabaseReadOnly(t *testing.T) {
-	t.Chdir(t.TempDir())
-	var appliedPath, pendingPath string
-	before := prepareReadOnlyCommandDatabase(t, func(db *sql.DB) {
-		storyID := ulid.Make().String()
-		var err error
-		appliedPath, err = infrastructure.WriteChangeset(changesetDir, []infrastructure.ChangesetLine{{
-			Op: "create", Entity: "story", ID: storyID,
-			Fields: map[string]any{"slug": "status-fixture", "goal": "goal", "status": "planned", "created_at": "2026-07-27T00:00:00Z"},
-			At:     "2026-07-27T00:00:00Z",
-		}})
-		if err != nil {
-			t.Fatalf("write applied changeset: %v", err)
-		}
-		if _, _, err := infrastructure.ApplyChangeset(db, appliedPath); err != nil {
-			t.Fatalf("apply changeset: %v", err)
-		}
-		pendingPath, err = infrastructure.WriteChangeset(changesetDir, []infrastructure.ChangesetLine{{
-			Op: "update", Entity: "story", ID: storyID,
-			Fields: map[string]any{"status": "done"},
-			At:     "2026-07-27T00:01:00Z",
-		}})
-		if err != nil {
-			t.Fatalf("write pending changeset: %v", err)
-		}
-	})
-
-	output := executeReadOnlyJSONCommand(t, "db", "changeset", "status", "--json")
-	var got struct {
-		Pending      []string `json:"pending"`
-		AppliedCount int      `json:"applied_count"`
-		LastApplied  string   `json:"last_applied"`
-	}
-	if err := json.Unmarshal(output, &got); err != nil {
-		t.Fatalf("decode changeset status output %q: %v", output, err)
-	}
-	wantPending := []string{filepath.Base(pendingPath)}
-	wantLastApplied := strings.TrimSuffix(filepath.Base(appliedPath), ".changeset.jsonl")
-	if !reflect.DeepEqual(got.Pending, wantPending) || got.AppliedCount != 1 || got.LastApplied != wantLastApplied {
-		t.Fatalf("changeset status output = %s, want pending=%v applied_count=1 last_applied=%q", output, wantPending, wantLastApplied)
-	}
-
-	assertReadOnlyCommandState(t, before, captureReadOnlyCommandState(t))
 }
 
 func prepareReadOnlyCommandDatabase(t *testing.T, setup func(*sql.DB)) readOnlyCommandSnapshot {
@@ -224,18 +172,9 @@ func captureReadOnlyCommandState(t *testing.T) readOnlyCommandSnapshot {
 	if len(data) < 20 {
 		t.Fatalf("database header is %d bytes, want at least 20", len(data))
 	}
-	changesetNames, err := infrastructure.ListChangesets(changesetDir)
-	if err != nil {
-		t.Fatalf("ListChangesets: %v", err)
-	}
-	changesets := make(map[string]readOnlyFileSnapshot, len(changesetNames))
-	for _, name := range changesetNames {
-		changesets[name] = captureReadOnlyFileSnapshot(t, filepath.Join(changesetDir, name))
-	}
 	return readOnlyCommandSnapshot{
 		database:      database,
 		journalHeader: [2]byte{data[18], data[19]},
-		changesets:    changesets,
 		wal:           captureReadOnlyFileSnapshot(t, dbPath+"-wal"),
 		shm:           captureReadOnlyFileSnapshot(t, dbPath+"-shm"),
 	}

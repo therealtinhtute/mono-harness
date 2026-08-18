@@ -201,6 +201,50 @@ ALTER TABLE traces ADD COLUMN task_status TEXT;
 		Name:    "0009_intake_plan_id",
 		SQL:     `ALTER TABLE intakes ADD COLUMN plan_id TEXT;`,
 	},
+	{
+		Version: 10,
+		Name:    "0010_drop_interventions",
+		SQL:     `DROP TABLE interventions;`,
+	},
+	{
+		// Copies the managed_docs column shape (id/path/hash/updated_at) —
+		// plan_index is a derived index over docs/plans/active/*.md, not a
+		// changeset entity: no command writes it directly, the read path
+		// refreshes it when the on-disk hash and indexed hash disagree (P2
+		// wave 3, docs/plans/active/harness-markdown-truth.md R9).
+		Version: 11,
+		Name:    "0011_plan_index",
+		SQL: `
+CREATE TABLE plan_index (
+	id TEXT PRIMARY KEY,
+	path TEXT UNIQUE NOT NULL,
+	sha256 TEXT NOT NULL,
+	status TEXT NOT NULL,
+	updated_at TEXT NOT NULL
+);
+`,
+	},
+	{
+		// Mirrors plan_index's column shape (P5, docs/plans/active/
+		// durable-memory.md R1): memories is a derived index over
+		// committed docs/memory/*.md entries, reconstructible via
+		// db rebuild from that markdown alone. type/scope classify an
+		// entry (see domain.Memory); plan_id is set only for
+		// scope=plan entries, tying a memory to one initiative.
+		Version: 12,
+		Name:    "0012_memories",
+		SQL: `
+CREATE TABLE memories (
+	id TEXT PRIMARY KEY,
+	path TEXT UNIQUE NOT NULL,
+	type TEXT NOT NULL,
+	scope TEXT NOT NULL,
+	plan_id TEXT,
+	sha256 TEXT NOT NULL,
+	created_at TEXT NOT NULL
+);
+`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

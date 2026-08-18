@@ -55,7 +55,7 @@ func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw, nextActi
 	}
 	defer db.Close()
 
-	id, _, err := application.RecordHandoff(db, changesetDir, runID, checkID, nextAction, openItems, closePhase)
+	id, err := application.RecordHandoff(db, runID, checkID, nextAction, openItems, closePhase)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

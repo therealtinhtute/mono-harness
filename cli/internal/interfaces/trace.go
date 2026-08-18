@@ -56,7 +56,7 @@ func runTraceAdd(cmd *cobra.Command, wave int, summary, runID, task, taskStatus,
 	}
 	defer db.Close()
 
-	id, _, err := application.CreateTrace(db, changesetDir, wave, summary, runID, task, taskStatus)
+	id, err := application.CreateTrace(db, wave, summary, runID, task, taskStatus)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)
@@ -89,7 +89,7 @@ func runTraceAddBatch(cmd *cobra.Command, wave int, runID, task, taskStatus, sum
 	}
 	defer db.Close()
 
-	ids, _, err := application.CreateTraces(db, changesetDir, wave, runID, tasks)
+	ids, err := application.CreateTraces(db, wave, runID, tasks)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

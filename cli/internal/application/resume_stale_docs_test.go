@@ -7,8 +7,8 @@ import (
 // TestResumeStaleDocsMatch covers the "match" case from cli-stale-drift-PLAN.md
 // T1: written docs_version equals the running CLI's version → no drift.
 func TestResumeStaleDocsMatch(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	setMeta(t, db, changesetDir, map[string]any{"docs_version": "0.2.0"})
+	db := freshDB(t)
+	setMeta(t, db, map[string]any{"docs_version": "0.2.0"})
 
 	view, err := Resume(db, "0.2.0")
 	if err != nil {
@@ -26,8 +26,8 @@ func TestResumeStaleDocsMatch(t *testing.T) {
 // diverges from the running CLI's version, neither side is "dev" → fires
 // stale_docs with the exact named recovery.
 func TestResumeStaleDocsDiffers(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	setMeta(t, db, changesetDir, map[string]any{"docs_version": "0.2.0"})
+	db := freshDB(t)
+	setMeta(t, db, map[string]any{"docs_version": "0.2.0"})
 
 	view, err := Resume(db, "0.3.0")
 	if err != nil {
@@ -48,8 +48,8 @@ func TestResumeStaleDocsDiffers(t *testing.T) {
 // project scaffolded by a dev build must never fire staleness, even against
 // a differing released CLI version — dogfooding must not drown in drift.
 func TestResumeStaleDocsDevWritten(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	setMeta(t, db, changesetDir, map[string]any{"docs_version": "dev"})
+	db := freshDB(t)
+	setMeta(t, db, map[string]any{"docs_version": "dev"})
 
 	view, err := Resume(db, "0.3.0")
 	if err != nil {
@@ -64,8 +64,8 @@ func TestResumeStaleDocsDevWritten(t *testing.T) {
 // build of the CLI against docs stamped by a released version must not fire
 // staleness either — the exemption is symmetric.
 func TestResumeStaleDocsDevCLI(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	setMeta(t, db, changesetDir, map[string]any{"docs_version": "0.2.0"})
+	db := freshDB(t)
+	setMeta(t, db, map[string]any{"docs_version": "0.2.0"})
 
 	view, err := Resume(db, "dev")
 	if err != nil {
@@ -81,7 +81,7 @@ func TestResumeStaleDocsDevCLI(t *testing.T) {
 // pre-embed) must not fire drift — blocking old projects is not acceptable
 // per cli-stale-drift-CONTEXT.md's Locked Decisions.
 func TestResumeStaleDocsMissing(t *testing.T) {
-	db, _ := freshDB(t)
+	db := freshDB(t)
 
 	view, err := Resume(db, "0.3.0")
 	if err != nil {
@@ -102,8 +102,8 @@ func TestResumeStaleDocsMissing(t *testing.T) {
 // — the exact condition a real un-migrated project after a CLI upgrade
 // would hit).
 func TestResumeStaleDocsPreMigrationSchema(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	setMeta(t, db, changesetDir, map[string]any{"docs_version": "0.2.0"})
+	db := freshDB(t)
+	setMeta(t, db, map[string]any{"docs_version": "0.2.0"})
 	if _, err := db.Exec(`UPDATE meta SET schema_version = 1`); err != nil {
 		t.Fatalf("force schema_version=1: %v", err)
 	}

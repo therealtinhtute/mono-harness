@@ -5,7 +5,7 @@ import "strings"
 // AppendToPlanSection inserts entry into the named `## {section}` heading's
 // body, positioned immediately before the next level-2 (`## `) heading — or
 // at end of file, if section is the last heading present. Follows the
-// targeted-line-scan precedent at next.go's parseActivePlanPhaseOrder (V3,
+// targeted-line-scan precedent at plan_lifecycle.go's parseActivePlanPhaseOrder (V3,
 // docs/plans/active/harness-memory-ceremony-convergence.md) rather than a
 // full markdown parser: this repository's plans don't nest `## ` sequences
 // inside code fences, so a line-level scan is sufficient and matches the

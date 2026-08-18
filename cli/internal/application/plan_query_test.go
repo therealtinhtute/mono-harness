@@ -230,9 +230,12 @@ func TestQueryPlanSectionListFormPhaseRoundTrip(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", planQueryListFixture)
 
-	v, err := QueryPlanSection("phase", "p1-first")
+	v, stop, err := QueryPlanSection("phase", "p1-first")
 	if err != nil {
 		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection: unexpected stop %+v", stop)
 	}
 	if v.Degraded {
 		t.Fatalf("QueryPlanSection: unexpectedly degraded on list-form plan")
@@ -258,9 +261,12 @@ func TestQueryPlanSectionCurrentStateRoundTrip(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", planQueryFixture)
 
-	v, err := QueryPlanSection("current-state", "")
+	v, stop, err := QueryPlanSection("current-state", "")
 	if err != nil {
 		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection: unexpected stop %+v", stop)
 	}
 	if v.Degraded {
 		t.Fatalf("QueryPlanSection: unexpectedly degraded")
@@ -277,9 +283,12 @@ func TestQueryPlanSectionPhaseRoundTrip(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", planQueryFixture)
 
-	v, err := QueryPlanSection("phase", "p1-first")
+	v, stop, err := QueryPlanSection("phase", "p1-first")
 	if err != nil {
 		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection: unexpected stop %+v", stop)
 	}
 	if v.Degraded {
 		t.Fatalf("QueryPlanSection: unexpectedly degraded")
@@ -293,9 +302,12 @@ func TestQueryPlanSectionDegradesOnMissingSection(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", "# Plan\n\n## Outcome\n- result: demo\n")
 
-	v, err := QueryPlanSection("current-state", "")
+	v, stop, err := QueryPlanSection("current-state", "")
 	if err != nil {
 		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection: unexpected stop %+v", stop)
 	}
 	if !v.Degraded {
 		t.Fatalf("QueryPlanSection: want degraded=true for a plan missing the section")
@@ -309,21 +321,77 @@ func TestQueryPlanSectionDegradesOnMissingPhase(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", planQueryFixture)
 
-	v, err := QueryPlanSection("phase", "no-such-phase")
+	v, stop, err := QueryPlanSection("phase", "no-such-phase")
 	if err != nil {
 		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection: unexpected stop %+v", stop)
 	}
 	if !v.Degraded {
 		t.Fatalf("QueryPlanSection: want degraded=true for an undefined phase")
 	}
 }
 
+// TestQueryPlanSectionDegradeStaysBoundedOnLargePlan proves P4 wave 2: a
+// section/phase miss on a 1,621-line plan (the same fixture
+// TestResolveActivePlanAmbiguousPacketStaysBounded uses for R3's Tier 2
+// guarantee) must not degrade to the whole file body — the response stays
+// under 500 tokens and names what the plan actually defines instead.
+func TestQueryPlanSectionDegradeStaysBoundedOnLargePlan(t *testing.T) {
+	chdirFixture(t)
+	writeFile(t, "docs/plans/active/big.md", planFrontmatter("2026-08-10", 1621))
+
+	const tokenBudget = 500
+	const approxCharsPerToken = 4
+
+	v, stop, err := QueryPlanSection("current-state", "")
+	if err != nil {
+		t.Fatalf("QueryPlanSection(current-state): %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection(current-state): unexpected stop %+v", stop)
+	}
+	if !v.Degraded || v.Omitted == "" {
+		t.Fatalf("QueryPlanSection(current-state) = %+v, want degraded with omitted set", v)
+	}
+	if len(v.Content) > tokenBudget*approxCharsPerToken {
+		t.Fatalf("current-state degrade content is %d chars (~%d tokens), want under %d tokens:\n%s",
+			len(v.Content), len(v.Content)/approxCharsPerToken, tokenBudget, v.Content)
+	}
+	if !strings.Contains(v.Content, "Decisions") {
+		t.Fatalf("content = %q, want it to name the plan's available sections", v.Content)
+	}
+
+	v, stop, err = QueryPlanSection("phase", "no-such-phase")
+	if err != nil {
+		t.Fatalf("QueryPlanSection(phase): %v", err)
+	}
+	if stop != nil {
+		t.Fatalf("QueryPlanSection(phase): unexpected stop %+v", stop)
+	}
+	if !v.Degraded || v.Omitted == "" {
+		t.Fatalf("QueryPlanSection(phase) = %+v, want degraded with omitted set", v)
+	}
+	if len(v.Content) > tokenBudget*approxCharsPerToken {
+		t.Fatalf("phase degrade content is %d chars (~%d tokens), want under %d tokens:\n%s",
+			len(v.Content), len(v.Content)/approxCharsPerToken, tokenBudget, v.Content)
+	}
+	if !strings.Contains(v.Content, "no-such-phase") {
+		t.Fatalf("content = %q, want it to name the requested phase", v.Content)
+	}
+}
+
 func TestQueryPlanSectionNoActivePlan(t *testing.T) {
 	chdirFixture(t)
 
-	_, err := QueryPlanSection("current-state", "")
-	assertLifecycleValidationError(t, err, "no_active_plan",
-		"query plan: no non-empty plan under docs/plans/active/*.md")
+	_, stop, err := QueryPlanSection("current-state", "")
+	if err != nil {
+		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop == nil || stop.Code != "none" {
+		t.Fatalf("stop = %+v, want code=none", stop)
+	}
 }
 
 func TestQueryPlanSectionAmbiguousActivePlan(t *testing.T) {
@@ -331,16 +399,20 @@ func TestQueryPlanSectionAmbiguousActivePlan(t *testing.T) {
 	writeFile(t, "docs/plans/active/a.md", planQueryFixture)
 	writeFile(t, "docs/plans/active/b.md", planQueryFixture)
 
-	_, err := QueryPlanSection("current-state", "")
-	assertLifecycleValidationError(t, err, "ambiguous_active_plan",
-		"query plan: 2 active plans found; this command requires exactly one")
+	_, stop, err := QueryPlanSection("current-state", "")
+	if err != nil {
+		t.Fatalf("QueryPlanSection: %v", err)
+	}
+	if stop == nil || stop.Code != "ambiguous" {
+		t.Fatalf("stop = %+v, want code=ambiguous", stop)
+	}
 }
 
 func TestQueryPlanSectionUnknownSection(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", planQueryFixture)
 
-	_, err := QueryPlanSection("bogus", "")
+	_, _, err := QueryPlanSection("bogus", "")
 	assertLifecycleValidationError(t, err, "unknown_section",
 		`query plan: unknown section "bogus" (want current-state|phase)`)
 }
@@ -349,7 +421,7 @@ func TestQueryPlanSectionPhaseWithoutSlugIsMissingRequiredField(t *testing.T) {
 	chdirFixture(t)
 	writeFile(t, "docs/plans/active/demo.md", planQueryFixture)
 
-	_, err := QueryPlanSection("phase", "")
+	_, _, err := QueryPlanSection("phase", "")
 	assertLifecycleValidationError(t, err, "missing_required_field",
 		"query plan --section phase requires --phase {slug}")
 }

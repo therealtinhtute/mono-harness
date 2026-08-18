@@ -180,3 +180,47 @@ func TestScaffoldArtifact_OverwriteEmptyPlaceholder(t *testing.T) {
 		t.Fatalf("skeleton not written over empty placeholder")
 	}
 }
+
+// TestScaffoldArtifact_RefusesSecondActivePlan proves R1
+// (docs/audit/consumer-adoption-audit.md D1): scaffolding a new plan while
+// a different, non-empty plan already exists under docs/plans/active/ is
+// refused, naming the existing path and the two exits.
+func TestScaffoldArtifact_RefusesSecondActivePlan(t *testing.T) {
+	chdirFixture(t)
+	existing := writeActivePlan(t, "existing", "alpha")
+
+	dst := filepath.Join("docs", "plans", "active", "newslug.md")
+	_, err := ScaffoldArtifact(embedded.Templates, "plan", dst)
+	ve, ok := err.(*domain.ValidationError)
+	if !ok || ve.Code != "active_plan_exists" {
+		t.Fatalf("want active_plan_exists ValidationError, got %v", err)
+	}
+	if !strings.Contains(ve.Message, existing) {
+		t.Fatalf("message = %q, want it to name the existing plan %q", ve.Message, existing)
+	}
+	if !strings.Contains(ve.Message, "plan complete") || !strings.Contains(ve.Message, "plan abandon") {
+		t.Fatalf("message = %q, want it to name both exits", ve.Message)
+	}
+	if _, statErr := os.Stat(dst); statErr == nil {
+		t.Fatalf("refused scaffold should not have written %s", dst)
+	}
+}
+
+// TestScaffoldArtifact_EmptyActiveDirStillSucceeds proves the guard only
+// fires on a non-empty plan: scaffolding into an empty docs/plans/active/
+// still writes the template.
+func TestScaffoldArtifact_EmptyActiveDirStillSucceeds(t *testing.T) {
+	chdirFixture(t)
+
+	dst := filepath.Join("docs", "plans", "active", "first.md")
+	data, err := ScaffoldArtifact(embedded.Templates, "plan", dst)
+	if err != nil {
+		t.Fatalf("scaffold into empty active/: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatalf("scaffold into empty active/: empty template")
+	}
+	if _, statErr := os.Stat(dst); statErr != nil {
+		t.Fatalf("scaffold into empty active/: file not written: %v", statErr)
+	}
+}

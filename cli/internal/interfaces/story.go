@@ -39,7 +39,7 @@ func runStory(cmd *cobra.Command, slug, goal, dependsOn string) error {
 	}
 	defer db.Close()
 
-	id, _, err := application.CreateStory(db, changesetDir, slug, goal, dependsOn)
+	id, err := application.CreateStory(db, slug, goal, dependsOn)
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

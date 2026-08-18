@@ -120,6 +120,30 @@ Re-created by migration `0007_decisions`, which re-adds a table `0003_drop_dead_
 
 The writable database is the ignored root `harness.db`. Tracked replay deltas remain under `.kit/changesets/`; no baseline or second database exists.
 
+#### `plan_index`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | ULID minted when the path is first indexed |
+| `path` | TEXT UNIQUE | active plan path (`docs/plans/active/{slug}.md`) |
+| `sha256` | TEXT | hash of plan content as of the last index refresh |
+| `status` | TEXT | plan frontmatter `status` as of the last index refresh |
+| `updated_at` | TEXT | last index refresh time |
+
+Not a changeset entity — no command writes `plan_index` directly. The read path refreshes a row whenever the on-disk hash differs from the indexed `sha256`, so staleness is a comparison against the file's real content, never a timestamp guess (R9, `docs/plans/active/harness-markdown-truth.md`).
+
+#### `memories`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | ULID minted by `memory add` |
+| `path` | TEXT UNIQUE | entry path (`docs/memory/{id}.md`) |
+| `type` | TEXT | free-text memory type, set by `memory add --type` |
+| `scope` | TEXT | enum `plan\|global` |
+| `plan_id` | TEXT, nullable | set only when `scope = plan`; ties the entry to one initiative plan |
+| `sha256` | TEXT | hash of the entry's markdown content as of the last write/rebuild |
+| `created_at` | TEXT | ULID-derived timestamp |
+
+Markdown-first, same as every other durable write path: `memory add` writes `docs/memory/{id}.md` before inserting this row, and `db rebuild` reconstructs the whole table from committed `docs/memory/*.md` content alone — no memory content is ever DB-only (R1/R4, `docs/plans/active/durable-memory.md`).
+
 ## Table ↔ Changeset Entity Type
 
 Every table maps to exactly one changeset `entity` string (the value in `{op, entity, id, fields, at}`). Table names are plural (SQL convention, SPEC R13's own wording); entity strings are singular, matching the CONTRACT.md command that produces them.
@@ -136,6 +160,7 @@ Every table maps to exactly one changeset `entity` string (the value in `{op, en
 | `traces` | `trace` | `trace add` |
 | `decisions` | `decision` | `decision add` |
 | `managed_docs` | `managed_doc` | `init`, `init --refresh-docs`, layout migration |
+| `memories` | `memory` | `memory add` |
 
 Cross-check against CONTRACT.md: database-mutating commands include `intake`, `story`, `intervention`, `trace add`, `decision add`, `run create`, `check record`, and `handoff record`, plus infrastructure mutations from `init`/`import`/`migrate`. Lifecycle commands may write multiple entity lines atomically for status and meta-pointer transitions while each created row uses the singular entity string above. `resume`, `query`, `validate`, `audit`, and `preflight` are read-only and write no changeset; `scaffold` is file-only and writes no database entity or changeset.
 

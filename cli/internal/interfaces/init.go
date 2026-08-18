@@ -66,13 +66,8 @@ func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version str
 	if err != nil {
 		return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 	}
-	if status == "created" {
-		if _, err := infrastructure.Replay(db, changesetDir); err != nil {
-			return newSystemError("changeset_replay_failed", fmt.Sprintf("init: %v", err))
-		}
-	}
 
-	scaffold, err := application.ScaffoldDocs(db, changesetDir, ".", kitDir, embedded.FS, version, refreshDocs, forceDocs)
+	scaffold, err := application.ScaffoldDocs(db, ".", kitDir, embedded.FS, version, refreshDocs, forceDocs)
 	if err != nil {
 		var validation *domain.ValidationError
 		if errors.As(err, &validation) {

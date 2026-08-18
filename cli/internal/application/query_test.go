@@ -10,8 +10,8 @@ import (
 )
 
 func TestQueryArtifactsPreservesLegacyArtifactPaths(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	firstID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	firstID := seedRun(t, db)
 	if _, err := db.Exec(`UPDATE runs SET artifact_path = '' WHERE id = ?`, firstID); err != nil {
 		t.Fatalf("clear artifact_path: %v", err)
 	}
@@ -41,11 +41,11 @@ func TestQueryArtifactsPreservesLegacyArtifactPaths(t *testing.T) {
 }
 
 func TestQueryTracesChronologicalOrderAndFilters(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := seedRun(t, db, changesetDir)
+	db := freshDB(t)
+	runID := seedRun(t, db)
 
 	for i, at := range []string{"2026-07-27T12:00:00Z", "2026-07-27T12:01:00Z", "2026-07-27T12:02:00Z"} {
-		id, _, err := CreateTrace(db, changesetDir, i+1, "wave summary", runID, "", "")
+		id, err := CreateTrace(db, i+1, "wave summary", runID, "", "")
 		if err != nil {
 			t.Fatalf("CreateTrace(%d): %v", i, err)
 		}
@@ -101,12 +101,12 @@ func TestQueryTracesChronologicalOrderAndFilters(t *testing.T) {
 // append-only section that was still write-only. QueryChecks closes that
 // gap with the same phase/tail filter shape as QueryTraces/QueryDecisions.
 func TestQueryChecksChronologicalOrderAndFilters(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	runID := createLifecycleRun(t, db, changesetDir, "cli-domain")
+	db := freshDB(t)
+	runID := createLifecycleRun(t, db, "cli-domain")
 
 	var ids []string
 	for i, verdict := range []string{"REQUEST_CHANGES", "APPROVED"} {
-		id, _, err := RecordCheck(db, changesetDir, runID, verdict, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "x"}})
+		id, err := RecordCheck(db, runID, verdict, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "x"}})
 		if err != nil {
 			t.Fatalf("RecordCheck(%d): %v", i, err)
 		}

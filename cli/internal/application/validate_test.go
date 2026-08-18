@@ -2,6 +2,7 @@ package application
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -9,48 +10,43 @@ import (
 	"github.com/therealtinhtute/skills/cli/internal/domain"
 )
 
-func createValidRetainedLifecycle(t *testing.T, db *sql.DB, changesetDir string) map[string]string {
+func createValidRetainedLifecycle(t *testing.T, db *sql.DB) map[string]string {
 	t.Helper()
 
-	intakeID, _, err := CreateIntake(db, changesetDir, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "", "")
+	intakeID, err := CreateIntake(db, domain.IntakeNewSpec, "validate retained entity IDs", domain.LaneNormal, "", "")
 	if err != nil {
 		t.Fatalf("CreateIntake: %v", err)
 	}
-	storyID, _, err := CreateStory(db, changesetDir, "retained-entity-ids", "validate retained entity IDs", "")
+	storyID, err := CreateStory(db, "retained-entity-ids", "validate retained entity IDs", "")
 	if err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
-	runID, _, err := CreateRun(db, changesetDir, "retained-entity-ids", ".kit/runs/work/legacy.md", "")
+	runID, err := CreateRun(db, "retained-entity-ids", ".kit/runs/work/legacy.md", "")
 	if err != nil {
 		t.Fatalf("CreateRun: %v", err)
 	}
-	traceID, _, err := CreateTrace(db, changesetDir, 1, "validate retained entity IDs", runID, "", "")
+	traceID, err := CreateTrace(db, 1, "validate retained entity IDs", runID, "", "")
 	if err != nil {
 		t.Fatalf("CreateTrace: %v", err)
 	}
-	checkID, _, err := RecordCheck(db, changesetDir, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
+	checkID, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "PASS"},
 	})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
-	interventionID, _, err := CreateIntervention(db, changesetDir, checkID, "validate retained entity IDs")
-	if err != nil {
-		t.Fatalf("CreateIntervention: %v", err)
-	}
-	handoffID, _, err := RecordHandoff(db, changesetDir, runID, checkID, "", nil, false)
+	handoffID, err := RecordHandoff(db, runID, checkID, "", nil, false)
 	if err != nil {
 		t.Fatalf("RecordHandoff: %v", err)
 	}
 
 	return map[string]string{
-		"story":        storyID,
-		"run":          runID,
-		"check":        checkID,
-		"handoff":      handoffID,
-		"intake":       intakeID,
-		"trace":        traceID,
-		"intervention": interventionID,
+		"story":   storyID,
+		"run":     runID,
+		"check":   checkID,
+		"handoff": handoffID,
+		"intake":  intakeID,
+		"trace":   traceID,
 	}
 }
 
@@ -68,8 +64,8 @@ func TestValidateWithoutDatabaseIsInvalid(t *testing.T) {
 }
 
 func TestValidateReportsOverflowLifecycleID(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	storyID, _, err := CreateStory(db, changesetDir, "overflow-id", "reject an overflowing ULID", "")
+	db := freshDB(t)
+	storyID, err := CreateStory(db, "overflow-id", "reject an overflowing ULID", "")
 	if err != nil {
 		t.Fatalf("CreateStory: %v", err)
 	}
@@ -110,14 +106,13 @@ func TestValidateReportsInvalidIDsForRetainedTables(t *testing.T) {
 	}{
 		{name: "intake", table: "intakes", link: "DB->INTAKE"},
 		{name: "trace", table: "traces", link: "DB->TRACE"},
-		{name: "intervention", table: "interventions", link: "DB->INTERVENTION"},
 	}
 
 	for _, invalid := range invalidIDs {
 		for _, entity := range entities {
 			t.Run(invalid.name+"/"+entity.name, func(t *testing.T) {
-				db, changesetDir := freshDB(t)
-				ids := createValidRetainedLifecycle(t, db, changesetDir)
+				db := freshDB(t)
+				ids := createValidRetainedLifecycle(t, db)
 				if _, err := db.Exec("UPDATE "+entity.table+" SET id = ? WHERE id = ?", invalid.id, ids[entity.name]); err != nil {
 					t.Fatalf("update %s id: %v", entity.name, err)
 				}
@@ -143,8 +138,8 @@ func TestValidateReportsInvalidIDsForRetainedTables(t *testing.T) {
 }
 
 func TestValidateReportsInvalidLifecycleEnums(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	ids := createValidRetainedLifecycle(t, db, changesetDir)
+	db := freshDB(t)
+	ids := createValidRetainedLifecycle(t, db)
 	if _, err := db.Exec(`UPDATE stories SET status = 'bogus' WHERE id = ?`, ids["story"]); err != nil {
 		t.Fatalf("corrupt story status: %v", err)
 	}
@@ -174,8 +169,8 @@ func TestValidateReportsInvalidLifecycleEnums(t *testing.T) {
 }
 
 func TestValidateCleanDatabaseIgnoresLegacyArtifactPaths(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	createValidRetainedLifecycle(t, db, changesetDir)
+	db := freshDB(t)
+	createValidRetainedLifecycle(t, db)
 
 	result, err := Validate(db)
 	if err != nil {
@@ -187,7 +182,7 @@ func TestValidateCleanDatabaseIgnoresLegacyArtifactPaths(t *testing.T) {
 }
 
 func TestValidateReportsBrokenDatabaseLink(t *testing.T) {
-	db, _ := freshDB(t)
+	db := freshDB(t)
 	db.SetMaxOpenConns(1)
 	if _, err := db.Exec(`PRAGMA foreign_keys=OFF`); err != nil {
 		t.Fatalf("disable foreign keys: %v", err)
@@ -213,9 +208,9 @@ func TestValidateReportsBrokenDatabaseLink(t *testing.T) {
 }
 
 func TestValidateReportsHandoffRunCheckMismatch(t *testing.T) {
-	db, changesetDir := freshDB(t)
-	checkRunID := createLifecycleRun(t, db, changesetDir, "cli-domain")
-	checkID, _, err := RecordCheck(db, changesetDir, checkRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}})
+	db := freshDB(t)
+	checkRunID := createLifecycleRun(t, db, "cli-domain")
+	checkID, err := RecordCheck(db, checkRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}})
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -244,5 +239,105 @@ func TestValidateReportsHandoffRunCheckMismatch(t *testing.T) {
 	}
 	if len(result.Findings) != 1 || result.Findings[0].Link != "CHECK->HANDOFF" || result.Findings[0].Issue != "broken_link" {
 		t.Fatalf("findings = %v, want one CHECK->HANDOFF broken_link", result.Findings)
+	}
+}
+
+// check 9 (R13): zero active plans is a valid idle state and reports no
+// finding — the designed result of plan complete/abandon before a new plan
+// is locked (matches TestLifecycle_ScratchDirFullChain's post-completion
+// validate assertion in cmd/zharness).
+func TestValidateNoActivePlanIsClean(t *testing.T) {
+	chdirFixture(t)
+	db := freshDB(t)
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if !result.Valid || len(result.Findings) != 0 {
+		t.Fatalf("result = %+v, want valid with no findings for zero active plans", result)
+	}
+}
+
+// check 9 (R13): 2+ active plans is the actual defect — ambiguity, not
+// absence.
+func TestValidateReportsAmbiguousActivePlans(t *testing.T) {
+	chdirFixture(t)
+	writeFile(t, "docs/plans/active/fixture-plan-a.md", scaffoldedPlanFixture)
+	writeFile(t, "docs/plans/active/fixture-plan-b.md", scaffoldedPlanFixture)
+	db := freshDB(t)
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false with two active plans")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "DOCS->PLAN" || result.Findings[0].Issue != "invalid_value" ||
+		!strings.Contains(result.Findings[0].Detail, "contains 2 plans") {
+		t.Fatalf("findings = %v, want one DOCS->PLAN invalid_value naming 2 plans", result.Findings)
+	}
+}
+
+// check 10: every required frontmatter key must carry a non-empty value.
+func TestValidateReportsMissingFrontmatterKey(t *testing.T) {
+	chdirFixture(t)
+	content := strings.Replace(scaffoldedPlanFixture, "lane: normal\n", "", 1)
+	writeFile(t, "docs/plans/active/fixture-plan.md", content)
+	db := freshDB(t)
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false with a missing frontmatter key")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "DOCS->PLAN" || result.Findings[0].Issue != "missing_key" ||
+		!strings.Contains(result.Findings[0].Detail, `"lane"`) {
+		t.Fatalf("findings = %v, want one DOCS->PLAN missing_key naming \"lane\"", result.Findings)
+	}
+}
+
+// check 11: every phase_slug the plan defines must have a matching story row.
+func TestValidateReportsPhaseWithoutStory(t *testing.T) {
+	chdirFixture(t)
+	content := strings.Replace(scaffoldedPlanFixture, "## Progress",
+		"## Phases and Verification\n- phase_slug: orphan-phase\n\n## Progress", 1)
+	writeFile(t, "docs/plans/active/fixture-plan.md", content)
+	db := freshDB(t)
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false with a phase that has no story row")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "STORY->PLAN" || result.Findings[0].Issue != "broken_link" ||
+		!strings.Contains(result.Findings[0].Detail, `"orphan-phase"`) {
+		t.Fatalf("findings = %v, want one STORY->PLAN broken_link naming \"orphan-phase\"", result.Findings)
+	}
+}
+
+// check 12: every heading past the structural section must be one of the
+// four known append-only headings.
+func TestValidateReportsUnknownPlanHeading(t *testing.T) {
+	chdirFixture(t)
+	content := scaffoldedPlanFixture + "\n## Bogus Heading\n- some text\n"
+	writeFile(t, "docs/plans/active/fixture-plan.md", content)
+	db := freshDB(t)
+
+	result, err := Validate(db)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if result.Valid {
+		t.Fatal("valid = true, want false with an unrecognized plan heading")
+	}
+	if len(result.Findings) != 1 || result.Findings[0].Link != "DOCS->PLAN" || result.Findings[0].Issue != "invalid_value" ||
+		!strings.Contains(result.Findings[0].Detail, "Bogus Heading") {
+		t.Fatalf("findings = %v, want one DOCS->PLAN invalid_value naming \"Bogus Heading\"", result.Findings)
 	}
 }

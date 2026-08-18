@@ -9,35 +9,34 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/therealtinhtute/skills/cli/internal/domain"
-	"github.com/therealtinhtute/skills/cli/internal/infrastructure"
 )
 
 // RecordDecisions validates and records a batch of decision entities in one
-// changeset (CONTRACT.md `decision add`) — the compressed-index counterpart
-// of a plan's `## Decisions` markdown section
+// transaction (CONTRACT.md `decision add`) — the compressed-index
+// counterpart of a plan's `## Decisions` markdown section
 // (docs/audit/workflow-harness-ceremony-audit.md, D1/D2/G1). Batching
 // exists so a wave surfacing several decisions costs one call, not one per
 // decision. runID is optional and shared across the whole batch, matching
 // `trace add --run-id`'s pattern; unknown_run_id/unknown_phase are
 // DB-lookup-dependent, so — like trace's unknown_run_id — they're enforced
 // here rather than in domain.Decision.Validate().
-func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.Decision) (ids []string, path string, err error) {
+func RecordDecisions(db *sql.DB, runID string, decisions []domain.Decision) (ids []string, err error) {
 	if len(decisions) == 0 {
-		return nil, "", &domain.ValidationError{Code: "empty_decisions", Message: "decision add: at least one decision is required"}
+		return nil, &domain.ValidationError{Code: "empty_decisions", Message: "decision add: at least one decision is required"}
 	}
 	for _, d := range decisions {
 		if err := d.Validate(); err != nil {
-			return nil, "", err
+			return nil, err
 		}
 	}
 
 	if runID != "" {
 		exists, err := runExists(db, runID)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		if !exists {
-			return nil, "", &domain.ValidationError{Code: "unknown_run_id", Message: "decision add: run_id " + runID + " not found"}
+			return nil, &domain.ValidationError{Code: "unknown_run_id", Message: "decision add: run_id " + runID + " not found"}
 		}
 	}
 	for _, d := range decisions {
@@ -46,10 +45,10 @@ func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.
 		}
 		exists, err := phaseExists(db, d.Phase)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		if !exists {
-			return nil, "", &domain.ValidationError{Code: "unknown_phase", Message: "decision add: phase " + d.Phase + " not found"}
+			return nil, &domain.ValidationError{Code: "unknown_phase", Message: "decision add: phase " + d.Phase + " not found"}
 		}
 	}
 
@@ -59,40 +58,48 @@ func RecordDecisions(db *sql.DB, changesetDir, runID string, decisions []domain.
 	for i, d := range decisions {
 		entryLines[i] = formatDecisionEntry(at, d)
 	}
-	writePlan, err := preparePlanAppend("Decisions", strings.Join(entryLines, "\n"))
+	writePlan, err := preparePlanAppend(db, "Decisions", strings.Join(entryLines, "\n"))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	lines := make([]infrastructure.ChangesetLine, 0, len(decisions))
+	// Markdown is the write target: writePlan runs before the DB write, so
+	// a failed markdown write leaves zero DB rows behind it (R8,
+	// docs/plans/active/harness-markdown-truth.md).
+	if err := writePlan(); err != nil {
+		return nil, fmt.Errorf("plan write failed: %w", err)
+	}
+
 	ids = make([]string, 0, len(decisions))
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("decisions: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
 	for _, d := range decisions {
 		id := ulid.Make().String()
-		fields := map[string]any{
-			"decision": d.Decision, "rationale": d.Rationale, "created_at": at,
-		}
+		var runIDArg, phaseArg, taskArg any
 		if runID != "" {
-			fields["run_id"] = runID
+			runIDArg = runID
 		}
 		if d.Phase != "" {
-			fields["phase"] = d.Phase
+			phaseArg = d.Phase
 		}
 		if d.Task != "" {
-			fields["task"] = d.Task
+			taskArg = d.Task
 		}
-		lines = append(lines, infrastructure.ChangesetLine{Op: "create", Entity: "decision", ID: id, Fields: fields, At: at})
+		if _, err := tx.Exec(
+			`INSERT INTO decisions (id, run_id, phase, task, decision, rationale, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			id, runIDArg, phaseArg, taskArg, d.Decision, d.Rationale, at,
+		); err != nil {
+			return nil, fmt.Errorf("decisions %v: plan markdown recorded, but db write failed: %w", ids, err)
+		}
 		ids = append(ids, id)
 	}
-
-	path, _, err = AppendAndApply(db, changesetDir, lines)
-	if err != nil {
-		return nil, "", err
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("decisions %v: plan markdown recorded, but db commit failed: %w", ids, err)
 	}
-
-	if err := writePlan(); err != nil {
-		return ids, path, fmt.Errorf("decisions %v recorded, but plan markdown update failed: %w", ids, err)
-	}
-	return ids, path, nil
+	return ids, nil
 }
 
 // formatDecisionEntry renders one `## Decisions` line using only the

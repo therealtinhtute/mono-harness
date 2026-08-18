@@ -26,7 +26,7 @@ func newMigrateCmd(version string) *cobra.Command {
 	var dryRun bool
 	layout := &cobra.Command{
 		Use:   "layout",
-		Short: "Replay legacy .kit state into the root database layout",
+		Short: "Copy legacy .kit state into the root database layout",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if target != "v2" {
@@ -71,7 +71,7 @@ func runMigrate(cmd *cobra.Command) error {
 }
 
 func runMigrateLayout(cmd *cobra.Command, version string, dryRun bool) error {
-	result, err := application.MigrateLayout(".", legacyDBPath, dbPath, changesetDir, kitDir, embedded.FS, version, dryRun)
+	result, err := application.MigrateLayout(".", legacyDBPath, dbPath, kitDir, embedded.FS, version, dryRun)
 	if err != nil {
 		var conflict *application.ManagedDocsConflictError
 		if errors.As(err, &conflict) {
@@ -82,6 +82,6 @@ func runMigrateLayout(cmd *cobra.Command, version string, dryRun bool) error {
 	if jsonOutput {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "status=%s parity=%v replayed=%d backfilled=%d source=%s target=%s docs_written=%v\n", result.Status, result.Parity, result.Replayed, result.Backfilled, result.SourceDB, result.TargetDB, result.DocsWritten)
+	fmt.Fprintf(cmd.OutOrStdout(), "status=%s parity=%v copied=%d source=%s target=%s docs_written=%v\n", result.Status, result.Parity, result.Copied, result.SourceDB, result.TargetDB, result.DocsWritten)
 	return nil
 }

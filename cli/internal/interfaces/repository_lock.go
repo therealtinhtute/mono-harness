@@ -17,16 +17,17 @@ var exclusiveMutationCommandPaths = map[string]struct{}{
 	"migrate":            {},
 	"migrate layout":     {},
 	"import":             {},
-	"db changeset apply": {},
 	"db rebuild":         {},
 	"intake":             {},
 	"story":              {},
-	"intervention":       {},
 	"trace add":          {},
 	"decision add":       {},
+	"memory add":         {},
 	"run create":         {},
 	"check record":       {},
 	"handoff record":     {},
+	"plan complete":      {},
+	"plan abandon":       {},
 }
 
 func wrapExclusiveMutationCommands(root *cobra.Command) {
