@@ -8,4 +8,9 @@ harness.db-shm
 .kit/conflicts/
 .kit/log/
 .kit/changesets/
+cli/.kit/harness.db
+cli/.kit/cache/
+cli/.kit/conflicts/
+cli/.kit/log/
+cli/.kit/changesets/
 __pycache__/
