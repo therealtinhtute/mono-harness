@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -79,6 +80,111 @@ func TestScaffoldDocsFreshRootProjection(t *testing.T) {
 		if !strings.Contains(string(gitignore), entry) {
 			t.Fatalf(".gitignore missing %q", entry)
 		}
+	}
+}
+
+func TestScaffoldOnceDocsSurviveForcedRefresh(t *testing.T) {
+	db := freshDB(t)
+	root := t.TempDir()
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+		t.Fatalf("initial ScaffoldDocs() error = %v", err)
+	}
+
+	for _, doc := range scaffoldOnceDocs {
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(doc.path))); err != nil {
+			t.Fatalf("scaffold-once %s not created: %v", doc.path, err)
+		}
+	}
+
+	readme := filepath.Join(root, "docs", "README.md")
+	authored := []byte("# Our docs\n\nconsumer-authored, must never be touched\n")
+	if err := os.WriteFile(readme, authored, 0o644); err != nil {
+		t.Fatalf("write consumer README: %v", err)
+	}
+
+	// force=true is what overwrites a conflicting *managed* doc; a scaffold-once
+	// doc has no managed_docs row, so it is never compared and never rewritten.
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, true); err != nil {
+		t.Fatalf("forced refresh ScaffoldDocs() error = %v", err)
+	}
+
+	got, err := os.ReadFile(readme)
+	if err != nil {
+		t.Fatalf("read README after forced refresh: %v", err)
+	}
+	if !bytes.Equal(got, authored) {
+		t.Fatalf("consumer README rewritten: got %q, want %q", got, authored)
+	}
+
+	for _, doc := range scaffoldOnceDocs {
+		var rows int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM managed_docs WHERE path = ?`, doc.path).Scan(&rows); err != nil {
+			t.Fatalf("count managed_docs for %s: %v", doc.path, err)
+		}
+		if rows != 0 {
+			t.Fatalf("managed_docs rows for scaffold-once %s = %d, want 0", doc.path, rows)
+		}
+	}
+
+	if _, err := os.Stat(filepath.Join(root, ".kit", "conflicts", "docs", "README.md.upstream")); !os.IsNotExist(err) {
+		t.Fatal("scaffold-once README staged as a conflict")
+	}
+}
+
+func TestScaffoldDocsWritesClaudeMdImport(t *testing.T) {
+	db := freshDB(t)
+	root := t.TempDir()
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+		t.Fatalf("ScaffoldDocs() error = %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(root, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	want := agentsBlockStart + "\n" + claudeMdImport + "\n" + agentsBlockEnd + "\n"
+	if string(got) != want {
+		t.Fatalf("CLAUDE.md = %q, want %q", got, want)
+	}
+	if strings.Contains(string(got), "managed instructions") {
+		t.Fatal("CLAUDE.md holds a copy of the managed body instead of an import")
+	}
+}
+
+func TestScaffoldDocsClaudeMdImportPreservesHumanText(t *testing.T) {
+	db := freshDB(t)
+	root := t.TempDir()
+	local := "# Project rules\n\nkeep this byte-for-byte\n"
+	if err := os.WriteFile(filepath.Join(root, "CLAUDE.md"), []byte(local), 0o644); err != nil {
+		t.Fatalf("seed CLAUDE.md: %v", err)
+	}
+
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+		t.Fatalf("ScaffoldDocs() error = %v", err)
+	}
+	first, err := os.ReadFile(filepath.Join(root, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	if !strings.HasPrefix(string(first), local) {
+		t.Fatalf("human text changed: %q", first)
+	}
+	if !strings.Contains(string(first), claudeMdImport) {
+		t.Fatalf("import missing: %q", first)
+	}
+
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, false); err != nil {
+		t.Fatalf("second ScaffoldDocs() error = %v", err)
+	}
+	second, err := os.ReadFile(filepath.Join(root, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("re-read CLAUDE.md: %v", err)
+	}
+	if !bytes.Equal(first, second) {
+		t.Fatalf("second init changed CLAUDE.md: first=%q second=%q", first, second)
+	}
+	if strings.Count(string(second), agentsBlockStart) != 1 {
+		t.Fatalf("marker duplicated: %q", second)
 	}
 }
 
