@@ -15,6 +15,7 @@ var gitignoreEntries = []string{"harness.db", "harness.db-wal", "harness.db-shm"
 const (
 	agentsBlockStart = "<!-- ZHARNESS:BEGIN -->"
 	agentsBlockEnd   = "<!-- ZHARNESS:END -->"
+	claudeMdImport   = "@AGENTS.md"
 )
 
 type ScaffoldResult struct {
@@ -42,11 +43,25 @@ func ScaffoldDocs(db *sql.DB, root, kitDir string, docsFS fs.FS, docsVersion str
 	}
 	result.DocsWritten = managed.DocsWritten
 
-	agentsWritten, err := writeAgentsManagedBlock(root, docsFS)
+	agentsBody, err := fs.ReadFile(docsFS, "AGENTS.md")
 	if err != nil {
 		return result, fmt.Errorf("agents block: %w", err)
 	}
-	result.AgentsShimWritten = agentsWritten
+	agentsWritten, err := writeManagedBlock(root, "AGENTS.md", string(agentsBody))
+	if err != nil {
+		return result, fmt.Errorf("agents block: %w", err)
+	}
+	// Claude Code reads CLAUDE.md and never AGENTS.md (anthropics/claude-code#34235),
+	// so the managed contract reaches it as an import rather than a second copy.
+	claudeWritten, err := writeManagedBlock(root, "CLAUDE.md", claudeMdImport)
+	if err != nil {
+		return result, fmt.Errorf("claude import block: %w", err)
+	}
+	result.AgentsShimWritten = agentsWritten || claudeWritten
+
+	if err := writeScaffoldOnceDocs(root); err != nil {
+		return result, fmt.Errorf("scaffold-once docs: %w", err)
+	}
 
 	updated, err := ensureGitignore(root)
 	if err != nil {
@@ -56,13 +71,9 @@ func ScaffoldDocs(db *sql.DB, root, kitDir string, docsFS fs.FS, docsVersion str
 	return result, nil
 }
 
-func writeAgentsManagedBlock(root string, docsFS fs.FS) (bool, error) {
-	content, err := fs.ReadFile(docsFS, "AGENTS.md")
-	if err != nil {
-		return false, err
-	}
-	block := agentsBlockStart + "\n" + strings.TrimSpace(string(content)) + "\n" + agentsBlockEnd
-	path := filepath.Join(root, "AGENTS.md")
+func writeManagedBlock(root, relPath, content string) (bool, error) {
+	block := agentsBlockStart + "\n" + strings.TrimSpace(content) + "\n" + agentsBlockEnd
+	path := filepath.Join(root, relPath)
 	existing, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return true, os.WriteFile(path, []byte(block+"\n"), 0o644)
@@ -72,7 +83,7 @@ func writeAgentsManagedBlock(root string, docsFS fs.FS) (bool, error) {
 	}
 
 	legacyMatches := false
-	if legacy, legacyErr := os.ReadFile(filepath.Join(root, ".kit", "docs", "AGENTS.md")); legacyErr == nil {
+	if legacy, legacyErr := os.ReadFile(filepath.Join(root, ".kit", "docs", relPath)); legacyErr == nil {
 		legacyMatches = bytes.Equal(existing, legacy)
 	}
 
@@ -80,7 +91,7 @@ func writeAgentsManagedBlock(root string, docsFS fs.FS) (bool, error) {
 	start := strings.Index(text, agentsBlockStart)
 	end := strings.Index(text, agentsBlockEnd)
 	if (start >= 0) != (end >= 0) || (start >= 0 && end < start) {
-		return false, fmt.Errorf("AGENTS.md contains an incomplete zharness managed block")
+		return false, fmt.Errorf("%s contains an incomplete zharness managed block", relPath)
 	}
 
 	var updated string
@@ -88,7 +99,7 @@ func writeAgentsManagedBlock(root string, docsFS fs.FS) (bool, error) {
 	case start >= 0:
 		end += len(agentsBlockEnd)
 		updated = text[:start] + block + text[end:]
-	case legacyMatches || strings.TrimSpace(text) == strings.TrimSpace(string(content)):
+	case legacyMatches || strings.TrimSpace(text) == strings.TrimSpace(content):
 		updated = block + "\n"
 	default:
 		separator := "\n"
@@ -102,6 +113,117 @@ func writeAgentsManagedBlock(root string, docsFS fs.FS) (bool, error) {
 	}
 	return true, os.WriteFile(path, []byte(updated), 0o644)
 }
+
+// scaffoldOnceDocs bodies write "~" where the markdown needs a backtick, since
+// a Go raw string literal cannot contain one.
+var scaffoldOnceDocs = []struct{ path, body string }{
+	{"docs/README.md", strings.ReplaceAll(docsReadmeBody, "~", "`")},
+	{"docs/decisions/README.md", strings.ReplaceAll(decisionsReadmeBody, "~", "`")},
+	{"docs/decisions/templates/decision.md", strings.ReplaceAll(decisionTemplateBody, "~", "`")},
+}
+
+// writeScaffoldOnceDocs seeds the authored-docs entrypoint. Unlike the managed
+// set it records no managed_docs row, so a consumer edit is never compared,
+// never staged as a conflict, and never refreshed.
+func writeScaffoldOnceDocs(root string) error {
+	for _, doc := range scaffoldOnceDocs {
+		path := filepath.Join(root, filepath.FromSlash(doc.path))
+		if _, err := os.Stat(path); err == nil {
+			continue
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(path, []byte(doc.body), 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+const docsReadmeBody = `# Documentation
+
+The authored documentation map for this repository. Every hand-written document
+should be reachable from this page.
+
+~zharness init~ wrote this file once, because it was absent. It is yours now —
+the harness never refreshes, overwrites, or deletes it.
+
+## Where to go
+
+| You want to | Read |
+|---|---|
+| Run a workflow stage | docs/WORKFLOW.md, then the one playbook it names |
+| Know why something is built the way it is | docs/decisions/README.md |
+| See what is being built right now | the active plan under docs/plans/active/ |
+
+Add a row for each authored document as you write it.
+
+## Ownership
+
+Three classes. The class decides who is allowed to edit the file.
+
+- **managed** — projected from the binary's embedded doc set and hash-tracked.
+  Edit the embedded source and cut a release; a local edit is staged under
+  .kit/conflicts/ rather than silently overwritten. Covers docs/WORKFLOW.md and
+  docs/playbooks/.
+- **scaffold-once** — written by ~zharness init~ only when absent, then owned by
+  you. Covers this file, docs/decisions/README.md, and
+  docs/decisions/templates/decision.md.
+- **authored** — written by hand, never embedded, never regenerated. Everything
+  else under docs/.
+
+An existing path under docs/ that is missing from this page is a defect in this
+page.
+`
+
+const decisionsReadmeBody = `# Decision Records
+
+One file per decision that is expensive to reverse. Cheap, reversible choices do
+not belong here — the code is their record.
+
+Copy docs/decisions/templates/decision.md to start a new one, numbered in
+sequence: 0001-short-slug.md, 0002-….
+
+| # | Decision | Status |
+|---|---|---|
+| — | none yet | — |
+
+Every record carries the same five headings: Status, Context, Decision,
+Consequences, Authority. A record is never rewritten once accepted — supersede
+it with a new one and mark the old one Superseded.
+`
+
+const decisionTemplateBody = `# NNNN — Short imperative title
+
+## Status
+
+Proposed | Accepted | Superseded by NNNN. Include the date it was accepted.
+
+## Context
+
+The forces in play: the constraint, the incident, the measurement. Enough that a
+reader who was not present can tell why the question was open at all. State what
+was actually observed, not what was assumed.
+
+## Decision
+
+What was decided, in the active voice. Name the alternative that was rejected
+and the reason — a record without a rejected alternative is a description, not a
+decision.
+
+## Consequences
+
+What this makes easy, and what it makes hard. Include the costs; a record that
+lists only benefits was written to justify rather than to inform.
+
+## Authority
+
+Where the claims come from: commits, files with path:line citations, measured
+output, external documentation, or the owner's call and its date.
+`
 
 func ensureGitignore(root string) (bool, error) {
 	path := filepath.Join(root, ".gitignore")
