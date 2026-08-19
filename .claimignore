@@ -16,7 +16,3 @@ skills/workflow/git/scripts/branch-cleanup.sh   # historical audit measurement (
 
 skills/workflow/work/references/examples.md  # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
 skills/workflow/work/references/routing.md   # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
-
-docs/audit/sdlc-token-cache-audit.md         # deleted by commit 655c6ac; the citing text lives in cli/docs/embedded/playbooks/, so removing it needs a binary change and a release - deferred to p2-consumer-scaffold. Retrievable at 655c6ac^.
-docs/audit/workflow-harness-ceremony-audit.md # deleted by commit 655c6ac; the citing text lives in cli/docs/embedded/playbooks/, so removing it needs a binary change and a release - deferred to p2-consumer-scaffold. Retrievable at 655c6ac^.
-docs/evals/failures.md                       # deleted by commit 655c6ac (12 lines); not required - cli/docs/embedded/playbooks/check.md states a repository without it skips that step without error. Removal of the citation is deferred to p2-consumer-scaffold along with the 655c6ac audit references. Retrievable at 655c6ac^.
