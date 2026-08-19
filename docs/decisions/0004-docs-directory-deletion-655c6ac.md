@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Restoration executed in phase `p1-doc-authority` of `docs/plans/active/docs-architecture.md`.
+Accepted. Restoration executed in phase `p1-doc-authority` of `docs/plans/completed/docs-architecture.md`.
 
 ## Context
 
@@ -53,4 +53,4 @@ Citations to the 8 cited files are handled in two places. Three of them are cite
 
 - Commit `655c6ac` — `git show --stat 655c6ac` lists all 26 files and 4,285 deletions.
 - `scripts/verify-doc-links.sh` — the gate that reported the 16 broken references.
-- `docs/plans/active/docs-architecture.md` — phase `p1-doc-authority`, requirements R10, R11, R12.
+- `docs/plans/completed/docs-architecture.md` — phase `p1-doc-authority`, requirements R10, R11, R12.
