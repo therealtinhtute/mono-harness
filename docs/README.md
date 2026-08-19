@@ -20,15 +20,15 @@ Three classes, and the class determines who is allowed to edit the file.
 
 - **managed** — present in the binary's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by `zharness init`, and hash-tracked in the `managed_docs` table. Edit the embedded source and cut a release; a local edit is staged as a conflict under `.kit/conflicts/`, never silently overwritten.
 - **authored** — written by hand, never embedded, never regenerated. The binary neither creates nor touches these.
-- **scaffold-once** — written by `zharness init` only when absent, then owned by the consumer. No file in this repository is in this class yet; it arrives with phase `p2-consumer-scaffold`.
+- **scaffold-once** — written by `zharness init` only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
 
 | Path | Class | Notes |
 |---|---|---|
 | `docs/WORKFLOW.md` | managed | stage router; names the one playbook to read |
-| `docs/playbooks/` | managed | 7 stage playbooks; edit `cli/docs/embedded/playbooks/` instead |
+| `docs/playbooks/` | managed | 6 stage playbooks; edit `cli/docs/embedded/playbooks/` instead. `git` is absent by design — it owns no harness entity, so its procedure lives at `skills/workflow/git/references/workflow.md` |
 | `docs/README.md` | authored | this page |
 | `docs/ARCHITECTURE.md` | authored | how the system works |
-| `docs/decisions/` | authored | numbered ADRs plus an index |
+| `docs/decisions/` | authored | numbered ADRs, an index, and `templates/decision.md` to copy for the next one |
 | `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. The CLI appends to these but never creates them from an embedded source |
 | `docs/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/workflow-harness/` | authored | legacy-adoption guide |
