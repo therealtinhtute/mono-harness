@@ -3,7 +3,7 @@ id: 01M0C5EMT7HMP1RGZH9MV5GKET
 type: plan
 intake_id: 01M0C5EQETZ60HJDWXG3JJHVTA
 lane: normal
-status: active
+status: completed
 created: 2026-08-19
 updated: 2026-08-19
 ---
@@ -133,7 +133,7 @@ updated: 2026-08-19
             check: `git diff --name-only $(git merge-base master HEAD)..HEAD -- '*.go' 'cli/docs/embedded/**'` produces no output, and `find cli/docs/embedded \( -name README.md -o -name ARCHITECTURE.md -o -name decision.md \)` produces no output.
   - phase_slug: p2-consumer-scaffold
     story_id: 01M0C8CE4RBXFFPBHV793RQ3VT
-    status: checked
+    status: done
     goal: teach `zharness init` to scaffold-once the authored-docs entrypoint into consumer repos without hash-tracking it, route to it by convention, and ship behind a `cli/v*` tag.
     depends_on: p1-doc-authority
     surfaces_allowed: cli/internal/application/init.go, cli/internal/application/init_test.go, cli/docs/embedded/AGENTS.md, cli/docs/embedded/playbooks/{work,check,watzup,handoff}.md, cli/docs/embedded/playbooks/git.md (deletion only, R13), cli/internal/interfaces/preflight.go (the `preflightPlaybooks` map only, R13), skills/workflow/git/{SKILL.md,references/workflow.md}, docs/playbooks/git.md (deletion only — orphaned projected copy), CLAUDE.md (the `ZHARNESS` managed block only, R14), .claimignore
@@ -227,6 +227,9 @@ updated: 2026-08-19
 - `2026-08-19T14:51:49Z` — handoff recorded. handoff: `01M0D83KGR9JMV7P6DBYSTB8JJ`. run: `01M0CTZ0D9NQMVG3RQ5BTX6XVK`. check: `01M0CVJN624F8R3YJBH9CR87HV`. phase closed.
 - `2026-08-19T14:58:59Z` — wave 1, task p2.w1.t4. task_status: `DONE`. run: `01M0CYD0V557AAYY5DGDFJW2QY`. summary: R14 proven by controlled experiment, not assertion. Earlier headless probes had failed on auth; root cause found: ~/.claude/settings.json sets env.ANTHROPIC_API_KEY to the 6-char placeholder literal 'claude', which takes precedence over the OAuth login, so unsetting the shell variable could never help. Worked around per-invocation with claude --settings <file setting ANTHROPIC_API_KEY to empty>, leaving the user's settings untouched. Two repos differing in exactly one variable: t3repo has @AGENTS.md inside the ZHARNESS:BEGIN/END markers and AGENTS.md ending ZHARNESS_CANARY=quokka7; ctlrepo has byte-identical human CLAUDE.md text with no import at all and AGENTS.md ending ZHARNESS_CANARY=narwhal3. Asked each session to echo ZHARNESS_CANARY: t3repo answered quokka7, ctlrepo answered NONE. Control-of-control: ctlrepo confirmed 'keep this byte-for-byte' from its own CLAUDE.md with YES, so its memory loading works and NONE is a real negative. Conclusions: Claude Code does not load AGENTS.md natively, and the import is not stripped by the surrounding HTML comments. R14 is necessary and correct as implemented; the marker-relative fallback is not needed. This also closes the separate open item asking whether AGENTS.md loads when CLAUDE.md is absent. No surfaces changed by this task..
 - `2026-08-19T14:58:59Z` — wave 1. run: `01M0CYD0V557AAYY5DGDFJW2QY`. summary: Wave 1 (scaffold-once class and the CLAUDE.md import) complete: writeScaffoldOnceDocs seeds three authored-doc files with no managed_docs row, writeManagedBlock generalized to write both AGENTS.md and CLAUDE.md with no special-casing, and R14's import proven necessary and working by a two-repo controlled experiment..
+- `2026-08-19T15:06:45Z` — wave 4, task p2.w4.t2. task_status: `DONE_WITH_CONCERNS`. run: `01M0CYD0V557AAYY5DGDFJW2QY`. summary: Release deferred by explicit owner decision rather than executed; concern surfaced and accepted before stopping. Two findings drove it. First, the release baseline: cli/v0.10.0 is already published and is an ancestor of HEAD, with 10 commits on top on branch docs/docs-architecture-plan, so this work would ship as cli/v0.11.0 -- from an unmerged branch, publishing a version master does not contain. Second, the task's own check 'git ls-remote --tags origin | grep -c refs/tags/v[0-9] prints 0' is unsatisfiable: it prints 13, because bare v0.1.0 through v0.10.0 were pushed long before the never-push-the-bare-tag rule existed, and no tag operation in this phase changes that count. Owner chose to defer the tag until merge to master and to leave the 13 published bare tags untouched, narrowing the check to 'this release pushes no new bare tag'. Verified what remains verifiable: find cli/docs/embedded for README.md/ARCHITECTURE.md/decision.md produces no output (R3 holds), and every local cli/v* tag is already on the remote, so nothing is pending an unpushed release. No tag was created, no ref was pushed, nothing outward-facing happened..
+- `2026-08-19T15:06:45Z` — wave 4. run: `01M0CYD0V557AAYY5DGDFJW2QY`. summary: Wave 4 (integration proof and release) complete: R7 idempotence proven end to end with the built binary, and the release deferred to post-merge by owner decision with its unsatisfiable bare-tag check narrowed to the rule it was meant to enforce..
+- `2026-08-19T15:12:26Z` — handoff recorded. handoff: `01M0D99B9HWKWSH4PQ0W4CSWMB`. run: `01M0CYD0V557AAYY5DGDFJW2QY`. check: `01M0D8HXBMCE5YZ5ZFX67KGAWR`. phase closed. open items: p2.w4.t2 (cut and push the cli/v0.11.0 tag) is deferred by explicit owner decision until this branch merges to master; tagging from an unmerged branch would publish a version master does not contain. Nothing is pushed and no tag exists locally.; The 13 published bare vX.Y.Z remote tags (v0.1.0 through v0.10.0) are left in place by owner decision; the task check was narrowed to 'this release pushes no new bare tag'.; managed_docs rows are lost by zharness db rebuild, since the table has no markdown representation. After a rebuild every projected file is misclassified as consumer-authored. Known gap, out of scope for this initiative.; This branch (docs/docs-architecture-plan) is unpushed and unmerged, carrying 5 commits..
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -241,6 +244,9 @@ updated: 2026-08-19
 - `2026-08-19T12:19:48Z` — Accepted the preflight playbook field being absent rather than the empty string p2.w3.t1 predicted. (phase: `p2-consumer-scaffold`), task: p2.w3.t1. rationale: The preflight view serializes Playbook with omitempty, so grep -c for a literal empty playbook value prints 0, not 1. Proved the intended claim by control comparison with the same new binary: watzup returns playbook=docs/playbooks/watzup.md, git returns no playbook key at all. Absence is strictly stronger than an empty value..
 - `2026-08-19T12:19:48Z` — Edited cli/internal/embedded/embedded_test.go (playbook count 7 to 6), which is outside p2 surfaces_allowed. (phase: `p2-consumer-scaffold`), task: p2.w3.t1. rationale: TestPlaybookCount asserts a literal count of embedded playbooks and failed the moment git.md left the embedded FS. p2.w3.t1's own check requires go test ./... to report ok for every package, so the one-constant edit is mechanically forced by the sanctioned deletion, not new scope. No other assertion referenced git.md..
 - `2026-08-19T12:19:48Z` — Rewrote skills/workflow/git/SKILL.md line 13 to make references/workflow.md the unconditional procedure source in both branches. (phase: `p2-consumer-scaffold`), task: p2.w3.t2. rationale: p2.w3.t2's first claim, that SKILL.md already carries the full Core Workflow inline, is false. SKILL.md is 64 lines of frontmatter, role, security, context and references with no workflow steps; all six steps plus pr and merge live in the moved file. Leaving the old wording would have left the harness-missing branch pointing at a Core Workflow that exists in no named file..
+- `2026-08-19T15:06:45Z` — Deferred p2.w4.t2 (cut the cli/v0.11.0 release) until the branch merges to master. Owner decision, 2026-08-19. (phase: `p2-consumer-scaffold`), task: p2.w4.t2. rationale: The phase sits on docs/docs-architecture-plan, not master, and cli/v0.10.0 is already published as an ancestor of HEAD with 10 commits on top. Tagging a release from an unmerged branch would publish a version whose commit master does not yet contain. The implementation the tag would ship is complete and gated APPROVED; only the release action is deferred, so no code or proof is outstanding..
+- `2026-08-19T15:06:45Z` — Narrowed p2.w4.t2's second check from 'the remote carries zero bare vX.Y.Z tags' to 'this release pushes no new bare vX.Y.Z tag'. (phase: `p2-consumer-scaffold`), task: p2.w4.t2. rationale: The check as written is unsatisfiable and always was: git ls-remote --tags origin | grep -c refs/tags/v[0-9] prints 13, because v0.1.0 through v0.10.0 were published long before the never-push-the-bare-tag rule existed. No tag operation performed by this phase changes that count. Driving it to zero would mean deleting 13 published tags, breaking anything pinned to them and any goreleaser artifact referencing them -- a destructive outward-facing act that the check was never intended to authorize. The narrowed form tests the rule that actually matters. Owner confirmed leaving the existing tags in place..
+- `2026-08-19T15:12:50Z` — plan completed. rationale: every phase_slug is a done story.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
@@ -271,14 +277,51 @@ updated: 2026-08-19
     synthetic temp repos seeded this session, never against a real third-party repository with
     pre-existing local edits — the `--force-docs` destructiveness noted in decision
     `01M0CZ1MHJ5VYFF4CJN9YMED4A` therefore remains reasoned, not observed.
+- `2026-08-19` — check **full** (the closing review `docs/playbooks/handoff.md` step 6 requires on a
+  final phase). No second check row exists by design: `zharness check record` takes no `--mode` and a
+  `checked` story cannot re-open, so `01M0D8HXBMCE5YZ5ZFX67KGAWR` is this phase's one check entity and
+  this entry records the depth behind it. Verdict: `APPROVED`. judge: `same-session` (claude-opus-5).
+  - security: no finding. Every path written by `ScaffoldDocs` is a package-level constant, never
+    consumer input, so no traversal is reachable; modes are `0o644`/`0o755`; no credential, network,
+    or exec path is introduced. The one security-adjacent property that matters here — `init` must not
+    destroy consumer work — is enforced by the stat-and-skip in `writeScaffoldOnceDocs`.
+  - `zharness init` against a consumer repo carrying its own `docs/README.md`,
+    `docs/decisions/README.md` and `CLAUDE.md` → exit 0, both docs byte-unchanged, `CLAUDE.md` kept its
+    human text and gained only the marked `@AGENTS.md` import. Proves the no-clobber property on a
+    seeded repo rather than inferring it from the `os.Stat` branch.
+  - performance: no finding. Three `strings.ReplaceAll` over small constants at package init, three
+    `os.Stat` calls and at most three small writes per `init`; `writeManagedBlock` runs twice instead
+    of once. Nothing iterates unbounded data.
+  - architecture: one accepted consequence, not a defect. The scaffold-once class deliberately records
+    no `managed_docs` row, so the binary can never update these files again — if a later release
+    improves the seeded `docs/README.md` body, existing consumers never receive it and there is no
+    migration path. That is the price of consumer ownership and is the intended trade.
+  - code quality: `result.AgentsShimWritten` now aggregates two files with `||`, so the field name
+    under-describes what it reports (display-only), and `fmt.Errorf("agents block: %w", …)` wraps two
+    distinct failures under one prefix. Both left unchanged under minimal-change.
+  - test coverage: adequate. The 106 new lines in `init_test.go` cover forced-refresh survival, zero
+    `managed_docs` rows, fresh-file content, human-text preservation, idempotence, and marker
+    non-duplication — every behaviour this phase claims.
+  - findings: 3, all in `docs/README.md`, all fixed in `bf65bda`. Two were this phase's own
+    regressions — the playbook count still read 7 after `1a7708a` deprojected `git.md`, and the
+    scaffold-once bullet still claimed no file in this repository was in that class after `48aec92`
+    added `docs/decisions/templates/decision.md`. The third was the decisions row omitting `templates/`.
+    The page's own rule (an existing path under `docs/` missing from the table is a defect in the
+    table) is what they violated.
+  - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings), exit=0, re-run after `bf65bda`
+  - `go test -C cli ./...` → ok for all 6 test packages, exit=0
+  - proof_gaps: the three named on the gate entry above still stand — no independent reviewer, the
+    R14 canary observed headlessly rather than in the interactive `/context` panel, and consumer
+    behaviour proven only on synthetic temp repos. This full review was performed by the same session
+    that wrote the diff, so it inherits every one of them.
 
 ## Current State and Next Action
-- active_phase: p2-consumer-scaffold
-- lifecycle_status: checked
+- active_phase: none — both phases are `done`, the initiative is complete
+- lifecycle_status: done
 - latest_run_id: 01M0CYD0V557AAYY5DGDFJW2QY
 - latest_trace_ids: [01M0CZG4K4J8KYV70SW3M6MQW3, 01M0D8GQ7EGJR8YNZSJFMTTKXB, 01M0D8GQ7NJ6B7YHFHACMWGRQQ]
 - latest_check_id: 01M0D8HXBMCE5YZ5ZFX67KGAWR
-- latest_handoff_id: 01M0D83KGR9JMV7P6DBYSTB8JJ
+- latest_handoff_id: 01M0D99B9HWKWSH4PQ0W4CSWMB
 - blockers: none
 - open_items:
   - p1-doc-authority is `done` in DB and plan, closed by handoff `01M0D83KGR9JMV7P6DBYSTB8JJ`
@@ -316,7 +359,8 @@ updated: 2026-08-19
   - p2 is this initiative's final phase, so `handoff.md` step 6 requires one clean `check full`
     (the complete Security/Performance/Architecture/Code Quality review) before closure. The
     `01M0D8HXBMCE5YZ5ZFX67KGAWR` gate does not satisfy that on its own.
-- exact_next_action: commit the p2 diff as scope-split commits on `docs/docs-architecture-plan`,
-  then run `check full` on this phase, then obtain owner authorization for `p2.w4.t2` (push the
-  `cli/v*` tag only — never the bare `vX.Y.Z` tag), then close the phase with
-  `handoff record --close-phase` and run `zharness plan complete`.
+- exact_next_action: nothing inside this initiative — both phases are closed and the plan is
+  complete. The next action belongs to the owner: review the 5 commits on
+  `docs/docs-architecture-plan`, push the branch and open a PR to `master`, and once merged cut
+  `cli/v0.11.0` from `master` (the `cli/v*` tag only — never the bare `vX.Y.Z` tag), which is the
+  deferred `p2.w4.t2`. Nothing is pushed and no tag exists locally.

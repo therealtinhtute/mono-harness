@@ -11,7 +11,8 @@ Start here. Every document in this repository is reachable from this page, and e
 | Run a workflow stage | [`docs/WORKFLOW.md`](WORKFLOW.md), then the one playbook it names |
 | Adopt the harness on an existing project | [`docs/workflow-harness/migration.md`](workflow-harness/migration.md) |
 | Write or edit a skill or a rule | [`docs/prompt-engineering-principles.md`](prompt-engineering-principles.md) |
-| See what is being built right now | [`docs/plans/active/docs-architecture.md`](plans/active/docs-architecture.md) |
+| See what is being built right now | the one plan under [`docs/plans/active/`](plans/active) — empty means nothing is in flight |
+| See what was built before | [`docs/plans/completed/`](plans/completed), most recently [`docs-architecture.md`](plans/completed/docs-architecture.md) |
 | Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md), [`cli/docs/SCHEMA.md`](../cli/docs/SCHEMA.md), [`cli/docs/STATE.md`](../cli/docs/STATE.md) |
 
 ## Ownership
