@@ -32,11 +32,11 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 
 ## SDLC Stage Coverage
 
-The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (`docs/audit/sdlc-gap-analysis.md` G1): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill (`docs/audit/sdlc-gap-analysis.md` G2), not a retrofit onto `work` or `check`.
+The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (G1 of the SDLC gap analysis, deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill (G2 of the same analysis), not a retrofit onto `work` or `check`.
 
 ## Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after `harness-memory-ceremony-convergence` (`cli/v0.8.1`, `docs/plans/completed/harness-memory-ceremony-convergence.md`): schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first and only readiness call; a missing binary fails that shell invocation directly. Otherwise the skill checks the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3, `docs/audit/workflow-harness-ceremony-audit.md`): a `dev` build (unreleased local build) always satisfies the gate, and a version below `0.8.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+`MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after the `harness-memory-ceremony-convergence` initiative shipped as `cli/v0.8.1`, whose plan record was deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`: schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first and only readiness call; a missing binary fails that shell invocation directly. Otherwise the skill checks the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3 of the ceremony audit, deleted by `655c6ac`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): a `dev` build (unreleased local build) always satisfies the gate, and a version below `0.8.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
 
 ### Non-spine skills degrade instead of stopping
 
@@ -87,11 +87,11 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 - Any skill outside `skills/workflow/` (`craft/`, `shipping/` untouched)
 - Markdown fallback / CLI-optional compatibility mode — explicitly rejected; `zharness` is mandatory
 
-This initiative's own roadmap is complete; see `docs/plans/completed/workflow-harness-history-2026-07.md` for its consolidated history, and `docs/plans/completed/harness-convergence-pass-v3.md` for the one-plan/one-DB convergence work that followed it.
+This initiative's own roadmap is complete. Its consolidated history and the one-plan/one-DB convergence work that followed were both recorded in completed plans that `655c6ac` deleted; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md` for what was removed and how to retrieve it.
 
 ## Pilot Evidence & Go/No-Go
 
-Piloted 2026-07-17 by dogfooding this repo (`Lab/skills`) itself — real legacy `.kit/workflow-state.yml`-driven history, not a synthetic target. Full evidence: `docs/workflow-harness/pilot-evidence/2026-07-17-lab-skills-import.md`.
+Piloted 2026-07-17 by dogfooding this repo itself — real legacy `.kit/workflow-state.yml`-driven history, not a synthetic target. The full evidence log was deleted by `655c6ac` and remains retrievable at `655c6ac^`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`.
 
 **Verdict: GO.**
 
