@@ -71,7 +71,7 @@ The enforced invariant is *at most* one active plan. Zero is a legitimate idle s
 
 Every spine stage begins with `zharness preflight <stage> --json`. It resolves readiness without mutating anything and returns the playbook path, the lifecycle position, and any drift.
 
-When the database or the projected docs are missing, preflight returns a `stop` whose recovery is `zharness init` (`cli/internal/application/preflight.go:76`). Skills do not self-scaffold; they run the recovery they are handed. The stage-to-playbook mapping lives in one table, `preflightPlaybooks` at `cli/internal/interfaces/preflight.go:30` — stages absent from it own no harness entity and get no playbook back.
+When the database or the projected docs are missing, preflight returns a `stop` whose recovery is `zharness init` (`cli/internal/application/preflight.go:76`). Skills do not self-scaffold; they run the recovery they are handed. The stage-to-playbook mapping lives in one table, `preflightPlaybooks` at `cli/internal/interfaces/preflight.go:23` — stages absent from it own no harness entity and get no playbook back.
 
 ## What lives where
 
