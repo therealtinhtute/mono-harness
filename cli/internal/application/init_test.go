@@ -188,6 +188,37 @@ func TestScaffoldDocsClaudeMdImportPreservesHumanText(t *testing.T) {
 	}
 }
 
+func TestScaffoldDocsKeepsClaudeMdWithLegacyKitCopy(t *testing.T) {
+	db := freshDB(t)
+	root := t.TempDir()
+	local := "# Project rules\n\nthis repo keeps a backup under .kit/docs\n"
+	if err := os.WriteFile(filepath.Join(root, "CLAUDE.md"), []byte(local), 0o644); err != nil {
+		t.Fatalf("seed CLAUDE.md: %v", err)
+	}
+	legacyDir := filepath.Join(root, ".kit", "docs")
+	if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(.kit/docs) error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(legacyDir, "CLAUDE.md"), []byte(local), 0o644); err != nil {
+		t.Fatalf("seed .kit/docs/CLAUDE.md: %v", err)
+	}
+
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+		t.Fatalf("ScaffoldDocs() error = %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(root, "CLAUDE.md"))
+	if err != nil {
+		t.Fatalf("read CLAUDE.md: %v", err)
+	}
+	if !strings.HasPrefix(string(got), local) {
+		t.Fatalf("consumer CLAUDE.md replaced by the managed block: %q", got)
+	}
+	if !strings.Contains(string(got), claudeMdImport) {
+		t.Fatalf("import missing: %q", got)
+	}
+}
+
 func TestScaffoldDocsSecondRunIsNoop(t *testing.T) {
 	db := freshDB(t)
 	root := t.TempDir()

@@ -95,6 +95,9 @@ func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version str
 	if scaffold.AgentsShimWritten {
 		fmt.Fprintln(cmd.OutOrStdout(), "updated AGENTS.md managed block")
 	}
+	if scaffold.ClaudeShimWritten {
+		fmt.Fprintln(cmd.OutOrStdout(), "updated CLAUDE.md managed block")
+	}
 	if scaffold.GitignoreUpdated {
 		fmt.Fprintln(cmd.OutOrStdout(), "updated .gitignore")
 	}

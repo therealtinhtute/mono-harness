@@ -294,7 +294,10 @@ func rootedPath(root, path string) string {
 }
 
 func snapshotManagedTargets(root string, docsFS fs.FS) ([]fileSnapshot, error) {
-	paths := []string{filepath.Join(root, "AGENTS.md"), filepath.Join(root, ".gitignore")}
+	paths := []string{filepath.Join(root, "AGENTS.md"), filepath.Join(root, "CLAUDE.md"), filepath.Join(root, ".gitignore")}
+	for _, doc := range scaffoldOnceDocs {
+		paths = append(paths, filepath.Join(root, filepath.FromSlash(doc.path)))
+	}
 	err := fs.WalkDir(docsFS, ".", func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr

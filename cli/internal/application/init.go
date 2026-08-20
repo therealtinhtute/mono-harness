@@ -21,6 +21,7 @@ const (
 type ScaffoldResult struct {
 	DocsWritten          bool
 	AgentsShimWritten    bool
+	ClaudeShimWritten    bool
 	AgentsShimNoticePath string
 	GitignoreUpdated     bool
 	DocsVersion          string
@@ -57,7 +58,8 @@ func ScaffoldDocs(db *sql.DB, root, kitDir string, docsFS fs.FS, docsVersion str
 	if err != nil {
 		return result, fmt.Errorf("claude import block: %w", err)
 	}
-	result.AgentsShimWritten = agentsWritten || claudeWritten
+	result.AgentsShimWritten = agentsWritten
+	result.ClaudeShimWritten = claudeWritten
 
 	if err := writeScaffoldOnceDocs(root); err != nil {
 		return result, fmt.Errorf("scaffold-once docs: %w", err)
@@ -82,9 +84,14 @@ func writeManagedBlock(root, relPath, content string) (bool, error) {
 		return false, err
 	}
 
+	// Only AGENTS.md was ever projected to .kit/docs/, so only it can be a
+	// harness-authored leftover worth replacing wholesale. Probing that path for
+	// any other file would hand the replace branch a consumer-owned copy.
 	legacyMatches := false
-	if legacy, legacyErr := os.ReadFile(filepath.Join(root, ".kit", "docs", relPath)); legacyErr == nil {
-		legacyMatches = bytes.Equal(existing, legacy)
+	if relPath == "AGENTS.md" {
+		if legacy, legacyErr := os.ReadFile(filepath.Join(root, ".kit", "docs", relPath)); legacyErr == nil {
+			legacyMatches = bytes.Equal(existing, legacy)
+		}
 	}
 
 	text := string(existing)
