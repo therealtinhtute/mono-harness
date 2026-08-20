@@ -14,5 +14,7 @@ skills/workflow/git/scripts/create-pr.sh        # historical audit measurement (
 skills/workflow/git/scripts/commit-workflow.sh  # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned/unreferenced automation in P5 wave 4 of harness-memory-ceremony-convergence
 skills/workflow/git/scripts/branch-cleanup.sh   # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned/unreferenced automation in P5 wave 4 of harness-memory-ceremony-convergence
 
+docs/playbooks/git.md  # deliberately deprojected (docs-architecture R13); this repo correctly has no such file, but docs/workflow-harness/migration.md must name the exact path so consumers upgrading past the deprojection can delete their stale copy. Permanent, not a deferral.
+
 skills/workflow/work/references/examples.md  # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
 skills/workflow/work/references/routing.md   # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
