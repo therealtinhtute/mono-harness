@@ -115,6 +115,48 @@ func TestMigrateLayoutDocsConflictRollsBackActivation(t *testing.T) {
 	}
 }
 
+func TestMigrateLayoutRollsBackEveryScaffoldedFile(t *testing.T) {
+	root := t.TempDir()
+	seedLegacyLayout(t, root)
+
+	// A non-empty directory at the backup path makes the os.Rename of the legacy
+	// db fail, which is the earliest failure point reached after ScaffoldDocs has
+	// already written CLAUDE.md and the scaffold-once docs.
+	backupPath := filepath.Join(root, ".kit", "harness.db.layout-v1-backup")
+	if err := os.MkdirAll(filepath.Join(backupPath, "occupied"), 0o755); err != nil {
+		t.Fatalf("MkdirAll(backup blocker) error = %v", err)
+	}
+
+	absentBefore := []string{
+		"CLAUDE.md",
+		"AGENTS.md",
+		filepath.Join("docs", "README.md"),
+		filepath.Join("docs", "decisions", "README.md"),
+		filepath.Join("docs", "decisions", "templates", "decision.md"),
+	}
+	for _, rel := range absentBefore {
+		if _, err := os.Stat(filepath.Join(root, rel)); !os.IsNotExist(err) {
+			t.Fatalf("fixture already has %s", rel)
+		}
+	}
+
+	if _, err := MigrateLayout(root, ".kit/harness.db", "harness.db", ".kit", fixtureDocsFS, "0.6.0", false); err == nil {
+		t.Fatal("MigrateLayout() error = nil, want backup-rename failure")
+	}
+
+	for _, rel := range absentBefore {
+		if _, err := os.Stat(filepath.Join(root, rel)); !os.IsNotExist(err) {
+			t.Errorf("%s survived rollback of a failed migration", rel)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, ".kit", "harness.db")); err != nil {
+		t.Fatalf("legacy db missing after rollback: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "harness.db")); !os.IsNotExist(err) {
+		t.Fatal("root db activated despite migration failure")
+	}
+}
+
 func seedLegacyLayout(t *testing.T, root string) (runID, checkID string) {
 	t.Helper()
 	legacyPath := filepath.Join(root, ".kit", "harness.db")
