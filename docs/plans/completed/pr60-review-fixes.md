@@ -3,7 +3,7 @@ id: 01M0EG9ZS3VVCF05EEMAW5S685
 type: plan
 intake_id: 01M0EG9T31545JJFK8HBJJB0XA
 lane: normal
-status: active
+status: completed
 created: 2026-08-20
 updated: 2026-08-20
 ---
@@ -80,7 +80,7 @@ updated: 2026-08-20
 
 ### Phase 1 — `pr60-go-correctness`
 - story: `01M0EG9ZS5XTQJV3J5J2CZ689B`
-- status: checked
+- status: done
 - depends on: none
 - goal: close the three Go defects — incomplete migration rollback, the whole-file-replace legacy probe reaching `CLAUDE.md`, and the mislabelled init report line.
 - covers: R1, R2, R3, R4, R5, R11
@@ -117,7 +117,7 @@ Both tasks are independent; each writes a test and records its red output before
 
 ### Phase 2 — `pr60-doc-truth`
 - story: `01M0EG9ZSERMRZVPE860XRCJPR`
-- status: checked
+- status: done
 - depends on: `pr60-go-correctness` — R10 verifies citations into `init.go`, whose line numbers Phase 1 may shift.
 - goal: make every document claim that PR #60 rendered stale true again.
 - covers: R6, R7, R8, R9, R10, R11
@@ -153,15 +153,15 @@ All independent of Wave 1 and of each other.
   - final acceptance: all eight findings resolved — 1 (T2.1/Phase 1), 2 (T2.2/Phase 1), 3 (T2.3/Phase 1), 4 (T1.1/Phase 2), 5 (T2.1/Phase 2), 6 (T2.2/Phase 2), 7 (T1.2/Phase 2), 8 (T2.3/Phase 2).
 
 ## Current State and Next Action
-- active phase: `pr60-doc-truth` (story `01M0EG9ZSERMRZVPE860XRCJPR`)
-- lifecycle_status: checked
+- active phase: none — initiative complete
+- lifecycle_status: done
 - latest run: `01M0EGZP9F5R9TKSGVZHJABG88`
-- latest check: `01M0EHD7N7NC54RGGV5SB0EZNA` (APPROVED, judge same-session — Phase 2)
-- latest trace: `01M0EHBMQR544B0ZZ6YQEMKS42` (Phase 2 wave 2 summary)
+- latest check: `01M0EHD7N7NC54RGGV5SB0EZNA` (APPROVED, judge same-session — gate for Phase 2; the final-phase `full` review ran at `2026-08-20T03:04Z`, also APPROVED, with its evidence appended to `## Validation` against this same ID)
+- latest trace: `01M0EHM93GPSS4VCQV2SB52WCS` (final-phase full review)
+- latest handoff: `01M0EM6DXHZ3G3CFTQBEEP9TZ2` (closed `pr60-go-correctness`), `01M0EM6JP08Y8418NJK082H2EY` (closed `pr60-doc-truth`)
 - blockers: none
-- open items:
-  - Both phases are `checked`. The final-phase `full` review (`handoff.md` step 6) ran at `2026-08-20T03:04Z` and returned APPROVED; `handoff` owns the transition to `done`.
-  - **`docs/plans/active/pr60-review-fixes.md` is still untracked.** The `git` stage must `git add` it, or the initiative ships without its own record.
+- completed work: all eight findings from the review of PR #60 closed — three Go defects with red-then-green tests (`pr60-go-correctness`), five document-truth corrections (`pr60-doc-truth`). Shipped to `master` as `9f96ff5`, `798f0a5`, `7f02463` (rebase-merged via PR #60).
+- open items: none blocking. Carried forward as known context, not work:
   - Harness gap (reported, not fixed here): `handoff.md` step 6 requires a `full` check on the final phase, but `work`'s in-session gate already moves the story to `checked`, and `zharness check record` rejects a non-`in-progress` story with `story_not_checkable`. The demanded full check therefore cannot record a durable row after the gate that precedes it. Evidence for the full review is appended to `## Validation` against the gate's check ID instead.
   - Resolved (was an open Phase 1 concern): the rollback test's dependence on POSIX `rename`-onto-non-empty-directory semantics is not a portability gap — `cli/.goreleaser.yaml:11-13` ships `darwin` and `linux` only, and `.github/workflows/cli-ci.yml:16` runs `ubuntu-latest`. Windows is not a target.
   - Not independently verified (same-session judge, Phase 1): `db migrate-layout` was exercised only against the `fstest.MapFS` fixture, never against a real legacy consumer repository on disk.
@@ -169,7 +169,7 @@ All independent of Wave 1 and of each other.
   - Not independently verified (same-session judge, Phase 2): that GitHub actually renders the `plans/active` link as a browsable directory once only `.gitkeep` is tracked — verified structurally (file tracked, both plan globs are `*.md`), not by loading the rendered page. And no automated check asserts doc↔code agreement for `path:line` citations; all 28 were resolved by hand, and `verify-doc-links.sh` does not read line numbers (NG2).
   - The dead `ScaffoldResult.AgentsShimNoticePath` field (`init.go:24`) is referenced nowhere. Pre-existing, out of scope, deliberately left alone.
   - Plan-parser gap (out of scope, reported): this plan's phase headings read `### Phase N — \`{slug}\``, but `extractPlanPhaseHeadingBlock` (`cli/internal/application/plan_query.go:178`) expects `### phase_slug: \`{slug}\``, so `zharness query plan --section phase` returns `available phases: (none defined)` with `degraded: true`. `zharness scaffold plan` also emits no `## Decisions`, `## Validation`, or `## Current State and Next Action` heading, all three of which had to be hand-added mid-run.
-- next action: `git` — stage all ten changed paths plus the untracked plan file, commit, and update PR #60; then `handoff` to close both phases to `done`.
+- next action: none — initiative closed. The two harness gaps above (plan-heading parser, and `check record` rejecting the `full` check that `handoff.md` step 6 demands) are unfiled; open them as issues if they should be fixed rather than remembered.
 
 ## Validation
 - `2026-08-20T02:43:01Z` — check. verdict: `APPROVED`. check: `01M0EGSV5EQKZ0S3B88GMNWP83`. run: `01M0EGHVGAN9TK70M66XRWFEKX`. phase: `pr60-go-correctness`. judge: `same-session` (claude-opus-5).
@@ -193,6 +193,7 @@ All independent of Wave 1 and of each other.
 - `2026-08-20T02:42:13Z` — Inject the post-ScaffoldDocs migration failure by placing a non-empty directory at the legacy db backup path, making os.Rename at layout_migration.go:175 fail. (phase: `pr60-go-correctness`), task: T1.1. rationale: The rollback gap only appears at failure points reached after ScaffoldDocs returns successfully. The pre-existing conflict test fails inside SyncManagedDocs, before CLAUDE.md or the scaffold-once docs are ever written, which is exactly why it passed against the bug. The backup-rename blocker needs no seam, no interface change and no test hook, is deterministic on Linux (rename onto a non-empty directory fails), and sits outside every MigrateLayout precondition check..
 - `2026-08-20T02:42:13Z` — Split ScaffoldResult.AgentsShimWritten into two booleans instead of rewording the single print line. (phase: `pr60-go-correctness`), task: T2.3. rationale: One boolean for two files cannot report which file changed, so any single message is wrong in some run. Two fields keep each print line true independently, and every existing assertion on AgentsShimWritten still holds because a fresh root writes both files - no test needed editing. The --json branch emits no scaffold field, so R-C carried no output-compatibility cost..
 - `2026-08-20T02:47:58Z` — Added a permanent .claimignore entry for docs/playbooks/git.md rather than rewording the migration note to avoid a backticked path. (phase: `pr60-doc-truth`), task: T1.2. rationale: Naming the exact path is the whole point of the note - a consumer cannot delete a file the doc refuses to spell. The gate flagged it correctly: the file genuinely does not exist in this repository, because docs-architecture R13 deprojected it. This is the case .claimignore exists for, and the entry states it is permanent rather than a deferral, per docs-architecture R12s requirement that deferral entries say so. Plan gap: Phase 2 assumed the doc edits were gate-neutral, but T1.2 necessarily introduces a reference to a deliberately absent file..
+- `2026-08-20T03:42:57Z` — plan completed. rationale: every phase_slug is a done story.
 
 ## Progress
 - `2026-08-20T02:39:01Z` — wave 1. run: `01M0EGHVGAN9TK70M66XRWFEKX`. summary: Phase pr60-go-correctness started (run 01M0EGHVGAN9TK70M66XRWFEKX). Wave 1 writes both data-loss tests red before any production edit..
@@ -212,3 +213,5 @@ All independent of Wave 1 and of each other.
 - `2026-08-20T02:52:44Z` — wave 2. run: `01M0EGZP9F5R9TKSGVZHJABG88`. summary: Wave 2 complete: link/citation truth. .gitkeep restores the plans/active link, the git reference no longer calls itself a playbook, and the single stale citation (preflight.go:30 -> :23) is corrected. Next: wave 3 gates..
 - `2026-08-20T02:54:24Z` — wave 3. run: `01M0EGZP9F5R9TKSGVZHJABG88`. summary: Wave 3 gate: both gates green (verify-doc-links.sh 0 findings; go test -C cli ./... 6 packages ok). Check 01M0EHD7N7NC54RGGV5SB0EZNA APPROVED, judge same-session. Phase pr60-doc-truth synced to checked in plan and DB. Gate 1 initially failed on the git reference's assertion that no cli/docs/embedded/playbooks/git.md exists; rephrased to cite the directory instead of the absent file rather than spend a second .claimignore exception..
 - `2026-08-20T02:57:27Z` — wave 3. run: `01M0EGZP9F5R9TKSGVZHJABG88`. summary: Final-phase full review (handoff.md step 6): Security/Performance/Architecture/Code Quality all clean, NG1-NG6 held, class-of-bug coverage complete (writeManagedBlock has 2 callers, probe appears once). go vet clean. Could not record a durable row: story already checked, check record returns story_not_checkable - reported as a harness gap; evidence appended to Validation against check 01M0EHD7N7NC54RGGV5SB0EZNA. Windows-portability concern closed: goreleaser targets darwin+linux only..
+- `2026-08-20T03:42:19Z` — handoff recorded. handoff: `01M0EM6DXHZ3G3CFTQBEEP9TZ2`. run: `01M0EGHVGAN9TK70M66XRWFEKX`. check: `01M0EGSV5EQKZ0S3B88GMNWP83`. phase closed.
+- `2026-08-20T03:42:24Z` — handoff recorded. handoff: `01M0EM6JP08Y8418NJK082H2EY`. run: `01M0EGZP9F5R9TKSGVZHJABG88`. check: `01M0EHD7N7NC54RGGV5SB0EZNA`. phase closed.
