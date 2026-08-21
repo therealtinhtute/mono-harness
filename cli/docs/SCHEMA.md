@@ -129,7 +129,7 @@ The writable database is the ignored root `harness.db`. Tracked replay deltas re
 | `status` | TEXT | plan frontmatter `status` as of the last index refresh |
 | `updated_at` | TEXT | last index refresh time |
 
-Not a changeset entity — no command writes `plan_index` directly. The read path refreshes a row whenever the on-disk hash differs from the indexed `sha256`, so staleness is a comparison against the file's real content, never a timestamp guess (R9, `docs/plans/active/harness-markdown-truth.md`).
+Not a changeset entity — no command writes `plan_index` directly. The read path refreshes a row whenever the on-disk hash differs from the indexed `sha256`, so staleness is a comparison against the file's real content, never a timestamp guess (R9, `docs/decisions/0001-markdown-as-source-of-truth.md`).
 
 #### `memories`
 | Column | Type | Notes |
@@ -142,7 +142,7 @@ Not a changeset entity — no command writes `plan_index` directly. The read pat
 | `sha256` | TEXT | hash of the entry's markdown content as of the last write/rebuild |
 | `created_at` | TEXT | ULID-derived timestamp |
 
-Markdown-first, same as every other durable write path: `memory add` writes `docs/memory/{id}.md` before inserting this row, and `db rebuild` reconstructs the whole table from committed `docs/memory/*.md` content alone — no memory content is ever DB-only (R1/R4, `docs/plans/active/durable-memory.md`).
+Markdown-first, same as every other durable write path: `memory add` writes `docs/memory/{id}.md` before inserting this row, and `db rebuild` reconstructs the whole table from committed `docs/memory/*.md` content alone — no memory content is ever DB-only (R1/R4, `docs/decisions/0001-markdown-as-source-of-truth.md`).
 
 ## Table ↔ Changeset Entity Type
 

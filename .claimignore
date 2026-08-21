@@ -18,3 +18,9 @@ docs/playbooks/git.md  # deliberately deprojected (docs-architecture R13); this 
 
 skills/workflow/work/references/examples.md  # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
 skills/workflow/work/references/routing.md   # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
+
+docs/evals/failures.md                                       # historical audit measurement cited by docs/audit/sdlc-gap-analysis.md; both deleted together in 655c6ac, R12 (consumer-doc-drift-gate) restores only the three audit docs, not this measurement target
+docs/plans/completed/eval-layer.md                            # historical audit measurement cited by docs/audit/workflow-harness-ceremony-audit.md; deleted in 655c6ac alongside that audit doc, out of R12 (consumer-doc-drift-gate)'s restoration scope
+docs/plans/completed/harness-convergence-pass-v3.md           # historical audit measurement cited by docs/audit/workflow-harness-ceremony-audit.md; deleted in 655c6ac alongside that audit doc, out of R12 (consumer-doc-drift-gate)'s restoration scope
+docs/plans/completed/harness-memory-ceremony-convergence.md   # historical audit measurement cited by docs/audit/workflow-harness-ceremony-audit.md and docs/audit/sdlc-token-cache-audit.md; deleted in 655c6ac alongside both audit docs, out of R12 (consumer-doc-drift-gate)'s restoration scope
+docs/plans/completed/workflow-harness-history-2026-07.md      # historical audit measurement cited by docs/audit/workflow-harness-ceremony-audit.md; deleted in 655c6ac alongside that audit doc, out of R12 (consumer-doc-drift-gate)'s restoration scope

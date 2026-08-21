@@ -34,7 +34,11 @@ type PlanSectionView struct {
 	Omitted  string `json:"omitted,omitempty"`
 }
 
-var planPhaseHeading = regexp.MustCompile("(?m)^### phase_slug: `([^`\r\n]+)`[ \t]*\r?$")
+// planPhaseHeading matches both the canonical `### phase_slug: \`{slug}\``
+// heading and the historical `### Phase N — \`{slug}\`` (em dash) form
+// docs/plans/completed/pr60-review-fixes.md uses (R18) — a completed plan
+// that predates the phase_slug heading convention and is never rewritten.
+var planPhaseHeading = regexp.MustCompile("(?m)^### (?:phase_slug: |Phase [0-9]+ — )`([^`\r\n]+)`[ \t]*\r?$")
 
 // planPhaseListItem matches the scaffold template's list form
 // (`  - phase_slug: {slug}`, under `## Phases and Verification` →

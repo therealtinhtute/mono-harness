@@ -21,7 +21,7 @@ Start here. Every document in this repository is reachable from this page, and e
 Three classes, and the class determines who is allowed to edit the file.
 
 - **managed** — present in the binary's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by `zharness init`, and hash-tracked in the `managed_docs` table. Edit the embedded source and cut a release; a local edit is staged as a conflict under `.kit/conflicts/`, never silently overwritten.
-- **authored** — written by hand, never embedded, never regenerated. The binary neither creates nor touches these.
+- **authored** — written by hand, never embedded, never regenerated. The consumer owns the content. When managed docs are present, `zharness audit` guards only whether any authored Markdown remains; it does not judge semantic correctness, citation quality, or historical accuracy. Those checks belong to the author or external tooling.
 - **scaffold-once** — written by `zharness init` only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
 
 | Path | Class | Notes |

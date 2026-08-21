@@ -31,7 +31,7 @@ func runAudit(cmd *cobra.Command, version string) error {
 	}
 	defer db.Close()
 
-	report, err := application.Audit(db.Raw(), version)
+	report, err := application.Audit(db.Raw(), version, ".")
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("audit: %v", err))
 	}

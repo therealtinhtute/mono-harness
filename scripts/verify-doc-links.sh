@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # verify-doc-links.sh - fail on broken repo-relative cross-references in tracked docs.
 #
-# A claim is a backtick-quoted, path-like token (contains a "/") whose first
-# segment is one of the repository's own top-level doc surfaces. It passes if it
-# resolves either from the repository root or from the referencing file's own
-# directory. Anything outside the allowlist is skipped by default, so
-# illustrative example paths never become findings.
+# A claim is a backtick-quoted, path-like token or a markdown-link target. A
+# backtick claim must start at one of the repository's own top-level doc surfaces
+# and resolves from the repository root or the referencing file's directory. A
+# markdown link resolves relative to the referencing file. Anything outside the
+# allowlist is skipped by default, so illustrative example paths stay harmless.
 #
 # Exit 0 = no findings, 1 = broken references, 2 = malformed .claimignore.
 
@@ -50,7 +50,11 @@ trap 'rm -f "$LIST"' EXIT
 # docs/plans/** is excluded by category, not by exception: a plan artifact must be
 # able to name a file it will create, and a completed plan is an immutable record
 # of paths as they were. Neither is a live cross-reference.
-find docs skills rules setup -name '*.md' -type f -not -path 'docs/plans/*' >"$LIST"
+# cli/testdata/** is excluded by category, not by exception: it is a frozen Go test
+# fixture whose stale paths are asserted input, not live repository documentation.
+find docs cli skills rules setup -name '*.md' -type f \
+  -not -path 'docs/plans/*' \
+  -not -path 'cli/testdata/*' >"$LIST"
 for extra in CLAUDE.md README.md; do
   if [ -f "$extra" ]; then
     printf '%s\n' "$extra" >>"$LIST"
@@ -59,33 +63,63 @@ done
 
 # --- scan --------------------------------------------------------------------
 findings=0
+CLAIM_PATTERN='[A-Za-z0-9._/-]+/[A-Za-z0-9._/-]+\.(md|sh|go|json|yml|toml|py)'
 while IFS= read -r file; do
   dir="$(dirname "$file")"
-  claims="$(grep -ohE '`[A-Za-z0-9._/-]+/[A-Za-z0-9._/-]+\.(md|sh|go|json|yml|toml|py)`' \
-    "$file" 2>/dev/null | tr -d '`' | sort -u || true)"
+  claims="$(
+    {
+      grep -ohE '`'"$CLAIM_PATTERN"'`' "$file" 2>/dev/null |
+        tr -d '`' |
+        while IFS= read -r claim; do
+          printf 'backtick:%s\n' "$claim"
+        done || true
+      grep -ohE '\]\('"$CLAIM_PATTERN" "$file" 2>/dev/null |
+        grep -oE "$CLAIM_PATTERN" |
+        while IFS= read -r claim; do
+          printf 'link:%s\n' "$claim"
+        done || true
+    } | sort -u
+  )"
   [ -n "$claims" ] || continue
 
-  while IFS= read -r claim; do
+  while IFS=: read -r kind claim; do
     [ -n "$claim" ] || continue
 
     case "$claim" in
-      *'{'* | *'}'* | *'*'*) continue ;;
+      *'{'* | *'}'* | *'*'* | '//'*) continue ;;
     esac
 
-    first="${claim%%/*}"
-    allowed=0
-    for prefix in $ALLOWED_PREFIXES; do
-      if [ "$first" = "$prefix" ]; then
-        allowed=1
-        break
+    if [ "$kind" = "link" ]; then
+      if [ -e "$dir/$claim" ]; then
+        continue
       fi
-    done
-    if [ "$allowed" -eq 0 ]; then
-      continue
-    fi
+    else
+      relative=0
+      case "$claim" in
+        ./* | ../*) relative=1 ;;
+      esac
 
-    if [ -e "$claim" ] || [ -e "$dir/$claim" ]; then
-      continue
+      if [ "$relative" -eq 0 ]; then
+        first="${claim%%/*}"
+        allowed=0
+        for prefix in $ALLOWED_PREFIXES; do
+          if [ "$first" = "$prefix" ]; then
+            allowed=1
+            break
+          fi
+        done
+        if [ "$allowed" -eq 0 ]; then
+          continue
+        fi
+      fi
+
+      if [ "$relative" -eq 1 ]; then
+        if [ -e "$dir/$claim" ]; then
+          continue
+        fi
+      elif [ -e "$claim" ] || [ -e "$dir/$claim" ]; then
+        continue
+      fi
     fi
 
     skip=0
