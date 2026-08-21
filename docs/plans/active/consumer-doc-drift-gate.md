@@ -307,7 +307,7 @@ updated: 2026-08-21
 
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none
+- `2026-08-21T04:36:44Z` — handoff recorded. handoff: `01M0H9PS6DFANMV2PHBHYX7YRM`. open items: Phase rebuild-phase-parser is planned and unstarted. It owns R17: planFieldValue (cli/internal/application/rebuild.go:151) anchors on ^[ \t]*<key>: and cannot see a field written as a markdown list item, so rebuildStoriesFromPlan drops the story through its malformed-block continue branch with no error. Unblock: run work full phase rebuild-phase-parser.; harness.db cannot currently be regenerated from committed markdown for this plan. zharness query phases --json lists rebuild-phase-parser (minted directly by the CLI) but none of the five H3-form phases this plan declares, and a db rebuild --yes additionally loses pr60-doc-truth and pr60-go-correctness. Do not trust any phase-count check until R17 lands.; R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run.; Follow-on initiative agreed but not locked: delete completed plans outright when done (upstream harness-experimental policy). Four approved phases -- ADR absorption, three docs/plans README policy files, delete the five existing completed plans and repair their non-ADR citations, and change zharness plan complete to delete rather than move. Cannot be locked until this plan completes and frees the single-active-plan slot..
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -325,7 +325,7 @@ updated: 2026-08-21
 - latest_run_id: none
 - latest_trace_ids: []
 - latest_check_id: none
-- latest_handoff_id: none
-- blockers: none
-- open_items: [R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run]
+- latest_handoff_id: 01M0H9PS6DFANMV2PHBHYX7YRM
+- blockers: [`harness.db` is not regenerable from committed markdown for this plan. `zharness query phases --json` lists `rebuild-phase-parser` — minted directly by the CLI — but none of the five phases this plan declares in `### phase_slug:` form, and `zharness db rebuild --yes` additionally loses `pr60-doc-truth` and `pr60-go-correctness`. Cause is R17. Unblock condition: phase `rebuild-phase-parser` lands, after which `db rebuild --yes` followed by `query phases --json` must list all six slugs and lose nothing. Until then, treat any phase-count or story-row check as untrustworthy evidence.]
+- open_items: [R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run | Follow-on initiative agreed but not locked — delete completed plans outright when done, per upstream harness-experimental policy; four approved phases covering ADR absorption, three `docs/plans/` README policy files, deletion of the five existing completed plans with their non-ADR citations repaired, and changing `zharness plan complete` to delete rather than move. It cannot be locked until this initiative completes and frees the single-active-plan slot.]
 - exact_next_action: work full — start phase `rebuild-phase-parser`
