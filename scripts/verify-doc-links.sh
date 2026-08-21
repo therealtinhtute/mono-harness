@@ -90,6 +90,25 @@ while IFS= read -r file; do
     esac
 
     if [ "$kind" = "link" ]; then
+      relative=0
+      case "$claim" in
+        ./* | ../*) relative=1 ;;
+      esac
+
+      if [ "$relative" -eq 0 ]; then
+        first="${claim%%/*}"
+        allowed=0
+        for prefix in $ALLOWED_PREFIXES; do
+          if [ "$first" = "$prefix" ]; then
+            allowed=1
+            break
+          fi
+        done
+        if [ "$allowed" -eq 0 ]; then
+          continue
+        fi
+      fi
+
       if [ -e "$dir/$claim" ]; then
         continue
       fi
