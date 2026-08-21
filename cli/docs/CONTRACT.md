@@ -20,7 +20,7 @@ Every non-zero JSON response: `{"error": {"code": "snake_case_string", "message"
 
 Repository coordination is cross-process and repository-root scoped. `preflight`, `query`, `next`, `resume`, `validate`, `audit`, and `db status` hold a shared directory-inode lock for the complete read-only SQLite handle lifetime. `init`, `migrate`, `migrate layout` (including dry-run), `import`, `db rebuild`, `intake`, `story`, `intervention`, `trace add`, `decision add`, `run create`, `check record`, and `handoff record` hold the exclusive lock from before DB probing/application validation through SQLite close. Lock acquisition creates no file, times out after five seconds with `repository_lock_timeout` (2), and reports unsupported platforms as `repository_lock_unsupported` (2); Linux and Darwin are supported.
 
-Every lifecycle write goes directly to `harness.db` inside one transaction — there is no changeset log, fence, or replay step (P3, `docs/plans/active/harness-markdown-truth.md`, Wave 2). A crash mid-write leaves the transaction rolled back rather than a pending file to recover; `db rebuild --yes` reconstructs the database from committed plan markdown if it's ever suspected to have diverged.
+Every lifecycle write goes directly to `harness.db` inside one transaction — there is no changeset log, fence, or replay step (P3, `docs/decisions/0001-markdown-as-source-of-truth.md`, Wave 2). A crash mid-write leaves the transaction rolled back rather than a pending file to recover; `db rebuild --yes` reconstructs the database from committed plan markdown if it's ever suspected to have diverged.
 
 ### `id`
 - Args: none — mints one fresh ULID without reading or mutating harness state; does not require `init` or a database
@@ -58,7 +58,7 @@ Every lifecycle write goes directly to `harness.db` inside one transaction — t
 
 ### `migrate`
 - No args: applies pending schema migrations to root `harness.db`; `--json` returns `{"applied": [...], "schema_version": N}`
-- `migrate layout --to v2 [--dry-run]`: migrates legacy `.kit/harness.db` by migrating an empty temporary DB, copying every lifecycle row directly from the legacy database (FK-safe table order: intakes, stories, runs, checks, handoffs, traces, decisions, meta), proving normalized parity, safely projecting docs, then atomically activating the root DB and retiring the legacy DB (P3 wave 2 replaced the old changeset-replay path with this direct row copy, `docs/plans/active/harness-markdown-truth.md`)
+- `migrate layout --to v2 [--dry-run]`: migrates legacy `.kit/harness.db` by migrating an empty temporary DB, copying every lifecycle row directly from the legacy database (FK-safe table order: intakes, stories, runs, checks, handoffs, traces, decisions, meta), proving normalized parity, safely projecting docs, then atomically activating the root DB and retiring the legacy DB (P3 wave 2 replaced the old changeset-replay path with this direct row copy, `docs/decisions/0001-markdown-as-source-of-truth.md`)
 - Dry-run creates no root DB or managed docs. Apply leaves legacy state active on parity/docs/activation failure.
 - `--json` (layout): `{"status":"dry-run|migrated|already-v2","source_db":"...","target_db":"...","copied":N,"parity":true,"docs_written":bool,"dry_run":bool,"schema_version":N}`
 - Errors: `invalid_layout` (1), `docs_conflict` (1), `migration_conflict` / `layout_migration_failed` (2)
@@ -72,7 +72,7 @@ Every lifecycle write goes directly to `harness.db` inside one transaction — t
 
 ### `db rebuild --yes`
 - Args: `--yes` required — without it, the command refuses with `confirmation_required` and mutates nothing
-- Deletes `harness.db` and its `-wal`/`-shm` sidecars if present, re-migrates to the current schema, then reconstructs `stories`, `intakes`, `checks`, their backing `runs`, `traces`, `handoffs`, and `decisions` from every committed plan under `docs/plans/{active,completed}/*.md` alone — no read of `.kit/changesets/` (P3, `docs/plans/active/harness-markdown-truth.md`: markdown is the source of truth, the db is a rebuildable derived index). `meta` pointers (`current_phase`, `latest_run_id`, `latest_check_id`, `docs_version`) are left unset — nothing in committed markdown proves which run/check is "latest". A `runs` row is only reconstructed when a Validation (check) entry backreferences it, since that is the only entry shape carrying the run's story slug; `traces`/`decisions` get freshly minted ids (markdown never recorded their own); `intakes.type`/`summary` are synthesized placeholders (a plan's frontmatter carries `intake_id` and `lane`, never the original type/summary). Database-only: unlike `init`, it never touches `docs/`, `AGENTS.md`, or `.gitignore`.
+- Deletes `harness.db` and its `-wal`/`-shm` sidecars if present, re-migrates to the current schema, then reconstructs `stories`, `intakes`, `checks`, their backing `runs`, `traces`, `handoffs`, and `decisions` from every committed plan under `docs/plans/{active,completed}/*.md` alone — no read of `.kit/changesets/` (P3, `docs/decisions/0001-markdown-as-source-of-truth.md`: markdown is the source of truth, the db is a rebuildable derived index). `meta` pointers (`current_phase`, `latest_run_id`, `latest_check_id`, `docs_version`) are left unset — nothing in committed markdown proves which run/check is "latest". A `runs` row is only reconstructed when a Validation (check) entry backreferences it, since that is the only entry shape carrying the run's story slug; `traces`/`decisions` get freshly minted ids (markdown never recorded their own); `intakes.type`/`summary` are synthesized placeholders (a plan's frontmatter carries `intake_id` and `lane`, never the original type/summary). Database-only: unlike `init`, it never touches `docs/`, `AGENTS.md`, or `.gitignore`.
 - `--json`: `{"status":"rebuilt","schema_version":N,"stories":N,"intakes":N,"runs":N,"checks":N,"handoffs":N,"traces":N,"decisions":N}`
 - Errors: `confirmation_required` (1), `db_not_writable` (2), `markdown_rebuild_failed` (2)
 - Consumer: recovery after any suspected DB/markdown divergence, or on a fresh clone where `harness.db` doesn't exist yet (`continuity`)
@@ -159,7 +159,7 @@ Durable, cross-session agent memory: a markdown-first `docs/memory/{id}.md` writ
   - `--type` is required in this mode; lists `memories` index rows (path + metadata, no body) filtered by type and optionally scope/plan-id, ordered `created_at DESC, id DESC`
   - `--json`: `[MemoryListView, ...]` — same fields as `MemoryView` minus `body`
   - Errors: `missing_required_field` (1, missing `--type`), `invalid_scope` (1), `db_unreadable` (2)
-- `memory query --keywords "..." [--type "..."] [--scope plan|global] [--plan-id {ulid}]` (P6, `docs/plans/active/retrieval-router.md` — additive ranked mode, R5: the plain filter mode above is unchanged)
+- `memory query --keywords "..." [--type "..."] [--scope plan|global] [--plan-id {ulid}]` (P6, `docs/decisions/0003-durable-memory-not-wired-into-playbooks.md` — additive ranked mode, R5: the plain filter mode above is unchanged)
   - `--keywords` switches the command to ranked mode: `--type` becomes optional (still narrows candidates when given, same as `--scope`/`--plan-id`); each surviving candidate's stored `type` plus markdown body is scored by case-insensitive keyword-token match count, zero-score entries are dropped, and the rest are ordered by score descending then `created_at DESC` as a tiebreak
   - `--json`: `[MemoryScoredView, ...]` — `MemoryListView`'s fields plus `score` (int)
   - Errors: `missing_required_field` (1, `--keywords` present but blank), `invalid_scope` (1), `db_unreadable` (2)
@@ -213,8 +213,9 @@ Durable, cross-session agent memory: a markdown-first `docs/memory/{id}.md` writ
 ## Research (Phase 6 — validation-gate)
 
 ### `audit`
-- Args: none — composes the database-backed `resume` drift reader with `validate` lifecycle/link findings
-- `--json`: `{"pointer_drift":[...],"contract_violations":[...],"unlinked_proofs":[]}`, stable ordering; `unlinked_proofs` remains an always-empty compatibility field
+- Args: none — composes the database-backed `resume` drift reader with `validate` lifecycle/link findings and read-only documentation-presence findings
+- `--json`: `{"pointer_drift":[...],"contract_violations":[...],"unlinked_proofs":[]}`, stable ordering; the three top-level arrays are fixed, and documentation findings add optional `identifier` and `severity` fields to their `contract_violations` entry
+- The authored-docs guard emits `identifier: "authored_docs_missing"` with `severity: "warning"` when embedded managed documentation is present on disk but `docs/` contains no Markdown outside the managed path set; this reports presence only, not content correctness
 - Proof-link and check artifact paths are optional/deprecated metadata and are not existence-checked
 - Errors: `db_unreadable` (2)
 - Consumer: `check` (wired into gate flow)

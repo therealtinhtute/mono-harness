@@ -151,13 +151,43 @@ func rebuildPlanPaths() ([]string, error) {
 	return paths, nil
 }
 
+// planFieldLegacyAlias names the field key docs/plans/completed/pr60-review-fixes.md
+// (R18) uses in place of the canonical key to-plan writes — that plan
+// predates to-plan's field-naming convention and is never rewritten.
+var planFieldLegacyAlias = map[string]string{
+	"story_id":   "story",
+	"depends_on": "depends on",
+}
+
 // planFieldValue finds the first "key: value" line anywhere in block — the
 // same single-match assumption SetPlanPhaseStatus (plan_phase_status.go)
 // already relies on for a phase block's own status line, extended to the
 // block's other scalar fields (story_id, goal, depends_on), which to-plan
-// places immediately after phase_slug, before any nested waves/tasks.
+// places immediately after phase_slug, before any nested waves/tasks. If key
+// itself isn't found, planFieldLegacyAlias's historical name is tried next.
+// A value starting with a backtick is trimmed to the text between its first
+// backtick pair, since the legacy form quotes the value and may append
+// trailing prose after it (e.g. "`slug` — explanation").
 func planFieldValue(block, key string) (string, bool) {
-	re := regexp.MustCompile(`(?m)^[ \t]*` + regexp.QuoteMeta(key) + `: ?(.*?)[ \t]*\r?$`)
+	value, ok := planFieldValueExact(block, key)
+	if !ok {
+		if alias, hasAlias := planFieldLegacyAlias[key]; hasAlias {
+			value, ok = planFieldValueExact(block, alias)
+		}
+	}
+	if !ok {
+		return "", false
+	}
+	if strings.HasPrefix(value, "`") {
+		if end := strings.Index(value[1:], "`"); end != -1 {
+			value = value[1 : end+1]
+		}
+	}
+	return value, true
+}
+
+func planFieldValueExact(block, key string) (string, bool) {
+	re := regexp.MustCompile(`(?m)^[ \t]*(?:-[ \t]*)?` + regexp.QuoteMeta(key) + `: ?(.*?)[ \t]*\r?$`)
 	m := re.FindStringSubmatch(block)
 	if m == nil {
 		return "", false

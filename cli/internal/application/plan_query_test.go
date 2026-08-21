@@ -115,6 +115,49 @@ func TestExtractPlanPhaseBlockHandlesCRLF(t *testing.T) {
 	}
 }
 
+// planQueryEmDashHeadingFixture mirrors docs/plans/completed/pr60-review-fixes.md's
+// literal phase-heading shape ("### Phase N — `{slug}`", em dash) — R18: neither
+// planPhaseHeading nor planPhaseListItem matched it, so the phase block was never
+// found at all.
+const planQueryEmDashHeadingFixture = "## Phases and Verification\n" +
+	"\n" +
+	"### Phase 1 — `pr60-go-correctness`\n" +
+	"- story: `01M0EG9ZS5XTQJV3J5J2CZ689B`\n" +
+	"- status: done\n" +
+	"- goal: close the three Go defects\n" +
+	"\n" +
+	"### Phase 2 — `pr60-doc-truth`\n" +
+	"- story: `01M0EG9ZSERMRZVPE860XRCJPR`\n" +
+	"- status: done\n" +
+	"- depends on: `pr60-go-correctness` — R10 verifies citations\n" +
+	"- goal: make every document claim true again\n" +
+	"\n" +
+	"## Progress\n" +
+	"- none\n"
+
+func TestExtractPlanPhaseBlockEmDashHeadingFormFindsPhase(t *testing.T) {
+	body, ok := extractPlanPhaseBlock(planQueryEmDashHeadingFixture, "pr60-go-correctness")
+	if !ok {
+		t.Fatalf("extractPlanPhaseBlock: not found for em-dash heading form")
+	}
+	if !containsAll(body, "story: `01M0EG9ZS5XTQJV3J5J2CZ689B`", "close the three Go defects") {
+		t.Fatalf("body = %q, want the pr60-go-correctness block only", body)
+	}
+	if containsAll(body, "pr60-doc-truth", "make every document claim") {
+		t.Fatalf("body = %q, leaked the next phase's content", body)
+	}
+}
+
+func TestExtractPlanPhaseBlockEmDashHeadingFormLastPhaseStopsAtNextTopLevelHeading(t *testing.T) {
+	body, ok := extractPlanPhaseBlock(planQueryEmDashHeadingFixture, "pr60-doc-truth")
+	if !ok {
+		t.Fatalf("extractPlanPhaseBlock: not found for em-dash heading form")
+	}
+	if containsAll(body, "## Progress", "- none") {
+		t.Fatalf("body = %q, leaked past the phase block into ## Progress", body)
+	}
+}
+
 // planQueryListFixture mirrors the literal shape `zharness scaffold plan`
 // produces once `to-plan` fills it in without `###` headings — the shape
 // audited in docs/audit/sdlc-token-cache-audit.md §4, which the pre-fix

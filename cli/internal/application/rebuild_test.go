@@ -187,6 +187,92 @@ func TestRebuildFromMarkdownDropsUncheckedRun(t *testing.T) {
 	}
 }
 
+// TestRebuildFromMarkdownListItemStoryFields proves R17: a phase block
+// under the `### phase_slug:` heading form (plan_query.go's other
+// supported shape) writes its scalar fields as markdown list items —
+// `- story_id: ...` — the form to-plan actually emits for this shape.
+// planFieldValue's regex anchors on `^[ \t]*story_id:` and so misses the
+// leading `- `, and rebuildStoriesFromPlan silently drops the story
+// through its malformed-block continue branch.
+func TestRebuildFromMarkdownListItemStoryFields(t *testing.T) {
+	chdirFixture(t)
+	storyID := ulid.Make().String()
+	const slug = "list-item-fixture"
+	planContent := "---\n" +
+		"id: " + ulid.Make().String() + "\n" +
+		"type: plan\n" +
+		"status: active\n" +
+		"---\n\n" +
+		"# Plan: List-item fixture\n\n" +
+		"## Phases and Verification\n" +
+		"### phase_slug: `" + slug + "`\n" +
+		"- story_id: " + storyID + "\n" +
+		"- status: planned\n" +
+		"- goal: prove list-item fields rebuild\n" +
+		"- depends_on: none\n\n" +
+		"## Progress\n\n## Decisions\n\n## Validation\n"
+	writeFile(t, filepath.Join("docs", "plans", "active", "list-item-fixture.md"), planContent)
+
+	db := freshDB(t)
+	result, err := RebuildFromMarkdown(db)
+	if err != nil {
+		t.Fatalf("RebuildFromMarkdown: %v", err)
+	}
+	if result.Stories != 1 {
+		t.Fatalf("RebuildResult.Stories = %d, want 1", result.Stories)
+	}
+	exists, err := storyRowExistsByID(db, storyID)
+	if err != nil {
+		t.Fatalf("storyRowExistsByID: %v", err)
+	}
+	if !exists {
+		t.Fatalf("story %s not found after rebuild: list-item field form was dropped", storyID)
+	}
+}
+
+// TestRebuildFromMarkdownEmDashHeadingLegacyFields proves R18: even once the
+// em-dash heading form ("### Phase N — `{slug}`", plan_query.go) is
+// discovered, docs/plans/completed/pr60-review-fixes.md's own field names --
+// `story:` with a backtick-wrapped value, `depends on:` with trailing prose
+// after the value -- are not the `story_id:`/`depends_on:` keys
+// planFieldValue matches, so rebuildStoriesFromPlan still takes its
+// malformed-block continue branch and drops the story.
+func TestRebuildFromMarkdownEmDashHeadingLegacyFields(t *testing.T) {
+	chdirFixture(t)
+	storyID := ulid.Make().String()
+	const slug = "em-dash-fixture"
+	planContent := "---\n" +
+		"id: " + ulid.Make().String() + "\n" +
+		"type: plan\n" +
+		"status: active\n" +
+		"---\n\n" +
+		"# Plan: Em-dash fixture\n\n" +
+		"## Phases and Verification\n" +
+		"### Phase 1 — `" + slug + "`\n" +
+		"- story: `" + storyID + "`\n" +
+		"- status: planned\n" +
+		"- depends on: `none` — no upstream phase\n" +
+		"- goal: prove em-dash heading legacy fields rebuild\n\n" +
+		"## Progress\n\n## Decisions\n\n## Validation\n"
+	writeFile(t, filepath.Join("docs", "plans", "active", "em-dash-fixture.md"), planContent)
+
+	db := freshDB(t)
+	result, err := RebuildFromMarkdown(db)
+	if err != nil {
+		t.Fatalf("RebuildFromMarkdown: %v", err)
+	}
+	if result.Stories != 1 {
+		t.Fatalf("RebuildResult.Stories = %d, want 1", result.Stories)
+	}
+	exists, err := storyRowExistsByID(db, storyID)
+	if err != nil {
+		t.Fatalf("storyRowExistsByID: %v", err)
+	}
+	if !exists {
+		t.Fatalf("story %s not found after rebuild: em-dash heading form / legacy field names were dropped", storyID)
+	}
+}
+
 type rebuildFixtureRows struct {
 	planID, intakeID, lane      string
 	storyID, slug, status       string
