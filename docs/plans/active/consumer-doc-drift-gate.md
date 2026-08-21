@@ -5,7 +5,7 @@ intake_id: 01M0FAY5EZSM3CPBCAXF6RTCQB
 lane: normal
 status: active
 created: 2026-08-20
-updated: 2026-08-20
+updated: 2026-08-21
 ---
 
 # Plan: consumer-repo documentation — guard the authored half, generate nothing
@@ -22,6 +22,7 @@ updated: 2026-08-20
   - A file under `docs/plans/`, `docs/decisions/`, or `docs/audit/` never produces a drift finding, no matter how far the code has moved, because those are point-in-time records.
   - A repository whose authored document carries no pin produces no drift finding and no error — pinning is opt-in, and its absence is not a defect.
   - `zharness init` creates no generated prose. The one new scaffold-once file is an unanswered question form, and `zharness audit` reports it as unanswered rather than counting it as documentation.
+  - `zharness db rebuild --yes` followed by `zharness query phases --json` lists every phase slug this plan declares, and loses no story that existed before the rebuild. A row the committed markdown cannot regenerate is the one failure ADR 0001 does not tolerate.
   - `cd cli && go test ./...` passes.
   - Each phase merges and stays useful even if no later phase ships.
 
@@ -55,10 +56,11 @@ updated: 2026-08-20
   - R10 [accepted]: `scripts/verify-doc-links.sh` scans `cli/` in addition to `docs`, `skills`, `rules`, and `setup`. Falsifiable: after the change and before any citation repair, the gate exits non-zero and names at least one finding inside `cli/docs/`. | source: `scripts/verify-doc-links.sh:53` vs `:18` (verified adversarially 2026-08-20)
   - R11 [accepted]: `scripts/verify-doc-links.sh` reports a repository-relative path written as a markdown link target, not only one written inside backticks. Today it matches the backtick form only. This yields **zero findings on the current tree** — every markdown link in the repository resolves — so it is prophylactic hardening, not a repair, and its falsification is synthetic: inject one broken markdown link, confirm it is reported, revert. Relative targets must resolve against the referencing file's directory, including a leading `../`, which the current first-segment allowlist check would reject outright. | source: `scripts/verify-doc-links.sh:64` (regex is backtick-delimited); simulated over all scanned files 2026-08-20
   - R12 [accepted]: The three audit documents deleted by `655c6ac` are restored verbatim from `655c6ac^` to their original paths under `docs/audit/`, and `docs/README.md`'s ownership table continues to cover them. Restoration is chosen over rewriting because 74 live citations — including six `.claimignore` justification reasons and requirements already accepted in completed plans — name these files as authority; the citations are correct and the files are what went missing. | source: `git log --diff-filter=D` and `git show 655c6ac^:` (verified 2026-08-20); `docs/decisions/0004-docs-directory-deletion-655c6ac.md`
-  - R13 [accepted]: No file under `cli/docs/` cites a repository path that does not exist. The six citations naming `docs/plans/active/` paths for plans now under `docs/plans/completed/` are repointed to the completed path or to the governing ADR. Falsifiable: `bash scripts/verify-doc-links.sh` passes with R10 and R11 in force. | source: measured working tree 2026-08-20; Fuchsia RFC guidance (authority above)
+  - R13 [accepted]: No file under `cli/docs/` cites a repository path that does not exist. The six citations naming `docs/plans/active/` paths for plans now under `docs/plans/completed/` are repointed to the governing decision record under `docs/decisions/`, never to `docs/plans/completed/`. A completed plan is a retired record whose lasting result belongs in a decision record; a citation aimed at the completed path is a link scheduled to break a second time. Falsifiable: `bash scripts/verify-doc-links.sh` passes with R10 and R11 in force, and `grep -rn 'docs/plans/completed/' cli/docs/` returns nothing. | source: measured working tree 2026-08-20; Fuchsia RFC guidance (authority above); owner decision this session
   - R14 [accepted]: No file under `cli/docs/embedded/` cites a repository-specific dated record. The three citations of `docs/audit/consumer-adoption-audit.md` in `handoff.md`, `work.md`, and `brainstorm.md` are removed or replaced by the rule they encode, because a consumer repository never contains that file. Generic `docs/plans/active/{slug}.md` template placeholders are not affected — they describe a live mechanism. | source: `cli/docs/embedded/playbooks/` measured 2026-08-20; `cli/internal/application/init.go` (path absent from every scaffold set)
   - R15 [accepted]: `zharness init` scaffolds `docs/ARCHITECTURE.md` once, when absent, containing at most five unanswered questions and no prose describing the repository. The questions cover: the problem and its audience; the main use cases in domain language; domain nouns whose meaning is non-standard; invariants that fail silently; and boundaries that must not be crossed. None is answerable by reading the repository — that is the admission test for each question. `zharness audit` reports the file as unanswered while every question is blank, and never counts it as documentation for R2. Falsification and rollback: if two or three real consumer repositories leave it blank, the entry is deleted from `scaffoldOnceDocs` and no migration is required. | source: `docs/research/agent-documentation-evidence.md` F3 (rationale +0.071 vs code-derivable +0.007) and F1 (generation is net-negative, elicitation is not measured as such); narrows `docs/plans/completed/docs-architecture.md` NG4
   - R16 [accepted]: Before this plan moves to `docs/plans/completed/`, every citation naming its active path by slug is repointed. Confirmed clean at lock time — `docs/README.md:15` and `docs/ARCHITECTURE.md:23` link generically to `plans/active/`, not to this slug — so this is a closing step, not a repair. | source: the six dead citations measured above, which are this exact failure mode one initiative later
+  - R17 [accepted]: `zharness db rebuild --yes` reconstructs a phase's story row from committed plan markdown regardless of which phase-block form the plan uses. `planFieldValue` (`cli/internal/application/rebuild.go:151`) matches `^[ \t]*<key>:` only, so a field written as a markdown list item -- `- story_id: 01M0...`, the form this plan and `docs/plans/completed/pr60-review-fixes.md` both use -- never matches, and `rebuildStoriesFromPlan` takes its `continue // malformed/hand-edited phase block` branch and drops the story silently. Measured 2026-08-20: `grep -c '^[[:space:]]*story_id:'` returns 2/2 for `docs/plans/completed/docs-architecture.md` (indented form, rebuilds) and 0/5 for this plan (list form, does not). After `zharness db rebuild --yes` all five of this plan's story IDs are absent, and two stories present beforehand -- `pr60-doc-truth` and `pr60-go-correctness` -- are lost. This is a live violation of `docs/decisions/0001-markdown-is-the-source-of-truth.md`: rows exist that markdown cannot regenerate. Falsifiable: after the fix, `zharness db rebuild --yes` followed by `zharness query phases --json` lists all five phase slugs of this plan, and no story present before the rebuild is missing after it. | source: `cli/internal/application/rebuild.go:150-165`; `cli/internal/application/plan_query.go:37,45`; reproduced against the working tree 2026-08-20
 
 ## Non-goals
 - NG1: No documentation generator of any kind — not AST-derived, not LLM-derived, not a repository wiki, and no prose written into any file by the CLI. F1 measures generation as net-negative on repositories that already have `docs/`, which is every repository that has run `zharness init`. `docs/plans/completed/docs-architecture.md` NG5 stays in force. R15's question form contains no statement about the repository and is therefore not generation.
@@ -102,6 +104,40 @@ updated: 2026-08-20
 <!-- Phase and task definitions are immutable after to-plan. Do not add task status fields. Append-only Progress is the sole task execution-status source. Only each phase lifecycle status changes to mirror DB transitions: to-plan=planned; work after run create=in-progress; clean durable check=checked; closing handoff=done. Each planned phase records phase_slug, story_id, status, goal, depends_on, waves, tasks, and checks. -->
 - planning_status: planned
 - phases:
+
+### phase_slug: `rebuild-phase-parser`
+- story_id: 01M0H8NGCWZ28H6KDSGSAT0V8D
+- status: planned
+- goal: make `db rebuild` reconstruct a story row from every phase-block form the repository's plans actually use, so the database stays regenerable from committed markdown as ADR 0001 requires.
+- depends_on: none
+- requirements: R17
+- surfaces_allowed: `cli/internal/application/rebuild.go`, `cli/internal/application/rebuild_test.go`
+- surfaces_avoided: `docs/`, `scripts/`, `cli/internal/application/plan_query.go`, `cli/internal/application/plan_lifecycle.go`
+- waves:
+  - **Wave 1 — reproduce the loss**
+    - task: pin the defect with a failing test before touching the parser, using the list-item form this plan uses.
+      - surfaces: `cli/internal/application/rebuild_test.go`
+      - expected_output: a test that rebuilds a plan whose phase block writes `- story_id: <ulid>` and asserts the story row exists; it fails on the current parser.
+      - check: `cd cli && go test ./internal/application/ -run Rebuild` fails, and the failure names the missing story row rather than a panic or a compile error.
+      - stop_condition: the new test passes before the fix. That would mean the defect is elsewhere; stop and re-diagnose rather than editing `planFieldValue`.
+  - **Wave 2 — widen the field matcher**
+    - task: allow an optional markdown list marker before the key in `planFieldValue`, changing nothing else about the match.
+      - surfaces: `cli/internal/application/rebuild.go:150-156`
+      - expected_output: the regex accepts `story_id:`, `  story_id:`, and `- story_id:` and still anchors to line start; no other function is edited.
+      - check: `cd cli && go test ./...` passes, including the Wave 1 test.
+      - check: `git diff --stat cli/internal/application/rebuild.go` shows a single-line change to the regex.
+  - **Wave 3 — prove the database is regenerable**
+    - task: rebuild against the real repository and confirm no story is lost and every declared phase returns.
+      - command: `zharness db rebuild --yes --json`
+      - check: `zharness query phases --json` lists `rebuild-phase-parser`, `audit-restore`, `link-gate-widening`, `authored-docs-guard`, `pin-drift-finding`, and `architecture-elicitation`.
+      - check: `zharness query phases --json` still lists `pr60-doc-truth` and `pr60-go-correctness`, which the current parser drops.
+      - stop_condition: any story present before the rebuild is absent after it. Do not proceed to `audit-restore` with a lossy rebuild.
+- checks:
+  - `cd cli && go test ./...` passes.
+  - `bash scripts/verify-doc-links.sh` passes (this phase touches no markdown).
+  - `zharness db rebuild --yes --json` followed by `zharness query phases --json` shows a story count no lower than before the rebuild.
+  - `zharness check record` verdict is `APPROVED` or `APPROVE_WITH_REQUESTS`.
+- escalation: if a plan form still fails to rebuild after the regex widens, the gap is in `extractPlanPhaseBlock` (`cli/internal/application/plan_query.go:163`) rather than in field matching. That file is on the avoided list for this phase — stop and route to `brainstorm refine` instead of widening scope.
 
 ### phase_slug: `audit-restore`
 - story_id: 01M0FTV4RHEWQG12ND15PACVGW
@@ -276,6 +312,8 @@ updated: 2026-08-20
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
 - `2026-08-20T10:21:54Z` — Guard authored consumer-repo documentation instead of generating it; lock the initiative as consumer-doc-drift-gate.. rationale: External evidence (docs/research/agent-documentation-evidence.md F1) measures LLM-generated context files at -0.5% to -2% task success and +20% cost on repositories that already carry docs, and only positive (+2.7%) once every .md and docs/ is deleted -- which is the opposite of a zharness-initialized repo. F3 puts documentation value at +0.007 (zero) on code-derivable questions and +0.071 on rationale. F6 disqualifies every external generator: DeepWiki is public-repo-only on the free tier, codesight is TS/JS-only, CodeWiki has no staleness answer. F5 shows four independent products converging on a four-piece drift mechanism of which this repo already holds three, missing only the pinned baseline SHA. Generating is crowded and net-negative here; guarding matches what the CLI already is..
+- `2026-08-21T04:19:13Z` — R13 chốt: dead docs/plans/active/ citations repoint to the governing decision record, never to docs/plans/completed/.. rationale: The owner has adopted upstream harness-experimental policy — a completed plan is deleted once a decision record absorbs its lasting result. Repointing a citation at docs/plans/completed/ would therefore schedule the same link to break a second time, one initiative later, which is exactly the failure mode R16 exists to prevent..
+- `2026-08-21T04:19:13Z` — Add R17 and a new first phase rebuild-phase-parser to fix planFieldValue in rebuild.go.. rationale: Reproduced 2026-08-20: planFieldValue (rebuild.go:151) anchors on ^[ \t]*<key>: and so cannot see a field written as a markdown list item. rebuildStoriesFromPlan then takes its malformed-block continue branch and drops the story with no error. Measured: 0 of 5 story_id lines in this plan match the regex, 2 of 2 match in docs-architecture.md. After db rebuild --yes all five of this plan story IDs are absent and pr60-doc-truth and pr60-go-correctness are lost. Rows that markdown cannot regenerate violate ADR 0001 directly, and PR #67 body claims a query phases verification that does not reproduce locally, so the defect blocks trusting any later phase gate..
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
@@ -290,4 +328,4 @@ updated: 2026-08-20
 - latest_handoff_id: none
 - blockers: none
 - open_items: [R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run]
-- exact_next_action: work full — start phase `audit-restore`
+- exact_next_action: work full — start phase `rebuild-phase-parser`
