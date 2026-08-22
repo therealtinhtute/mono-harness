@@ -391,7 +391,7 @@ updated: 2026-08-21
 
 ### phase_slug: `pin-drift-finding`
 - story_id: 01M0FTV8M4ERF0H3SKDBED05GW
-- status: planned
+- status: in-progress
 - goal: an authored document may declare a pinned commit, and `zharness audit` reports when source paths it cites have moved past that pin, naming the document, the moved citations, and the size of the change.
 - depends_on: authored-docs-guard
 - requirements: R3, R4, R5, R6, R7, R9
@@ -503,6 +503,7 @@ updated: 2026-08-21
 - `2026-08-22T07:33:53Z` — wave 2, task add a resolver returning the git repository root, cached per-process with sync.Once so one invocation shells out at most once, and falling back to today's bare-filename cwd resolution when git-root discovery fails. task_status: `DONE`. run: `01M0M5ZADQTJTST98FKV20T733`. summary: paths.go: gitRepositoryRoot() shells out to git rev-parse --show-toplevel once per process (exec.Command precedent from plan_resolve.go:200), trims output, returns empty on error/missing git; resolveDBPath/resolveLegacyDBPath join root with dbPath/.kit/harness.db and fall back to the bare constants outside a repository. Tests re-arm the cache via resetGitRootCache to isolate per-test temp repos. All three DBPath tests pass; cd cli && go build ./... passes..
 - `2026-08-22T07:37:31Z` — wave 3, task replace each of the confirmed dbPath references with a call to the resolver, changing nothing else about that command's control flow or error text shape. task_status: `DONE`. run: `01M0M5ZADQTJTST98FKV20T733`. summary: Migrated all references across the 18 call-site files (audit, check, db, decision, handoff, import, init, intake, memory, migrate, plan, preflight, query, resume, run, story, trace, validate): Exists/Open/OpenReadOnly and error-message concatenations now use resolveDBPath()/resolveLegacyDBPath(); init db_path JSON key name unchanged; migrate.go:74 verified safe because layout_migration.go rootedPath() passes absolute paths through unchanged. grep -rn '\bdbPath\b' outside paths.go: zero matches. cd cli && go build ./... && go test ./... pass; git diff --stat touches exactly paths.go, paths_test.go, and the 18 call-site files..
 - `2026-08-22T07:39:29Z` — wave 4, task reproduce R22's exact falsification command against the real repository, from a real subdirectory, not a temporary fixture. task_status: `DONE_WITH_CONCERNS`. run: `01M0M5ZADQTJTST98FKV20T733`. summary: Built zharness from source (go build ./cmd/zharness): (cd cli/internal/application && zharness query phases --json) exits 0 and is byte-identical (cmp) to the root-cwd run — R22 falsification satisfied; find . -name 'harness.db*' lists database files only at the repository root, none under cli/. Concern: invocation_log.go still writes .kit/log/zharness.jsonl cwd-relative — a fresh log dir reappeared under cli/internal/application/ after one subdir invocation; out of R22 scope (db resolution only) and outside this phase's surfaces_allowed, so leaked dir trashed and gap reported for a follow-up requirement instead of widening this phase. verify-doc-links.sh exits 0; zharness validate valid..
+- `2026-08-22T09:50:48Z` — wave 1. run: `01M0ME03TSWV60F3Q3Z62JVZQD`. summary: phase pin-drift-finding started: run 01M0ME03TSWV60F3Q3Z62JVZQD created, plan phase status synced to in-progress (trace CLI rejects task_status=in-progress per decision 01M0M5VRFQH6AGEQZRYYVXRAR5 — wave-summary precedent reused); Wave 1 (pin format + citation extraction) next.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -551,12 +552,12 @@ updated: 2026-08-21
   - `find . -name 'harness.db*' -not -path './.git/*'` → db files only at repository root; none under cli/
 
 ## Current State and Next Action
-- active_phase: hygiene-guard-widening
-- lifecycle_status: checked
-- latest_run_id: 01M0JAYZJW3MFA7H9DVRWQ510C
-- latest_trace_ids: [01M0JB1G3CQD1XWX9ZSPFYH6NV, 01M0JB40N7XGPZEAW28PFPJCBE]
-- latest_check_id: 01M0JB4NAZE9K59H60MPXW7XRT
+- active_phase: pin-drift-finding
+- lifecycle_status: in-progress
+- latest_run_id: 01M0ME03TSWV60F3Q3Z62JVZQD
+- latest_trace_ids: []
+- latest_check_id: 01M0M6RZ7964SG1Z47DD70NCHN
 - latest_handoff_id: 01M0H9PS6DFANMV2PHBHYX7YRM
 - blockers: none
-- open_items: [R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run | Follow-on initiative agreed but not locked — delete completed plans outright when done, per upstream harness-experimental policy; four approved phases covering ADR absorption, three `docs/plans/` README policy files, deletion of the five existing completed plans with their non-ADR citations repaired, and changing `zharness plan complete` to delete rather than move. It cannot be locked until this initiative completes and frees the single-active-plan slot. | B3 not yet handled: commit 2ddc83c (message "feat(all): - add new feature.", 25 files) is authored by huaquanghan <tinhpt662299@gmail.com>, not the session's git user, and is missing the required trailer; PR #67's body still claims "Plan-only change. One markdown file, no code, no behavior change." Needs owner confirmation before rewriting published history.]
-- exact_next_action: resolve B3 (commit 2ddc83c message/author/trailer, stale PR #67 body) — confirm approach with owner before rewriting published history — then push R20/R21 fixes; `pin-drift-finding` and `architecture-elicitation` remain planned, independent of this phase
+- open_items: [R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run | Follow-on initiative agreed but not locked — delete completed plans outright when done, per upstream harness-experimental policy; four approved phases covering ADR absorption, three `docs/plans/` README policy files, deletion of the five existing completed plans with their non-ADR citations repaired, and changing `zharness plan complete` to delete rather than move. It cannot be locked until this initiative completes and frees the single-active-plan slot. | B3 resolved per decision 01M0M5XNE6VJJEWMR5GF2S — commit replaced by rebase before #67 merge, PR body corrected. | invocation_log.go still writes .kit/log/ cwd-relative (R22 wave-4 concern, follow-up requirement candidate, outside this plan's scope)]
+- exact_next_action: execute phase `pin-drift-finding` Wave 1 (pin format + citation extraction), then Wave 2 (drift measurement); after that `architecture-elicitation` remains planned

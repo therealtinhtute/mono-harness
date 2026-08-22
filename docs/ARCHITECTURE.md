@@ -1,5 +1,7 @@
 # Architecture
 
+<!-- zharness:pin 1f296887f6dedc53604a9d75ef83be4f857d44ce -->
+
 How the harness actually works, and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
 
 ## The one idea
