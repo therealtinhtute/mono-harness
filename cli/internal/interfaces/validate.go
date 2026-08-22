@@ -24,7 +24,7 @@ func newValidateCmd() *cobra.Command {
 
 func runValidate(cmd *cobra.Command) error {
 	var raw *sql.DB
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
 		db = nil
 	} else if err != nil {

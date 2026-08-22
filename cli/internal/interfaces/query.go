@@ -49,9 +49,9 @@ func runQuery(cmd *cobra.Command, view, phaseFilter string, latest bool, runID s
 		return emitQueryResult(cmd, v, fmt.Sprintf("%+v", v))
 	}
 
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "query: no db at "+dbPath+"; run `zharness init` first")
+		return newSystemError("db_unreadable", "query: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("query", err)

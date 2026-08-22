@@ -70,10 +70,10 @@ func newMemoryCmd() *cobra.Command {
 }
 
 func runMemoryAdd(cmd *cobra.Command, memType, scope, planID, summary string) error {
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "memory add: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "memory add: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("memory add: %v", err))
 	}
@@ -99,9 +99,9 @@ func runMemoryGet(cmd *cobra.Command, id string) error {
 		return newUserError("missing_required_field", "memory get: --id is required")
 	}
 
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "memory get: no db at "+dbPath+"; run `zharness init` first")
+		return newSystemError("db_unreadable", "memory get: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("memory get", err)
@@ -124,9 +124,9 @@ func runMemoryGet(cmd *cobra.Command, id string) error {
 }
 
 func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string) error {
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "memory query: no db at "+dbPath+"; run `zharness init` first")
+		return newSystemError("db_unreadable", "memory query: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("memory query", err)
@@ -149,9 +149,9 @@ func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string) error {
 }
 
 func runMemoryQueryRanked(cmd *cobra.Command, keywords, memType, scope, planID string) error {
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "memory query: no db at "+dbPath+"; run `zharness init` first")
+		return newSystemError("db_unreadable", "memory query: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("memory query", err)

@@ -47,10 +47,10 @@ func runTraceAdd(cmd *cobra.Command, wave int, summary, runID, task, taskStatus,
 		return runTraceAddBatch(cmd, wave, runID, task, taskStatus, summary, tasksRaw)
 	}
 
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "trace add: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "trace add: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("trace add: %v", err))
 	}
@@ -80,10 +80,10 @@ func runTraceAddBatch(cmd *cobra.Command, wave int, runID, task, taskStatus, sum
 		return newUserError("invalid_tasks", fmt.Sprintf("trace add: --tasks is not valid JSON: %v", err))
 	}
 
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "trace add: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "trace add: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("trace add: %v", err))
 	}

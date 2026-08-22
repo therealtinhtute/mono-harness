@@ -34,7 +34,7 @@ func runResume(cmd *cobra.Command, version string) error {
 		return newUserError("invalid_arguments", "resume: --facts and --json are mutually exclusive")
 	}
 
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
 		return emitResume(cmd, application.ResumeView{Drift: []application.DriftFinding{}, Readiness: "no-harness"})
 	}

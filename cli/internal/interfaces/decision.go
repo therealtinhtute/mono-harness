@@ -40,10 +40,10 @@ func runDecisionAdd(cmd *cobra.Command, decisionsRaw, runID string) error {
 		return newUserError("invalid_decisions", fmt.Sprintf("decision add: --decisions is not valid JSON: %v", err))
 	}
 
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "decision add: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "decision add: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("decision add: %v", err))
 	}
