@@ -146,7 +146,7 @@ func observePreflightState(version string) (dbStatus, docsStatus string, hasInPr
 	if !infrastructure.Exists(preflightDocsPath) {
 		docsStatus = application.PreflightDocsMissing
 	}
-	opened, err := infrastructure.OpenReadOnly(dbPath)
+	opened, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
 		return application.PreflightDBMissing, docsStatus, false, nil
 	}

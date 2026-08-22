@@ -63,13 +63,13 @@ func runDBRebuild(cmd *cobra.Command, yes bool) error {
 			"db rebuild: pass --yes to confirm deleting harness.db (and its -wal/-shm sidecars) and rebuilding it from committed plan markdown alone")
 	}
 
-	for _, path := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
+	for _, path := range []string{resolveDBPath(), resolveDBPath() + "-wal", resolveDBPath() + "-shm"} {
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			return newSystemError("db_not_writable", fmt.Sprintf("db rebuild: %v", err))
 		}
 	}
 
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_not_writable", fmt.Sprintf("db rebuild: %v", err))
 	}
@@ -100,14 +100,14 @@ func runDBRebuild(cmd *cobra.Command, yes bool) error {
 		})
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "rebuilt %s (schema_version=%d, stories=%d, intakes=%d, runs=%d, checks=%d, handoffs=%d, traces=%d, decisions=%d, memories=%d)\n",
-		dbPath, schemaVersion, result.Stories, result.Intakes, result.Runs, result.Checks, result.Handoffs, result.Traces, result.Decisions, result.Memories)
+		resolveDBPath(), schemaVersion, result.Stories, result.Intakes, result.Runs, result.Checks, result.Handoffs, result.Traces, result.Decisions, result.Memories)
 	return nil
 }
 
 func runDBStatus(cmd *cobra.Command) error {
-	db, err := infrastructure.OpenReadOnly(dbPath)
+	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "db status: no db at "+dbPath+"; run `zharness init` first")
+		return newSystemError("db_unreadable", "db status: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("db status", err)

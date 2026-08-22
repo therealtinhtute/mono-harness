@@ -42,11 +42,11 @@ func newMigrateCmd(version string) *cobra.Command {
 }
 
 func runMigrate(cmd *cobra.Command) error {
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "migrate: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "migrate: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
 
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("migrate: %v", err))
 	}
@@ -71,7 +71,7 @@ func runMigrate(cmd *cobra.Command) error {
 }
 
 func runMigrateLayout(cmd *cobra.Command, version string, dryRun bool) error {
-	result, err := application.MigrateLayout(".", legacyDBPath, dbPath, kitDir, embedded.FS, version, dryRun)
+	result, err := application.MigrateLayout(".", resolveLegacyDBPath(), resolveDBPath(), kitDir, embedded.FS, version, dryRun)
 	if err != nil {
 		var conflict *application.ManagedDocsConflictError
 		if errors.As(err, &conflict) {

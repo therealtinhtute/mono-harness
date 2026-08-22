@@ -46,10 +46,10 @@ func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw, nextActi
 		return newUserError("invalid_open_items", fmt.Sprintf("handoff record: --open-items is not valid JSON: %v", err))
 	}
 
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "handoff record: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "handoff record: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("handoff record: %v", err))
 	}

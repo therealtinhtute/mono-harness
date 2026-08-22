@@ -46,10 +46,10 @@ func runCheckRecord(cmd *cobra.Command, verdict, runID, judge, judgeModel, proof
 		return newUserError("invalid_proof_links", fmt.Sprintf("check record: --proof-links is not valid JSON: %v", err))
 	}
 
-	if !infrastructure.Exists(dbPath) {
-		return newSystemError("db_unreadable", "check record: no db at "+dbPath+"; run `zharness init` first")
+	if !infrastructure.Exists(resolveDBPath()) {
+		return newSystemError("db_unreadable", "check record: no db at "+resolveDBPath()+"; run `zharness init` first")
 	}
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_unreadable", fmt.Sprintf("check record: %v", err))
 	}

@@ -36,19 +36,19 @@ func newInitCmd(version string) *cobra.Command {
 // workflow docs with hash-based conflict protection. A legacy .kit database
 // must use the explicit layout migrator so init cannot silently fork state.
 func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version string) error {
-	if !infrastructure.Exists(dbPath) && infrastructure.Exists(legacyDBPath) {
-		return newUserError("layout_migration_required", "init: legacy database found at "+legacyDBPath+"; run `zharness migrate layout --to v2`")
+	if !infrastructure.Exists(resolveDBPath()) && infrastructure.Exists(resolveLegacyDBPath()) {
+		return newUserError("layout_migration_required", "init: legacy database found at "+resolveLegacyDBPath()+"; run `zharness migrate layout --to v2`")
 	}
 	if err := os.MkdirAll(kitDir, 0o755); err != nil {
 		return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 	}
 
 	status := "created"
-	if infrastructure.Exists(dbPath) {
+	if infrastructure.Exists(resolveDBPath()) {
 		if !force {
 			status = "exists"
 		} else {
-			for _, path := range []string{dbPath, dbPath + "-wal", dbPath + "-shm"} {
+			for _, path := range []string{resolveDBPath(), resolveDBPath() + "-wal", resolveDBPath() + "-shm"} {
 				if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 					return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 				}
@@ -56,7 +56,7 @@ func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version str
 		}
 	}
 
-	db, err := infrastructure.Open(dbPath)
+	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
 		return newSystemError("db_not_writable", fmt.Sprintf("init: %v", err))
 	}
@@ -83,12 +83,12 @@ func runInit(cmd *cobra.Command, force, refreshDocs, forceDocs bool, version str
 	if jsonOutput {
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
 			"status":         status,
-			"db_path":        dbPath,
+			"db_path":        resolveDBPath(),
 			"schema_version": schemaVersion,
 		})
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "%s %s (schema_version=%d)\n", status, dbPath, schemaVersion)
+	fmt.Fprintf(cmd.OutOrStdout(), "%s %s (schema_version=%d)\n", status, resolveDBPath(), schemaVersion)
 	if scaffold.DocsWritten {
 		fmt.Fprintf(cmd.OutOrStdout(), "scaffolded managed %s (docs_version=%s)\n", docsDir, scaffold.DocsVersion)
 	}
