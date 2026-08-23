@@ -393,8 +393,8 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 		UnlinkedProofs []any `json:"unlinked_proofs"`
 	}
 	mustUnmarshal(t, auditOut, &auditResp)
-	if len(auditResp.PointerDrift) != 0 || len(auditResp.ContractViolations) != 0 || len(auditResp.UnlinkedProofs) != 0 {
-		t.Fatalf("audit = %+v, want no drift, violations, or unlinked proofs", auditResp)
+	if len(auditResp.PointerDrift) != 0 || len(auditResp.ContractViolations) != 1 || auditResp.ContractViolations[0].Issue != "unanswered_architecture" || len(auditResp.UnlinkedProofs) != 0 {
+		t.Fatalf("audit = %+v, want only the unanswered architecture finding", auditResp)
 	}
 }
 

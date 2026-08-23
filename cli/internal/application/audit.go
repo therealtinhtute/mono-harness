@@ -58,7 +58,15 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 		})
 	}
 
-	finding, present, err := authoredDocsFinding(repoRoot)
+	finding, architectureUnanswered, err := unansweredArchitectureFinding(repoRoot)
+	if err != nil {
+		return report, fmt.Errorf("audit: %w", err)
+	}
+	if architectureUnanswered {
+		report.ContractViolations = append(report.ContractViolations, finding)
+	}
+
+	finding, present, err := authoredDocsFinding(repoRoot, architectureUnanswered)
 	if err != nil {
 		return report, fmt.Errorf("audit: %w", err)
 	}
@@ -83,7 +91,32 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 	return report, nil
 }
 
-func authoredDocsFinding(repoRoot string) (AuditFinding, bool, error) {
+func unansweredArchitectureFinding(repoRoot string) (AuditFinding, bool, error) {
+	path := filepath.Join(repoRoot, "docs", "ARCHITECTURE.md")
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return AuditFinding{}, false, nil
+	}
+	if err != nil {
+		return AuditFinding{}, false, fmt.Errorf("read architecture document: %w", err)
+	}
+	if !isUnansweredArchitecture(data) {
+		return AuditFinding{}, false, nil
+	}
+	return AuditFinding{
+		Link:       "DOCS->ARCHITECTURE",
+		Issue:      "unanswered_architecture",
+		Detail:     "docs/ARCHITECTURE.md still contains the unanswered scaffold questions; this reports elicitation status only and does not evaluate answer content",
+		Identifier: "architecture_unanswered",
+		Severity:   "warning",
+	}, true, nil
+}
+
+func isUnansweredArchitecture(data []byte) bool {
+	return strings.TrimSpace(string(data)) == strings.TrimSpace(architectureDocBody)
+}
+
+func authoredDocsFinding(repoRoot string, architectureUnanswered bool) (AuditFinding, bool, error) {
 	managedPaths := map[string]struct{}{}
 	managedPresent := false
 	err := fs.WalkDir(embedded.FS, ".", func(path string, entry fs.DirEntry, walkErr error) error {
@@ -128,7 +161,8 @@ func authoredDocsFinding(repoRoot string) (AuditFinding, bool, error) {
 		if err != nil {
 			return err
 		}
-		if _, managed := managedPaths[filepath.ToSlash(relative)]; !managed {
+		relativeSlash := filepath.ToSlash(relative)
+		if _, managed := managedPaths[relativeSlash]; !managed && !(relativeSlash == "docs/ARCHITECTURE.md" && architectureUnanswered) {
 			authoredMarkdown = true
 		}
 		return nil

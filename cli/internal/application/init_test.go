@@ -83,6 +83,58 @@ func TestScaffoldDocsFreshRootProjection(t *testing.T) {
 	}
 }
 
+func TestArchitectureScaffoldUsesUnansweredQuestions(t *testing.T) {
+	if len(scaffoldOnceDocs) != 4 {
+		t.Fatalf("scaffold-once entries = %d, want exactly four", len(scaffoldOnceDocs))
+	}
+
+	var architecture struct{ path, body string }
+	for _, doc := range scaffoldOnceDocs {
+		if doc.path == "docs/ARCHITECTURE.md" {
+			architecture = doc
+			break
+		}
+	}
+	if architecture.path == "" {
+		t.Fatal("architecture scaffold-once entry is missing")
+	}
+	if got := strings.Count(architecture.body, "?"); got != 5 {
+		t.Fatalf("architecture questions = %d, want five", got)
+	}
+	if strings.Contains(architecture.body, "repository") || strings.Contains(architecture.body, "zharness") {
+		t.Fatalf("architecture scaffold contains repository-specific text: %q", architecture.body)
+	}
+
+	db := freshDB(t)
+	root := t.TempDir()
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
+		t.Fatalf("initial ScaffoldDocs() error = %v", err)
+	}
+	path := filepath.Join(root, filepath.FromSlash(architecture.path))
+	initial, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read architecture scaffold: %v", err)
+	}
+	if !bytes.Equal(initial, []byte(architecture.body)) {
+		t.Fatalf("architecture scaffold content differs from declared body")
+	}
+
+	authored := []byte("# Answered\n")
+	if err := os.WriteFile(path, authored, 0o644); err != nil {
+		t.Fatalf("write answered architecture: %v", err)
+	}
+	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, true); err != nil {
+		t.Fatalf("forced refresh ScaffoldDocs() error = %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read architecture after refresh: %v", err)
+	}
+	if !bytes.Equal(got, authored) {
+		t.Fatalf("architecture scaffold was rewritten: got %q, want %q", got, authored)
+	}
+}
+
 func TestScaffoldOnceDocsSurviveForcedRefresh(t *testing.T) {
 	db := freshDB(t)
 	root := t.TempDir()

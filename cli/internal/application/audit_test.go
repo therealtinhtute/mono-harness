@@ -155,6 +155,69 @@ func TestAuditReportsMissingAuthoredDocs(t *testing.T) {
 	}
 }
 
+func TestAuditReportsUnansweredArchitectureScaffold(t *testing.T) {
+	repoRoot := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repoRoot, "AGENTS.md"), []byte("managed\n"), 0o644); err != nil {
+		t.Fatalf("write managed root doc: %v", err)
+	}
+	docs := filepath.Join(repoRoot, "docs")
+	if err := os.MkdirAll(docs, 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+	architecturePath := filepath.Join(docs, "ARCHITECTURE.md")
+	if err := os.WriteFile(architecturePath, []byte(architectureDocBody), 0o644); err != nil {
+		t.Fatalf("write architecture scaffold: %v", err)
+	}
+	db := freshDB(t)
+	seedRun(t, db)
+	report, err := Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with unanswered architecture scaffold: %v", err)
+	}
+	if len(report.ContractViolations) != 2 {
+		t.Fatalf("contract_violations = %v, want unanswered-architecture and missing-authored-docs findings", report.ContractViolations)
+	}
+	finding := report.ContractViolations[0]
+	if finding.Identifier != "architecture_unanswered" || finding.Severity != "warning" {
+		t.Fatalf("finding = %+v, want architecture_unanswered warning", finding)
+	}
+	if !strings.Contains(finding.Detail, "elicitation status") || strings.Contains(strings.ToLower(finding.Detail), "correct") {
+		t.Fatalf("finding detail = %q, want status-only wording", finding.Detail)
+	}
+	finding = report.ContractViolations[1]
+	if finding.Identifier != "authored_docs_missing" || finding.Severity != "warning" {
+		t.Fatalf("finding = %+v, want authored_docs_missing warning", finding)
+	}
+
+	answered := `# Architecture
+
+## Problem and audience
+The consumer answers this question.
+
+## Main use cases
+The consumer answers this question.
+
+## Non-standard domain nouns
+The consumer answers this question.
+
+## Silent invariants
+The consumer answers this question.
+
+## Boundaries
+The consumer answers this question.
+`
+	if err := os.WriteFile(architecturePath, []byte(answered), 0o644); err != nil {
+		t.Fatalf("write answered architecture: %v", err)
+	}
+	report, err = Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with answered architecture: %v", err)
+	}
+	if len(report.ContractViolations) != 0 {
+		t.Fatalf("contract_violations = %v, want none after answering architecture: %v", report.ContractViolations, report.ContractViolations)
+	}
+}
+
 // initGitRepoFixture turns dir into a deterministic git repository and
 // returns a runner for further read/write git commands inside it.
 func initGitRepoFixture(t *testing.T, dir string) func(...string) string {

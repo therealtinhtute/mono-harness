@@ -127,6 +127,7 @@ var scaffoldOnceDocs = []struct{ path, body string }{
 	{"docs/README.md", strings.ReplaceAll(docsReadmeBody, "~", "`")},
 	{"docs/decisions/README.md", strings.ReplaceAll(decisionsReadmeBody, "~", "`")},
 	{"docs/decisions/templates/decision.md", strings.ReplaceAll(decisionTemplateBody, "~", "`")},
+	{"docs/ARCHITECTURE.md", architectureDocBody},
 }
 
 // writeScaffoldOnceDocs seeds the authored-docs entrypoint. Unlike the managed
@@ -149,6 +150,29 @@ func writeScaffoldOnceDocs(root string) error {
 	}
 	return nil
 }
+
+const architectureDocBody = `# Architecture
+
+## Problem and audience
+
+What problem does this project solve, and who is its audience?
+
+## Main use cases
+
+What are the main use cases, described in domain language?
+
+## Non-standard domain nouns
+
+Which domain nouns have meanings here that are non-standard?
+
+## Silent invariants
+
+Which invariants can fail silently?
+
+## Boundaries
+
+Which boundaries must not be crossed?
+`
 
 const docsReadmeBody = `# Documentation
 
