@@ -2,7 +2,7 @@
 
 Authored. External-literature evidence gathered 2026-08-20 to settle one question: should the harness *generate* documentation for consumer repositories, or *guard* documentation those repositories already have?
 
-Requirements in `docs/plans/active/consumer-doc-drift-gate.md` cite this page as authority. Nothing here describes this repository's own behavior — for that, read [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md).
+The consumer-documentation initiative cites this page as authority. Nothing here describes this repository's own behavior — for that, read [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md).
 
 ## Method and limits
 

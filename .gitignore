@@ -3,9 +3,12 @@ cli/dist/
 harness.db
 harness.db-wal
 harness.db-shm
+**/.kit/
 **/.kit/harness.db
 **/.kit/cache/
 **/.kit/conflicts/
 **/.kit/log/
 **/.kit/changesets/
 __pycache__/
+.kit/cache/
+.kit/conflicts/
