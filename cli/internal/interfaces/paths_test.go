@@ -55,9 +55,7 @@ func TestDBPathResolvesAgainstGitRootFromSubdirectory(t *testing.T) {
 
 	got := resolveDBPath()
 	want := filepath.Join(root, "harness.db")
-	if got != want {
-		t.Fatalf("resolved db path from subdirectory: got %q, want %q", got, want)
-	}
+	assertSamePath(t, got, want)
 }
 
 func TestLegacyDBPathResolvesAgainstGitRootFromSubdirectory(t *testing.T) {
@@ -67,12 +65,27 @@ func TestLegacyDBPathResolvesAgainstGitRootFromSubdirectory(t *testing.T) {
 	if err := os.MkdirAll(subdir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(filepath.Join(root, ".kit"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	t.Chdir(subdir)
 
 	got := resolveLegacyDBPath()
 	want := filepath.Join(root, ".kit", "harness.db")
+	assertSamePath(t, got, want)
+}
+
+func assertSamePath(t *testing.T, got, want string) {
+	t.Helper()
+	gotDir, gotErr := filepath.EvalSymlinks(filepath.Dir(got))
+	wantDir, wantErr := filepath.EvalSymlinks(filepath.Dir(want))
+	if gotErr != nil || wantErr != nil {
+		t.Fatalf("evaluate resolved path directories: got %q (%v), want %q (%v)", got, gotErr, want, wantErr)
+	}
+	got = filepath.Join(gotDir, filepath.Base(got))
+	want = filepath.Join(wantDir, filepath.Base(want))
 	if got != want {
-		t.Fatalf("resolved legacy db path from subdirectory: got %q, want %q", got, want)
+		t.Fatalf("resolved path: got %q, want %q", got, want)
 	}
 }
 
