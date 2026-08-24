@@ -21,6 +21,14 @@ func newAuditCmd(version string) *cobra.Command {
 	}
 }
 
+// mapAuditError renders an application.Audit failure (R25). Audit content
+// failures — an unreadable docs tree, a failing git subprocess — are not
+// database problems, so they carry their own code instead of db_unreadable,
+// and the "audit:" prefix is applied exactly once, here.
+func mapAuditError(err error) *cliError {
+	return newSystemError("audit_failed", fmt.Sprintf("audit: %v", err))
+}
+
 func runAudit(cmd *cobra.Command, version string) error {
 	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
@@ -33,7 +41,7 @@ func runAudit(cmd *cobra.Command, version string) error {
 
 	report, err := application.Audit(db.Raw(), version, ".")
 	if err != nil {
-		return newSystemError("db_unreadable", fmt.Sprintf("audit: %v", err))
+		return mapAuditError(err)
 	}
 
 	if jsonOutput {

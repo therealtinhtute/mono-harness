@@ -2,6 +2,7 @@ package application
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -44,13 +45,13 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 
 	resumeView, err := Resume(db, cliVersion)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	report.PointerDrift = resumeView.Drift
 
 	validateResult, err := Validate(db)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	for _, finding := range validateResult.Findings {
 		report.ContractViolations = append(report.ContractViolations, AuditFinding{
@@ -60,7 +61,7 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 
 	finding, present, err := authoredDocsFinding(repoRoot)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	if present {
 		report.ContractViolations = append(report.ContractViolations, finding)
@@ -68,12 +69,20 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 
 	pins, err := scanPinnedDocs(repoRoot)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	for _, doc := range pins {
+		resolves, err := pinResolves(repoRoot, doc.Pin)
+		if err != nil {
+			return report, err
+		}
+		if !resolves {
+			report.ContractViolations = append(report.ContractViolations, unresolvablePinFinding(doc))
+			continue
+		}
 		finding, present, err := pinDriftFinding(repoRoot, doc)
 		if err != nil {
-			return report, fmt.Errorf("audit: %w", err)
+			return report, err
 		}
 		if present {
 			report.ContractViolations = append(report.ContractViolations, finding)
@@ -161,9 +170,12 @@ var docPinPattern = regexp.MustCompile(`(?m)<!--\s*zharness:pin\s+([0-9a-fA-F]{7
 
 // docCitationPattern matches repository-relative source citations of the form
 // `path/to/file.ext:NN` — the shape docs/ARCHITECTURE.md uses for every
-// citation it carries. The `:NN` suffix is required so prose paths and glob
-// placeholders never match.
-var docCitationPattern = regexp.MustCompile(`(?:[A-Za-z0-9_][A-Za-z0-9_.\-]*/)*[A-Za-z0-9_][A-Za-z0-9_.\-]*\.[A-Za-z0-9]+:[0-9]+`)
+// citation it carries. At least one directory segment is required before the
+// file name (R24): the resolution rule joins tokens against the repository
+// root, so a bare filename token like `trace.go:65` would resolve to a
+// non-existent root-level path and be misreported as missing — it is prose,
+// not a citation.
+var docCitationPattern = regexp.MustCompile(`(?:[A-Za-z0-9_][A-Za-z0-9_.\-]*/)+[A-Za-z0-9_][A-Za-z0-9_.\-]*\.[A-Za-z0-9]+:[0-9]+`)
 
 // pinnedDoc is one eligible document that declares a pin.
 type pinnedDoc struct {
@@ -269,7 +281,11 @@ func measureCitation(repoRoot, pin, citation string) (citationDrift, error) {
 		if len(fields) < 3 {
 			continue
 		}
-		// Binary entries report "-" instead of counts; they still count as movement.
+		// Binary entries report "-" instead of counts; they still count as
+		// movement. The deterministic fallback (R25) is exactly one added and
+		// one removed line per binary entry — a fixed sentinel pair asserted
+		// by TestMeasureCitationBinaryFileCountsOnePair, not an accumulated
+		// guess.
 		if n, err := strconv.Atoi(fields[0]); err == nil {
 			drift.LinesAdded += n
 		} else {
@@ -322,4 +338,37 @@ func pinDriftFinding(repoRoot string, doc pinnedDoc) (AuditFinding, bool, error)
 		Identifier: "authored_doc_pin_drift",
 		Severity:   "info",
 	}, true, nil
+}
+
+// pinResolves reports whether git can resolve the pin to an existing commit
+// (R23). A pin git rejects — unknown, misspelled, or malformed SHA — is a
+// degraded document, not an audit failure: it returns false with no error so
+// the caller can emit one warning finding and continue measuring every other
+// pinned document. An error is returned only when git itself could not run,
+// which is an environment failure, not document content.
+func pinResolves(repoRoot, pin string) (bool, error) {
+	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--quiet", "--verify", pin+"^{commit}")
+	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	err := cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return false, nil
+	}
+	return false, fmt.Errorf("verify pin %s: %w", pin, err)
+}
+
+// unresolvablePinFinding composes R23's warning: it names the document and the
+// unresolvable pin value, states that no drift was measured for this
+// document, and never masks the findings of other pinned documents.
+func unresolvablePinFinding(doc pinnedDoc) AuditFinding {
+	return AuditFinding{
+		Link:       "DOCS->SOURCE",
+		Issue:      "unresolvable_pin",
+		Detail:     fmt.Sprintf("%s declares <!-- zharness:pin %s -->, but git cannot resolve that commit — the pin is misspelled, malformed, or names an object outside this repository's history. No drift was measured for this document; fix the pin to restore its freshness signal.", doc.Name, doc.Pin),
+		Identifier: "authored_doc_pin_invalid",
+		Severity:   "warning",
+	}
 }
