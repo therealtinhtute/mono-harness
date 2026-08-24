@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -80,58 +81,6 @@ func TestScaffoldDocsFreshRootProjection(t *testing.T) {
 		if !strings.Contains(string(gitignore), entry) {
 			t.Fatalf(".gitignore missing %q", entry)
 		}
-	}
-}
-
-func TestArchitectureScaffoldUsesUnansweredQuestions(t *testing.T) {
-	if len(scaffoldOnceDocs) != 4 {
-		t.Fatalf("scaffold-once entries = %d, want exactly four", len(scaffoldOnceDocs))
-	}
-
-	var architecture struct{ path, body string }
-	for _, doc := range scaffoldOnceDocs {
-		if doc.path == "docs/ARCHITECTURE.md" {
-			architecture = doc
-			break
-		}
-	}
-	if architecture.path == "" {
-		t.Fatal("architecture scaffold-once entry is missing")
-	}
-	if got := strings.Count(architecture.body, "?"); got != 5 {
-		t.Fatalf("architecture questions = %d, want five", got)
-	}
-	if strings.Contains(architecture.body, "repository") || strings.Contains(architecture.body, "zharness") {
-		t.Fatalf("architecture scaffold contains repository-specific text: %q", architecture.body)
-	}
-
-	db := freshDB(t)
-	root := t.TempDir()
-	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFS, "0.6.0", false, false); err != nil {
-		t.Fatalf("initial ScaffoldDocs() error = %v", err)
-	}
-	path := filepath.Join(root, filepath.FromSlash(architecture.path))
-	initial, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read architecture scaffold: %v", err)
-	}
-	if !bytes.Equal(initial, []byte(architecture.body)) {
-		t.Fatalf("architecture scaffold content differs from declared body")
-	}
-
-	authored := []byte("# Answered\n")
-	if err := os.WriteFile(path, authored, 0o644); err != nil {
-		t.Fatalf("write answered architecture: %v", err)
-	}
-	if _, err := ScaffoldDocs(db, root, ".kit", fixtureDocsFSV2, "0.7.0", true, true); err != nil {
-		t.Fatalf("forced refresh ScaffoldDocs() error = %v", err)
-	}
-	got, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read architecture after refresh: %v", err)
-	}
-	if !bytes.Equal(got, authored) {
-		t.Fatalf("architecture scaffold was rewritten: got %q, want %q", got, authored)
 	}
 }
 
@@ -424,5 +373,39 @@ func TestScaffoldDocsForceOverwritesConflict(t *testing.T) {
 	}
 	if string(got) != string(fixtureDocsFSV2["WORKFLOW.md"].Data) {
 		t.Fatalf("forced WORKFLOW.md = %q", got)
+	}
+}
+
+// TestScaffoldOnceDocsCapsAtFourEntries pins NG2's cap: the scaffold-once set
+// gains exactly one file in this initiative (the R15 question form) and no
+// further.
+func TestScaffoldOnceDocsCapsAtFourEntries(t *testing.T) {
+	if len(scaffoldOnceDocs) != 4 {
+		t.Fatalf("scaffoldOnceDocs has %d entries, want exactly four (NG2)", len(scaffoldOnceDocs))
+	}
+}
+
+// TestArchitectureQuestionFormAdmission locks the R15 form's structure: the
+// zharness:unanswered marker audit keys on, and exactly five numbered
+// questions. The admission test itself — that none of the five questions can
+// be answered by reading the repository — is an editorial judgment applied at
+// review time, not a mechanical assertion.
+func TestArchitectureQuestionFormAdmission(t *testing.T) {
+	var body string
+	for _, doc := range scaffoldOnceDocs {
+		if doc.path == "docs/ARCHITECTURE.md" {
+			body = doc.body
+			break
+		}
+	}
+	if body == "" {
+		t.Fatal("scaffoldOnceDocs has no docs/ARCHITECTURE.md entry")
+	}
+	if !strings.Contains(body, "zharness:unanswered") {
+		t.Fatal("question form missing the zharness:unanswered marker audit keys on")
+	}
+	questions := regexp.MustCompile(`(?m)^\d\. .+\?$`).FindAllString(body, -1)
+	if len(questions) != 5 {
+		t.Fatalf("question form carries %d numbered questions, want exactly five (R15): %q", len(questions), questions)
 	}
 }

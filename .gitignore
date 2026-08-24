@@ -12,3 +12,6 @@ harness.db-shm
 __pycache__/
 .kit/cache/
 .kit/conflicts/
+
+# opencode session state (tool-local, never repo content)
+.opencode/

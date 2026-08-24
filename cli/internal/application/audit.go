@@ -1,7 +1,9 @@
 package application
 
 import (
+	"bytes"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -44,13 +46,13 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 
 	resumeView, err := Resume(db, cliVersion)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	report.PointerDrift = resumeView.Drift
 
 	validateResult, err := Validate(db)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	for _, finding := range validateResult.Findings {
 		report.ContractViolations = append(report.ContractViolations, AuditFinding{
@@ -58,17 +60,9 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 		})
 	}
 
-	finding, architectureUnanswered, err := unansweredArchitectureFinding(repoRoot)
+	finding, present, err := authoredDocsFinding(repoRoot)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
-	}
-	if architectureUnanswered {
-		report.ContractViolations = append(report.ContractViolations, finding)
-	}
-
-	finding, present, err := authoredDocsFinding(repoRoot, architectureUnanswered)
-	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	if present {
 		report.ContractViolations = append(report.ContractViolations, finding)
@@ -76,47 +70,38 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 
 	pins, err := scanPinnedDocs(repoRoot)
 	if err != nil {
-		return report, fmt.Errorf("audit: %w", err)
+		return report, err
 	}
 	for _, doc := range pins {
+		resolves, err := pinResolves(repoRoot, doc.Pin)
+		if err != nil {
+			return report, err
+		}
+		if !resolves {
+			report.ContractViolations = append(report.ContractViolations, unresolvablePinFinding(doc))
+			continue
+		}
 		finding, present, err := pinDriftFinding(repoRoot, doc)
 		if err != nil {
-			return report, fmt.Errorf("audit: %w", err)
+			return report, err
 		}
 		if present {
 			report.ContractViolations = append(report.ContractViolations, finding)
 		}
 	}
 
+	finding, present, err = architectureElicitationFinding(repoRoot)
+	if err != nil {
+		return report, err
+	}
+	if present {
+		report.ContractViolations = append(report.ContractViolations, finding)
+	}
+
 	return report, nil
 }
 
-func unansweredArchitectureFinding(repoRoot string) (AuditFinding, bool, error) {
-	path := filepath.Join(repoRoot, "docs", "ARCHITECTURE.md")
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return AuditFinding{}, false, nil
-	}
-	if err != nil {
-		return AuditFinding{}, false, fmt.Errorf("read architecture document: %w", err)
-	}
-	if !isUnansweredArchitecture(data) {
-		return AuditFinding{}, false, nil
-	}
-	return AuditFinding{
-		Link:       "DOCS->ARCHITECTURE",
-		Issue:      "unanswered_architecture",
-		Detail:     "docs/ARCHITECTURE.md still contains the unanswered scaffold questions; this reports elicitation status only and does not evaluate answer content",
-		Identifier: "architecture_unanswered",
-		Severity:   "warning",
-	}, true, nil
-}
-
-func isUnansweredArchitecture(data []byte) bool {
-	return strings.TrimSpace(string(data)) == strings.TrimSpace(architectureDocBody)
-}
-
-func authoredDocsFinding(repoRoot string, architectureUnanswered bool) (AuditFinding, bool, error) {
+func authoredDocsFinding(repoRoot string) (AuditFinding, bool, error) {
 	managedPaths := map[string]struct{}{}
 	managedPresent := false
 	err := fs.WalkDir(embedded.FS, ".", func(path string, entry fs.DirEntry, walkErr error) error {
@@ -161,8 +146,10 @@ func authoredDocsFinding(repoRoot string, architectureUnanswered bool) (AuditFin
 		if err != nil {
 			return err
 		}
-		relativeSlash := filepath.ToSlash(relative)
-		if _, managed := managedPaths[relativeSlash]; !managed && !(relativeSlash == "docs/ARCHITECTURE.md" && architectureUnanswered) {
+		if _, managed := managedPaths[filepath.ToSlash(relative)]; !managed {
+			if filepath.ToSlash(relative) == "docs/ARCHITECTURE.md" && isUnansweredArchitectureForm(path) {
+				return nil // R15: the unanswered question form is not documentation
+			}
 			authoredMarkdown = true
 		}
 		return nil
@@ -195,9 +182,12 @@ var docPinPattern = regexp.MustCompile(`(?m)<!--\s*zharness:pin\s+([0-9a-fA-F]{7
 
 // docCitationPattern matches repository-relative source citations of the form
 // `path/to/file.ext:NN` — the shape docs/ARCHITECTURE.md uses for every
-// citation it carries. The `:NN` suffix is required so prose paths and glob
-// placeholders never match.
-var docCitationPattern = regexp.MustCompile(`(?:[A-Za-z0-9_][A-Za-z0-9_.\-]*/)*[A-Za-z0-9_][A-Za-z0-9_.\-]*\.[A-Za-z0-9]+:[0-9]+`)
+// citation it carries. At least one directory segment is required before the
+// file name (R24): the resolution rule joins tokens against the repository
+// root, so a bare filename token like `trace.go:65` would resolve to a
+// non-existent root-level path and be misreported as missing — it is prose,
+// not a citation.
+var docCitationPattern = regexp.MustCompile(`(?:[A-Za-z0-9_][A-Za-z0-9_.\-]*/)+[A-Za-z0-9_][A-Za-z0-9_.\-]*\.[A-Za-z0-9]+:[0-9]+`)
 
 // pinnedDoc is one eligible document that declares a pin.
 type pinnedDoc struct {
@@ -303,7 +293,11 @@ func measureCitation(repoRoot, pin, citation string) (citationDrift, error) {
 		if len(fields) < 3 {
 			continue
 		}
-		// Binary entries report "-" instead of counts; they still count as movement.
+		// Binary entries report "-" instead of counts; they still count as
+		// movement. The deterministic fallback (R25) is exactly one added and
+		// one removed line per binary entry — a fixed sentinel pair asserted
+		// by TestMeasureCitationBinaryFileCountsOnePair, not an accumulated
+		// guess.
 		if n, err := strconv.Atoi(fields[0]); err == nil {
 			drift.LinesAdded += n
 		} else {
@@ -354,6 +348,80 @@ func pinDriftFinding(repoRoot string, doc pinnedDoc) (AuditFinding, bool, error)
 		Issue:      "pinned_doc_drift",
 		Detail:     detail.String(),
 		Identifier: "authored_doc_pin_drift",
+		Severity:   "info",
+	}, true, nil
+}
+
+// pinResolves reports whether git can resolve the pin to an existing commit
+// (R23). A pin git rejects — unknown, misspelled, or malformed SHA — is a
+// degraded document, not an audit failure: it returns false with no error so
+// the caller can emit one warning finding and continue measuring every other
+// pinned document. An error is returned only when git itself could not run,
+// which is an environment failure, not document content.
+func pinResolves(repoRoot, pin string) (bool, error) {
+	cmd := exec.Command("git", "-C", repoRoot, "rev-parse", "--quiet", "--verify", pin+"^{commit}")
+	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	err := cmd.Run()
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return false, nil
+	}
+	return false, fmt.Errorf("verify pin %s: %w", pin, err)
+}
+
+// unresolvablePinFinding composes R23's warning: it names the document and the
+// unresolvable pin value, states that no drift was measured for this
+// document, and never masks the findings of other pinned documents.
+func unresolvablePinFinding(doc pinnedDoc) AuditFinding {
+	return AuditFinding{
+		Link:       "DOCS->SOURCE",
+		Issue:      "unresolvable_pin",
+		Detail:     fmt.Sprintf("%s declares <!-- zharness:pin %s -->, but git cannot resolve that commit — the pin is misspelled, malformed, or names an object outside this repository's history. No drift was measured for this document; fix the pin to restore its freshness signal.", doc.Name, doc.Pin),
+		Identifier: "authored_doc_pin_invalid",
+		Severity:   "warning",
+	}
+}
+
+// architectureUnansweredMarker is the comment the R15 scaffold form carries;
+// the consumer deletes it by answering, which is what clears the report.
+const architectureUnansweredMarker = "<!-- zharness:unanswered"
+
+// isUnansweredArchitectureForm reports whether the file still carries the
+// scaffold marker. An unreadable file is treated as content so a real error
+// can surface elsewhere rather than silently excusing the file from the R2
+// count.
+func isUnansweredArchitectureForm(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	return bytes.Contains(data, []byte(architectureUnansweredMarker))
+}
+
+// architectureElicitationFinding composes R15's report (R6/R9): an
+// info-severity presence signal that docs/ARCHITECTURE.md is still the
+// unanswered question form. It never claims anything about the quality or
+// correctness of answers, because there are none to judge.
+func architectureElicitationFinding(repoRoot string) (AuditFinding, bool, error) {
+	path := filepath.Join(repoRoot, "docs", "ARCHITECTURE.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return AuditFinding{}, false, nil
+		}
+		return AuditFinding{}, false, fmt.Errorf("read docs/ARCHITECTURE.md: %w", err)
+	}
+	if !bytes.Contains(data, []byte(architectureUnansweredMarker)) {
+		return AuditFinding{}, false, nil
+	}
+	return AuditFinding{
+		Link:       "DOCS->SOURCE",
+		Issue:      "architecture_elicitation_unanswered",
+		Detail:     "docs/ARCHITECTURE.md is still the scaffolded question form — its five questions are unanswered. It is not counted as authored documentation until the form is answered; answering it is a human task the harness cannot do.",
+		Identifier: "architecture_elicitation_unanswered",
 		Severity:   "info",
 	}, true, nil
 }

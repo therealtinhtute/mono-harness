@@ -155,69 +155,6 @@ func TestAuditReportsMissingAuthoredDocs(t *testing.T) {
 	}
 }
 
-func TestAuditReportsUnansweredArchitectureScaffold(t *testing.T) {
-	repoRoot := t.TempDir()
-	if err := os.WriteFile(filepath.Join(repoRoot, "AGENTS.md"), []byte("managed\n"), 0o644); err != nil {
-		t.Fatalf("write managed root doc: %v", err)
-	}
-	docs := filepath.Join(repoRoot, "docs")
-	if err := os.MkdirAll(docs, 0o755); err != nil {
-		t.Fatalf("mkdir docs: %v", err)
-	}
-	architecturePath := filepath.Join(docs, "ARCHITECTURE.md")
-	if err := os.WriteFile(architecturePath, []byte(architectureDocBody), 0o644); err != nil {
-		t.Fatalf("write architecture scaffold: %v", err)
-	}
-	db := freshDB(t)
-	seedRun(t, db)
-	report, err := Audit(db, "dev", repoRoot)
-	if err != nil {
-		t.Fatalf("Audit with unanswered architecture scaffold: %v", err)
-	}
-	if len(report.ContractViolations) != 2 {
-		t.Fatalf("contract_violations = %v, want unanswered-architecture and missing-authored-docs findings", report.ContractViolations)
-	}
-	finding := report.ContractViolations[0]
-	if finding.Identifier != "architecture_unanswered" || finding.Severity != "warning" {
-		t.Fatalf("finding = %+v, want architecture_unanswered warning", finding)
-	}
-	if !strings.Contains(finding.Detail, "elicitation status") || strings.Contains(strings.ToLower(finding.Detail), "correct") {
-		t.Fatalf("finding detail = %q, want status-only wording", finding.Detail)
-	}
-	finding = report.ContractViolations[1]
-	if finding.Identifier != "authored_docs_missing" || finding.Severity != "warning" {
-		t.Fatalf("finding = %+v, want authored_docs_missing warning", finding)
-	}
-
-	answered := `# Architecture
-
-## Problem and audience
-The consumer answers this question.
-
-## Main use cases
-The consumer answers this question.
-
-## Non-standard domain nouns
-The consumer answers this question.
-
-## Silent invariants
-The consumer answers this question.
-
-## Boundaries
-The consumer answers this question.
-`
-	if err := os.WriteFile(architecturePath, []byte(answered), 0o644); err != nil {
-		t.Fatalf("write answered architecture: %v", err)
-	}
-	report, err = Audit(db, "dev", repoRoot)
-	if err != nil {
-		t.Fatalf("Audit with answered architecture: %v", err)
-	}
-	if len(report.ContractViolations) != 0 {
-		t.Fatalf("contract_violations = %v, want none after answering architecture: %v", report.ContractViolations, report.ContractViolations)
-	}
-}
-
 // initGitRepoFixture turns dir into a deterministic git repository and
 // returns a runner for further read/write git commands inside it.
 func initGitRepoFixture(t *testing.T, dir string) func(...string) string {
@@ -298,16 +235,20 @@ func TestAuditPinScopingExemptDirectories(t *testing.T) {
 	}
 }
 
-// TestDocCitationPatternExtraction locks the citation shape: path/to/file.ext:NN
-// tokens are found in backticks and prose; globs, versions, and bare times are not.
+// TestDocCitationPatternExtraction locks the citation shape (R24): only
+// repository-relative path:line tokens with at least one directory segment
+// are citations. Bare filename tokens, globs, versions, and bare times are
+// prose — a bare token joined against the repository root would resolve to a
+// non-existent path and be misreported as missing.
 func TestDocCitationPatternExtraction(t *testing.T) {
 	body := "`cli/internal/application/plan_write.go:36` states the rule. " +
-		"Also (`trace.go:65`) and `docs/README.md:15`.\n" +
-		"Globs like `docs/plans/active/*.md` never match, nor do `v0.11.0` or `12:30`.\n"
+		"Also (`interfaces/trace.go:65`) and `docs/README.md:15`.\n" +
+		"Bare `trace.go:65`, globs like `docs/plans/active/*.md`, versions like `v0.11.0`, " +
+		"and times like 12:30 never match.\n"
 	got := docCitationPattern.FindAllString(body, -1)
 	want := []string{
 		"cli/internal/application/plan_write.go:36",
-		"trace.go:65",
+		"interfaces/trace.go:65",
 		"docs/README.md:15",
 	}
 	if len(got) != len(want) {
@@ -317,6 +258,9 @@ func TestDocCitationPatternExtraction(t *testing.T) {
 		if got[i] != want[i] {
 			t.Fatalf("citation[%d] = %q, want %q", i, got[i], want[i])
 		}
+	}
+	if bare := docCitationPattern.FindAllString("see trace.go:65 for details", -1); len(bare) != 0 {
+		t.Fatalf("bare filename tokens extracted as citations: %q (R24)", bare)
 	}
 }
 
@@ -485,5 +429,200 @@ func TestAuditPinDriftMissingPathDistinct(t *testing.T) {
 	}
 	if !strings.Contains(detail[missingIdx:], "pkg/gone.go:1") {
 		t.Fatalf("detail = %q, want gone.go listed as missing", detail)
+	}
+}
+
+// TestAuditUnresolvablePinDegradesToWarning pins one document validly (its
+// cited source moves afterwards) and a second document to a bogus SHA whose
+// cited path exists on disk — the review probe's exact failure mode. Audit
+// must stay exit-0 clean: no error, the bogus pin yields exactly one
+// authored_doc_pin_invalid warning naming document and pin, and the
+// validly-pinned neighbor still yields its authored_doc_pin_drift finding
+// (R23: degrade, never fail, never mask).
+func TestAuditUnresolvablePinDegradesToWarning(t *testing.T) {
+	repoRoot := t.TempDir()
+	git := initGitRepoFixture(t, repoRoot)
+
+	if err := os.MkdirAll(filepath.Join(repoRoot, "pkg"), 0o755); err != nil {
+		t.Fatalf("mkdir pkg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoRoot, "pkg", "thing.go"), []byte("one\ntwo\n"), 0o644); err != nil {
+		t.Fatalf("write thing.go: %v", err)
+	}
+	git("add", "-A")
+	git("commit", "-q", "-m", "base")
+	baseSha := git("rev-parse", "HEAD")
+
+	docs := filepath.Join(repoRoot, "docs")
+	if err := os.MkdirAll(docs, 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+	valid := "# Guide\n\n<!-- zharness:pin " + baseSha + " -->\n\nSee `pkg/thing.go:1`.\n"
+	if err := os.WriteFile(filepath.Join(docs, "Guide.md"), []byte(valid), 0o644); err != nil {
+		t.Fatalf("write Guide.md: %v", err)
+	}
+	bogus := "# Broken\n\n<!-- zharness:pin deadbeefdeadbeef -->\n\nSee `pkg/thing.go:1`.\n"
+	if err := os.WriteFile(filepath.Join(docs, "Broken.md"), []byte(bogus), 0o644); err != nil {
+		t.Fatalf("write Broken.md: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(repoRoot, "pkg", "thing.go"), []byte("one\ntwo\nthree\n"), 0o644); err != nil {
+		t.Fatalf("move thing.go forward: %v", err)
+	}
+	git("add", "-A")
+	git("commit", "-q", "-m", "drift")
+
+	db := freshDB(t)
+	seedRun(t, db)
+	report, err := Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with an unresolvable pin among valid ones: %v (R23: never fail)", err)
+	}
+
+	var invalid, drift *AuditFinding
+	for i := range report.ContractViolations {
+		switch report.ContractViolations[i].Identifier {
+		case "authored_doc_pin_invalid":
+			invalid = &report.ContractViolations[i]
+		case "authored_doc_pin_drift":
+			drift = &report.ContractViolations[i]
+		}
+	}
+	if invalid == nil {
+		t.Fatalf("contract_violations = %+v, want an authored_doc_pin_invalid warning for the bogus pin (R23)", report.ContractViolations)
+	}
+	if invalid.Severity != "warning" {
+		t.Fatalf("severity = %q, want warning", invalid.Severity)
+	}
+	if !strings.Contains(invalid.Detail, "Broken.md") || !strings.Contains(invalid.Detail, "deadbeefdeadbeef") {
+		t.Fatalf("detail = %q, want document name and unresolvable pin value", invalid.Detail)
+	}
+	if !strings.Contains(invalid.Detail, "No drift was measured") {
+		t.Fatalf("detail = %q, want explicit statement that measurement was skipped", invalid.Detail)
+	}
+	if drift == nil {
+		t.Fatalf("contract_violations = %+v, want the validly-pinned neighbor's drift finding preserved (R23: never mask)", report.ContractViolations)
+	}
+	if len(report.ContractViolations) != 2 {
+		t.Fatalf("contract_violations = %+v, want exactly the two pin findings", report.ContractViolations)
+	}
+}
+
+// TestMeasureCitationBinaryFileCountsOnePair proves the binary-numstat
+// fallback is deterministic (R25): a binary file modified after the pin moves
+// the citation and contributes exactly one added and one removed line pair.
+func TestMeasureCitationBinaryFileCountsOnePair(t *testing.T) {
+	repoRoot := t.TempDir()
+	git := initGitRepoFixture(t, repoRoot)
+
+	if err := os.MkdirAll(filepath.Join(repoRoot, "pkg"), 0o755); err != nil {
+		t.Fatalf("mkdir pkg: %v", err)
+	}
+	binaryV1 := []byte{0x00, 0x01, 0x02, 0xff}
+	if err := os.WriteFile(filepath.Join(repoRoot, "pkg", "asset.bin"), binaryV1, 0o644); err != nil {
+		t.Fatalf("write asset.bin: %v", err)
+	}
+	git("add", "-A")
+	git("commit", "-q", "-m", "base")
+	baseSha := git("rev-parse", "HEAD")
+
+	binaryV2 := []byte{0x00, 0x01, 0x02, 0xfe, 0xfd}
+	if err := os.WriteFile(filepath.Join(repoRoot, "pkg", "asset.bin"), binaryV2, 0o644); err != nil {
+		t.Fatalf("rewrite asset.bin: %v", err)
+	}
+	git("add", "-A")
+	git("commit", "-q", "-m", "drift")
+
+	drift, err := measureCitation(repoRoot, baseSha, "pkg/asset.bin:1")
+	if err != nil {
+		t.Fatalf("measureCitation: %v", err)
+	}
+	if !drift.Moved {
+		t.Fatalf("drift = %+v, want Moved for a binary file changed after the pin", drift)
+	}
+	if drift.LinesAdded != 1 || drift.LinesRemoved != 1 {
+		t.Fatalf("lines = +%d/-%d, want the fixed +1/-1 sentinel pair per binary entry (R25)", drift.LinesAdded, drift.LinesRemoved)
+	}
+}
+
+// TestAuditFailsWhenDocsIsNotADirectory forces a real application.Audit error
+// path: `docs` exists as a regular file, so scanPinnedDocs cannot read it as a
+// directory and Audit returns an error rather than a finding.
+func TestAuditFailsWhenDocsIsNotADirectory(t *testing.T) {
+	repoRoot := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repoRoot, "docs"), []byte("not a directory"), 0o644); err != nil {
+		t.Fatalf("write docs file: %v", err)
+	}
+	db := freshDB(t)
+	seedRun(t, db)
+	if _, err := Audit(db, "dev", repoRoot); err == nil {
+		t.Fatal("Audit with docs-as-file succeeded, want an error from the unreadable docs tree")
+	}
+}
+
+// TestAuditReportsUnansweredArchitectureFormAsNotDocs scaffolds the R15
+// question form into an otherwise docs-less repository and proves both
+// behaviors at once: the form is reported unanswered (its own info finding,
+// R6) AND it does not satisfy the authored-docs guard's precondition (R15:
+// never counted as documentation), so authored_docs_missing still fires.
+// Answering the form — replacing the marker with real prose — clears both.
+func TestAuditReportsUnansweredArchitectureFormAsNotDocs(t *testing.T) {
+	repoRoot := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repoRoot, "AGENTS.md"), []byte("managed\n"), 0o644); err != nil {
+		t.Fatalf("write managed root doc: %v", err)
+	}
+	docs := filepath.Join(repoRoot, "docs")
+	if err := os.MkdirAll(docs, 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+	form := strings.ReplaceAll(architectureQuestionFormBody, "~", "`")
+	if err := os.WriteFile(filepath.Join(docs, "ARCHITECTURE.md"), []byte(form), 0o644); err != nil {
+		t.Fatalf("write scaffolded question form: %v", err)
+	}
+
+	db := freshDB(t)
+	seedRun(t, db)
+	report, err := Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with the unanswered question form: %v", err)
+	}
+	if len(report.ContractViolations) != 2 {
+		t.Fatalf("contract_violations = %+v, want authored_docs_missing plus architecture_elicitation_unanswered", report.ContractViolations)
+	}
+	var missing, unanswered *AuditFinding
+	for i := range report.ContractViolations {
+		switch report.ContractViolations[i].Identifier {
+		case "authored_docs_missing":
+			missing = &report.ContractViolations[i]
+		case "architecture_elicitation_unanswered":
+			unanswered = &report.ContractViolations[i]
+		}
+	}
+	if missing == nil || missing.Severity != "warning" {
+		t.Fatalf("missing = %+v, want the authored_docs_missing warning — the form is not documentation (R15)", missing)
+	}
+	if unanswered == nil || unanswered.Severity != "info" {
+		t.Fatalf("unanswered = %+v, want the architecture_elicitation_unanswered info finding", unanswered)
+	}
+	lower := strings.ToLower(unanswered.Detail)
+	if strings.Contains(lower, "correct") || strings.Contains(lower, "accurate") {
+		t.Fatalf("detail = %q, want no correctness claim about answers (R9)", unanswered.Detail)
+	}
+
+	answered := strings.Replace(form,
+		"<!-- zharness:unanswered -- `zharness init` scaffolded this form because\ndocs/ARCHITECTURE.md was absent. Answer the five questions below in your own\nwords, then delete this comment; while it remains, `zharness audit` reports\nthis file as an unanswered form rather than documentation. -->",
+		"The harness is a CLI that keeps durable agent workflow state in git-tracked\nmarkdown and derives a database from it.", 1)
+	if answered == form {
+		t.Fatal("marker replacement did not apply; fixture stale")
+	}
+	if err := os.WriteFile(filepath.Join(docs, "ARCHITECTURE.md"), []byte(answered), 0o644); err != nil {
+		t.Fatalf("answer the form: %v", err)
+	}
+	report, err = Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with an answered ARCHITECTURE.md: %v", err)
+	}
+	if len(report.ContractViolations) != 0 {
+		t.Fatalf("contract_violations = %+v, want none once the form is answered", report.ContractViolations)
 	}
 }
