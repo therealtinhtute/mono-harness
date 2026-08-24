@@ -14,13 +14,21 @@ import (
 
 const activePlanCompletedDir = "docs/plans/completed"
 
-var activePlanPhaseSlug = regexp.MustCompile(`(?m)^[ \t]*-[ \t]+phase_slug:[ \t]*([^ \t\r\n]+)[ \t]*$`)
+var activePlanPhaseSlug = regexp.MustCompile(
+	"(?m)^[ \\t]*(-[ \\t]+phase_slug:[ \\t]*([a-zA-Z0-9][a-zA-Z0-9_-]*)|###[ \\t]+phase_slug:[ \\t]*`([^`\\r\\n]+)`)[ \\t]*$",
+)
 
 func parseActivePlanPhaseOrder(content string) []string {
 	matches := activePlanPhaseSlug.FindAllStringSubmatch(content, -1)
 	slugs := make([]string, 0, len(matches))
 	for _, match := range matches {
-		slugs = append(slugs, match[1])
+		slug := match[2]
+		if slug == "" {
+			slug = match[3]
+		}
+		if slug != "" {
+			slugs = append(slugs, slug)
+		}
 	}
 	return slugs
 }
@@ -59,6 +67,15 @@ func PlanComplete(db *sql.DB) (string, *StopInfo, error) {
 	}
 
 	slugs := parseActivePlanPhaseOrder(plan.content)
+	if len(slugs) == 0 {
+		return "", nil, &domain.ValidationError{
+			Code: "no_phases",
+			Message: fmt.Sprintf(
+				"%s: no recognized phase declarations: plan complete requires at least one canonical phase_slug declaration.",
+				plan.path,
+			),
+		}
+	}
 	openSlug, err := selectActivePhase(db, slugs)
 	if err != nil {
 		return "", nil, err
