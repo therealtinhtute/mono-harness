@@ -127,6 +127,7 @@ var scaffoldOnceDocs = []struct{ path, body string }{
 	{"docs/README.md", strings.ReplaceAll(docsReadmeBody, "~", "`")},
 	{"docs/decisions/README.md", strings.ReplaceAll(decisionsReadmeBody, "~", "`")},
 	{"docs/decisions/templates/decision.md", strings.ReplaceAll(decisionTemplateBody, "~", "`")},
+	{"docs/ARCHITECTURE.md", strings.ReplaceAll(architectureQuestionFormBody, "~", "`")},
 }
 
 // writeScaffoldOnceDocs seeds the authored-docs entrypoint. Unlike the managed
@@ -271,3 +272,29 @@ func ensureGitignore(root string) (bool, error) {
 	_, err = f.WriteString(builder.String())
 	return true, err
 }
+
+// architectureQuestionFormBody is R15's elicitation form: at most five
+// questions, none answerable by reading the repository, and no prose
+// describing it — a form a human fills in, not generated documentation (R1).
+// The zharness:unanswered marker is what audit keys on: while the marker
+// remains, the file is an unanswered form rather than documentation.
+const architectureQuestionFormBody = `# Architecture
+
+<!-- zharness:unanswered -- ~zharness init~ scaffolded this form because
+docs/ARCHITECTURE.md was absent. Answer the five questions below in your own
+words, then delete this comment; while it remains, ~zharness audit~ reports
+this file as an unanswered form rather than documentation. -->
+
+Answer only what you know today. None of these questions can be answered by
+reading the code, so no agent can fill them in for you.
+
+1. What problem does this system solve, and who is it for?
+
+2. What are its main use cases, stated in the domain's own language?
+
+3. Which domain nouns mean something different here than their everyday meaning?
+
+4. Which invariants fail silently when they are violated?
+
+5. Which boundaries must never be crossed?
+`

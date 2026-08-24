@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -372,5 +373,39 @@ func TestScaffoldDocsForceOverwritesConflict(t *testing.T) {
 	}
 	if string(got) != string(fixtureDocsFSV2["WORKFLOW.md"].Data) {
 		t.Fatalf("forced WORKFLOW.md = %q", got)
+	}
+}
+
+// TestScaffoldOnceDocsCapsAtFourEntries pins NG2's cap: the scaffold-once set
+// gains exactly one file in this initiative (the R15 question form) and no
+// further.
+func TestScaffoldOnceDocsCapsAtFourEntries(t *testing.T) {
+	if len(scaffoldOnceDocs) != 4 {
+		t.Fatalf("scaffoldOnceDocs has %d entries, want exactly four (NG2)", len(scaffoldOnceDocs))
+	}
+}
+
+// TestArchitectureQuestionFormAdmission locks the R15 form's structure: the
+// zharness:unanswered marker audit keys on, and exactly five numbered
+// questions. The admission test itself — that none of the five questions can
+// be answered by reading the repository — is an editorial judgment applied at
+// review time, not a mechanical assertion.
+func TestArchitectureQuestionFormAdmission(t *testing.T) {
+	var body string
+	for _, doc := range scaffoldOnceDocs {
+		if doc.path == "docs/ARCHITECTURE.md" {
+			body = doc.body
+			break
+		}
+	}
+	if body == "" {
+		t.Fatal("scaffoldOnceDocs has no docs/ARCHITECTURE.md entry")
+	}
+	if !strings.Contains(body, "zharness:unanswered") {
+		t.Fatal("question form missing the zharness:unanswered marker audit keys on")
+	}
+	questions := regexp.MustCompile(`(?m)^\d\. .+\?$`).FindAllString(body, -1)
+	if len(questions) != 5 {
+		t.Fatalf("question form carries %d numbered questions, want exactly five (R15): %q", len(questions), questions)
 	}
 }

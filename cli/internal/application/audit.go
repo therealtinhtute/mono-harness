@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -89,6 +90,14 @@ func Audit(db *sql.DB, cliVersion, repoRoot string) (AuditReport, error) {
 		}
 	}
 
+	finding, present, err = architectureElicitationFinding(repoRoot)
+	if err != nil {
+		return report, err
+	}
+	if present {
+		report.ContractViolations = append(report.ContractViolations, finding)
+	}
+
 	return report, nil
 }
 
@@ -138,6 +147,9 @@ func authoredDocsFinding(repoRoot string) (AuditFinding, bool, error) {
 			return err
 		}
 		if _, managed := managedPaths[filepath.ToSlash(relative)]; !managed {
+			if filepath.ToSlash(relative) == "docs/ARCHITECTURE.md" && isUnansweredArchitectureForm(path) {
+				return nil // R15: the unanswered question form is not documentation
+			}
 			authoredMarkdown = true
 		}
 		return nil
@@ -371,4 +383,45 @@ func unresolvablePinFinding(doc pinnedDoc) AuditFinding {
 		Identifier: "authored_doc_pin_invalid",
 		Severity:   "warning",
 	}
+}
+
+// architectureUnansweredMarker is the comment the R15 scaffold form carries;
+// the consumer deletes it by answering, which is what clears the report.
+const architectureUnansweredMarker = "<!-- zharness:unanswered"
+
+// isUnansweredArchitectureForm reports whether the file still carries the
+// scaffold marker. An unreadable file is treated as content so a real error
+// can surface elsewhere rather than silently excusing the file from the R2
+// count.
+func isUnansweredArchitectureForm(path string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	return bytes.Contains(data, []byte(architectureUnansweredMarker))
+}
+
+// architectureElicitationFinding composes R15's report (R6/R9): an
+// info-severity presence signal that docs/ARCHITECTURE.md is still the
+// unanswered question form. It never claims anything about the quality or
+// correctness of answers, because there are none to judge.
+func architectureElicitationFinding(repoRoot string) (AuditFinding, bool, error) {
+	path := filepath.Join(repoRoot, "docs", "ARCHITECTURE.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return AuditFinding{}, false, nil
+		}
+		return AuditFinding{}, false, fmt.Errorf("read docs/ARCHITECTURE.md: %w", err)
+	}
+	if !bytes.Contains(data, []byte(architectureUnansweredMarker)) {
+		return AuditFinding{}, false, nil
+	}
+	return AuditFinding{
+		Link:       "DOCS->SOURCE",
+		Issue:      "architecture_elicitation_unanswered",
+		Detail:     "docs/ARCHITECTURE.md is still the scaffolded question form — its five questions are unanswered. It is not counted as authored documentation until the form is answered; answering it is a human task the harness cannot do.",
+		Identifier: "architecture_elicitation_unanswered",
+		Severity:   "info",
+	}, true, nil
 }

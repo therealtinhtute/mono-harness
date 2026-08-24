@@ -393,8 +393,14 @@ func TestLifecycle_ScratchDirFullChain(t *testing.T) {
 		UnlinkedProofs []any `json:"unlinked_proofs"`
 	}
 	mustUnmarshal(t, auditOut, &auditResp)
-	if len(auditResp.PointerDrift) != 0 || len(auditResp.ContractViolations) != 0 || len(auditResp.UnlinkedProofs) != 0 {
-		t.Fatalf("audit = %+v, want no drift, violations, or unlinked proofs", auditResp)
+	// R15: the scaffolded docs/ARCHITECTURE.md question form is intentionally
+	// reported as unanswered until a human answers it — it is the one expected
+	// finding in a fresh consumer repository, not drift or proof loss.
+	if len(auditResp.PointerDrift) != 0 || len(auditResp.UnlinkedProofs) != 0 || len(auditResp.ContractViolations) != 1 {
+		t.Fatalf("audit = %+v, want no drift, no unlinked proofs, and exactly the architecture_elicitation_unanswered violation", auditResp)
+	}
+	if len(auditResp.ContractViolations) == 1 && auditResp.ContractViolations[0].Issue != "architecture_elicitation_unanswered" {
+		t.Fatalf("audit = %+v, want only architecture_elicitation_unanswered", auditResp)
 	}
 }
 

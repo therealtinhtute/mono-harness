@@ -2,13 +2,13 @@
 
 ## Status
 
-Accepted. Implemented in phase `authored-docs-guard` of `docs/plans/active/consumer-doc-drift-gate.md` on 2026-08-21.
+Accepted. Implemented in phase `authored-docs-guard` of the `consumer-doc-drift-gate` initiative on 2026-08-21.
 
 ## Context
 
 Commit `655c6ac` removed the repository's authored documentation while leaving the embedded managed set recoverable by `zharness init`. The managed half reappeared, but the authored half did not, so the repository looked healthy until its citations failed. The incident and its remaining gap are recorded in `docs/decisions/0004-docs-directory-deletion-655c6ac.md:9-13,45-50`.
 
-Before this phase, `audit` composed database-backed lifecycle readers and exposed a fixed three-array JSON envelope (`cli/internal/application/audit.go:16-49`). The `managed_docs` table is a derived runtime record used by projection, not a durable source of repository state; a fresh clone followed by `db rebuild` cannot use it as the precondition for detecting lost authored documentation (`docs/plans/active/consumer-doc-drift-gate.md:42-49`).
+Before this phase, `audit` composed database-backed lifecycle readers and exposed a fixed three-array JSON envelope (`cli/internal/application/audit.go:16-49`). The `managed_docs` table is a derived runtime record used by projection, not a durable source of repository state; a fresh clone followed by `db rebuild` cannot use it as the precondition for detecting lost authored documentation (the plan's accepted requirements R2, R6–R9).
 
 ## Decision
 
@@ -31,7 +31,7 @@ The rejected alternative is to treat the database's managed-document rows as pro
 ## Authority
 
 - `docs/decisions/0004-docs-directory-deletion-655c6ac.md:9-13,45-50` — incident and the unclosed detection gap.
-- `docs/plans/active/consumer-doc-drift-gate.md:48-55` — accepted requirements R2 and R6-R9.
+- The `consumer-doc-drift-gate` plan's accepted requirements R2 and R6-R9, locked 2026-08-20.
 - `cli/internal/application/audit.go:16-21,30-130` — report envelope, embedded-set filesystem scan, finding identifier, and severity.
 - `cli/docs/CONTRACT.md:215-221` — public `audit` contract.
 - `docs/README.md:21-40` — documentation ownership classes and table.

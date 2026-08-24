@@ -559,3 +559,70 @@ func TestAuditFailsWhenDocsIsNotADirectory(t *testing.T) {
 		t.Fatal("Audit with docs-as-file succeeded, want an error from the unreadable docs tree")
 	}
 }
+
+// TestAuditReportsUnansweredArchitectureFormAsNotDocs scaffolds the R15
+// question form into an otherwise docs-less repository and proves both
+// behaviors at once: the form is reported unanswered (its own info finding,
+// R6) AND it does not satisfy the authored-docs guard's precondition (R15:
+// never counted as documentation), so authored_docs_missing still fires.
+// Answering the form — replacing the marker with real prose — clears both.
+func TestAuditReportsUnansweredArchitectureFormAsNotDocs(t *testing.T) {
+	repoRoot := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repoRoot, "AGENTS.md"), []byte("managed\n"), 0o644); err != nil {
+		t.Fatalf("write managed root doc: %v", err)
+	}
+	docs := filepath.Join(repoRoot, "docs")
+	if err := os.MkdirAll(docs, 0o755); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+	form := strings.ReplaceAll(architectureQuestionFormBody, "~", "`")
+	if err := os.WriteFile(filepath.Join(docs, "ARCHITECTURE.md"), []byte(form), 0o644); err != nil {
+		t.Fatalf("write scaffolded question form: %v", err)
+	}
+
+	db := freshDB(t)
+	seedRun(t, db)
+	report, err := Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with the unanswered question form: %v", err)
+	}
+	if len(report.ContractViolations) != 2 {
+		t.Fatalf("contract_violations = %+v, want authored_docs_missing plus architecture_elicitation_unanswered", report.ContractViolations)
+	}
+	var missing, unanswered *AuditFinding
+	for i := range report.ContractViolations {
+		switch report.ContractViolations[i].Identifier {
+		case "authored_docs_missing":
+			missing = &report.ContractViolations[i]
+		case "architecture_elicitation_unanswered":
+			unanswered = &report.ContractViolations[i]
+		}
+	}
+	if missing == nil || missing.Severity != "warning" {
+		t.Fatalf("missing = %+v, want the authored_docs_missing warning — the form is not documentation (R15)", missing)
+	}
+	if unanswered == nil || unanswered.Severity != "info" {
+		t.Fatalf("unanswered = %+v, want the architecture_elicitation_unanswered info finding", unanswered)
+	}
+	lower := strings.ToLower(unanswered.Detail)
+	if strings.Contains(lower, "correct") || strings.Contains(lower, "accurate") {
+		t.Fatalf("detail = %q, want no correctness claim about answers (R9)", unanswered.Detail)
+	}
+
+	answered := strings.Replace(form,
+		"<!-- zharness:unanswered -- `zharness init` scaffolded this form because\ndocs/ARCHITECTURE.md was absent. Answer the five questions below in your own\nwords, then delete this comment; while it remains, `zharness audit` reports\nthis file as an unanswered form rather than documentation. -->",
+		"The harness is a CLI that keeps durable agent workflow state in git-tracked\nmarkdown and derives a database from it.", 1)
+	if answered == form {
+		t.Fatal("marker replacement did not apply; fixture stale")
+	}
+	if err := os.WriteFile(filepath.Join(docs, "ARCHITECTURE.md"), []byte(answered), 0o644); err != nil {
+		t.Fatalf("answer the form: %v", err)
+	}
+	report, err = Audit(db, "dev", repoRoot)
+	if err != nil {
+		t.Fatalf("Audit with an answered ARCHITECTURE.md: %v", err)
+	}
+	if len(report.ContractViolations) != 0 {
+		t.Fatalf("contract_violations = %+v, want none once the form is answered", report.ContractViolations)
+	}
+}
