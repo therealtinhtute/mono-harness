@@ -3,7 +3,7 @@ id: 01M0FAVR17J6RGK6S40HRNA7F3
 type: plan
 intake_id: 01M0FAY5EZSM3CPBCAXF6RTCQB
 lane: normal
-status: active
+status: completed
 created: 2026-08-20
 updated: 2026-08-24
 ---
@@ -126,7 +126,7 @@ updated: 2026-08-24
 
 ### phase_slug: `rebuild-phase-parser`
 - story_id: 01M0H8NGCWZ28H6KDSGSAT0V8D
-- status: checked
+- status: done
 - goal: make `db rebuild` reconstruct a story row from every phase-block form the repository's plans actually use, so the database stays regenerable from committed markdown as ADR 0001 requires.
 - depends_on: none
 - requirements: R17
@@ -160,7 +160,7 @@ updated: 2026-08-24
 
 ### phase_slug: `legacy-phase-form`
 - story_id: 01M0HHQPDMEWEF9ZET6649GV28
-- status: checked
+- status: done
 - goal: make `db rebuild` fully regenerate `pr60-doc-truth` and `pr60-go-correctness` from `docs/plans/completed/pr60-review-fixes.md`'s phase-block form — a compound gap (heading discovery, then field-name matching) that `rebuild-phase-parser`'s list-item fix left closed only for the shapes this plan itself uses.
 - depends_on: rebuild-phase-parser
 - requirements: R18
@@ -202,7 +202,7 @@ updated: 2026-08-24
 
 ### phase_slug: `audit-restore`
 - story_id: 01M0FTV4RHEWQG12ND15PACVGW
-- status: checked
+- status: done
 - goal: make the repository's 74 citations of three deleted audit documents true again, and stop the embedded playbooks citing a path no consumer repository contains.
 - depends_on: none
 - requirements: R12, R14
@@ -237,7 +237,7 @@ updated: 2026-08-24
 
 ### phase_slug: `playbook-scaffold-sync`
 - story_id: 01M0HM0KJFXZEXN67KTA90CY9Y
-- status: checked
+- status: done
 - goal: sync `docs/playbooks/` (the projected scaffold-once copy) to match `cli/docs/embedded/playbooks/` (the source `audit-restore` Wave 2 edits for R14), since `zharness init` cannot perform this sync for an existing checkout.
 - depends_on: audit-restore
 - requirements: R19
@@ -259,7 +259,7 @@ updated: 2026-08-24
 
 ### phase_slug: `link-gate-widening`
 - story_id: 01M0FTV4RVKEC0FZWWNPN6JHNV
-- status: checked
+- status: done
 - goal: make `verify-doc-links.sh` able to see `cli/` and markdown-link targets, exclude the Go test fixture by category, and repair the citations the widened gate then reports.
 - depends_on: audit-restore
 - requirements: R10, R11, R13
@@ -293,7 +293,7 @@ updated: 2026-08-24
 
 ### phase_slug: `authored-docs-guard`
 - story_id: 01M0FTV4S4RBAK9D1K3QQQ9161
-- status: checked
+- status: done
 - goal: `zharness audit` reports a finding when a repository carrying the harness's managed documentation has no authored documentation left — the `655c6ac` signature, which today produces a fully green repository.
 - depends_on: link-gate-widening
 - requirements: R2, R6, R7, R8, R9
@@ -329,7 +329,7 @@ updated: 2026-08-24
 
 ### phase_slug: `hygiene-guard-widening`
 - story_id: 01M0JASK0TWJ5366RTZ8H284Y6
-- status: checked
+- status: done
 - goal: no per-machine `.kit/` directory at any depth can be committed, and `scripts/verify-doc-links.sh` applies the same `ALLOWED_PREFIXES` check to a markdown-link claim that it already applies to a backtick claim.
 - depends_on: null
 - requirements: R20, R21
@@ -358,7 +358,7 @@ updated: 2026-08-24
 
 ### phase_slug: `db-root-resolution`
 - story_id: 01M0JD6D832M94R02RCHJ37J2X
-- status: planned
+- status: done
 - goal: every `zharness` subcommand resolves `harness.db` against the git repository root, not process cwd, so `zharness <cmd>` behaves identically regardless of which subdirectory inside the repository it is invoked from.
 - depends_on: null
 - requirements: R22
@@ -398,7 +398,7 @@ updated: 2026-08-24
 
 ### phase_slug: `pin-drift-finding`
 - story_id: 01M0FTV8M4ERF0H3SKDBED05GW
-- status: checked
+- status: done
 - goal: an authored document may declare a pinned commit, and `zharness audit` reports when source paths it cites have moved past that pin, naming the document, the moved citations, and the size of the change.
 - depends_on: authored-docs-guard
 - requirements: R3, R4, R5, R6, R7, R9
@@ -427,7 +427,7 @@ updated: 2026-08-24
 
 ### phase_slug: `pin-robustness`
 - story_id: 01M0RWYC0RMHCCD96RPD0CFE19
-- status: checked
+- status: done
 - goal: a pinned document naming an unresolvable commit degrades `zharness audit` to one warning finding instead of an error, the citation grammar agrees with repository-relative resolution, and audit's failure paths and counters stay honest.
 - depends_on: pin-drift-finding
 - requirements: R23, R24, R25
@@ -463,7 +463,7 @@ updated: 2026-08-24
 
 ### phase_slug: `architecture-elicitation`
 - story_id: 01M0FTV8MEZW4TM96C0JAJSS0W
-- status: planned
+- status: done
 - goal: `zharness init` scaffolds `docs/ARCHITECTURE.md` once, as at most five unanswered questions that no repository read can answer, and `audit` reports it as unanswered rather than counting it as documentation.
 - depends_on: authored-docs-guard
 - requirements: R1, R15, R16
@@ -560,6 +560,23 @@ updated: 2026-08-24
 - `2026-08-24T04:18:33Z` — wave 3. run: `01M0RZDHH9520GY3GA78VP7XGE`. summary: Wave 3 complete: audit failure paths honest — audit_failed code for content errors, single prefix at render, deterministic binary counting with named test; contract updated..
 - `2026-08-24T04:25:15Z` — handoff recorded. handoff: `01M0S07XAZMW0DSG5MK7CFVBC3`. run: `01M0RZDHH9520GY3GA78VP7XGE`. check: `01M0RZW24RHM9VGJH8SF64YQEP`. open items: feat/pin-robustness (bfa3bfb) is local-only: push branch, open PR, merge to land R23-R25; pin-drift-finding and earlier checked phases have not been closed with --close-phase; decide whether to cascade-close before final handoff; architecture-elicitation is the last planned phase; initiative closure additionally requires check full on it; same-session gate caveat: audit_failed cobra exit envelope verified unit-level (mapAuditError test) only.
 - `2026-08-24T04:50:13Z` — wave 3. run: `01M0RZDHH9520GY3GA78VP7XGE`. summary: bookkeeping: post-handoff hand edit of Current State (open-items + exact_next_action for handoff 01M0S07XAZMW0DSG5MK7CFVBC3) desynced plan_index.sha256; this trace is the sanctioned stale_index recovery — CLI owns both sides, index now matches the committed file..
+- `2026-08-24T06:48:14Z` — wave 1. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. summary: phase architecture-elicitation started on branch feat/architecture-elicitation: run 01M0S8DERJP0JFJGKV1RH5CE8A created, plan phase status synced to in-progress (trace CLI rejects task_status=in-progress per decision 01M0M5VRFQH6AGEQZRYYVXRAR5 — wave-summary precedent reused); Wave 1 (the question form in scaffoldOnceDocs) next.
+- `2026-08-24T07:01:18Z` — wave 1, task add a fourth entry to scaffoldOnceDocs containing at most five unanswerable-by-reading questions. task_status: `DONE`. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. summary: init.go: architectureQuestionFormBody added as fourth entry — five numbered questions (problem/audience, use cases in domain language, non-standard nouns, silent invariants, boundaries), each ending in ?, plus a <!-- zharness:unanswered --> instruction comment audit keys on; ~→` substitution matches existing entries. Checks: TestScaffoldOnceDocsCapsAtFourEntries pins NG2 cap=4; TestArchitectureQuestionFormAdmission asserts marker + exactly five question lines; admission test applied editorially — none of the five is answerable via Glob+Read. Binary probe: zharness init in temp dir creates the form verbatim; scaffold-once semantics already proven generically by TestScaffoldOnceDocsSurviveForcedRefresh which now covers the fourth entry (consumer edits never rewritten, no conflict staged, zero managed_docs rows)..
+- `2026-08-24T07:01:35Z` — wave 1. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. summary: Wave 1 complete: the R15 question form is the fourth scaffold-once entry, structurally pinned by tests and verified end-to-end via binary init probe..
+- `2026-08-24T07:01:35Z` — wave 2, task audit reports the file as unanswered while every question is blank, and never counts it as authored documentation for R2. task_status: `DONE`. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. summary: audit.go: architectureUnansweredMarker + isUnansweredArchitectureForm (unreadable file treated as content, not excused) + architectureElicitationFinding (identifier architecture_elicitation_unanswered, severity info, wording carries no correctness claim per R9); authoredDocsFinding walk now skips docs/ARCHITECTURE.md only while the marker remains. Tests: TestAuditReportsUnansweredArchitectureFormAsNotDocs proves BOTH findings fire on the blank form (missing=warning, unanswered=info) and both clear once answered; CONTRACT.md documents identifier, severity, marker semantics, and the R2 exclusion. Deviation recorded: cmd/zharness/lifecycle_test.go updated to expect exactly this one finding in a fresh consumer repo (decision 01M0S8YRY1YHKQD1JPYC3PKRF0). Binary probe: fresh init → audit exits 0 with exactly the one info finding; answering the form → zero violations..
+- `2026-08-24T07:02:06Z` — wave 2. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. summary: Wave 2 complete: unanswered form reported as info and excluded from the R2 count; answering clears both; contract documented; lifecycle ripple recorded as a decision..
+- `2026-08-24T07:02:06Z` — wave 3, task repoint every citation naming this plan's active path by slug before it moves to docs/plans/completed/ (R16). task_status: `DONE`. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. summary: grep -rn consumer-doc-drift-gate outside docs/plans/active/ classified: two real path citations repointed to prose-slug references (docs/decisions/0005 x3 — status line, context requirement-pointer, authority entry; docs/research/agent-documentation-evidence.md:5), chosen over completed-path links per R13 second-order-breakage reasoning; .claimignore lines name the slug only in justification comments with no resolvable path and stay; .kit/log/zharness.jsonl is untracked runtime noise. Surfaces deviation recorded as decision 01M0S93Z8QVGT8CZWXSN4CZDKK. verify-doc-links.sh exits 0 post-edit. plan complete itself runs at initiative closure per handoff step 6, after check full..
+- `2026-08-24T07:03:41Z` — handoff recorded. handoff: `01M0S9A0RCA67XZNHV3ZNMJ1QT`. run: `01M0HAHCF491420NFW88Y6DMGK`. check: `01M0HJHSTF2DK59T8CFVC01BBY`. phase closed.
+- `2026-08-24T07:03:41Z` — handoff recorded. handoff: `01M0S9A0RVWDQ4D68TH9NM54EA`. run: `01M0HK0Z2ABNXGGCQ59CW8QM8R`. check: `01M0HK1SKVH266TZ3Z4RRRR1NS`. phase closed.
+- `2026-08-24T07:03:41Z` — handoff recorded. handoff: `01M0S9A0S9WJ4RB4R6A0ADQDC4`. run: `01M0HK7JGA9FNKP389B2G7G25D`. check: `01M0HM29N12HZ9FM6JPSW3YPYQ`. phase closed.
+- `2026-08-24T07:03:41Z` — handoff recorded. handoff: `01M0S9A0SQ09RV6D2PWVW5P2EW`. run: `01M0HM32RWXPCFWT7TTNH42YAE`. check: `01M0HM3HJMK7TWDGE4AJY9FWJ6`. phase closed.
+- `2026-08-24T07:03:41Z` — handoff recorded. handoff: `01M0S9A0T595E1F10JC8E66HMH`. run: `01M0HPWQAGDM4H7DSQAKQZ2H5C`. check: `01M0HRD7G9YXWV41J77E3SWE82`. phase closed.
+- `2026-08-24T07:03:58Z` — handoff recorded. handoff: `01M0S9AH06HQD1ARQ3YKDG5CEV`. run: `01M0JANBQMEZG31D8DR84VZ4W4`. check: `01M0JAPFW3QZ2C7EBK5VSHCN9W`. phase closed.
+- `2026-08-24T07:03:58Z` — handoff recorded. handoff: `01M0S9AH0JDXNHYTYYBQN1FMYZ`. run: `01M0JAYZJW3MFA7H9DVRWQ510C`. check: `01M0JB4NAZE9K59H60MPXW7XRT`. phase closed.
+- `2026-08-24T07:03:58Z` — handoff recorded. handoff: `01M0S9AH0Y2DA0Q9RFW14FBCS7`. run: `01M0M5ZADQTJTST98FKV20T733`. check: `01M0M6RZ7964SG1Z47DD70NCHN`. phase closed.
+- `2026-08-24T07:03:58Z` — handoff recorded. handoff: `01M0S9AH1BR2H4QFAH14PDVG70`. run: `01M0ME03TSWV60F3Q3Z62JVZQD`. check: `01M0RZ6RB8GHKFQAPWQ76QNEZC`. phase closed.
+- `2026-08-24T07:03:58Z` — handoff recorded. handoff: `01M0S9AH1Q80SABM8K679HVFSK`. run: `01M0RZDHH9520GY3GA78VP7XGE`. check: `01M0RZW24RHM9VGJH8SF64YQEP`. phase closed.
+- `2026-08-24T07:04:21Z` — handoff recorded. handoff: `01M0S9B82B6B3Y8YTQ4G10KG10`. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. check: `01M0S981PARY8PZS8SP9J47KAH`. phase closed.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -573,6 +590,9 @@ updated: 2026-08-24
 - `2026-08-21T08:58:43Z` — Record the phase start as a wave-level summary rather than a task trace with status in-progress. (phase: `link-gate-widening`), task: start phase link-gate-widening. rationale: The work playbook requests task_status=in-progress for phase start, but the live trace CLI rejects that value and accepts only DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED. The attempted command returned invalid_task_status; a wave summary preserves the start evidence without mislabeling a task as complete..
 - `2026-08-21T14:19:09Z` — Wave 1 task 2 expected_output text has the R21 exit-code claim inverted (says the link-form probe exits 0/skipped on the unmodified script; the actual, previously-recorded R21 evidence is the reverse: the link form is reported at exit 1 and only the backtick form is silently skipped). Proceeding on the actual measured behavior (exit 1, one finding) since the task's pass/fail check only requires docs/README.md clean after revert, which the probe satisfied. (phase: `hygiene-guard-widening`), task: reproduce R21 — a markdown-link claim outside ALLOWED_PREFIXES is silently skipped while the identical backtick claim is not.. rationale: The wave text likely inherited a copy/paste swap from describing the fixed post-Wave-2 state instead of the pre-fix reproduction. The check criterion itself is exit-code-agnostic, so this does not block the wave; flagging so the narrative is not mistaken for a contradiction later..
 - `2026-08-22T07:28:18Z` — Reconcile harness.db after cwd data-loss (R22 incident): db rebuild --yes restored 21 stories, 15 checks, 15 runs from committed markdown; authored-docs-guard and hygiene-guard-widening now checked, matching the plan. B3 is already resolved: PR #67 body carries the 2026-08-21 status-update correction and commit 2ddc83c was replaced by rebase (1ff3ab8/4452d8b) before merge.. rationale: Sessions on 2026-08-21 ran zharness from cli/internal/application/ so trace/check writes failed with db_unreadable while markdown Progress entries still landed, leaving DB behind markdown. ADR 0001 makes committed markdown the source of truth, so rebuild is the sanctioned repair; meta pointers reset to unset is a supported drift state and Phase C work full re-anchors them..
+- `2026-08-24T06:57:33Z` — TestLifecycle_ScratchDirFullChain (cmd/zharness) updated to expect exactly one contract violation — architecture_elicitation_unanswered — instead of zero. (phase: `architecture-elicitation`), task: audit reports the file as unanswered while every question is blank. rationale: The integration chain asserts end-state audit cleanliness over init+audit, which this phase deliberately changes: R15 mandates reporting the scaffolded question form as unanswered until a human answers it. The assertion is the caller-side ripple of the new product behavior (same rule as the Audit-signature constraint: callers and tests move with the change), not a falsified fixture — the identifier is asserted explicitly so any other violation still fails the test. surfaces_allowed does not list cmd/zharness/lifecycle_test.go, so this deviation is recorded here rather than silently widening the phase..
+- `2026-08-24T07:00:23Z` — R16 citation repoints edited two files outside surfaces_allowed: docs/decisions/0005-authored-documentation-boundary.md (three active-path citations reworded to prose slug references carrying requirement IDs) and docs/research/agent-documentation-evidence.md:5 (same treatment). (phase: `architecture-elicitation`), task: repoint every citation naming this plan's active path by slug before it moves to docs/plans/completed/ (R16). rationale: Wave 3 task itself demands repointing every citation naming this plan's active path by slug, but the citation locations were unknowable at plan time — ADR-0005 was authored after this plan was locked. Prose-slug references were chosen over docs/plans/completed/ links per R13's second-order-breakage reasoning; .claimignore lines mentioning the slug are justification comments naming no resolvable path and cannot break, so they stay..
+- `2026-08-24T07:06:22Z` — plan completed. rationale: every phase_slug is a done story.
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
@@ -612,14 +632,17 @@ updated: 2026-08-24
 - `2026-08-24T04:18:47Z` — check. verdict: `APPROVED`. check: `01M0RZW24RHM9VGJH8SF64YQEP`. run: `01M0RZDHH9520GY3GA78VP7XGE`. phase: `pin-robustness`. judge: `same-session` (ox-alpha-opencode).
   - `cd cli && go vet ./... && go test ./...` → all packages ok including TestAuditUnresolvablePinDegradesToWarning, TestMeasureCitationBinaryFileCountsOnePair, TestMapAuditErrorOwnCodeAndSinglePrefix
   - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
+- `2026-08-24T07:02:37Z` — check. verdict: `APPROVED`. check: `01M0S981PARY8PZS8SP9J47KAH`. run: `01M0S8DERJP0JFJGKV1RH5CE8A`. phase: `architecture-elicitation`. judge: `same-session` (ox-alpha-opencode).
+  - `cd cli && go vet ./... && go test ./...` → all 6 packages ok incl. TestScaffoldOnceDocsCapsAtFourEntries, TestArchitectureQuestionFormAdmission, TestAuditReportsUnansweredArchitectureFormAsNotDocs
+  - `bash scripts/verify-doc-links.sh` → doc links OK (0 findings)
 
 ## Current State and Next Action
-- active_phase: pin-robustness
-- lifecycle_status: checked
-- latest_run_id: 01M0RZDHH9520GY3GA78VP7XGE
-- latest_trace_ids: [01M0RZTB9SFE8R0S3T07E2Z43F, 01M0RZTQFCJ3XTCF4PDRDYFR19, 01M0RZTQFVVRRVKMCDERCQBPSK, 01M0RZVCQRNZKCV5DMA58W9REQ, 01M0RZVMSGVH3MYZZSXE7MW448]
-- latest_check_id: 01M0RZW24RHM9VGJH8SF64YQEP
-- latest_handoff_id: 01M0S07XAZMW0DSG5MK7CFVBC3
+- active_phase: none
+- lifecycle_status: done
+- latest_run_id: 01M0S8DERJP0JFJGKV1RH5CE8A
+- latest_trace_ids: [01M0S97D7CXWYG68Y6Y97ZDDEF]
+- latest_check_id: 01M0S981PARY8PZS8SP9J47KAH
+- latest_handoff_id: 01M0S9B82B6B3Y8YTQ4G10KG10
 - blockers: none
-- open_items: [feat/pin-robustness (bfa3bfb) is local-only: push branch, open PR, merge to land R23-R25 | pin-drift-finding and earlier checked phases have not been closed with --close-phase; decide whether to cascade-close before final handoff | architecture-elicitation is the last planned phase; initiative closure additionally requires check full on it | same-session gate caveat: audit_failed cobra exit envelope verified unit-level (mapAuditError test) only | R15 cannot be verified in this repository because docs/ARCHITECTURE.md already exists and scaffold-once skips existing paths; its only valid evidence is a temporary-directory init run | Follow-on initiative agreed but not locked — delete completed plans outright when done, per upstream harness-experimental policy; four approved phases covering ADR absorption, three `docs/plans/` README policy files, deletion of the five existing completed plans with their non-ADR citations repaired, and changing `zharness plan complete` to delete rather than move. It cannot be locked until this initiative completes and frees the single-active-plan slot. | invocation_log.go still writes .kit/log/ cwd-relative (R22 wave-4 concern, follow-up requirement candidate, outside this plan's scope) | `zharness audit --json` cannot be cited as an APPROVED proof-link: `check record` holds the repository write lock while re-running proofs, so the child audit's read lock times out (observed 2026-08-24); cite DB-free commands for gates]
-- exact_next_action: push feat/pin-robustness and open/merge its PR to land R23-R25 (gated APPROVED, check 01M0RZW24RHM9VGJH8SF64YQEP), then `work full phase architecture-elicitation`
+- open_items: none
+- exact_next_action: initiative complete — every phase done, final phase closed under check 01M0S981PARY8PZS8SP9J47KAH (gate APPROVED; the initiative's one check full ran in-session, same-session judge ox-alpha-opencode); run `zharness plan complete` to move this record to docs/plans/completed/
