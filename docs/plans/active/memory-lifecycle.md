@@ -137,7 +137,7 @@ updated: 2026-08-25
 
 ## Progress
 <!-- Append-only durable entries record timestamp, phase, wave, task, task_status, run_id, trace_id, exact verification/result, and changed surfaces or blocker. -->
-- none
+- `2026-08-25T15:14:21Z` — handoff recorded. handoff: `01M0WQS5AQMH0YSYTSCEEP0EGX`. open items: Start work full phase supersede-lineage on the memory-lifecycle initiative - regression-first wave 1, tree is clean at 1a79174; Cross-repo leftovers from this session: monoui has 13 tracked harness deletions UNCOMMITTED there plus a blocked Vercel deploy (invalid VERCEL_TOKEN since Aug 21, run 32849418619 - rotate token, update GitHub secret, re-run deploy); kumo-desk db rebuilt and verified same day; Open design items parked outside this plan: ledger-drift reconciliation (11 consumer-doc-drift-gate stories still checked while its plan sits in completed/) and context-packet phase-list cap for large plans.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
