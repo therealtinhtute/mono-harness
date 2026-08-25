@@ -77,7 +77,7 @@ func runPreflight(cmd *cobra.Command, stage, requestedMode, version string) erro
 	if docsStatus != application.PreflightDocsReady {
 		playbook = ""
 	}
-	view, err := application.Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version)
+	view, err := application.Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version, hasCommittedPlans())
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)

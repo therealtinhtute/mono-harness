@@ -41,7 +41,7 @@ func runDecisionAdd(cmd *cobra.Command, decisionsRaw, runID string) error {
 	}
 
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "decision add: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("decision add")
 	}
 	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {

@@ -32,7 +32,7 @@ func mapAuditError(err error) *cliError {
 func runAudit(cmd *cobra.Command, version string) error {
 	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "audit: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("audit")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("audit", err)

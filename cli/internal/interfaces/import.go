@@ -29,7 +29,7 @@ func newImportCmd() *cobra.Command {
 
 func runImport(cmd *cobra.Command, legacyDir string) error {
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "import: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("import")
 	}
 
 	db, err := infrastructure.Open(resolveDBPath())

@@ -43,7 +43,7 @@ func newMigrateCmd(version string) *cobra.Command {
 
 func runMigrate(cmd *cobra.Command) error {
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "migrate: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("migrate")
 	}
 
 	db, err := infrastructure.Open(resolveDBPath())

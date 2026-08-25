@@ -33,7 +33,19 @@ type PreflightView struct {
 	Context   *ContextPacket `json:"context,omitempty"`
 }
 
-func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version string) (PreflightView, error) {
+// missingDBRecovery picks the durable-stage stop recovery for a missing
+// database: when committed plan markdown exists under docs/plans/,
+// `db rebuild` restores lifecycle state from it (P3 markdown truth), while
+// a bare init would create an empty DB contradicting those plans; init is
+// only right for a repo with nothing to restore.
+func missingDBRecovery(hasCommittedPlans bool) string {
+	if hasCommittedPlans {
+		return "zharness db rebuild --yes"
+	}
+	return "zharness init"
+}
+
+func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version string, hasCommittedPlans bool) (PreflightView, error) {
 	stage = strings.ToLower(strings.TrimSpace(stage))
 	mode, err := domain.ResolvePreflightMode(stage, requestedMode)
 	if err != nil {
@@ -73,7 +85,7 @@ func Preflight(stage, requestedMode, dbStatus, docsStatus, playbook, version str
 			view.Stop = &StopInfo{
 				Code:     "harness_required",
 				Message:  "This durable workflow stage requires an initialized harness database.",
-				Recovery: "zharness init",
+				Recovery: missingDBRecovery(hasCommittedPlans),
 			}
 		case docsStatus == PreflightDocsMissing:
 			view.Readiness = PreflightBlocked

@@ -107,7 +107,7 @@ func runDBRebuild(cmd *cobra.Command, yes bool) error {
 func runDBStatus(cmd *cobra.Command) error {
 	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
-		return newSystemError("db_unreadable", "db status: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("db status")
 	}
 	if err != nil {
 		return mapReadOnlyOpenError("db status", err)

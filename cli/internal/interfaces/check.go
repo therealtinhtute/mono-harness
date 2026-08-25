@@ -47,7 +47,7 @@ func runCheckRecord(cmd *cobra.Command, verdict, runID, judge, judgeModel, proof
 	}
 
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "check record: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("check record")
 	}
 	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {

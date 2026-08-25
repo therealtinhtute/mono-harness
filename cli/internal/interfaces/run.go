@@ -38,7 +38,7 @@ func newRunCmd() *cobra.Command {
 
 func runRunCreate(cmd *cobra.Command, slug, artifactPath, planID string) error {
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "run create: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("run create")
 	}
 	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {

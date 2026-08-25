@@ -44,7 +44,7 @@ func newPlanCmd() *cobra.Command {
 
 func runPlanComplete(cmd *cobra.Command) error {
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "plan complete: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("plan complete")
 	}
 	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {

@@ -28,7 +28,7 @@ func TestPreflightMatrix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := Preflight(tt.stage, tt.requestedMode, tt.db, tt.docs, ".kit/docs/playbooks/test.md", "dev")
+			got, err := Preflight(tt.stage, tt.requestedMode, tt.db, tt.docs, ".kit/docs/playbooks/test.md", "dev", false)
 			if err != nil {
 				t.Fatalf("Preflight() error = %v", err)
 			}
@@ -49,7 +49,7 @@ func TestPreflightMatrix(t *testing.T) {
 func TestPreflightNormalizesStage(t *testing.T) {
 	t.Parallel()
 
-	view, err := Preflight(" WATZUP ", "", PreflightDBReady, PreflightDocsReady, ".kit/docs/playbooks/watzup.md", "dev")
+	view, err := Preflight(" WATZUP ", "", PreflightDBReady, PreflightDocsReady, ".kit/docs/playbooks/watzup.md", "dev", false)
 	if err != nil {
 		t.Fatalf("Preflight() error = %v", err)
 	}
@@ -61,10 +61,33 @@ func TestPreflightNormalizesStage(t *testing.T) {
 func TestPreflightRejectsInvalidObservedStatus(t *testing.T) {
 	t.Parallel()
 
-	if _, err := Preflight("watzup", "", "corrupt", PreflightDocsReady, "", "dev"); err == nil {
+	if _, err := Preflight("watzup", "", "corrupt", PreflightDocsReady, "", "dev", false); err == nil {
 		t.Fatal("Preflight() invalid db status error = nil")
 	}
-	if _, err := Preflight("watzup", "", PreflightDBReady, "old", "", "dev"); err == nil {
+	if _, err := Preflight("watzup", "", PreflightDBReady, "old", "", "dev", false); err == nil {
 		t.Fatal("Preflight() invalid docs status error = nil")
+	}
+}
+
+// A missing database on a durable stage recovers from committed plan
+// markdown when it exists (P3 markdown truth) and falls back to init only
+// for a repo with nothing to restore.
+func TestPreflightMissingDBRecoveryBranchesOnCommittedPlans(t *testing.T) {
+	t.Parallel()
+
+	withPlans, err := Preflight("to-plan", "full", PreflightDBMissing, PreflightDocsReady, "", "dev", true)
+	if err != nil {
+		t.Fatalf("Preflight() error = %v", err)
+	}
+	if withPlans.Stop == nil || withPlans.Stop.Code != "harness_required" || withPlans.Stop.Recovery != "zharness db rebuild --yes" {
+		t.Fatalf("Preflight() stop = %+v, want harness_required recovering via zharness db rebuild --yes when committed plans exist", withPlans.Stop)
+	}
+
+	fresh, err := Preflight("to-plan", "full", PreflightDBMissing, PreflightDocsReady, "", "dev", false)
+	if err != nil {
+		t.Fatalf("Preflight() error = %v", err)
+	}
+	if fresh.Stop == nil || fresh.Stop.Recovery != "zharness init" {
+		t.Fatalf("Preflight() stop = %+v, want harness_required recovering via zharness init with no committed plans", fresh.Stop)
 	}
 }

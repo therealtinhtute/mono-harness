@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/therealtinhtute/skills/cli/internal/application"
 	"github.com/therealtinhtute/skills/cli/internal/domain"
@@ -50,6 +51,36 @@ func mapReadOnlyOpenError(prefix string, err error) *cliError {
 		return mapRepositoryLockError(prefix, err)
 	}
 	return newSystemError("db_unreadable", fmt.Sprintf("%s: %v", prefix, err))
+}
+
+// committedPlanGlobs are the markdown locations `zharness db rebuild`
+// reconstructs lifecycle state from (P3: plan markdown is the source of
+// truth, harness.db is a derived index).
+var committedPlanGlobs = []string{"docs/plans/active/*.md", "docs/plans/completed/*.md"}
+
+// hasCommittedPlans reports whether any committed plan markdown exists
+// under docs/plans/{active,completed}/ — cwd-relative, matching
+// resolveDBPath and the db-rebuild glob.
+func hasCommittedPlans() bool {
+	for _, glob := range committedPlanGlobs {
+		if matches, err := filepath.Glob(glob); err == nil && len(matches) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// missingDBError builds the db_unreadable system error for a missing
+// harness.db, branching the recovery hint on committed plan markdown:
+// when plans exist, `db rebuild` restores lifecycle state from them,
+// while a bare `init` would create an empty DB whose state contradicts
+// those plans; init is only right for a repo with nothing to restore.
+func missingDBError(scope string) *cliError {
+	hint := "; run `zharness init` first"
+	if hasCommittedPlans() {
+		hint = "; run `zharness db rebuild --yes` to restore lifecycle state from committed plan markdown"
+	}
+	return newSystemError("db_unreadable", scope+": no db at "+resolveDBPath()+hint)
 }
 
 // mapValidationError converts a domain/application validation failure into

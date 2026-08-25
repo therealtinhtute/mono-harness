@@ -35,7 +35,7 @@ func newIntakeCmd() *cobra.Command {
 
 func runIntake(cmd *cobra.Command, typ, summary, lane, planPath, planID string) error {
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "intake: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("intake")
 	}
 	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {

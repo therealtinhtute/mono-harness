@@ -47,7 +47,7 @@ func runHandoffRecord(cmd *cobra.Command, runID, checkID, openItemsRaw, nextActi
 	}
 
 	if !infrastructure.Exists(resolveDBPath()) {
-		return newSystemError("db_unreadable", "handoff record: no db at "+resolveDBPath()+"; run `zharness init` first")
+		return missingDBError("handoff record")
 	}
 	db, err := infrastructure.Open(resolveDBPath())
 	if err != nil {
