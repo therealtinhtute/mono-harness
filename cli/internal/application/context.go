@@ -3,6 +3,7 @@ package application
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 // contextTraceTail is the window policy cap on a phase's trace history
@@ -20,15 +21,16 @@ const contextTraceTail = 30
 // that reference them (BuildContextPacket), so a packet never carries a
 // field its own stage's playbook has no use for.
 type ContextPacket struct {
-	Position        Position       `json:"position"`
-	LatestRunID     *string        `json:"latest_run_id"`
-	LatestCheckID   *string        `json:"latest_check_id"`
-	LatestHandoffID *string        `json:"latest_handoff_id"`
-	Drift           []DriftFinding `json:"drift"`
-	Readiness       string         `json:"readiness"`
-	Phases          []PhaseView    `json:"phases,omitempty"`
-	Traces          []TraceView    `json:"traces,omitempty"`
-	Omitted         []OmittedField `json:"omitted,omitempty"`
+	Position        Position        `json:"position"`
+	LatestRunID     *string         `json:"latest_run_id"`
+	LatestCheckID   *string         `json:"latest_check_id"`
+	LatestHandoffID *string         `json:"latest_handoff_id"`
+	Drift           []DriftFinding  `json:"drift"`
+	Readiness       string          `json:"readiness"`
+	Phases          []PhaseView     `json:"phases,omitempty"`
+	Traces          []TraceView     `json:"traces,omitempty"`
+	Memories        []MemoryListView `json:"memories,omitempty"`
+	Omitted         []OmittedField  `json:"omitted,omitempty"`
 }
 
 // OmittedField declares a field a context packet bounded rather than
@@ -100,5 +102,70 @@ func BuildContextPacket(db *sql.DB, stage, version string) (*ContextPacket, erro
 		}
 	}
 
+	// Memories: include all active memories for agent context (R2 — superseded
+	// entries are excluded by default, matching MemoryQuery's default).
+	if err := populateContextMemories(db, pkg); err != nil {
+		return nil, fmt.Errorf("build context packet: memories: %w", err)
+	}
+
 	return pkg, nil
+}
+
+func populateContextMemories(db *sql.DB, pkg *ContextPacket) error {
+	// No memories table yet (pre-migration) — degrade, return empty.
+	var tableCount int
+	if err := db.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name='memories'`).Scan(&tableCount); err != nil {
+		return err
+	}
+	if tableCount == 0 {
+		return nil
+	}
+	rows, err := db.Query(`SELECT id, path, type, scope, plan_id, created_at, superseded_by, superseded_at FROM memories WHERE superseded_by IS NULL ORDER BY created_at DESC, id DESC`)
+	if err != nil {
+		if err.Error() != "" && containsNoSuchColumn(err.Error()) {
+			return populateContextMemoriesLegacy(db, pkg)
+		}
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var v MemoryListView
+		var planIDCol sql.NullString
+		var supBy sql.NullString
+		var supAt sql.NullString
+		if err := rows.Scan(&v.ID, &v.Path, &v.Type, &v.Scope, &planIDCol, &v.CreatedAt, &supBy, &supAt); err != nil {
+			return err
+		}
+		v.PlanID = nullableString(planIDCol)
+		if supBy.Valid && supBy.String != "" {
+			v.SupersededBy = &supBy.String
+		}
+		if supAt.Valid && supAt.String != "" {
+			v.SupersededAt = &supAt.String
+		}
+		pkg.Memories = append(pkg.Memories, v)
+	}
+	return rows.Err()
+}
+
+func populateContextMemoriesLegacy(db *sql.DB, pkg *ContextPacket) error {
+	rows, err := db.Query(`SELECT id, path, type, scope, plan_id, created_at FROM memories ORDER BY created_at DESC, id DESC`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var v MemoryListView
+		var planIDCol sql.NullString
+		if err := rows.Scan(&v.ID, &v.Path, &v.Type, &v.Scope, &planIDCol, &v.CreatedAt); err != nil {
+			return err
+		}
+		v.PlanID = nullableString(planIDCol)
+		pkg.Memories = append(pkg.Memories, v)
+	}
+	return rows.Err()
+}
+
+func containsNoSuchColumn(msg string) bool {
+	return strings.Contains(msg, "no such column")
 }

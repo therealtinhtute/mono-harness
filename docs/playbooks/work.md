@@ -44,6 +44,18 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 10. **Refresh current state** — update active phase, `lifecycle_status: in-progress`, latest run/trace IDs, blockers, open items, and exact next action. Keep the plan `status: active` until final closure.
 11. **Verify synchronization and gate the phase** — rerun `zharness query phases --json`; require the selected phase to be `in-progress` in both DB and plan. After all phase waves complete, perform `check.md`'s durable `gate` steps (Review and Gate Steps 1-4 and 6-11, skipping step 5's complete manual review) **yourself, in this same session**, on the phase diff — do not dispatch to the separate `/check` skill for this: its own frontmatter pins `model: opus`, and prompt caches are model-scoped, so routing through it would force exactly the cold-cache switch this step exists to avoid (F1 of the SDLC token-cache audit — a per-phase `check full` was costing $0.275/phase, 63% of the gate's own cost, for a review most phases don't need). The complete manual review (`check.md` full mode) runs exactly once, on the initiative's final phase, as a `handoff` closure precondition (`handoff.md` step 6) — that single review may switch model, since it happens once per initiative rather than once per phase. Do not mark the phase checked or done; durable `check` and closing `handoff` own those transitions.
 
+## Memory conventions
+
+Record durable memory under `docs/memory/` via `zharness memory add` only when one of three triggers fires:
+
+- **Fact correction** — an earlier memory is wrong or has been superseded; write the corrected entry then link it with `zharness memory supersede --old-id {old} --new-id {new} --json` so the old frontmatter `superseded_by`/`superseded_at` lineage remains queryable.
+- **Durable lesson** — a cross-session learning, architecture decision, or hard-won gotcha that would otherwise be rediscovered.
+- **Owner preference** — an explicit owner instruction about style, process, or scope that should persist beyond the current session.
+
+**Redaction rule** — never store credentials, secrets, API keys, or token values in a memory body; bodies are committed markdown and must not contain sensitive values. Record only that a secret exists, its scope, and where to fetch it.
+
+**Usage pointers** — `zharness memory add --type {type} --scope plan|global [--plan-id {ulid}] --summary "..." --json` writes `docs/memory/{id}.md` first and derives the `memories` index (see `cli/docs/CONTRACT.md` and [memory contract](../../cli/docs/CONTRACT.md)); `zharness memory supersede` writes the lineage; `zharness memory query --keywords "..." [--type {type}]` and `zharness memory get --id {ulid}` read back ranked or by id (default queries hide superseded entries; `--include-superseded` restores them, while `memory get` always reports `status`). No new external dependency; retrieval ranking details live in `cli/docs/CONTRACT.md`.
+
 ## Command Reference
 
 - `zharness preflight work --mode {full|bounded} --json`

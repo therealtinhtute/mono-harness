@@ -3,6 +3,7 @@ package interfaces
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -33,6 +34,7 @@ func newMemoryCmd() *cobra.Command {
 	add.Flags().String("scope", "", "plan|global (required)")
 	add.Flags().String("plan-id", "", "initiative plan ulid (required when --scope=plan, disallowed when --scope=global)")
 	add.Flags().String("summary", "", "entry body (required)")
+	add.Flags().Bool("force", false, "bypass dedup gate when similar entries exist (use with similar_memory)")
 
 	get := &cobra.Command{
 		Use:   "get",
@@ -54,18 +56,33 @@ func newMemoryCmd() *cobra.Command {
 			scope, _ := cmd.Flags().GetString("scope")
 			planID, _ := cmd.Flags().GetString("plan-id")
 			keywords, _ := cmd.Flags().GetString("keywords")
+			includeSuperseded, _ := cmd.Flags().GetBool("include-superseded")
 			if keywords != "" {
-				return runMemoryQueryRanked(cmd, keywords, memType, scope, planID)
+				return runMemoryQueryRanked(cmd, keywords, memType, scope, planID, includeSuperseded)
 			}
-			return runMemoryQuery(cmd, memType, scope, planID)
+			return runMemoryQuery(cmd, memType, scope, planID, includeSuperseded)
 		},
 	}
 	query.Flags().String("type", "", "memory type filter (required unless --keywords is set)")
 	query.Flags().String("scope", "", "plan|global (optional)")
 	query.Flags().String("plan-id", "", "initiative plan ulid (optional)")
 	query.Flags().String("keywords", "", "rank results by keyword match against type+body instead of exact filtering (optional; --type becomes optional too)")
+	query.Flags().Bool("include-superseded", false, "include superseded entries (default: exclude)")
 
-	memory.AddCommand(add, get, query)
+	supersede := &cobra.Command{
+		Use:   "supersede",
+		Short: "Mark one memory entry as superseded by another",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			oldID, _ := cmd.Flags().GetString("old-id")
+			newID, _ := cmd.Flags().GetString("new-id")
+			return runMemorySupersede(cmd, oldID, newID)
+		},
+	}
+	supersede.Flags().String("old-id", "", "memory entry ulid to supersede (required)")
+	supersede.Flags().String("new-id", "", "memory entry ulid that supersedes the old one (required)")
+
+	memory.AddCommand(add, get, query, supersede)
 	return memory
 }
 
@@ -78,6 +95,26 @@ func runMemoryAdd(cmd *cobra.Command, memType, scope, planID, summary string) er
 		return newSystemError("db_unreadable", fmt.Sprintf("memory add: %v", err))
 	}
 	defer db.Close()
+
+	// Pre-insert dedup gate (R3): rank new summary against existing entries;
+	// best score >=4 folded-token matches refuses with similar_memory unless --force.
+	force, _ := cmd.Flags().GetBool("force")
+	if !force && strings.TrimSpace(summary) != "" {
+		ranked, rerr := application.MemoryQueryRanked(db, summary, "", "", "")
+		if rerr == nil && len(ranked) > 0 && ranked[0].Score >= 4 {
+			var ids []string
+			for _, r := range ranked {
+				if r.Score >= 4 {
+					ids = append(ids, r.ID)
+				}
+				if len(ids) >= 5 {
+					break
+				}
+			}
+			ve := &domain.ValidationError{Code: "similar_memory", Message: fmt.Sprintf("memory add: similar entries exist: %s (use --force to bypass)", strings.Join(ids, ", "))}
+			return mapValidationError(ve)
+		}
+	}
 
 	id, err := application.CreateMemory(db, memType, scope, planID, summary)
 	if err != nil {
@@ -123,7 +160,7 @@ func runMemoryGet(cmd *cobra.Command, id string) error {
 	return nil
 }
 
-func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string) error {
+func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string, includeSuperseded bool) error {
 	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
 		return missingDBError("memory query")
@@ -133,7 +170,12 @@ func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string) error {
 	}
 	defer db.Close()
 
-	views, err := application.MemoryQuery(db.Raw(), memType, scope, planID)
+	var views []application.MemoryListView
+	if includeSuperseded {
+		views, err = application.MemoryQueryWithIncludeSuperseded(db.Raw(), memType, scope, planID, true)
+	} else {
+		views, err = application.MemoryQuery(db.Raw(), memType, scope, planID)
+	}
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)
@@ -148,7 +190,7 @@ func runMemoryQuery(cmd *cobra.Command, memType, scope, planID string) error {
 	return nil
 }
 
-func runMemoryQueryRanked(cmd *cobra.Command, keywords, memType, scope, planID string) error {
+func runMemoryQueryRanked(cmd *cobra.Command, keywords, memType, scope, planID string, includeSuperseded bool) error {
 	db, err := infrastructure.OpenReadOnly(resolveDBPath())
 	if infrastructure.IsDatabaseNotFound(err) {
 		return missingDBError("memory query")
@@ -158,7 +200,12 @@ func runMemoryQueryRanked(cmd *cobra.Command, keywords, memType, scope, planID s
 	}
 	defer db.Close()
 
-	views, err := application.MemoryQueryRanked(db.Raw(), keywords, memType, scope, planID)
+	var views []application.MemoryScoredView
+	if includeSuperseded {
+		views, err = application.MemoryQueryRankedWithIncludeSuperseded(db.Raw(), keywords, memType, scope, planID, true)
+	} else {
+		views, err = application.MemoryQueryRanked(db.Raw(), keywords, memType, scope, planID)
+	}
 	if err != nil {
 		if ve, ok := err.(*domain.ValidationError); ok {
 			return mapValidationError(ve)
@@ -170,5 +217,35 @@ func runMemoryQueryRanked(cmd *cobra.Command, keywords, memType, scope, planID s
 		return json.NewEncoder(cmd.OutOrStdout()).Encode(views)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", views)
+	return nil
+}
+
+func runMemorySupersede(cmd *cobra.Command, oldID, newID string) error {
+	if oldID == "" {
+		return newUserError("missing_required_field", "memory supersede: --old-id is required")
+	}
+	if newID == "" {
+		return newUserError("missing_required_field", "memory supersede: --new-id is required")
+	}
+	if !infrastructure.Exists(resolveDBPath()) {
+		return missingDBError("memory supersede")
+	}
+	db, err := infrastructure.Open(resolveDBPath())
+	if err != nil {
+		return newSystemError("db_unreadable", fmt.Sprintf("memory supersede: %v", err))
+	}
+	defer db.Close()
+
+	if err := application.SupersedeMemory(db, oldID, newID); err != nil {
+		if ve, ok := err.(*domain.ValidationError); ok {
+			return mapValidationError(ve)
+		}
+		return newSystemError("db_not_writable", fmt.Sprintf("memory supersede: %v", err))
+	}
+
+	if jsonOutput {
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{"old_id": oldID, "new_id": newID, "superseded": true})
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "memory %s superseded by %s\n", oldID, newID)
 	return nil
 }

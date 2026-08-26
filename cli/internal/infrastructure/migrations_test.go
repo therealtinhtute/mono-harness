@@ -34,7 +34,7 @@ func TestMigrate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Migrate: %v", err)
 	}
-	wantApplied := []string{"0001_init", "0002_meta_docs_version", "0003_drop_dead_surface", "0004_managed_docs", "0005_intake_plan_path", "0006_check_judge", "0007_decisions", "0008_trace_task_granularity", "0009_intake_plan_id", "0010_drop_interventions", "0011_plan_index", "0012_memories"}
+	wantApplied := []string{"0001_init", "0002_meta_docs_version", "0003_drop_dead_surface", "0004_managed_docs", "0005_intake_plan_path", "0006_check_judge", "0007_decisions", "0008_trace_task_granularity", "0009_intake_plan_id", "0010_drop_interventions", "0011_plan_index", "0012_memories", "0013_memories_supersede_lineage"}
 	if len(applied) != len(wantApplied) {
 		t.Fatalf("applied = %v, want %v", applied, wantApplied)
 	}
@@ -43,8 +43,8 @@ func TestMigrate(t *testing.T) {
 			t.Fatalf("applied = %v, want %v", applied, wantApplied)
 		}
 	}
-	if schemaVersion != 12 {
-		t.Fatalf("schemaVersion = %d, want 12", schemaVersion)
+	if schemaVersion != 13 {
+		t.Fatalf("schemaVersion = %d, want 13", schemaVersion)
 	}
 
 	rows, err := db.Query(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`)
@@ -80,7 +80,7 @@ func TestMigrate(t *testing.T) {
 	if len(applied2) != 0 {
 		t.Fatalf("second Migrate applied = %v, want none", applied2)
 	}
-	if schemaVersion2 != 12 {
-		t.Fatalf("second Migrate schemaVersion = %d, want 12", schemaVersion2)
+	if schemaVersion2 != 13 {
+		t.Fatalf("second Migrate schemaVersion = %d, want 13", schemaVersion2)
 	}
 }

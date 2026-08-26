@@ -245,6 +245,19 @@ CREATE TABLE memories (
 );
 `,
 	},
+	{
+		// Supersede lineage (P6, docs/plans/active/memory-lifecycle.md R1/R5):
+		// adds superseded_by/ superseded_at to the derived memories index,
+		// mirroring the frontmatter fields the supersede command writes.
+		// Markdown stays sole source of truth — db rebuild reconstructs
+		// these columns from frontmatter alone.
+		Version: 13,
+		Name:    "0013_memories_supersede_lineage",
+		SQL: `
+ALTER TABLE memories ADD COLUMN superseded_by TEXT;
+ALTER TABLE memories ADD COLUMN superseded_at TEXT;
+`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.
