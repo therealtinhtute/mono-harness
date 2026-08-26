@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The zharness CLI — mono-harness</title>
+  <meta name="description" content="The zharness CLI: command groups, flags, and the state model it records and rebuilds.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-inner">
+      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
+      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <nav class="mast-nav" aria-label="Primary">
+        <ul>
+          <li><a href="../index.html">Overview</a></li>
+          <li><a href="installation.html">Install</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="cli.html">CLI</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="workflow.html">Workflow</a></li>
+          <li><a href="contributing.html">Contribute</a></li>
+        </ul>
+      </nav>
+      <hr class="mast-rule" aria-hidden="true">
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <header class="page-head">
+        <p class="kicker">docs &middot; cli</p>
+        <h1>The zharness CLI</h1>
+        <p class="lede">A durable state harness for the workflow skill chain, written in Go and targeting Go 1.25 with CGO disabled. Every command supports <code>--json</code> for machine-readable output.</p>
+      </header>
+
+      <div class="prose">
+        <h2>Shape</h2>
+        <p>The CLI is a read/write surface over one invariant: markdown is the write target, the database row is derived from it. Read-only commands inspect state; mutating commands write markdown first, then derive a row &mdash; never the other way around. That is the guarantee that makes <code>zharness db rebuild</code> able to reconstruct the database from committed markdown alone.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Global flags</p>
+        <div class="specimen-body">
+          <div class="specimen-row">
+            <span class="specimen-key">--json</span>
+            <span>emit machine-readable JSON output.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">-h, --help</span>
+            <span>help for any command.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">-v, --version</span>
+            <span>print the version.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">--mode &lt;mode&gt;</span>
+            <span>stage mode on <code>preflight</code> (for example: explore, lock, simple, full, review).</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Commands</h2>
+        <p>Twenty-two top-level commands, grouped by what they touch.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>audit</code></td><td>Report pointer drift and lifecycle contract violations.</td></tr>
+            <tr><td><code>check</code></td><td>Check (gate verdict) operations.</td></tr>
+            <tr><td><code>completion</code></td><td>Generate the autocompletion script for the specified shell.</td></tr>
+            <tr><td><code>db</code></td><td>Database operations &mdash; <code>rebuild</code>, <code>status</code>.</td></tr>
+            <tr><td><code>decision</code></td><td>Decision operations.</td></tr>
+            <tr><td><code>handoff</code></td><td>Handoff (close-out record) operations.</td></tr>
+            <tr><td><code>help</code></td><td>Help about any command.</td></tr>
+            <tr><td><code>id</code></td><td>Mint a new ULID without mutating harness state.</td></tr>
+            <tr><td><code>import</code></td><td>Parse legacy <code>.kit/</code> state into DB rows (defaults to <code>.kit/</code>).</td></tr>
+            <tr><td><code>init</code></td><td>Create the root zharness database and safely scaffold managed docs.</td></tr>
+            <tr><td><code>intake</code></td><td>Record a new intake (SPEC lock trigger).</td></tr>
+            <tr><td><code>memory</code></td><td>Durable cross-session memory operations &mdash; <code>add</code>, <code>get</code>, <code>query</code>, <code>supersede</code>.</td></tr>
+            <tr><td><code>migrate</code></td><td>Apply schema migrations or migrate repository layout.</td></tr>
+            <tr><td><code>plan</code></td><td>Active-plan lifecycle operations &mdash; <code>complete</code>, <code>abandon</code>.</td></tr>
+            <tr><td><code>preflight</code></td><td>Resolve workflow stage readiness without mutating harness state.</td></tr>
+            <tr><td><code>query</code></td><td>Read-only views: state, phases, artifacts, check, checks, traces, decisions, handoff, plan.</td></tr>
+            <tr><td><code>resume</code></td><td>Snapshot of current position, drift, and readiness.</td></tr>
+            <tr><td><code>run</code></td><td>Run operations &mdash; <code>create</code>.</td></tr>
+            <tr><td><code>scaffold</code></td><td>Emit an artifact skeleton (frontmatter + section headers) for the agent to fill.</td></tr>
+            <tr><td><code>story</code></td><td>Record a new story (phase); slug = phase slug.</td></tr>
+            <tr><td><code>trace</code></td><td>Trace operations.</td></tr>
+            <tr><td><code>validate</code></td><td>Validate the durable lifecycle graph.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <h2>Command groups</h2>
+        <p>The same commands, seen through the workflow that uses them.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Group</th><th>Commands</th><th>Use</th></tr></thead>
+          <tbody>
+            <tr><td>Readiness</td><td><code>preflight</code> <code>resume</code></td><td>Resolve stage readiness and current position.</td></tr>
+            <tr><td>Planning</td><td><code>intake</code> <code>story</code> <code>scaffold</code></td><td>Record intake and phases, or create artifact skeletons.</td></tr>
+            <tr><td>Execution</td><td><code>run create</code> <code>trace add</code> <code>decision add</code></td><td>Record runs, task progress, and execution decisions.</td></tr>
+            <tr><td>Gates</td><td><code>check record</code> <code>handoff record</code></td><td>Record verdicts and close phases.</td></tr>
+            <tr><td>Inspection</td><td><code>query</code> <code>validate</code> <code>audit</code> <code>db status</code></td><td>Inspect state, lifecycle links, drift, and database health.</td></tr>
+            <tr><td>Recovery</td><td><code>import</code> <code>migrate layout</code> <code>db rebuild</code></td><td>Import legacy state or rebuild from replayable changesets.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <h2>State model</h2>
+        <p>Where each kind of state lives, and its lifecycle.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Path</th><th>Role</th><th>Lifecycle</th></tr></thead>
+          <tbody>
+            <tr><td><code>.kit/changesets/</code></td><td>ULID-named JSONL replay source for local harness state.</td><td>Gitignored local state.</td></tr>
+            <tr><td><code>harness.db</code></td><td>Materialized SQLite view rebuilt from changesets.</td><td>Gitignored local state.</td></tr>
+            <tr><td><code>cli/docs/embedded/</code></td><td>Canonical WORKFLOW.md, playbooks, and artifact templates shipped inside the CLI.</td><td>Tracked source.</td></tr>
+            <tr><td><code>docs/</code></td><td>Managed root-doc projection created by <code>zharness init</code>.</td><td>Generated; not edited as source.</td></tr>
+            <tr><td><code>docs/plans/active/</code></td><td>Durable initiative plans with requirements, phases, progress, decisions, validation, and current state.</td><td>Project-local workflow data.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <p>The database is a view. Changesets are the replay input, and <code>cli/docs/embedded/</code> is the source of truth for managed workflow documentation. The full contract, schema, and state reference live in the repository under <code>cli/docs/</code>, and the reasoning behind it all is under <a href="architecture.html">Architecture</a>.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot-letter">
+    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
+    <nav class="foot-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../index.html">Overview</a></li>
+        <li><a href="installation.html">Install</a></li>
+        <li><a href="skills.html">Skills</a></li>
+        <li><a href="cli.html">CLI</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="workflow.html">Workflow</a></li>
+        <li><a href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
+    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

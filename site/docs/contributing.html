@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contributing — mono-harness</title>
+  <meta name="description" content="Development loop, validation, build and test gates, and how to contribute.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-inner">
+      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
+      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <nav class="mast-nav" aria-label="Primary">
+        <ul>
+          <li><a href="../index.html">Overview</a></li>
+          <li><a href="installation.html">Install</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="cli.html">CLI</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="workflow.html">Workflow</a></li>
+          <li><a href="contributing.html">Contribute</a></li>
+        </ul>
+      </nav>
+      <hr class="mast-rule" aria-hidden="true">
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <header class="page-head">
+        <p class="kicker">docs &middot; contribute</p>
+        <h1>Contributing</h1>
+        <p class="lede">Read <a href="https://github.com/therealtinhtute/mono-harness/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a> before opening a pull request. Report vulnerabilities privately through <a href="https://github.com/therealtinhtute/mono-harness/blob/master/SECURITY.md">SECURITY.md</a>. Never commit API keys, access tokens, private settings, or local harness state.</p>
+      </header>
+
+      <div class="prose">
+        <h2>Iterate on a skill</h2>
+        <p>Add the directory to Claude Code and edit the skill directly under <code>skills/</code>. Keep <code>SKILL.md</code> focused on routing and execution; move deep detail into <code>references/</code> and reusable logic into <code>scripts/</code>.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Local iteration</p>
+        <div class="specimen-body">
+          <pre><code>claude-code add-dir /path/to/mono-harness</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Validate a skill</h2>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Validation</p>
+        <div class="specimen-body">
+          <pre><code>bash scripts/validate-skill.sh skills/workflow/work/SKILL.md</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Build and test the CLI</h2>
+        <p>The CLI targets Go 1.25 and builds with CGO disabled. The GitHub Actions workflow runs the same build, vet, and test gates for changes under <code>cli/</code>.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Build, vet, test</p>
+        <div class="specimen-body">
+          <pre><code>cd cli
+CGO_ENABLED=0 go build ./...
+go vet ./...
+go test ./...</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Check documentation references</h2>
+        <p>This checks repo-relative documentation claims against the files present in the checkout &mdash; backtick and markdown-link citations alike.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Doc links</p>
+        <div class="specimen-body">
+          <pre><code>bash scripts/verify-doc-links.sh</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Before you open a PR</h2>
+        <p>The repository is MIT-licensed and ships a Contributor Covenant code of conduct. Two pre-commit habits keep the history clean: run the narrowest validation for what changed (a skill, the CLI, or the docs), and never stage secrets or local harness state. The full checklist lives in <code>CONTRIBUTING.md</code>.</p>
+      </div>
+
+      <div class="cta">
+        <p class="cta__line">The repo is the source of truth &mdash; these pages are its index.</p>
+        <a class="cta__action" href="https://github.com/therealtinhtute/mono-harness">Open the repository</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot-letter">
+    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
+    <nav class="foot-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../index.html">Overview</a></li>
+        <li><a href="installation.html">Install</a></li>
+        <li><a href="skills.html">Skills</a></li>
+        <li><a href="cli.html">CLI</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="workflow.html">Workflow</a></li>
+        <li><a href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
+    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

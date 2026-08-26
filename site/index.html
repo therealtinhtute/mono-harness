@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mono-harness — skills for AI agents, and a durable workflow harness</title>
+  <meta name="description" content="A personal collection of skills.sh-compatible skills for Claude Code and other AI agents, backed by the Go zharness workflow harness. Markdown is the truth; everything else is derived.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-inner">
+      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
+      <p class="mast-name"><a href="index.html">mono-harness</a></p>
+      <nav class="mast-nav" aria-label="Primary">
+        <ul>
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="docs/installation.html">Install</a></li>
+          <li><a href="docs/skills.html">Skills</a></li>
+          <li><a href="docs/cli.html">CLI</a></li>
+          <li><a href="docs/architecture.html">Architecture</a></li>
+          <li><a href="docs/workflow.html">Workflow</a></li>
+          <li><a href="docs/contributing.html">Contribute</a></li>
+        </ul>
+      </nav>
+      <hr class="mast-rule" aria-hidden="true">
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <header class="page-head">
+        <p class="kicker">mono-harness &middot; the documentation</p>
+        <h1>Skills for agents, and a harness that makes the work replayable.</h1>
+        <p class="lede">A personal collection of <a href="https://skills.sh">skills.sh</a>-compatible skills for Claude Code and other AI agents, backed by a durable local workflow harness &mdash; the Go CLI <code>zharness</code>. Committed markdown is the truth; everything else is derived from it and can be thrown away.</p>
+      </header>
+
+      <div class="prose">
+        <h2>What this is</h2>
+        <p>Fourteen skills in three groups, plus one binary that keeps the whole thing honest. The skills are plain Markdown &mdash; each has a required <code>SKILL.md</code> and may carry <code>references/</code> and <code>scripts/</code> for progressive detail. The harness is a Go CLI that records and rebuilds workflow state, so a session is not a blur of chat turns but an inspectable ledger of plans, runs, traces, and decisions.</p>
+        <p>The skills do not contain operating logic. A spine skill version-gates the binary, calls <code>zharness preflight</code>, and reads whatever playbook path comes back. The logic lives in a playbook file &mdash; so any agent that can read a file and run a CLI executes the same lifecycle, with no dependence on a particular vendor's skill format.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">The three groups</p>
+        <div class="specimen-body">
+          <div class="specimen-row">
+            <span class="specimen-key">workflow &middot; 8</span>
+            <span><code>brainstorm</code> <code>to-plan</code> <code>work</code> <code>check</code> <code>handoff</code> <code>watzup</code> <code>git</code> <code>interview</code> &mdash; discovery, planning, execution, review, handoff, and Git workflow.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">craft &middot; 4</span>
+            <span><code>write</code> <code>librarian</code> <code>create-skill</code> <code>prompt-leverage</code> &mdash; writing, GitHub research, skill authoring, and prompt improvement.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">shipping &middot; 2</span>
+            <span><code>create-cli</code> <code>turbo-mono-platform</code> &mdash; CLI design and full-stack TypeScript monorepos.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>The one idea</h2>
+        <p>Committed markdown is the truth. Everything else is derived from it and can be thrown away. The SQLite database is an index, not a store. The projected playbooks are a copy, not a source. The <code>.kit/</code> directory is scratch, not state. Delete every derived artifact and re-run the CLI, and you get the same system back &mdash; because the only irreplaceable bytes are the ones Git is already tracking.</p>
+        <p>That single constraint explains most of the design, and it is the test any new mutating command has to pass: a field that lands only in the database and never in markdown disappears on the next rebuild.</p>
+      </div>
+
+      <figure class="diagram-figure">
+        <figcaption>The four surfaces</figcaption>
+        <div class="diagram-stack">
+          <div class="diagram-box">
+            <p class="diagram-box__title">skills/workflow/*/SKILL.md</p>
+            <p class="diagram-box__desc">thin trigger &mdash; runs <code>zharness preflight &lt;stage&gt; --json</code></p>
+          </div>
+          <div class="diagram-arrow" aria-hidden="true">&darr;</div>
+          <div class="diagram-box">
+            <p class="diagram-box__title">docs/playbooks/&lt;stage&gt;.md</p>
+            <p class="diagram-box__desc">the procedure &mdash; projected from the binary, never hand-edited</p>
+          </div>
+          <div class="diagram-arrow" aria-hidden="true">&darr;</div>
+          <div class="diagram-box">
+            <p class="diagram-box__title">zharness (Go binary)</p>
+            <p class="diagram-box__desc">the guardrail &mdash; writes markdown, derives the DB row</p>
+          </div>
+          <div class="diagram-arrow" aria-hidden="true">&darr;</div>
+          <div class="diagram-box is-accent">
+            <p class="diagram-box__title">docs/plans/active/*.md</p>
+            <p class="diagram-box__desc">the truth &mdash; committed; harness.db is rebuilt from it</p>
+          </div>
+        </div>
+      </figure>
+
+      <div class="prose">
+        <h2>Start here</h2>
+        <p>The quickest path depends on what you want. To adopt the whole system &mdash; skills, rules, hooks, and harness &mdash; run the bootstrap installer. To grab only the skills, use <code>npx skills add</code>. To use the harness on its own, install the CLI release.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Full bootstrap</p>
+        <div class="specimen-body">
+          <pre><code>git clone git@github.com:therealtinhtute/mono-harness.git ~/mono-harness
+cd ~/mono-harness
+bash setup/install.sh</code></pre>
+          <p style="margin-top:var(--space-sm);font-size:var(--text-sm);color:var(--color-ink-soft);">Requires Node.js 18+, <code>jq</code>, and SSH access to the repository. See <a href="docs/installation.html">Installation</a> for the skills-only and CLI-only paths.</p>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>The chain</h2>
+        <p>Durable work follows one sequence. Each stage runs a read-only <code>zharness preflight</code> check before it does anything, and each write goes to markdown before it goes to the database.</p>
+      </div>
+
+      <div class="trustflow" role="list">
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/brainstorm</p><p class="trustflow-step__body">lock requirements into an active plan</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/to-plan</p><p class="trustflow-step__body">phases, waves, tasks, checks</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/work</p><p class="trustflow-step__body">execute and verify each task</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/check</p><p class="trustflow-step__body">gate and review the diff</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/handoff</p><p class="trustflow-step__body">persist state and the next action</p></div>
+      </div>
+
+      <div class="prose">
+        <p><code>/git</code> sits alongside the chain for staging, committing, and pull requests; <code>/watzup</code> reconstructs branch, lifecycle, and handoff state when a session returns cold. For small, bounded changes there is a reduced mode &mdash; <code>/work simple</code>, <code>/check bounded</code> &mdash; that writes no lifecycle rows at all. The full path is documented under <a href="docs/workflow.html">Workflow</a>.</p>
+      </div>
+
+      <div class="cta">
+        <p class="cta__line">Read the architecture, or install it and try the chain.</p>
+        <a class="cta__action" href="docs/architecture.html">Read the architecture</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot-letter">
+    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
+    <nav class="foot-nav" aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="docs/installation.html">Install</a></li>
+        <li><a href="docs/skills.html">Skills</a></li>
+        <li><a href="docs/cli.html">CLI</a></li>
+        <li><a href="docs/architecture.html">Architecture</a></li>
+        <li><a href="docs/workflow.html">Workflow</a></li>
+        <li><a href="docs/contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
+    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

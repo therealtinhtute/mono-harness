@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Installation — mono-harness</title>
+  <meta name="description" content="Install mono-harness: full Claude Code bootstrap, skills only, or the zharness CLI on its own.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-inner">
+      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
+      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <nav class="mast-nav" aria-label="Primary">
+        <ul>
+          <li><a href="../index.html">Overview</a></li>
+          <li><a href="installation.html">Install</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="cli.html">CLI</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="workflow.html">Workflow</a></li>
+          <li><a href="contributing.html">Contribute</a></li>
+        </ul>
+      </nav>
+      <hr class="mast-rule" aria-hidden="true">
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <header class="page-head">
+        <p class="kicker">docs &middot; installation</p>
+        <h1>Installation</h1>
+        <p class="lede">Three entry points &mdash; the full bootstrap, the skills on their own, or the CLI on its own. Pick the smallest one that matches what you want.</p>
+      </header>
+
+      <div class="prose">
+        <h2>Prerequisites</h2>
+        <ul>
+          <li>Node.js 18+ for skill installation and the statusline.</li>
+          <li><code>jq</code> for the statusline.</li>
+          <li>SSH access to <code>git@github.com:therealtinhtute/mono-harness.git</code>.</li>
+          <li>An authenticated <code>gh</code> CLI and <code>tar</code>, for the release installer.</li>
+        </ul>
+        <p>After any install, review <code>~/.claude/settings.json</code> and configure <code>ANTHROPIC_AUTH_TOKEN</code> as your environment requires.</p>
+
+        <h2>Full Claude Code bootstrap</h2>
+        <p>The installer installs the global <code>CLAUDE.md</code>, the rules, hooks, a settings template, and the statusline; backs up files before replacing them; and installs every repository skill globally through <code>npx skills add</code>.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Bootstrap</p>
+        <div class="specimen-body">
+          <pre><code>git clone git@github.com:therealtinhtute/mono-harness.git ~/mono-harness
+cd ~/mono-harness
+bash setup/install.sh</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>An existing <code>~/.claude/settings.json</code> is preserved rather than overwritten.</p>
+
+        <h2>Skills only</h2>
+        <p>List the published skills without installing them, or install the whole set for Claude Code in one command.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Skills</p>
+        <div class="specimen-body">
+          <pre><code># list the published skills
+npx skills add git@github.com:therealtinhtute/mono-harness.git --list
+
+# install all skills for Claude Code, globally
+npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Install zharness</h2>
+        <p>The release installer installs the latest release of the workflow CLI to <code>~/.local/bin/zharness</code> for Linux or macOS on amd64 or arm64.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">CLI</p>
+        <div class="specimen-body">
+          <pre><code>bash scripts/install-zharness.sh
+zharness --version</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>First run</h2>
+        <p>Before durable planning or execution, initialize the project. <code>zharness init</code> creates the root <code>harness.db</code>, replays existing changesets, and scaffolds the managed workflow docs under <code>docs/</code>.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Init</p>
+        <div class="specimen-body">
+          <pre><code>cd /path/to/project
+zharness init --json</code></pre>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>From there the durable path is <code>/brainstorm &rarr; /to-plan &rarr; /work &rarr; /check &rarr; /git &rarr; /handoff</code> &mdash; see <a href="workflow.html">Workflow</a> for the reduced modes when you only need a bounded change.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot-letter">
+    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
+    <nav class="foot-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../index.html">Overview</a></li>
+        <li><a href="installation.html">Install</a></li>
+        <li><a href="skills.html">Skills</a></li>
+        <li><a href="cli.html">CLI</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="workflow.html">Workflow</a></li>
+        <li><a href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
+    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>
