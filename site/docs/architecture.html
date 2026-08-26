@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture — mono-harness</title>
+  <meta name="description" content="How the harness actually works: markdown first, four surfaces, and a database that is an index, not a store.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-inner">
+      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
+      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <nav class="mast-nav" aria-label="Primary">
+        <ul>
+          <li><a href="../index.html">Overview</a></li>
+          <li><a href="installation.html">Install</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="cli.html">CLI</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="workflow.html">Workflow</a></li>
+          <li><a href="contributing.html">Contribute</a></li>
+        </ul>
+      </nav>
+      <hr class="mast-rule" aria-hidden="true">
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <header class="page-head">
+        <p class="kicker">docs &middot; architecture</p>
+        <h1>Architecture</h1>
+        <p class="lede">How the harness actually works, and why it is shaped this way. Decisions that are expensive to reverse have their own records under <code>docs/decisions/</code>; this page describes the running system.</p>
+      </header>
+
+      <div class="prose">
+        <h2>The one idea</h2>
+        <p>Committed markdown is the truth. Everything else is derived from it and can be thrown away.</p>
+        <p>That single constraint explains most of the design. The SQLite database is an index, not a store. The projected playbooks are a copy, not a source. The <code>.kit/</code> directory is scratch, not state. If you deleted every derived artifact and re-ran the CLI, you would get the same system back, because the only irreplaceable bytes are the ones git is already tracking.</p>
+
+        <h2>Markdown first, then the row</h2>
+        <p>Every lifecycle write goes to markdown before it goes to the database, and the ordering is deliberate. A SQL transaction cannot span a file write, so the guarantee is one-directional by construction: a failed markdown write leaves zero rows behind it, while a database failure after a successful markdown write leaves the markdown line as the durable fact, recoverable by rebuild.</p>
+        <p>The consequence worth internalizing: a field that lands only in the database and never in markdown disappears on the next rebuild. That is the test any new mutating command has to pass.</p>
+
+        <h2>harness.db is an index</h2>
+        <p>The entire database is reconstructed from committed plan markdown alone. The file is gitignored, and losing it costs nothing. Three derived indexes share one column shape &mdash; path, SHA256, updated_at &mdash; and staleness is always a hash comparison, never a timestamp guess.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Table</th><th>Indexes</th></tr></thead>
+          <tbody>
+            <tr><td><code>managed_docs</code></td><td>the projected doc set under <code>docs/</code></td></tr>
+            <tr><td><code>plan_index</code></td><td>active plans under <code>docs/plans/</code></td></tr>
+            <tr><td><code>memories</code></td><td>memory entries under <code>docs/memory/</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <h2>Managed docs: projection with conflict staging</h2>
+        <p>The binary carries two embedded filesystems. The first holds <code>AGENTS.md</code>, <code>WORKFLOW.md</code>, and <code>playbooks/</code>; this set is projected into the consumer repo&rsquo;s <code>docs/</code> at <code>init</code> and hash-tracked. Templates are declared separately on purpose: they are never projected, only emitted when <code>zharness scaffold</code> asks for one.</p>
+        <p>On sync, unchanged files refresh silently. A file the consumer edited locally is not overwritten &mdash; it is staged as a conflict under <code>.kit/conflicts/</code> and reported, unless <code>--force-docs</code> is passed. Removing a file from the embedded set leaves an inert orphan in already-initialized repos rather than breaking them; nothing in this package deletes.</p>
+
+        <h2>Exactly one active plan</h2>
+        <p>One resolver owns the active-plan invariant, and it never returns a bare error for the two interesting cases. Zero plans yields a stop whose recovery is <code>brainstorm lock</code>. Two or more yields a stop with a bounded candidate list built from frontmatter previews &mdash; plan bodies are never read to disambiguate. The enforced invariant is at most one active plan; zero is a legitimate idle state.</p>
+
+        <h2>Preflight is the only entry point</h2>
+        <p>Every spine stage begins with <code>zharness preflight &lt;stage&gt; --json</code>. It resolves readiness without mutating anything and returns the playbook path, the lifecycle position, and any drift. When the database or the projected docs are missing, preflight returns a stop whose recovery is <code>zharness init</code>. Skills do not self-scaffold; they run the recovery they are handed.</p>
+
+        <h2>What lives where</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Path</th><th>Nature</th></tr></thead>
+          <tbody>
+            <tr><td><code>docs/plans/</code></td><td>authoritative &mdash; the initiative record</td></tr>
+            <tr><td><code>docs/decisions/</code></td><td>authoritative &mdash; ADRs</td></tr>
+            <tr><td><code>docs/playbooks/</code>, <code>docs/WORKFLOW.md</code></td><td>projected from the binary; edit <code>cli/docs/embedded/</code> instead</td></tr>
+            <tr><td><code>harness.db</code></td><td>derived; gitignored; rebuild with <code>zharness db rebuild --yes</code></td></tr>
+            <tr><td><code>.kit/</code></td><td>per-machine scratch &mdash; cache, conflicts, logs; fully gitignored</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <p>The four surfaces &mdash; skill, playbook, binary, plan &mdash; are the whole mechanism. Read them top to bottom and the system is one sentence: <em>skills trigger, playbooks instruct, the binary guards, and markdown remembers.</em></p>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot-letter">
+    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
+    <nav class="foot-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../index.html">Overview</a></li>
+        <li><a href="installation.html">Install</a></li>
+        <li><a href="skills.html">Skills</a></li>
+        <li><a href="cli.html">CLI</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="workflow.html">Workflow</a></li>
+        <li><a href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
+    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workflow — mono-harness</title>
+  <meta name="description" content="The durable workflow path and its reduced modes, from brainstorm to handoff.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="mast-inner">
+      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
+      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <nav class="mast-nav" aria-label="Primary">
+        <ul>
+          <li><a href="../index.html">Overview</a></li>
+          <li><a href="installation.html">Install</a></li>
+          <li><a href="skills.html">Skills</a></li>
+          <li><a href="cli.html">CLI</a></li>
+          <li><a href="architecture.html">Architecture</a></li>
+          <li><a href="workflow.html">Workflow</a></li>
+          <li><a href="contributing.html">Contribute</a></li>
+        </ul>
+      </nav>
+      <hr class="mast-rule" aria-hidden="true">
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <header class="page-head">
+        <p class="kicker">docs &middot; workflow</p>
+        <h1>Workflow</h1>
+        <p class="lede">The normal durable path from a rough idea to a persisted handoff, and the reduced modes for when the change is small enough not to need a ledger.</p>
+      </header>
+
+      <div class="prose">
+        <h2>The durable path</h2>
+        <p>Each stage runs a read-only <code>zharness preflight</code> check first. Durable modes require an initialized, readable database and current managed docs; reduced modes continue without them.</p>
+      </div>
+
+      <div class="trustflow" role="list">
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/brainstorm</p><p class="trustflow-step__body">explore options, lock requirements</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/to-plan</p><p class="trustflow-step__body">phases, waves, tasks, checks</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/work</p><p class="trustflow-step__body">execute, verify each task</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/check</p><p class="trustflow-step__body">gates and review</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/git</p><p class="trustflow-step__body">stage, commit, push, PR</p></div>
+        <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
+        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/handoff</p><p class="trustflow-step__body">persist state, next action</p></div>
+      </div>
+
+      <div class="prose">
+        <h2>Reduced modes</h2>
+        <p>Use the smallest mode that matches the work. Reduced work writes no lifecycle rows &mdash; the git diff plus captured proof are its durable evidence.</p>
+      </div>
+
+      <div class="specimen">
+        <p class="specimen-label">Reduced modes</p>
+        <div class="specimen-body">
+          <div class="specimen-row"><span class="specimen-key">/brainstorm explore</span><span>response-only exploration.</span></div>
+          <div class="specimen-row"><span class="specimen-key">/work simple &lt;task&gt;</span><span>bounded change, no lifecycle rows.</span></div>
+          <div class="specimen-row"><span class="specimen-key">/check bounded</span><span>response-only gate for bounded work.</span></div>
+          <div class="specimen-row"><span class="specimen-key">/watzup</span><span>read-only resume and branch recap.</span></div>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>The journey</h2>
+        <p>First run, initialize &mdash; <code>zharness init</code> creates the root <code>harness.db</code>, replays existing changesets, and scaffolds the managed docs. Then the durable path is a straight line: <code>/brainstorm &rarr; /to-plan &rarr; /work &rarr; /check &rarr; /git &rarr; /handoff</code>. At any point, <code>/watzup</code> reconstructs where things stand when a session comes back cold.</p>
+        <p>Durable memory is separate and opt-in. Record it only when a fact needs correcting, a lesson would otherwise be rediscovered, or an owner preference should persist. Bodies are committed markdown, so they never carry credentials or secrets &mdash; only that a secret exists, its scope, and where to fetch it.</p>
+
+        <h2>Boundaries</h2>
+        <p>Durable modes require an initialized database. Durable memory ships unwired from the spine playbooks by design &mdash; it is a store you reach for explicitly, not a default. And reduced modes, by design, leave no ledger: pick them for a bounded change, not for work that needs phases, waves, and a trace someone else will resume.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot-letter">
+    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
+    <nav class="foot-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../index.html">Overview</a></li>
+        <li><a href="installation.html">Install</a></li>
+        <li><a href="skills.html">Skills</a></li>
+        <li><a href="cli.html">CLI</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="workflow.html">Workflow</a></li>
+        <li><a href="contributing.html">Contribute</a></li>
+      </ul>
+    </nav>
+    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
+    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>
