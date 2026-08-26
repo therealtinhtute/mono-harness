@@ -28,10 +28,18 @@ func checkExists(db *sql.DB, id string) (bool, error) {
 // at it in the same transaction — the hand-authored meta changeset check.md's
 // playbook previously required is now owned by the CLI. unknown_run_id is
 // DB-lookup-dependent, so it's enforced here rather than in
-// domain.Check.Validate() (invalid_verdict, invalid_judge, and
-// empty_proof_links are already covered there).
-func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink) (id string, err error) {
-	entity := domain.Check{RunID: runID, Verdict: verdict, Judge: judge, JudgeModel: judgeModel, ProofLinks: proofLinks}
+// domain.Check.Validate() (invalid_verdict, invalid_judge,
+// invalid_check_mode, and empty_proof_links are already covered there).
+// mode records which check playbook mode produced the verdict; "" is
+// normalized to gate. A mode=full check on an already-checked story is the
+// handoff final-phase complete review (harness-fixes-63-64 R2) and is the
+// only record path allowed past checked status; a non-clean full verdict
+// reopens the story to in-progress.
+func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink, mode string) (id string, err error) {
+	if mode == "" {
+		mode = domain.CheckModeGate
+	}
+	entity := domain.Check{RunID: runID, Verdict: verdict, Judge: judge, JudgeModel: judgeModel, Mode: mode, ProofLinks: proofLinks}
 	if err := entity.Validate(); err != nil {
 		return "", err
 	}
@@ -57,7 +65,10 @@ func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLink
 		return "", err
 	}
 	if storyStatus != domain.StoryInProgress {
-		return "", &domain.ValidationError{Code: "story_not_checkable", Message: "check record: story must be in-progress"}
+		fullOnChecked := storyStatus == domain.StoryChecked && mode == domain.CheckModeFull
+		if !fullOnChecked {
+			return "", &domain.ValidationError{Code: "story_not_checkable", Message: "check record: story must be in-progress"}
+		}
 	}
 	if latestRunID != runID {
 		return "", &domain.ValidationError{Code: "run_not_latest", Message: "check record: run_id is not the latest run for its story"}
@@ -80,7 +91,7 @@ func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLink
 	at := time.Now().UTC().Format(time.RFC3339)
 	id = ulid.Make().String()
 
-	writePlan, err := preparePlanAppend(db, "Validation", formatCheckValidationEntry(at, id, storySlug, runID, verdict, judge, judgeModel, proofLinks))
+	writePlan, err := preparePlanAppend(db, "Validation", formatCheckValidationEntry(at, id, storySlug, runID, verdict, judge, judgeModel, proofLinks, mode))
 	if err != nil {
 		return "", err
 	}
@@ -102,6 +113,14 @@ func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLink
 
 	if verdict != domain.VerdictRequestChanges {
 		writeStatus, err := preparePlanPhaseStatus(db, storySlug, domain.StoryChecked)
+		if err != nil {
+			return "", err
+		}
+		if err := writeStatus(); err != nil {
+			return "", fmt.Errorf("plan write failed: %w", err)
+		}
+	} else if storyStatus == domain.StoryChecked && mode == domain.CheckModeFull {
+		writeStatus, err := preparePlanPhaseStatus(db, storySlug, domain.StoryInProgress)
 		if err != nil {
 			return "", err
 		}
@@ -130,13 +149,17 @@ func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLink
 	defer tx.Rollback() //nolint:errcheck
 
 	if _, err := tx.Exec(
-		`INSERT INTO checks (id, run_id, verdict, judge, judge_model, proof_links, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		id, runID, verdict, judge, judgeModel, string(proofLinksJSON), at,
+		`INSERT INTO checks (id, run_id, verdict, judge, judge_model, proof_links, mode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, runID, verdict, judge, judgeModel, string(proofLinksJSON), mode, at,
 	); err != nil {
 		return "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
 	}
 	if verdict != domain.VerdictRequestChanges {
 		if _, err := tx.Exec(`UPDATE stories SET status = ? WHERE id = ?`, domain.StoryChecked, storyID); err != nil {
+			return "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
+		}
+	} else if storyStatus == domain.StoryChecked && mode == domain.CheckModeFull {
+		if _, err := tx.Exec(`UPDATE stories SET status = ? WHERE id = ?`, domain.StoryInProgress, storyID); err != nil {
 			return "", fmt.Errorf("check %s: plan markdown recorded, but db write failed: %w", id, err)
 		}
 	}
@@ -154,8 +177,8 @@ func RecordCheck(db *sql.DB, runID, verdict, judge, judgeModel string, proofLink
 // become nested sub-bullets, mirroring the nested-bullet convention real
 // hand-authored Validation entries already use
 // (docs/plans/completed/eval-layer.md).
-func formatCheckValidationEntry(at, id, phase, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink) string {
-	line := fmt.Sprintf("- `%s` — check. verdict: `%s`. check: `%s`. run: `%s`.", at, verdict, id, runID)
+func formatCheckValidationEntry(at, id, phase, runID, verdict, judge, judgeModel string, proofLinks []domain.ProofLink, mode string) string {
+	line := fmt.Sprintf("- `%s` — check. verdict: `%s`. check: `%s`. run: `%s`. mode: `%s`.", at, verdict, id, runID, mode)
 	if phase != "" {
 		line += fmt.Sprintf(" phase: `%s`.", phase)
 	}

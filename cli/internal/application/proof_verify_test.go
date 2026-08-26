@@ -13,7 +13,7 @@ func TestRecordCheckRejectsApprovedVerdictWithFailingProof(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "false", OutputRef: "should not be accepted"},
-	})
+	}, "")
 	if id != "" {
 		t.Fatalf("RecordCheck returned id=%q, want empty on verification failure", id)
 	}
@@ -35,7 +35,7 @@ func TestRecordCheckRejectsApproveWithRequestsVerdictWithFailingProof(t *testing
 
 	_, err := RecordCheck(db, runID, domain.VerdictApproveWithRequests, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "false", OutputRef: "should not be accepted"},
-	})
+	}, "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "proof_verification_failed" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: proof_verification_failed}", err)
@@ -48,7 +48,7 @@ func TestRecordCheckAcceptsApprovedVerdictWithPassingProof(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestRecordCheckDoesNotVerifyRequestChangesProof(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "false", OutputRef: "reproduces the bug"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}

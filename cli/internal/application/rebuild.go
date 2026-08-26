@@ -341,7 +341,7 @@ func rebuildIntakeFromFrontmatter(db *sql.DB, path, content string, result *Rebu
 // checkProofLinkLine, since they're 0..N indented continuation lines, not
 // part of the header.
 var checkValidationHeader = regexp.MustCompile(
-	"^- `([^`]+)` — check\\. verdict: `([^`]+)`\\. check: `([^`]+)`\\. run: `([^`]+)`\\.(?: phase: `([^`]+)`\\.)? judge: `([^`]+)` \\(([^)]*)\\)\\.$",
+	"^- `([^`]+)` — check\\. verdict: `([^`]+)`\\. check: `([^`]+)`\\. run: `([^`]+)`\\.(?: mode: `([^`]+)`\\.)?(?: phase: `([^`]+)`\\.)? judge: `([^`]+)` \\(([^)]*)\\)\\.$",
 )
 
 var checkProofLinkLine = regexp.MustCompile("^  - `([^`]+)`(?: → (.*))?$")
@@ -357,7 +357,7 @@ func rebuildChecksFromValidation(db *sql.DB, content string, runStorySlug map[st
 		if m == nil {
 			continue // hand-authored or otherwise non-CLI-generated entry: degrade, skip
 		}
-		at, verdict, checkID, runID, phase, judge, judgeModel := m[1], m[2], m[3], m[4], m[5], m[6], m[7]
+		at, verdict, checkID, runID, mode, phase, judge, judgeModel := m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]
 
 		if phase != "" {
 			if _, err := ensureRunRow(db, runID, phase, runStorySlug, result); err != nil {
@@ -390,8 +390,8 @@ func rebuildChecksFromValidation(db *sql.DB, content string, runStorySlug map[st
 		}
 
 		if _, err := db.Exec(
-			`INSERT INTO checks (id, run_id, verdict, proof_links, judge, judge_model, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			checkID, runID, verdict, string(proofLinksJSON), judge, judgeModel, at,
+			`INSERT INTO checks (id, run_id, verdict, proof_links, judge, judge_model, mode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			checkID, runID, verdict, string(proofLinksJSON), judge, judgeModel, mode, at,
 		); err != nil {
 			return fmt.Errorf("insert check %s: %w", checkID, err)
 		}

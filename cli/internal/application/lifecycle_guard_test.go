@@ -82,7 +82,7 @@ func createLifecycleRun(t *testing.T, db *sql.DB, storySlug string) string {
 
 func recordCleanLifecycleCheck(t *testing.T, db *sql.DB, runID string) string {
 	t.Helper()
-	checkID, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
+	checkID, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -124,14 +124,14 @@ func TestLifecycleGuardCheckUsesLatestInProgressRun(t *testing.T) {
 	}
 
 	before := takeLifecycleSnapshot(t, db, storySlug)
-	id, err := RecordCheck(db, olderRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
+	id, err := RecordCheck(db, olderRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}, "")
 	assertLifecycleValidationError(t, err, "run_not_latest", "check record: run_id is not the latest run for its story")
 	if id != "" {
 		t.Fatalf("rejected RecordCheck returned id=%q, want empty value", id)
 	}
 	assertLifecycleUnchanged(t, before, takeLifecycleSnapshot(t, db, storySlug))
 
-	if _, err := RecordCheck(db, latestRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}); err != nil {
+	if _, err := RecordCheck(db, latestRunID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}, ""); err != nil {
 		t.Fatalf("RecordCheck(latest run): %v", err)
 	}
 	if got := queryStoryStatus(t, db, storySlug); got != domain.StoryChecked {
@@ -153,7 +153,7 @@ func TestLifecycleGuardCheckRejectsCheckedAndDoneStory(t *testing.T) {
 			}
 
 			before := takeLifecycleSnapshot(t, db, storySlug)
-			id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}})
+			id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true", OutputRef: "ok"}}, "")
 			assertLifecycleValidationError(t, err, "story_not_checkable", "check record: story must be in-progress")
 			if id != "" {
 				t.Fatalf("rejected RecordCheck returned id=%q, want empty value", id)
