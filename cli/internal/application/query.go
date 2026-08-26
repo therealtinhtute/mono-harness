@@ -107,6 +107,7 @@ type CheckView struct {
 	Phase      string  `json:"phase"`
 	Judge      *string `json:"judge"`
 	JudgeModel *string `json:"judge_model"`
+	Mode       *string `json:"mode"`
 }
 
 // QueryLatestCheck reads the most recently created check row, joined to
@@ -114,14 +115,14 @@ type CheckView struct {
 // checks rows itself).
 func QueryLatestCheck(db *sql.DB) (CheckView, bool, error) {
 	var v CheckView
-	var judge, judgeModel sql.NullString
+	var judge, judgeModel, mode sql.NullString
 	err := db.QueryRow(`
-		SELECT checks.id, checks.verdict, runs.story_slug, checks.judge, checks.judge_model
+		SELECT checks.id, checks.verdict, runs.story_slug, checks.judge, checks.judge_model, checks.mode
 		FROM checks
 		JOIN runs ON runs.id = checks.run_id
 		ORDER BY checks.created_at DESC, checks.id DESC
 		LIMIT 1
-	`).Scan(&v.ID, &v.Verdict, &v.Phase, &judge, &judgeModel)
+	`).Scan(&v.ID, &v.Verdict, &v.Phase, &judge, &judgeModel, &mode)
 	if err == sql.ErrNoRows {
 		return v, false, nil
 	}
@@ -130,6 +131,7 @@ func QueryLatestCheck(db *sql.DB) (CheckView, bool, error) {
 	}
 	v.Judge = nullableString(judge)
 	v.JudgeModel = nullableString(judgeModel)
+	v.Mode = nullableString(mode)
 	return v, true, nil
 }
 
@@ -147,6 +149,7 @@ type CheckListView struct {
 	Verdict    string  `json:"verdict"`
 	Judge      *string `json:"judge"`
 	JudgeModel *string `json:"judge_model"`
+	Mode       *string `json:"mode"`
 	CreatedAt  string  `json:"created_at"`
 }
 
@@ -156,7 +159,7 @@ type CheckListView struct {
 // (`--tail`, 0 = unbounded).
 func QueryChecks(db *sql.DB, phase string, tail int) ([]CheckListView, error) {
 	q := `
-		SELECT checks.id, checks.run_id, runs.story_slug, checks.verdict, checks.judge, checks.judge_model, checks.created_at
+		SELECT checks.id, checks.run_id, runs.story_slug, checks.verdict, checks.judge, checks.judge_model, checks.mode, checks.created_at
 		FROM checks
 		JOIN runs ON runs.id = checks.run_id`
 	args := []any{}
@@ -179,12 +182,13 @@ func QueryChecks(db *sql.DB, phase string, tail int) ([]CheckListView, error) {
 	views := []CheckListView{}
 	for rows.Next() {
 		var v CheckListView
-		var judge, judgeModel sql.NullString
-		if err := rows.Scan(&v.ID, &v.RunID, &v.Phase, &v.Verdict, &judge, &judgeModel, &v.CreatedAt); err != nil {
+		var judge, judgeModel, mode sql.NullString
+		if err := rows.Scan(&v.ID, &v.RunID, &v.Phase, &v.Verdict, &judge, &judgeModel, &mode, &v.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan check row: %w", err)
 		}
 		v.Judge = nullableString(judge)
 		v.JudgeModel = nullableString(judgeModel)
+		v.Mode = nullableString(mode)
 		views = append(views, v)
 	}
 	if err := rows.Err(); err != nil {

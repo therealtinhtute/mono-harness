@@ -17,7 +17,7 @@ func TestCheckRecord(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok", ArtifactPath: ".kit/runs/work/x.md"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestCheckRecordRequestChangesAllowsEmptyProofLinks(t *testing.T) {
 		t.Fatalf("pre-check story status = %q, want in-progress", got)
 	}
 
-	_, err = RecordCheck(db, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", nil)
+	_, err = RecordCheck(db, runID, domain.VerdictRequestChanges, domain.JudgeIndependent, "test-model", nil, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestCheckRecordEmptyProofLinks(t *testing.T) {
 	db := freshDB(t)
 	runID := seedRun(t, db)
 
-	_, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", nil)
+	_, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", nil, "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "empty_proof_links" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: empty_proof_links}", err)
@@ -82,7 +82,7 @@ func TestCheckRecordInvalidVerdict(t *testing.T) {
 	db := freshDB(t)
 	runID := seedRun(t, db)
 
-	_, err := RecordCheck(db, runID, "MAYBE", domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
+	_, err := RecordCheck(db, runID, "MAYBE", domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}}, "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "invalid_verdict" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: invalid_verdict}", err)
@@ -92,7 +92,7 @@ func TestCheckRecordInvalidVerdict(t *testing.T) {
 func TestCheckRecordUnknownRunID(t *testing.T) {
 	db := freshDB(t)
 
-	_, err := RecordCheck(db, "01HZZZZZZZZZZZZZZZZZZZZZZZ", domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}})
+	_, err := RecordCheck(db, "01HZZZZZZZZZZZZZZZZZZZZZZZ", domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "x"}}, "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "unknown_run_id" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: unknown_run_id}", err)
@@ -123,7 +123,7 @@ func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
 
 	_, err = RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
-	})
+	}, "")
 	ve, ok := err.(*domain.ValidationError)
 	if !ok || ve.Code != "independent_judge_required" {
 		t.Fatalf("err = %v, want *domain.ValidationError{Code: independent_judge_required}", err)
@@ -134,7 +134,7 @@ func TestCheckRecordRequiresIndependentJudgeForHighRiskLane(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck with independent judge: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestCheckRecordAllowsSameSessionJudgeWhenLaneUnresolvable(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestCheckRecordAllowsSameSessionJudgeForNonHighRiskLane(t *testing.T) {
 
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeSameSession, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -202,7 +202,7 @@ func TestCheckRecordWritesPlanValidationEntry(t *testing.T) {
 	id, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
 		{Command: "echo checked", OutputRef: "0 findings"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestCheckRecordMalformedPlanBlocksDBWrite(t *testing.T) {
 	marker := filepath.Join(t.TempDir(), "ran")
 	_, err = RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "touch " + marker, OutputRef: "ok"},
-	})
+	}, "")
 	if err == nil {
 		t.Fatal("RecordCheck = nil error, want a plan-section-not-found failure")
 	}
@@ -287,7 +287,7 @@ func TestCheckRecordReadOnlyPlanBlocksDBWrite(t *testing.T) {
 
 	_, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{
 		{Command: "true", OutputRef: "ok"},
-	})
+	}, "")
 	if err == nil {
 		t.Fatal("RecordCheck = nil error, want a read-only plan write failure")
 	}

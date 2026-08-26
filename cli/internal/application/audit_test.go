@@ -56,7 +56,7 @@ func TestAuditIgnoresLegacyProofArtifactPaths(t *testing.T) {
 		{Command: "true", OutputRef: "PASS"},
 		{Command: "true", OutputRef: "PASS", ArtifactPath: filepath.Join(t.TempDir(), "missing-report.md")},
 	}
-	if _, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", proofLinks); err != nil {
+	if _, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", proofLinks, ""); err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 
@@ -75,7 +75,7 @@ func TestAuditIgnoresLegacyProofArtifactPaths(t *testing.T) {
 func TestAuditDeterministic(t *testing.T) {
 	db := freshDB(t)
 	runID := createLifecycleRun(t, db, "cli-domain")
-	if _, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}}); err != nil {
+	if _, err := RecordCheck(db, runID, domain.VerdictApproved, domain.JudgeIndependent, "test-model", []domain.ProofLink{{Command: "true"}}, ""); err != nil {
 		t.Fatalf("RecordCheck: %v", err)
 	}
 

@@ -39,6 +39,24 @@ func IsValidJudge(judge string) bool {
 	return checkJudges[judge]
 }
 
+// Check mode enum (CONTRACT.md `check record`, harness-fixes-63-64 R1):
+// records which check playbook mode produced the verdict — gate for the
+// per-phase durable gate, full for the one complete manual review handoff
+// requires on an initiative's final phase.
+const (
+	CheckModeGate = "gate"
+	CheckModeFull = "full"
+)
+
+var checkModes = map[string]bool{
+	CheckModeGate: true,
+	CheckModeFull: true,
+}
+
+func IsValidCheckMode(mode string) bool {
+	return checkModes[mode]
+}
+
 // ProofLink is one entry of a Check's proof_links JSON array.
 type ProofLink struct {
 	Command      string `json:"command"`
@@ -53,6 +71,7 @@ type Check struct {
 	Verdict      string
 	Judge        string
 	JudgeModel   string
+	Mode         string
 	ProofLinks   []ProofLink
 	ArtifactPath *string
 	CreatedAt    string
@@ -75,6 +94,9 @@ func (c Check) Validate() error {
 	}
 	if !IsValidJudge(c.Judge) {
 		return &ValidationError{Code: "invalid_judge", Message: fmt.Sprintf("check: invalid judge %q", c.Judge)}
+	}
+	if c.Mode != "" && !IsValidCheckMode(c.Mode) {
+		return &ValidationError{Code: "invalid_check_mode", Message: "check: mode must be one of gate, full"}
 	}
 	if strings.TrimSpace(c.JudgeModel) == "" {
 		return &ValidationError{Code: "missing_required_field", Message: "check: judge_model is required"}

@@ -64,7 +64,7 @@ func copyLifecycleRows(legacyDB, tempDB *sql.DB) (copied int, err error) {
 		cols  []string
 	}{
 		{`SELECT id, story_slug, plan_id, trace_ids, artifact_path, created_at FROM runs ORDER BY created_at, id`, "runs", []string{"id", "story_slug", "plan_id", "trace_ids", "artifact_path", "created_at"}},
-		{`SELECT id, run_id, verdict, judge, judge_model, proof_links, artifact_path, created_at FROM checks ORDER BY created_at, id`, "checks", []string{"id", "run_id", "verdict", "judge", "judge_model", "proof_links", "artifact_path", "created_at"}},
+		checksCopySpec(legacyDB),
 		{`SELECT id, run_id, check_id, anchors, created_at FROM handoffs ORDER BY created_at, id`, "handoffs", []string{"id", "run_id", "check_id", "anchors", "created_at"}},
 		{`SELECT id, run_id, wave, summary, task, task_status, created_at FROM traces ORDER BY created_at, id`, "traces", []string{"id", "run_id", "wave", "summary", "task", "task_status", "created_at"}},
 		{`SELECT id, run_id, phase, task, decision, rationale, created_at FROM decisions ORDER BY created_at, id`, "decisions", []string{"id", "run_id", "phase", "task", "decision", "rationale", "created_at"}},
@@ -87,6 +87,33 @@ func copyLifecycleRows(legacyDB, tempDB *sql.DB) (copied int, err error) {
 		return copied, fmt.Errorf("copy meta: %w", err)
 	}
 	return copied, nil
+}
+
+// checksCopySpec adapts to legacy databases that predate migration
+// 0014_checks_mode: the mode column is copied only when the legacy table
+// has it, so pre-mode rows keep their '' default in the migrated db
+// (harness-fixes-63-64 R3).
+func checksCopySpec(legacyDB *sql.DB) (spec struct {
+	query string
+	table string
+	cols  []string
+}) {
+	spec = struct {
+		query string
+		table string
+		cols  []string
+	}{
+		`SELECT id, run_id, verdict, judge, judge_model, proof_links, artifact_path, created_at FROM checks ORDER BY created_at, id`,
+		"checks",
+		[]string{"id", "run_id", "verdict", "judge", "judge_model", "proof_links", "artifact_path", "created_at"},
+	}
+	hasMode, err := tableHasColumn(legacyDB, "checks", "mode")
+	if err != nil || !hasMode {
+		return spec
+	}
+	spec.query = `SELECT id, run_id, verdict, judge, judge_model, proof_links, artifact_path, mode, created_at FROM checks ORDER BY created_at, id`
+	spec.cols = []string{"id", "run_id", "verdict", "judge", "judge_model", "proof_links", "artifact_path", "mode", "created_at"}
+	return spec
 }
 
 // copyRows reads every row of query from legacyDB and inserts it into

@@ -258,6 +258,18 @@ ALTER TABLE memories ADD COLUMN superseded_by TEXT;
 ALTER TABLE memories ADD COLUMN superseded_at TEXT;
 `,
 	},
+	{
+		// Persisted check mode (harness-fixes-63-64 R1/R3): records which
+		// check playbook mode produced the verdict so handoff's final-phase
+		// full-review precondition is verifiable from the DB. Markdown stays
+		// sole source of truth — db rebuild reconstructs the column from the
+		// Validation entry's `mode:` segment; legacy entries yield ''.
+		Version: 14,
+		Name:    "0014_checks_mode",
+		SQL: `
+ALTER TABLE checks ADD COLUMN mode TEXT NOT NULL DEFAULT '';
+`,
+	},
 }
 
 // CurrentSchemaVersion returns the highest version among known migrations.

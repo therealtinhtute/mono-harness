@@ -79,7 +79,7 @@ func TestRebuildFromMarkdownRoundTrip(t *testing.T) {
 		"## Decisions\n" +
 		formatDecisionEntry(decisionAt, domain.Decision{Decision: "use a hand-seeded fixture", Rationale: "keeps the round trip exact", Phase: slug, Task: "seed the fixture"}) + "\n\n" +
 		"## Validation\n" +
-		formatCheckValidationEntry(checkAt, checkID, slug, runID, domain.VerdictApproved, domain.JudgeIndependent, "sonnet-5", proofLinks) + "\n"
+		formatCheckValidationEntry(checkAt, checkID, slug, runID, domain.VerdictApproved, domain.JudgeIndependent, "sonnet-5", proofLinks, domain.CheckModeFull) + "\n"
 
 	planPath := filepath.Join("docs", "plans", "active", "rebuild-fixture.md")
 	writeFile(t, planPath, planContent)
@@ -87,10 +87,10 @@ func TestRebuildFromMarkdownRoundTrip(t *testing.T) {
 	seedRebuildFixtureRows(t, db, rebuildFixtureRows{
 		planID: planID, intakeID: intakeID, lane: lane,
 		storyID: storyID, slug: slug, status: domain.StoryChecked,
-		runID: runID,
-		checkID: checkID, checkAt: checkAt, proofLinks: proofLinks,
+		runID:   runID,
+		checkID: checkID, checkAt: checkAt, checkMode: domain.CheckModeFull, proofLinks: proofLinks,
 		handoffID: handoffID, handoffAt: handoffAt, nextAction: nextAction, openItems: openItems,
-		traceAt: traceAt,
+		traceAt:    traceAt,
 		decisionAt: decisionAt, decisionPhase: slug, decisionTask: "seed the fixture",
 	})
 
@@ -127,6 +127,12 @@ func TestRebuildFromMarkdownRoundTrip(t *testing.T) {
 		before.check.verdict != after.check.verdict || before.check.judge != after.check.judge ||
 		before.check.judgeModel != after.check.judgeModel {
 		t.Errorf("check scalar fields mismatch:\nbefore: %+v\nafter:  %+v", before.check, after.check)
+	}
+	if after.check.mode != domain.CheckModeFull {
+		t.Errorf("rebuilt check mode = %q, want full", after.check.mode)
+	}
+	if before.check.mode != after.check.mode {
+		t.Errorf("check mode mismatch:\nbefore: %+v\nafter:  %+v", before.check.mode, after.check.mode)
 	}
 	if !jsonEqual(t, before.check.proofLinksJSON, after.check.proofLinksJSON) {
 		t.Errorf("check.proof_links mismatch:\nbefore: %s\nafter:  %s", before.check.proofLinksJSON, after.check.proofLinksJSON)
@@ -184,6 +190,50 @@ func TestRebuildFromMarkdownDropsUncheckedRun(t *testing.T) {
 	}
 	if runIDCol.Valid {
 		t.Fatalf("trace.run_id = %q, want NULL (backreferenced run was never reconstructed)", runIDCol.String)
+	}
+}
+
+// TestRebuildFromMarkdownLegacyCheckEntryWithoutMode proves the mode
+// column round-trip degrades honestly for pre-mode Validation entries:
+// an entry carrying no `mode:` segment still reconstructs the check, with
+// an empty mode that is never treated as full.
+func TestRebuildFromMarkdownLegacyCheckEntryWithoutMode(t *testing.T) {
+	chdirFixture(t)
+	storyID := ulid.Make().String()
+	runID := ulid.Make().String()
+	checkID := ulid.Make().String()
+	const slug = "legacy-check-fixture"
+	planContent := "---\n" +
+		"id: " + ulid.Make().String() + "\n" +
+		"type: plan\n" +
+		"status: active\n" +
+		"---\n\n" +
+		"# Plan: Legacy check entry fixture\n\n" +
+		"## Phases and Verification\n" +
+		"### phase_slug: `" + slug + "`\n" +
+		"- story_id: " + storyID + "\n" +
+		"- status: checked\n" +
+		"- goal: prove legacy check entries rebuild with empty mode\n" +
+		"- depends_on: none\n\n" +
+		"## Progress\n\n## Decisions\n\n" +
+		"## Validation\n" +
+		"- `2026-07-02T10:05:00Z` — check. verdict: `APPROVED`. check: `" + checkID + "`. run: `" + runID + "`. phase: `" + slug + "`. judge: `independent` (sonnet-5).\n"
+	writeFile(t, filepath.Join("docs", "plans", "active", "legacy-check-fixture.md"), planContent)
+
+	db := freshDB(t)
+	result, err := RebuildFromMarkdown(db)
+	if err != nil {
+		t.Fatalf("RebuildFromMarkdown: %v", err)
+	}
+	if result.Checks != 1 {
+		t.Fatalf("RebuildResult.Checks = %d, want 1", result.Checks)
+	}
+	var mode string
+	if err := db.QueryRow(`SELECT mode FROM checks WHERE id = ?`, checkID).Scan(&mode); err != nil {
+		t.Fatalf("query rebuilt check: %v", err)
+	}
+	if mode != "" {
+		t.Fatalf("rebuilt legacy check mode = %q, want empty string", mode)
 	}
 }
 
@@ -278,6 +328,7 @@ type rebuildFixtureRows struct {
 	storyID, slug, status       string
 	runID                       string
 	checkID, checkAt            string
+	checkMode                   string
 	proofLinks                  []domain.ProofLink
 	handoffID, handoffAt        string
 	nextAction                  string
@@ -319,8 +370,8 @@ func seedRebuildFixtureRows(t *testing.T, db *sql.DB, f rebuildFixtureRows) {
 		t.Fatalf("marshal proof_links: %v", err)
 	}
 	if _, err := db.Exec(
-		`INSERT INTO checks (id, run_id, verdict, judge, judge_model, proof_links, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		f.checkID, f.runID, domain.VerdictApproved, domain.JudgeIndependent, "sonnet-5", string(proofLinksJSON), f.checkAt,
+		`INSERT INTO checks (id, run_id, verdict, judge, judge_model, proof_links, mode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		f.checkID, f.runID, domain.VerdictApproved, domain.JudgeIndependent, "sonnet-5", string(proofLinksJSON), f.checkMode, f.checkAt,
 	); err != nil {
 		t.Fatalf("seed check: %v", err)
 	}
@@ -364,7 +415,7 @@ type rebuildRunSnapshot struct {
 }
 
 type rebuildCheckSnapshot struct {
-	id, runID, verdict, judge, judgeModel, proofLinksJSON string
+	id, runID, verdict, judge, judgeModel, proofLinksJSON, mode string
 }
 
 type rebuildHandoffSnapshot struct {
@@ -411,8 +462,8 @@ func snapshotRebuildState(t *testing.T, db *sql.DB, storyID, runID, checkID, han
 	}
 
 	snap.check.id = checkID
-	if err := db.QueryRow(`SELECT run_id, verdict, judge, judge_model, proof_links FROM checks WHERE id = ?`, checkID).
-		Scan(&snap.check.runID, &snap.check.verdict, &snap.check.judge, &snap.check.judgeModel, &snap.check.proofLinksJSON); err != nil {
+	if err := db.QueryRow(`SELECT run_id, verdict, judge, judge_model, proof_links, mode FROM checks WHERE id = ?`, checkID).
+		Scan(&snap.check.runID, &snap.check.verdict, &snap.check.judge, &snap.check.judgeModel, &snap.check.proofLinksJSON, &snap.check.mode); err != nil {
 		t.Fatalf("snapshot check: %v", err)
 	}
 

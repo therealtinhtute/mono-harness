@@ -430,5 +430,3 @@ func TestMemoryRebuildSupersedeChain(t *testing.T) {
 		t.Fatalf("after rebuild Status = %q, want superseded", oldView.Status)
 	}
 }
-
-
