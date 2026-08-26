@@ -219,7 +219,7 @@ main {
 
 .prose blockquote p { margin: 0; }
 
-.prose pre {
+pre {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   line-height: 1.6;
@@ -230,7 +230,7 @@ main {
   overflow-x: auto;
 }
 
-.prose pre code {
+pre code {
   background: none;
   border: 0;
   padding: 0;
