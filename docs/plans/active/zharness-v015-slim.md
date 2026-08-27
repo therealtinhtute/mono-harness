@@ -5,7 +5,7 @@ intake_id: 01M0Z679N4DKH6XWC1RSTPW3AG
 lane: high-risk
 status: active
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-08-27
 ---
 
 # Plan: zharness v0.15 "slim" — Installer-only binary, markdown-only state, fail-open
@@ -91,7 +91,7 @@ updated: 2026-08-26
 - phases:
   - phase_slug: p0-fail-open
     story_id: 01M0ZABXJ6NY46A035CQ4552F1
-    status: checked
+    status: done
     goal: Remove every fail-closed STOP from the 6 spine skills, the AGENTS.md block, and the 6 playbooks so the lifecycle runs with the binary absent; the CLI stays fully intact.
     depends_on: none
     surfaces_allowed: skills/workflow/{watzup,work,check,brainstorm,to-plan,handoff}/SKILL.md, skills/workflow/README.md, cli/docs/embedded/AGENTS.md, cli/docs/embedded/playbooks/*.md, AGENTS.md and docs/playbooks/*.md as regenerated projections
@@ -138,7 +138,7 @@ updated: 2026-08-26
       - kill-switch smoke test (wave 3) passes
   - phase_slug: p1-hook-guard
     story_id: 01M0ZABXJKG00H6VFQT8ZWMXKC
-    status: checked
+    status: done
     goal: Move both fail-closed guarantees into the pre-commit hook and prove parity against the existing `check record` before anything is deleted.
     depends_on: p0-fail-open
     surfaces_allowed: scripts/record-check.sh, scripts/install-git-hooks.sh, .github/workflows/cli-ci.yml
@@ -297,6 +297,8 @@ updated: 2026-08-26
 - `2026-08-27T07:40:50Z` — wave 2. run: `01M11036QNF018W57CBMC1ZG2K`. summary: P1-W2 done: parity proven both directions; CI enforcement landed.
 - `2026-08-27T08:25:48Z` — wave 2, task patch guard core per independent review findings F1-F3. task_status: `DONE`. run: `01M1154XP8J7JKW2F1K57847DX`. summary: v2 core: entry-hash dedupe replaces timestamp-set; backtick-normalized judge match; anchored verdict token; indent>=2 proofs; malformed approvable rejected; staged-installer enforcement.
 - `2026-08-27T08:25:48Z` — wave 2, task fix CI sanity grep symbol + tab-evade hardening (N1,O1). task_status: `DONE`. run: `01M1154XP8J7JKW2F1K57847DX`. summary: cli-ci.yml greps zharness_guard_entries_of_file; [[:blank:]] in both greps; battery 5/5 green incl new tab case.
+- `2026-08-27T08:30:15Z` — handoff recorded. handoff: `01M115ENJ3VK8V8ZEH0H11R7JR`. run: `01M11036QNF018W57CBMC1ZG2K`. check: `01M1155G7EY3119BQPB71NJYXC`. phase closed.
+- `2026-08-27T08:30:15Z` — handoff recorded. handoff: `01M115ENJWGB99VKRT387354X6`. run: `01M1154XP8J7JKW2F1K57847DX`. check: `01M1155Q0BHJGRWZZ7XY8TYFFR`. phase closed.
 
 ## Decisions
 <!-- Append-only durable entries record timestamp, phase/task, decision, and rationale. -->
@@ -316,6 +318,7 @@ updated: 2026-08-26
 - `2026-08-27T08:25:48Z` — Replace added-entry detection from timestamp set-diff to full-text sha256 dedupe and reject approvable entries citing zero proof commands (phase: `p1-hook-guard`), task: p1-w2 hardening. rationale: First independent judge (session ses_fbdcd4b1effe40) proved three R2 false-negative vectors and one R3 blind spot to the repo-canonical backticked judge form; guard must read content, not timestamps..
 - `2026-08-27T08:25:48Z` — Use [[:blank:]] instead of \t inside bracket expressions after judge-2 findings O1-O3 noted for a later pass (phase: `p1-hook-guard`), task: p1-w2 hardening. rationale: GNU grep treats \t literally in brackets so tab-separated evasions passed; O2 bullet-line anchoring and O3 undated-entry visibility deferred to v3 as deliberate-evasion-only residue..
 - `2026-08-27T08:25:48Z` — Record durable gate checks for both phases with judge declared independent via two fresh-context goal-verify sessions (phase: `p1-hook-guard`), task: p1-w2. rationale: Same authoring session cannot approve its own high-risk work (independent_judge_required); subagent sessions audited statically and by fixture reproduction without authoring access; battery outputs published above for cross-checking..
+- `2026-08-27T08:30:37Z` — Owner cleared the mandatory P1-to-P2 pause in-session after both phases were durably checked by independent judges (phase: `p1-hook-guard`), task: pause-clearance. rationale: Plan constraint required explicit human clearance before irreversible deletion; owner instruction recorded on 2026-08-27 (branch session): P0+P1 verified per contract, ready for p2-delete-cli. Guard v2 hardening closed all findings from two independent audit sessions..
 
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
@@ -344,12 +347,12 @@ updated: 2026-08-26
   - `cd cli && go test ./...` → 5 packages ok
 
 ## Current State and Next Action
-- active_phase: p1-hook-guard (checked in DB and plan; MANDATORY HUMAN PAUSE before p2-delete-cli)
+- active_phase: p2-delete-cli (entry gate; owner cleared the mandatory pause — see ## Decisions)
 - lifecycle_status: in-progress
 - latest_run_id: 01M1154XP8J7JKW2F1K57847DX (p1); 01M11036QNF018W57CBMC1ZG2K (p0)
 - latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; hardening round recorded on p1 run]
 - latest_check_id: 01M1155Q0BHJGRWZZ7XY8TYFFR (p1 gate APPROVED, judge independent, session ses_fbdb480ecffeca); 01M1155G7EY3119BQPB71NJYXC (p0 gate APPROVED, judge independent, session ses_fbdcd4b1effe40)
-- latest_handoff_id: 01M0YRBNHYHK1TDV3486Q62HQN (previous initiative)
-- blockers: none technical — both phases durably checked by independent judges; awaiting owner clearance of the P1→P2 pause
-- open_items: [O2 verdict anchoring to bullet lines + O3 undated-entry visibility deferred to guard v3; non-spine git/interview skill refs flagged for P2 optional-block sweep; S5/S7 measured in P4]
-- exact_next_action: HUMAN PAUSE — owner reviews independent-audit trail then clears p2-delete-cli wave 1
+- latest_handoff_id: 01M115ENJWGB99VKRT387354X6 (p1 close-phase); 01M115ENJ3VK8V8ZEH0H11R7JR (p0 close-phase)
+- blockers: none
+- open_items: [O2 verdict anchoring to bullet lines + O3 undated-entry visibility deferred to guard v3; non-spine git/interview skill refs flagged for P2 optional-block sweep; P2 wave 1 deletes 20 command groups + SQLite + optional index-sync blocks; CHANGELOG breaking note pins 0.14.x]
+- exact_next_action: work full phase p2-delete-cli
