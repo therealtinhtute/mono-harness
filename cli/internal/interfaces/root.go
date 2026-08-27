@@ -1,69 +1,43 @@
-// Package interfaces wires the zharness command surface (cobra) to the
-// application layer. See cli/docs/CONTRACT.md for the full command
-// contract. cli-core only registers the Core section (Phase 3); domain
-// and research commands are added in later phases.
+// Package interfaces wires the zharness command surface (cobra).
+//
+// v0.15 slim: the entire lifecycle command surface has been deleted from
+// source. State lives in git-committed markdown alone; the two fail-closed
+// guarantees — proof re-execution and the independent-judge rule for
+// high-risk lanes — live in the repository's pre-commit hook
+// (scripts/install-git-hooks.sh), which reads staged bytes and trusts no
+// marker an agent writes. See docs/plans/active/zharness-v015-slim.md.
+//
+// The three managed-set verbs (install / update / uninstall) land here in
+// p3-installer; until then the surface is intentionally empty.
 package interfaces
 
 import (
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 )
 
-// jsonOutput is bound to the --json persistent flag; every command reads
-// it directly instead of re-resolving the flag from cmd.Flags().
-var jsonOutput bool
-
-// Execute builds and runs the root command, returning the process exit
-// code per CONTRACT.md (0 success, 1 user error, 2 system error). Every
-// invocation is also logged best-effort (R8, logInvocation) — a
-// side-channel forensic record, not part of the exit-code contract above.
+// Execute builds and runs the root command, returning the process exit code.
 func Execute(version string) int {
-	start := time.Now()
 	root := NewRootCmd(version)
 	err := root.Execute()
 	exit := 0
 	if err != nil {
-		exit = handleError(root.ErrOrStderr(), err)
+		root.PrintErrln(err)
+		exit = 1
 	}
-	logInvocation(os.Args[1:], exit, time.Since(start), invocationErrorCode(err))
+	_ = os.Stdout // keep os import stable for future verb output plumbing
 	return exit
 }
 
-// NewRootCmd builds the zharness root command with all registered
-// subcommands.
+// NewRootCmd builds the zharness root command with its registered verbs.
 func NewRootCmd(version string) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "zharness",
-		Short:         "Durable state harness for the workflow skill chain",
+		Short:         "Installer for the markdown-first workflow harness",
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.PersistentFlags().BoolVar(&jsonOutput, "json", false, "emit machine-readable JSON output")
-
-	root.AddCommand(newIDCmd())
-	root.AddCommand(newScaffoldCmd())
-	root.AddCommand(newInitCmd(version))
-	root.AddCommand(newMigrateCmd(version))
-	root.AddCommand(newImportCmd())
-	root.AddCommand(newDBCmd())
-	root.AddCommand(newQueryCmd())
-	root.AddCommand(newIntakeCmd())
-	root.AddCommand(newStoryCmd())
-	root.AddCommand(newTraceCmd())
-	root.AddCommand(newDecisionCmd())
-	root.AddCommand(newMemoryCmd())
-	root.AddCommand(newRunCmd())
-	root.AddCommand(newPlanCmd())
-	root.AddCommand(newResumeCmd(version))
-	root.AddCommand(newPreflightCmd(version))
-	root.AddCommand(newCheckCmd())
-	root.AddCommand(newHandoffCmd())
-	root.AddCommand(newValidateCmd())
-	root.AddCommand(newAuditCmd(version))
-	wrapExclusiveMutationCommands(root)
-
 	return root
 }

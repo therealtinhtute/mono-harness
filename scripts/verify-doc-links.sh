@@ -63,6 +63,7 @@ done
 
 # --- scan --------------------------------------------------------------------
 findings=0
+REMOVED_HITS=0
 CLAIM_PATTERN='[A-Za-z0-9._/-]+/[A-Za-z0-9._/-]+\.(md|sh|go|json|yml|toml|py)'
 while IFS= read -r file; do
   dir="$(dirname "$file")"
@@ -84,6 +85,16 @@ while IFS= read -r file; do
 
   while IFS=: read -r kind claim; do
     [ -n "$claim" ] || continue
+
+    # v0.15 removed surfaces: immutable audit/history records still cite files
+    # deleted by docs(plans): zharness-v015-slim p2-delete-cli. The removal is
+    # archived in the root CHANGELOG v0.15 section. Known-removed claims pass
+    # existence checks but are counted, never silently dropped.
+    case "$claim" in
+      cli/internal/application/*|cli/internal/domain/*|cli/internal/infrastructure/*|cli/docs/SCHEMA.md|cli/docs/STATE.md)
+        REMOVED_HITS=$((REMOVED_HITS + 1))
+        continue ;;
+    esac
 
     case "$claim" in
       *'{'* | *'}'* | *'*'* | '//'*) continue ;;
@@ -164,4 +175,4 @@ if [ "$findings" -gt 0 ]; then
   exit 1
 fi
 
-printf 'doc links OK (0 findings)\n'
+printf 'doc links OK (0 findings; %d claim(s) under known-removed v0.15 surfaces)\n' "$REMOVED_HITS"

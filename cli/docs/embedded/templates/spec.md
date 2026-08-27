@@ -3,7 +3,7 @@ id: {ULID}
 type: spec
 phase: none
 lane: {tiny|normal|high-risk}
-intake_id: {ULID returned by `zharness intake` at SPEC lock}
+intake_id: {unique token minted at SPEC lock}
 created: {YYYY-MM-DD}
 updated: {YYYY-MM-DD}
 ---

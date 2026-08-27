@@ -14,15 +14,15 @@ Start here. Every document in this repository is reachable from this page, and e
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
 | See what is being built right now | the one plan under [`docs/plans/active/`](plans/active) — empty means nothing is in flight |
 | See what was built before | [`docs/plans/completed/`](plans/completed), most recently [`docs-architecture.md`](plans/completed/docs-architecture.md) |
-| Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md), [`cli/docs/SCHEMA.md`](../cli/docs/SCHEMA.md), [`cli/docs/STATE.md`](../cli/docs/STATE.md) |
+| Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md) |
 
 ## Ownership
 
 Three classes, and the class determines who is allowed to edit the file.
 
-- **managed** — present in the binary's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by `zharness init`, and hash-tracked in the `managed_docs` table. Edit the embedded source and cut a release; a local edit is staged as a conflict under `.kit/conflicts/`, never silently overwritten.
-- **authored** — written by hand, never embedded, never regenerated. The consumer owns the content. When managed docs are present, `zharness audit` guards only whether any authored Markdown remains; it does not judge semantic correctness, citation quality, or historical accuracy. Those checks belong to the author or external tooling.
-- **scaffold-once** — written by `zharness init` only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
+- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/` for the updater's three-way merge. Edit the embedded source and cut a release; a local edit is staged as an update conflict, never silently overwritten.
+- **authored** — written by hand, never embedded, never regenerated. The consumer owns the content; repository scripts (not a binary verdict) watch whether any authored markdown remains, and semantic correctness belongs to the author or external tooling.
+- **scaffold-once** — written by the managed-set installer only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
 
 | Path | Class | Notes |
 |---|---|---|
@@ -31,7 +31,7 @@ Three classes, and the class determines who is allowed to edit the file.
 | `docs/README.md` | authored | this page |
 | `docs/ARCHITECTURE.md` | authored | how the system works |
 | `docs/decisions/` | authored | numbered ADRs, an index, and `templates/decision.md` to copy for the next one |
-| `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. The CLI appends to these but never creates them from an embedded source |
+| `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the stage playbooks; nothing generates these files |
 | `docs/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
@@ -43,8 +43,8 @@ An existing path under `docs/` that is missing from this table is a defect in th
 
 | Path | What it is |
 |---|---|
-| `cli/docs/` | the CLI's own contract, schema, and state reference — authored, and the source of the embedded set under `cli/docs/embedded/` |
+| `cli/docs/` | the CLI's contract reference — authored; `cli/docs/embedded/` holds the installer's managed doc set |
 | `skills/` | the installable agent skills; each has its own `SKILL.md` |
 | `rules/` | source for the global rules installed into `~/.claude/rules/` |
-| `harness.db` | derived index, gitignored, rebuilt with `zharness db rebuild --yes` |
+| (legacy) a per-machine derived index | removed from the architecture in v0.15 — archive: v0.15 section of CHANGELOG.md |
 | `.kit/` | per-machine scratch — cache, conflicts, logs; fully gitignored |

@@ -37,7 +37,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 6. **Evaluate required proof** — for `tiny`, require command output; for `normal`, require unit plus command output; for `high-risk`, require unit, integration, manual review, and command output. Name every missing class exactly. A gate does not silently substitute automated checks for required manual-review evidence.
 7. **Choose the verdict** — any critical issue or material plan contradiction is `REQUEST_CHANGES`; major non-critical findings are at least `APPROVE_WITH_REQUESTS`; no blocking findings is `APPROVED`. Declare the judge: `same-session` when the reviewing agent also authored the diff under review, `independent` otherwise, alongside the reviewing model's identifier. When the judge is `same-session`, an `APPROVED` or `APPROVE_WITH_REQUESTS` verdict must name at least one aspect that was not independently verified.
 8. **Append durable evidence first (mandatory)** — write the Validation entry into the active plan by hand: timestamp, phase slug, exact commands and results, verdict, judge, judge model, proof gaps, and nested sub-bullets carrying each proof command exactly as run. Never self-certify; cite only commands whose real output you captured. `REQUEST_CHANGES` entries may cite failing commands on purpose.
-9. **Record the mirrored DB check while the binary exists** — run `zharness check record --verdict {verdict} --run-id {run-id} --judge {independent|same-session} --judge-model {model identifier} --proof-links '[{"command":"{exact command}","output_ref":"Validation entry {timestamp}: {result}"}, ...]' --json`. This call re-executes every cited proof command itself and refuses a false claim (`proof_verification_failed`) before recording anything; missing or invalid judge flags fail as `invalid_judge`/`missing_required_field`. Save the returned check ID beside the entry. This mirroring stays mandatory whenever the binary exists through `p0-fail-open` and `p1-hook-guard`; `p1-hook-guard`'s pre-commit hook then becomes the sole proof guarantee and `p2-delete-cli` deletes the command — from that point step 8 alone stands.
+9. **Commit-time proof guarantee** — no verifier runs here. The repository's pre-commit hook is the sole proof guarantee: it parses this Validation entry from staged bytes and re-executes every nested proof command itself before an APPROVED/APPROVE_WITH_REQUESTS verdict can be committed (`scripts/install-git-hooks.sh`; CI re-runs it). Cite only commands whose real output you captured, written as nested sub-bullets exactly as run — REQUEST_CHANGES entries may cite deliberately failing commands.
 10. **Synchronize durable plan state**:
     - For `APPROVED` or `APPROVE_WITH_REQUESTS`, immediately set the phase status and Current State lifecycle status to `checked`, record the returned check ID if one was issued, complete the Validation entry's exact evidence, and route to closing `handoff` or `git`.
     - For `REQUEST_CHANGES`, keep the phase and Current State lifecycle status `in-progress` to match the DB row whenever the binary exists (its recorded Validation entry carries that truth once the ledger is gone), record the findings as blockers/open items, and route back to `work`. When that ledger at docs/evals/failures.md exists, also append one ledger row per finding — durable gate/full only.
@@ -45,17 +45,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 
 ## Response-Only Review and Bounded Gate
 
-Run the narrowest checks that prove the requested change, perform the requested or scope-appropriate review, and return the same evidence/verdict fields in the response. `review` is always response-only: it never calls `zharness check record` and never updates the plan, even if an active plan exists. Bounded/simple follows the same zero-write rule.
-
-## Optional index-sync (optional and reconciling)
-
-Only while the `zharness` binary still exists on PATH: these enrich the gate with ledger context and verification. They never substitute steps 3–8 above, which carry their own proof on disk.
-
-- `zharness preflight check --mode {gate|full|review|bounded} --json` (Preconditions context alternative)
-- `zharness audit --json` (durable lifecycle link audit — treat pointer drift touching the phase as findings)
-- `zharness query phases --json` (step 11 re-verification)
-
-Step 9's `zharness check record` deliberately sits outside this block: it is a guarantee, not convenience, until the hook replaces it.
+Run the narrowest checks that prove the requested change, perform the requested or scope-appropriate review, and return the same evidence/verdict fields in the response. `review` is always response-only: it never appends to Validation and never updates the plan, even if an active plan exists. Bounded/simple follows the same zero-write rule.
 
 ## Output Format
 

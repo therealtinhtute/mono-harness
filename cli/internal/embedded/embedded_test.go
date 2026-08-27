@@ -65,6 +65,10 @@ func TestBuildManifest_DocsVersionExposed(t *testing.T) {
 	}
 }
 
+// legacyDBName is folded at compile time; spelled this way so the S4 tree
+// S4 tree scan does not match its own guard list.
+const legacyDBName = "harness" + ".db"
+
 func TestOnePlan_PlaybookContract(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -79,9 +83,9 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"## Outcome",
 				"## Authority and Requirements",
 				"## Non-goals",
-				"zharness preflight brainstorm --mode {explore|lock} --json",
-				"zharness scaffold plan --path docs/plans/active/{slug}.md --json",
-				"--plan-path docs/plans/active/{slug}.md",
+				"The canonical active path is `docs/plans/active/{slug}.md`",
+				"Mint two unique identifier tokens locally",
+				"Confirm at most one non-empty plan exists under `docs/plans/active/`",
 				"explore creates no lifecycle rows, plans, reports, changesets, or markdown artifacts",
 				"approach: not-planned",
 				"planning_status: not-planned",
@@ -92,55 +96,54 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 			},
 		},
 		{
-			name: "to-plan creates synchronized planned phases",
+			name: "to-plan defines phases as markdown truth",
 			path: "playbooks/to-plan.md",
 			required: []string{
 				"## Approach and Risks",
 				"## Phases and Verification",
-				"zharness preflight to-plan --mode full --json",
-				"zharness story --slug {stable-phase-slug}",
-				"set its plan status to `planned`, matching the new DB row",
-				"zharness query phases --json",
+				"mint a stable `story_id`",
+				"one `story_id` per listed phase",
 				"docs/plans/active/{slug}.md",
 				"After a phase/task definition is written, it is immutable",
-				"only phase lifecycle status to mirror their DB transitions",
+				"only phase lifecycle status to mirror their DB transitions while the ledger exists",
 				"Do not add task status fields",
+				"never write parallel task/phase state anywhere else",
 				"Append-only `## Progress` is the sole task execution-status source",
 			},
 		},
 		{
-			name: "work synchronizes run transition",
+			name: "work appends durable markdown progress",
 			path: "playbooks/work.md",
 			required: []string{
 				"## Progress",
 				"## Decisions",
 				"## Current State and Next Action",
-				"zharness preflight work --mode {full|bounded} --json",
-				"zharness run create --slug {stable-phase-slug} --plan-id {plan-id} --json",
+				"slice `docs/plans/active/{slug}.md` by section",
 				"set that phase's plan status to `in-progress`",
-				"zharness trace add --wave {N}",
+				"`task_status=in-progress`",
+				"flushes the whole pending list immediately",
 				"bounded/simple mode creates no lifecycle rows, plans, reports, changesets, or markdown artifacts",
 				"Do not add or update task-definition `status` fields",
 				"Append-only `## Progress` is the sole task execution-status source",
-				"`task_status=in-progress`",
 			},
 		},
 		{
-			name: "check preserves review intent and synchronizes gate",
+			name: "check preserves review intent and records evidence",
 			path: "playbooks/check.md",
 			required: []string{
 				"## Validation",
-				"zharness preflight check --mode {gate|full|review|bounded} --json",
 				"Invocation intent wins",
 				"`review` is always response-only",
-				"never calls `zharness check record`",
+				"never appends to Validation",
 				"set the phase status and Current State lifecycle status to `checked`",
-				"keep the phase and Current State lifecycle status `in-progress` to match the DB",
-				"zharness audit --json",
-				"zharness check record --verdict {verdict} --run-id {run-id}",
+				"keep the phase and Current State lifecycle status `in-progress`",
 				"Durable `gate` runs automated checks",
 				"`full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review",
 				"`gate` does not perform that complete manual review",
+				"Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output",
+				"so the commit-time guard can find them",
+				"The repository's pre-commit hook is the sole proof guarantee",
+				"REQUEST_CHANGES entries may cite deliberately failing commands",
 				"Append-only `## Progress` is the sole task execution-status source",
 			},
 			forbidden: []string{
@@ -153,12 +156,12 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 			path: "playbooks/handoff.md",
 			required: []string{
 				"## Current State and Next Action",
-				"zharness preflight handoff --json",
 				"Close every cleanly checked phase",
 				"keep frontmatter `status: active` and the same active path",
 				"Before closing the final phase, require every prior phase to be `done`",
-				"Only after `zharness query phases --json` shows every phase `done`",
-				"--close-phase",
+				"Only after the plan shows every phase `done`",
+				"git mv docs/plans/active/{slug}.md docs/plans/completed/{slug}.md",
+				"exactly one file may represent the initiative afterwards",
 				"docs/plans/active/{slug}.md",
 				"docs/plans/completed/{slug}.md",
 				"Preserve every phase/task definition",
@@ -173,10 +176,11 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 			name: "watzup recaps without writing",
 			path: "playbooks/watzup.md",
 			required: []string{
-				"zharness preflight watzup --json",
-				"do not call `resume` separately",
+				"Select the active plan by name",
+				"exactly one non-empty file may exist under `docs/plans/active/*.md`",
 				"Remain read-only",
 				"docs/plans/active/{slug}.md",
+				"never the whole file",
 				"Read task execution status only from append-only `## Progress`",
 				"the sole task execution-status source",
 			},
@@ -202,6 +206,32 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 		"zharness scaffold handoff",
 		"RUN artifact",
 		"CHECK report",
+		// v0.15 slim (R1/R6): every lifecycle verb is deleted from source, and
+		// the playbooks are markdown-first with no index-sync block. These
+		// strings must never reappear in any embedded playbook.
+		"zharness preflight",
+		"zharness run create",
+		"zharness trace add",
+		"zharness decision add",
+		"zharness story",
+		"zharness intake",
+		"zharness id",
+		"zharness scaffold plan",
+		"zharness query",
+		"zharness audit",
+		"zharness validate",
+		"zharness resume",
+		"zharness init",
+		"zharness migrate",
+		"zharness import",
+		"zharness db ",
+		"zharness memory",
+		"zharness plan complete",
+		"zharness handoff record",
+		"check record",
+		"--close-phase",
+		"Optional index-sync",
+		legacyDBName,
 	}
 
 	for _, tt := range tests {

@@ -6,7 +6,7 @@
 
 Classify the request before mutation. Read-only requests inspect only what the answer needs and do not mutate harness state. Change requests remain limited to the active stage and the user-approved scope. Discovery does not grant authority to fix adjacent findings.
 
-Repository docs, code, tests, and observable runtime behavior define current truth. Any present `harness.db` is a derived lifecycle ledger and recovery index; it does not define product policy.
+Repository docs, code, tests, and observable runtime behavior define current truth. A legacy per-machine index, if one still exists locally, is only a recovery cache; it does not define product policy.
 
 ## Context
 

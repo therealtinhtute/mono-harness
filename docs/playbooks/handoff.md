@@ -34,18 +34,6 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
    - Move the plan out of active state yourself: set frontmatter `status: completed`, refresh `updated`, and `git mv docs/plans/active/{slug}.md docs/plans/completed/{slug}.md`. Do not copy — exactly one file may represent the initiative afterwards, and the completed path must contain the same plan ID.
 7. **Verify continuity quality** — branch captured, anchors match the plan's own entries, phase statuses match the plan, blockers are specific, one exact next action exists, sensitive data is absent, and exactly one plan file represents the initiative.
 
-## Optional index-sync (optional and reconciling)
-
-Only while the `zharness` binary still exists on PATH: after finishing the mandatory markdown writes above, these mirror the same transitions into the DB ledger. Never run them instead of editing the plan; on divergence `zharness db rebuild --yes` rebuilds the index from committed markdown.
-
-- `zharness preflight handoff --json`
-- `zharness query traces --tail 10 --json`, `zharness query decisions --tail 10 --json`, `zharness query checks --tail 3 --json` (step 2 alternative tails)
-- `zharness query phases --json` (steps 5/6 re-verification)
-- `zharness handoff record [--run-id {run-id}] [--check-id {check-id}] --open-items '[...]' --json` (step 4)
-- `zharness handoff record --run-id {run-id} --check-id {check-id} --open-items '[]' --close-phase --json` (step 5)
-- `zharness plan complete --json` (step 6 — performs the identical complete-and-move transition while it exists)
-- Only after `zharness query phases --json` shows every phase `done` does the final move of step 6 get mirrored through that command
-
 ## Exit Conditions
 
 - Incomplete phase: the same active plan contains honest execution status, anchors, blockers/open items, and one exact next action.

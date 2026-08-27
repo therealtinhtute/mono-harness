@@ -53,20 +53,6 @@ Record durable memory under `docs/memory/{id}.md` — plain committed files, edi
 
 Retrieval is grep-first: search `docs/memory/*.md` by keyword directly; a file whose frontmatter says superseded stays visible for lineage but should be discounted in answers.
 
-## Optional index-sync (optional and reconciling)
-
-Only while the `zharness` binary still exists on PATH: after completing the mandatory markdown writes above, these reconcile the DB ledger with what was appended — never instead of them, never hand-duplicating their output back into the plan. On divergence `zharness db rebuild --yes` reconstructs the index from committed markdown alone.
-
-- `zharness preflight work --mode {full|bounded} --json`
-- `zharness query plan --section phase --phase {stable-phase-slug} --json`
-- `zharness query traces --phase {stable-phase-slug} --json`
-- `zharness query phases --json` (step 11 re-verification)
-- `zharness run create --slug {stable-phase-slug} --plan-id {plan-id} --json`
-- `zharness trace add --wave {N} --tasks '[{"task":"...","task_status":"...","summary":"..."}, ...]' --run-id {run-id} --json`
-- `zharness trace add --wave {N} --summary "..." --run-id {run-id} --json`
-- `zharness decision add --decisions '[{"decision":"...","rationale":"...","phase":"{slug}","task":"{task}"}, ...]' --run-id {run-id} --json`
-- `zharness memory add --type {type} --scope plan|global [--plan-id {ulid}] --summary "..." --json`, `zharness memory supersede --old-id {old} --new-id {new} --json`
-
 ## Exit Conditions
 
 - Full mode: the selected phase is `in-progress` in both the status field and Current State, every attempted task has a `## Progress` entry, material decisions are recorded with rationale, each completed wave ends with a summary line, Current State is resumable, and completed implementation is gated in-session per step 11 (`check.md`'s `full` mode applies only when the selected phase is the initiative's final phase — see `handoff.md` step 6).

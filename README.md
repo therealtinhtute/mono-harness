@@ -130,28 +130,16 @@ Every workflow stage attempts a read-only zharness preflight check when the bina
 
 | Path | Role | Lifecycle |
 | --- | --- | --- |
-| .kit/changesets/ | ULID-named JSONL replay source for local harness state. | Gitignored local state. |
-| harness.db | Materialized SQLite view rebuilt from changesets. | Gitignored local state. |
-| cli/docs/embedded/ | Canonical WORKFLOW.md, playbooks, and artifact templates shipped inside the CLI. | Tracked source. |
-| docs/ | Managed root-doc projection created by zharness init. | Generated; do not edit as source. |
-| docs/plans/active/ | Durable initiative plans containing requirements, phases, progress, decisions, validation, and current state. | Project-local workflow data. |
+| docs/plans/active/ | Durable initiative plans containing requirements, phases, progress, decisions, validation, and current state. | Project-local workflow data — the record. |
+| cli/docs/embedded/ | Canonical WORKFLOW.md, playbooks, AGENTS block shipped inside the CLI. | Tracked source. |
+| docs/ | Managed root-doc projection; the installer refreshes it, the updater merges local edits. | Generated from the managed set; do not hand-edit. |
+| .git/hooks/pre-commit | The two fail-closed guards (proof re-execution, independent judge). | Installed by scripts/install-git-hooks.sh. |
 
-The database is a view. Changesets are the replay input, and cli/docs/embedded/ is the source of truth for managed workflow documentation.
+Committed markdown is the whole system of record; a legacy per-machine index is only a recovery cache and is never created again.
 
 ## CLI quick reference
 
-All commands support --json for machine-readable output.
-
-| Group | Commands | Use |
-| --- | --- | --- |
-| Readiness | preflight, resume, next | Resolve stage readiness, current position, and routing. |
-| Planning | intake, story, scaffold | Record intake and phases or create artifact skeletons. |
-| Execution | run create, trace add, decision add | Record runs, task progress, and execution decisions. |
-| Gates | check record, handoff record, intervention | Record verdicts, close phases, or apply an explicit human override. |
-| Inspection | query, validate, audit, db status | Inspect state, lifecycle links, drift, and database health. |
-| Recovery | import, migrate layout, db rebuild, db changeset apply | Import legacy state or rebuild from replayable changesets. |
-
-Detailed contracts live in [cli/docs/CONTRACT.md](cli/docs/CONTRACT.md), [cli/docs/STATE.md](cli/docs/STATE.md), and [cli/docs/SCHEMA.md](cli/docs/SCHEMA.md).
+`zharness --help` documents the installed surface. Since v0.15 the lifecycle lives in markdown plus repo scripts (`scripts/record-check.sh`, `scripts/install-git-hooks.sh`); the binary's install / update / uninstall verbs arrive with phase p3-installer.
 
 ## Development
 

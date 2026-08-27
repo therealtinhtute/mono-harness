@@ -42,14 +42,6 @@ Preserve every other section. After a phase/task definition is written, it is im
 - Waves expose executable coordination; tasks expose exact proof.
 - Lifecycle lives in the plan file itself; never write parallel task/phase state anywhere else.
 
-## Optional index-sync (optional and reconciling)
-
-Only while the `zharness` binary still exists on PATH: after finishing the mandatory markdown writes above, these reconcile the DB ledger with them. Never run them instead of editing the plan.
-
-- `zharness preflight to-plan --mode full --json`
-- `zharness story --slug {stable-phase-slug} --goal "..." [--depends-on {slug}] --json` — returns the canonical row ID to copy beside the phase; then set its plan status to `planned`, matching the new DB row
-- `zharness query phases --json` — re-verification only
-
 ## Exit Conditions
 
 Complete only when the same active plan contains a decision-complete approach, explicit risks/recovery, stable phases with story IDs and coherent statuses, executable waves/tasks, and exact verification commands. The next action must name the phase that `work full` should start.

@@ -6,27 +6,27 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 
 ## 4-Layer Model
 
-- **harness** — the optional ledger layer (`harness.db`, gitignored, repo root, present only while the binary exists). Markdown plus git stays the system of record — `db rebuild` regenerates the index from committed plans alone (`docs/plans/completed/harness-markdown-truth.md`).
+- **harness** — gone since v0.15. Markdown plus git is the system of record; the archive decision trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
 - **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. Every skill attempts `zharness preflight` where available for one shared readiness/rail-guard decision; without the binary each degrades to its markdown-first playbook instead of failing. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) then follow the playbook path returned by preflight — or `docs/playbooks/{stage}.md` directly when it is absent; operating logic lives in those playbooks, not in the trigger.
-- **cli** — `zharness`, the Go binary (cobra command tree; `modernc.org/sqlite` remains only while the binary exists and is deleted at v0.15). Where present it reconciles the ledger after markdown writes; nothing waits on it.
+- **cli** — `zharness`, the Go binary being reduced to install / update / uninstall for the managed doc set (`docs/plans/**`, playbooks, the AGENTS block). Lifecycle enforcement moved to repo scripts plus the pre-commit hook; nothing waits on the binary.
 
 ## Lifecycle
 
 ### Intent → Intake — `brainstorm`
-A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections; `zharness intake` mirrors the classification into the ledger whenever the binary exists.
+A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections; The lane lives nowhere else — no separate store exists.
 
 ### Story/Plan — `to-plan`
-Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files — assigning one stable story identity per stable phase; `zharness story` mirrors the row while the ledger exists.
+Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files — assigning one stable story identity per stable phase (a plain unique token written beside the phase).
 
 ### Trace — `work`
-`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Progress/Decisions sections; `zharness trace add` mirrors each flushed wave into the queryable trail whenever the binary exists.
+`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Progress/Decisions sections in one editing pass per wave.
 
 ### Proof — `check`
-`check` runs the automated gate, evaluates the required-proof matrix for the plan's lane (tiny/normal/high-risk), and appends a deterministic verdict with nested proof-command sub-bullets to the plan's Validation section; while the binary exists `zharness audit` checks lifecycle links and `check record` re-executes every cited proof command itself. Missing required proof always fails, naming the missing evidence.
+`check` runs the automated gate, evaluates the required-proof matrix for the plan's lane (tiny/normal/high-risk), and appends a deterministic verdict with nested proof-command sub-bullets to the plan's Validation section; the pre-commit hook re-executes every cited proof itself at commit time and rejects false claims. Missing required proof always fails, naming the missing evidence.
 
 ### Handoff/Resume — `handoff`, `watzup`
-`handoff` updates the plan's Current State and Next Action directly and, on final clean closure, moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`; `zharness handoff record` mirrors each closure while the ledger exists. `watzup` renders a session-start recap from Git state plus the plan itself, with an optional `zharness resume` position packet.
+`handoff` updates the plan's Current State and Next Action directly and, on final clean closure, moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders a session-start recap from Git state plus the plan alone.
 
 `git` and `interview` sit outside this spine — see mapping table below.
 
@@ -59,18 +59,17 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 
 `references/` for a rewritten skill is pruned to only what the corresponding playbook does *not* absorb — most of it is deleted once the playbook is proven to carry the same content (diff-checked during `playbook-authoring`).
 
-## Skill ↔ Command ↔ Entity Mapping
+## Skill ↔ Plan-Section Mapping
 
-| Skill | Plan section owned | `zharness` command group | Entity |
-| :--- | :--- | :--- | :--- |
-| `brainstorm` | Outcome, Authority and Requirements, Non-goals (intake ID in frontmatter) | `intake` | intake |
-| `to-plan` | Approach and Risks, Phases and Verification | `init`, `story` | story (phase) |
-| `work` | Progress, Decisions (append-only) | `run create`, `trace add` | run + trace |
-| `check` | Validation (append-only) | `audit`, `check record` | check (verdict) |
-| `handoff` | Current State and Next Action | `handoff record` | handoff |
-| `watzup` | console recap | `resume` | resume snapshot |
-| `git` | commit / PR | `preflight`, `query check --latest` | read-only: no dedicated harness entity |
-| `interview` | feeds `brainstorm` / `to-plan` output | `preflight` | read-only: no dedicated harness entity |
+| Skill | Owns | Mechanism |
+| :--- | :--- | :--- |
+| `brainstorm` | Outcome, Authority and Requirements, Non-goals (lane in frontmatter) | playbook + hand-edited markdown |
+| `to-plan` | Approach and Risks, Phases and Verification (story tokens) | playbook + hand-edited markdown |
+| `work` | Progress, Decisions (append-only) | playbook + hand-edited markdown |
+| `check` | Validation (append-only) | playbook + nested proof sub-bullets |
+| `handoff` | Current State and Next Action, phase closure | playbook + `git mv` on completion |
+| `watzup` | console recap | git + plan reads only |
+| `git` / `interview` | no plan sections | enrichment optional, never blocking |
 
 ## Scope
 
@@ -98,7 +97,7 @@ Piloted 2026-07-17 by dogfooding this repo itself — real legacy `.kit/workflow
 - `zharness init && zharness import && zharness query state --json` — **pass**. Derived state matched this repo's real pre-import `workflow-state.yml` (`current_phase`, `entry_phase`) exactly, on real history, not a fixture.
 - Rebuild-from-changesets (cross-machine resume mechanism) — **pass**. A scratch copy of `.kit/changesets/**` replayed through `zharness init` + `zharness db changeset apply` in ULID order produced a byte-identical `resume --json` to the original. Zero divergence.
 - `zharness validate` / `zharness audit` — **2 real gaps found, both filed, neither blocking**:
-  - [#24](https://github.com/therealtinhtute/skills/issues/24) — `resume.go`'s drift `Recovery` strings don't match `cli/docs/STATE.md`'s documented text (escalated from continuity's `check` gate)
+  - [#24](https://github.com/therealtinhtute/skills/issues/24) — pilot-era gap #24 (archived with tag `v0.14.0`; `resume.go` and its STATE doc were removed in v0.15)
   - [#25](https://github.com/therealtinhtute/skills/issues/25) — phases 1-6's RUN/CHECK/HANDOFF artifacts predate the harness and fail `validate`'s ULID cross-link checks (`entropy_score: 100`, zero DB-level `pointer_drift` — the gap is markdown frontmatter, not the harness itself)
 
 Neither gap breaks the chain's core promise: state derivation from legacy `.kit/` is correct, and the changeset-rebuild mechanism is proven byte-exact on this repo's own real history. Both gaps are scoped, filed, and routed to future planning cycles rather than hotfixed mid-pilot, per this phase's own rule.

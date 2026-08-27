@@ -27,14 +27,6 @@ Keep the recap concise:
 4. Risks/blockers and proof gaps.
 5. One exact next action.
 
-## Optional index-sync (optional and reconciling)
-
-Only while the `zharness` binary still exists on PATH: running these enriches the recap with the DB position and drift packet. Never let them substitute the markdown reads above, and never mutate anything through them.
-
-- `zharness preflight watzup --json` — readiness plus `context` position/drift; render its `position`, `drift`, `readiness`, and latest IDs 1:1 — do not call `resume` separately
-- `zharness query plan --section current-state --json` (step 2 alternative)
-- `zharness query traces --tail 5 --json`, `zharness query decisions --tail 5 --json`, `zharness query checks --tail 1 --json` (step 2 tails)
-
 ## Exit Conditions
 
 Complete only when Git state, the selected active plan, current proof, risks, and one exact next action are stated. Recap stays response-only: nothing in this playbook mutates repository state, and the optional block above never runs its own writes.

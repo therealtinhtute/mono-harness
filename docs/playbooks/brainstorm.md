@@ -45,15 +45,6 @@ Preserve all later-stage content already present in the plan. Once `to-plan` has
 8. **Self-review** — remove all literal template placeholders so no literal fake lifecycle placeholders remain; confirm requirements are numbered and falsifiable; confirm Outcome, requirements, and Non-goals do not contradict; confirm rejected alternatives were surfaced; confirm the bootstrap state is honest; confirm no second markdown was created.
 9. **Review gate and handoff** — show the active plan path and concise decision summary. Explicit execution intent may satisfy the procedural gate when scope is bounded and no unresolved product decision, destructive action, or outward-facing action remains. Otherwise wait for approval before routing to `to-plan`.
 
-## Optional index-sync (optional and reconciling)
-
-Only while the `zharness` binary still exists on PATH: after finishing the mandatory markdown writes above, these reconcile the DB ledger with them (minting canonical IDs, recording the intake classification). Never run them instead of writing the plan.
-
-- `zharness preflight brainstorm --mode {explore|lock} --json`
-- `zharness id --json`
-- `zharness scaffold plan --path docs/plans/active/{slug}.md --json`
-- `zharness intake --type {input-type} --summary "..." --lane {lane} --plan-path docs/plans/active/{slug}.md --json`
-
 ## Exit Conditions
 
 - Explore: one recommendation, rationale, and rejected alternatives in the response; zero durable writes.
