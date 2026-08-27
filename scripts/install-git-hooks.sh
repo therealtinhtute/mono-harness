@@ -13,90 +13,108 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 # Two wrappers feed it pairs of plan-file contents:
 #   - pre-commit: staged blob vs HEAD blob ("reads staged bytes, trusts no marker")
 #   - CI job:     pushed HEAD blob vs parent blob
-# Guards implemented here (zharness v0.15 p1-hook-guard):
+# Guards implemented here (zharness v0.15 p1-hook-guard, review-hardened v2):
 #   R2: re-execute every nested proof command of newly added ## Validation
-#       entries whose verdict is APPROVED or APPROVE_WITH_REQUESTS
+#       entries whose anchored verdict is APPROVED or APPROVE_WITH_REQUESTS
 #       (`sh -c`, 5-minute timeout each); any non-zero exit rejects, naming
 #       the failing command and its output tail. REQUEST_CHANGES proof is
 #       never re-executed. No pass marker is read.
-#   R3: reject `judge: same-session` on any plan whose frontmatter carries
-#       `lane: high-risk`.
+#   R3: reject `judge: same-session` on any newly added entry of a plan whose
+#       frontmatter carries `lane: high-risk`. Matching strips backticks, so
+#       the repository's canonical judge: `same-session` form is caught too.
+#   Hardening from independent review (v2): "new entry" means its FULL TEXT
+#   differs from every old-side Validation entry — timestamp-set diffing was
+#   removed because replaying an existing timestamp made fresh APPROVED text
+#   invisible; verdict detection is anchored to a `verdict:` token so prose
+#   mentions cannot shadow it; proof bullets accept any indent >= 2 spaces;
+#   an approvable verdict citing zero proofs is rejected as malformed instead
+#   of being waved through.
 
 zharness_lane_of() {                       # <content-file>
   awk '/^---$/{n++; next} n==1 && /^lane:/{sub(/^lane:[ \t]*/, ""); print; exit}' "$1"
 }
 
-zharness_added_validation_timestamps() {   # <old-file> <new-file>
-  comm -13 \
-    <(grep -oE '^- `[0-9]{4}-[0-9]{2}-[0-9]{2}T[^`]+' "$1" 2>/dev/null | sort -u) \
-    <(grep -oE '^- `[0-9]{4}-[0-9]{2}-[0-9]{2}T[^`]+' "$2" | sort -u) || true
-}
-
-zharness_extract_entry() {                 # <file> <entry-prefix>
-  ZWANT="$2" awk '
-    BEGIN { want = ENVIRON["ZWANT"] }
-    $0 == "## Validation"           {inv = 1; next}
-    /^## / && inv                   {exit}
-    inv && index($0, want) == 1     {grab = 1}
-    grab                            {print}
+zharness_dump_entries() {                  # <content-file> <outdir>
+  OUT="$2" awk '
+    BEGIN { out = ENVIRON["OUT"] }
+    $0 == "## Validation" {inv = 1; next}
+    /^## / && inv         {exit}
+    inv {
+      if ($0 ~ /^- `[0-9]{4}-/) { n++; buf[n] = $0 }
+      else if (n > 0)           { buf[n] = buf[n] "\n" $0 }
+    }
+    END { for (i = 1; i <= n; i++) print buf[i] > (out "/e" sprintf("%04d", i) ".txt") }
   ' "$1"
 }
 
-zharness_entry_verdict() {                 # <entry-body>
-  printf '%s\n' "$1" | grep -oE '(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES)' | head -1 || true
+zharness_anchored_verdict() {              # <entry-body>
+  printf '%s\n' "$1" \
+    | grep -oE '`?verdict`?[[:blank:]]*:[[:blank:]]*`?(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES)' \
+    | grep -oE '(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES)' | head -1 || true
 }
 
 zharness_entry_proofs() {                  # <entry-body>
   printf '%s\n' "$1" \
-    | grep -oE '^[[:space:]]{2,6}- `[^`]+`' \
+    | grep -oE '^[[:space:]]{2,}- `[^`]+`' \
     | sed -E 's/^[[:space:]]*-[[:space:]]*`//; s/`[[:space:]]*$//' \
     | grep -v '^$' || true
 }
 
-zharness_validation_same_session_lines() {   # <content-file>
-  awk '
-    $0 == "## Validation"             {inv = 1; next}
-    /^## / && inv                     {exit}
-    inv && /judge:[ \t]*same-session/ {print}
-  ' "$1"
+zharness_entry_has_same_session() {        # <entry-body>, backticks stripped first
+  printf '%s\n' "$1" | sed 's/[`]//g' | grep -q 'judge:[[:blank:]]*same-session'
 }
 
-zharness_guards_file() {                   # <path> <old-file> <new-file>
-  local path="$1" old="$2" new="$3"
-  if [ "$(zharness_lane_of "$new")" != "high-risk" ]; then return 0; fi
-  local added
-  added=$(comm -13 \
-    <(zharness_validation_same_session_lines "$old" | sort -u) \
-    <(zharness_validation_same_session_lines "$new" | sort -u))
-  if [ -n "$added" ]; then
-    echo "" >&2
-    echo "❌ R3 JUDGE GUARD REJECTED: $path" >&2
-    echo "   frontmatter sets lane: high-risk and a newly added ## Validation" >&2
-    echo "   entry declares a same-session judge. An independent judge is required." >&2
-    echo "   offending lines:" >&2
-    printf '%s\n' "$added" >&2
-    return 1
-  fi
-  return 0
-}
+zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
+  local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out body verdict cmds scratch h efile header line
+  local -A OLDHASH=()
 
-zharness_proof_reexec_file() {             # <path> <old-file> <new-file>
-  local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out ts body verdict cmds
-  local timestamps
-  timestamps=$(zharness_added_validation_timestamps "$old" "$new")
-  [ -z "$timestamps" ] && return 0
-  while IFS= read -r ts; do
-    [ -z "$ts" ] && continue
-    body=$(zharness_extract_entry "$new" "$ts")
-    verdict=$(zharness_entry_verdict "$body")
+  scratch=$(mktemp -d)
+  mkdir -p "$scratch/o" "$scratch/n"
+  zharness_dump_entries "$old" "$scratch/o"
+  zharness_dump_entries "$new" "$scratch/n"
+
+  for efile in "$scratch"/o/e*.txt; do
+    [ -f "$efile" ] || continue
+    h=$(sha256sum "$efile" | cut -d' ' -f1)
+    OLDHASH["$h"]=1
+  done
+
+  for efile in "$scratch"/n/e*.txt; do
+    [ -f "$efile" ] || continue
+    h=$(sha256sum "$efile" | cut -d' ' -f1)
+    [ -n "${OLDHASH[$h]:-}" ] && continue
+    body=$(cat "$efile")
+    header=$(head -1 "$efile")
+
+    if [ "$(zharness_lane_of "$new")" = "high-risk" ] && zharness_entry_has_same_session "$body"; then
+      failed=$((failed + 1))
+      echo "" >&2
+      echo "❌ R3 JUDGE GUARD REJECTED: $path" >&2
+      echo "   frontmatter sets lane: high-risk and a newly added ## Validation" >&2
+      echo "   entry declares a same-session judge. An independent judge is required." >&2
+      echo "   offending entry starts: $header" >&2
+      printf '%s\n' "$body" | grep 'judge:' | sed 's/^/     /' >&2
+      continue
+    fi
+
+    verdict=$(zharness_anchored_verdict "$body")
     case "$verdict" in
       APPROVED|APPROVE_WITH_REQUESTS) ;;
       *) continue ;;
     esac
+
     cmds=$(zharness_entry_proofs "$body")
-    [ -z "$cmds" ] && continue
+    if [ -z "$cmds" ]; then
+      failed=$((failed + 1))
+      echo "" >&2
+      echo "❌ R2 PROOF GUARD REJECTED: $path" >&2
+      echo "   malformed entry: verdict \`$verdict\` cites no proof commands at all" >&2
+      echo "   offending entry starts: $header" >&2
+      continue
+    fi
+
     while IFS= read -r cmd; do
-      echo "🧪 re-executing proof [$ts]: $cmd"
+      echo "🧪 re-executing proof [$header]: $cmd"
       out=$(timeout 300 sh -c "$cmd" 2>&1) && rc_cmd=0 || rc_cmd=$?
       if [ "${rc_cmd:-0}" -ne 0 ]; then
         failed=$((failed + 1))
@@ -108,11 +126,13 @@ zharness_proof_reexec_file() {             # <path> <old-file> <new-file>
         printf '%s\n' "$out" | tail -10 >&2
       fi
     done <<< "$cmds"
-  done <<< "$timestamps"
+  done
+
+  rm -rf "$scratch"
   [ "$failed" -eq 0 ]
 }
 
-zhuards_guard_plans() {                    # <path-list-space-separated> <old-source|staged|head> <dir-for-temp>
+zhuards_guard_plans() {                    # <path-list-space-separated> <staged|head> <dir-for-temp>
   local plans="$1" mode="$2" tmp="$3" f rc=0
   for f in $plans; do
     case "$mode" in
@@ -125,12 +145,10 @@ zhuards_guard_plans() {                    # <path-list-space-separated> <old-so
         git show "HEAD:$f"   > "$tmp/new.md"
         ;;
     esac
-    if ! zharness_guards_file "$f" "$tmp/old.md" "$tmp/new.md"; then rc=1; fi
-    if ! zharness_proof_reexec_file "$f" "$tmp/old.md" "$tmp/new.md"; then rc=1; fi
+    if ! zharness_guard_entries_of_file "$f" "$tmp/old.md" "$tmp/new.md"; then rc=1; fi
   done
   return $rc
 }
-
 # ZGUARD-CORE-END
 
 function show_usage() {
@@ -171,7 +189,19 @@ ROOT="$(git rev-parse --show-toplevel)"
 export ROOT
 ZHARNESS_HOOK_SOURCE="$ROOT/scripts/install-git-hooks.sh"
 _zhtmp=$(mktemp -d)
-awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' "$ZHARNESS_HOOK_SOURCE" > "$_zhtmp/guard.sh"
+# Enforce from the staged installer bytes when the installer itself is part of
+# this commit; otherwise fall back to the worktree copy.
+GUARD_SRC="$ZHARNESS_HOOK_SOURCE"
+if git diff --cached --name-only -- scripts/install-git-hooks.sh | grep -q . 2>/dev/null; then
+  git show ":scripts/install-git-hooks.sh" > "$_zhtmp/src.sh" || {
+    echo "❌ cannot resolve staged guard source"; exit 1;
+  }
+  GUARD_SRC="$_zhtmp/src.sh"
+fi
+awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' "$GUARD_SRC" > "$_zhtmp/guard.sh" || {
+  echo "❌ guard core extraction failed from $GUARD_SRC"; exit 1;
+}
+grep -q '^zharness_guard_entries_of_file()' "$_zhtmp/guard.sh" || { echo "❌ guard core incomplete"; exit 1; }
 # shellcheck disable=SC1090
 source "$_zhtmp/guard.sh"
 

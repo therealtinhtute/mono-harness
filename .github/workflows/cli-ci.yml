@@ -50,7 +50,7 @@ jobs:
       - name: Extract guard core from installer
         run: |
           awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh > /tmp/guard.sh
-          grep -q '^zharness_proof_reexec_file()' /tmp/guard.sh
+          grep -q '^zharness_guard_entries_of_file()' /tmp/guard.sh
 
       - name: Run guards against pushed commit's plan changes
         run: |
