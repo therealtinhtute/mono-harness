@@ -6,27 +6,27 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 
 ## 4-Layer Model
 
-- **harness** — the durable state layer. SQLite (`harness.db`, gitignored, repo root) materialized by replaying local, ULID-named JSONL changesets under `.kit/changesets/` (also gitignored — per-machine state, not committed). This is the source of truth for intake, story/phase, trace, and check history — not the markdown.
-- **workflows** — the lifecycle contract itself: `Intent → Intake → Story/Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. Every skill version-gates and calls `zharness preflight` for one shared readiness/rail-guard decision. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) then follow the playbook path returned by preflight; operating logic lives in those playbooks, not in the trigger.
-- **cli** — `zharness`, the Go binary (cobra command tree, `modernc.org/sqlite`, CGO disabled) that routes every workflow stage and reads/writes the harness layer. `preflight` is read-only; every mutating command appends a changeset before touching the database.
+- **harness** — the optional ledger layer (`harness.db`, gitignored, repo root, present only while the binary exists). Markdown plus git stays the system of record — `db rebuild` regenerates the index from committed plans alone (`docs/plans/completed/harness-markdown-truth.md`).
+- **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
+- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. Every skill attempts `zharness preflight` where available for one shared readiness/rail-guard decision; without the binary each degrades to its markdown-first playbook instead of failing. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) then follow the playbook path returned by preflight — or `docs/playbooks/{stage}.md` directly when it is absent; operating logic lives in those playbooks, not in the trigger.
+- **cli** — `zharness`, the Go binary (cobra command tree; `modernc.org/sqlite` remains only while the binary exists and is deleted at v0.15). Where present it reconciles the ledger after markdown writes; nothing waits on it.
 
 ## Lifecycle
 
 ### Intent → Intake — `brainstorm`
-A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections. `zharness intake` records the classification; the intake ID is persisted in the plan's frontmatter.
+A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections; `zharness intake` mirrors the classification into the ledger whenever the binary exists.
 
 ### Story/Plan — `to-plan`
-Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files. `zharness story` records one story row per stable phase.
+Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files — assigning one stable story identity per stable phase; `zharness story` mirrors the row while the ledger exists.
 
 ### Trace — `work`
-`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Progress/Decisions sections. Each wave emits `zharness trace add`, linked to the run so the execution trail is queryable after the fact.
+`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Progress/Decisions sections; `zharness trace add` mirrors each flushed wave into the queryable trail whenever the binary exists.
 
 ### Proof — `check`
-`check` runs the automated gate, audits durable lifecycle links with `zharness audit`, evaluates the required-proof matrix for the intake's risk lane (tiny/normal/high-risk), and records a deterministic verdict with `zharness check record` appended to the plan's Validation section. Missing required proof always fails, naming the missing evidence.
+`check` runs the automated gate, evaluates the required-proof matrix for the plan's lane (tiny/normal/high-risk), and appends a deterministic verdict with nested proof-command sub-bullets to the plan's Validation section; while the binary exists `zharness audit` checks lifecycle links and `check record` re-executes every cited proof command itself. Missing required proof always fails, naming the missing evidence.
 
 ### Handoff/Resume — `handoff`, `watzup`
-`handoff` records a handoff entity and updates the plan's Current State and Next Action; a final clean closure moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders `zharness resume` at the start of the next session: workflow position, latest run/check/handoff IDs, and a named recovery action for any drift.
+`handoff` updates the plan's Current State and Next Action directly and, on final clean closure, moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`; `zharness handoff record` mirrors each closure while the ledger exists. `watzup` renders a session-start recap from Git state plus the plan itself, with an optional `zharness resume` position packet.
 
 `git` and `interview` sit outside this spine — see mapping table below.
 
@@ -36,11 +36,11 @@ The workflow chain covers plan → code → verify → commit/PR. Deployment, re
 
 ## Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after the `harness-memory-ceremony-convergence` initiative shipped as `cli/v0.8.1`, whose plan record was deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`: schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first and only readiness call; a missing binary fails that shell invocation directly. Otherwise the skill checks the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3 of the ceremony audit, deleted by `655c6ac`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): a `dev` build (unreleased local build) always satisfies the gate, and a version below `0.8.1` prints `zharness not found or out of date — run: bash scripts/install-zharness.sh` and stops the skill.
+`MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after the `harness-memory-ceremony-convergence` initiative shipped as `cli/v0.8.1`, whose plan record was deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`: schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first readiness call when the binary is present — but `MIN_ZHARNESS_VERSION` is documentation, not a blocking gate: the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3 of the ceremony audit, deleted by `655c6ac`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`) only decides fresh vs degraded behavior. A missing binary or a version below `0.8.1` degrades instead of halting: print one fallback line and follow the stage's markdown-first playbook (`docs/playbooks/{stage}.md`) directly from repo-local state alone; a `dev` build (unreleased local build) simply behaves fresh.
 
 ### Non-spine skills degrade instead of stopping
 
-A skill that owns no harness entity must not hard-stop on the harness. Of the 8 workflow skills, exactly two have no dedicated entity in the mapping table below: `git` and `interview`. Neither writes to the harness, so a missing, stale, or unreadable `zharness` is never a reason to refuse their actual work — staging and committing, or grilling an intent. Each prints one line noting harness enrichment is unavailable (the `git` gate-verdict warning, or nothing at all for `interview`) and proceeds regardless. This does not weaken the 6 spine skills' hard stop above: a durable write with no harness to write the durable record to is a real blocker, not a degraded feature, precisely because those 6 each own the entity they'd be writing.
+A skill that owns no harness entity must not hard-stop on the harness. Of the 8 workflow skills, exactly two have no dedicated entity in the mapping table below: `git` and `interview`. Neither writes to the harness, so a missing, stale, or unreadable `zharness` is never a reason to refuse their actual work — staging and committing, or grilling an intent. Each prints one line noting harness enrichment is unavailable (the `git` gate-verdict warning, or nothing at all for `interview`) and proceeds regardless. The 6 spine skills now degrade the same way when the harness is absent: markdown plus git stays the system of record, so a missing binary costs bookkeeping convenience, never the ability to do the work.
 
 ## Thin-Trigger Template
 
@@ -52,7 +52,7 @@ name: {skill-name}
 description: {unchanged from before this initiative — skills.sh discovery/trigger UX is Claude-facing content, stays here}
 ---
 
-Run `zharness preflight {stage} [--mode {mode}] --json`. Missing binary: stop, tell the user to run `bash scripts/install-zharness.sh`. Otherwise check its `version` field — below MIN_ZHARNESS_VERSION (0.8.1): stop with the same message; a `dev` build always passes. If it returns `stop`, state the message and follow the exact recovery. Otherwise read and follow its returned `playbook` path when present; reduced mode must remain read-only.
+Run `zharness preflight {stage} [--mode {mode}] --json`. Missing binary or `version` below MIN_ZHARNESS_VERSION (0.8.1): degrade, don't halt — print one fallback line and follow the returned `playbook` path directly, or `docs/playbooks/{stage}.md` when nothing was returned. If it returns `stop`, state the message and follow the exact recovery. Reduced mode must remain read-only.
 
 Defer to: {one line naming the skills this stage hands off to or resumes from}
 ```
@@ -85,7 +85,7 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 ### Out of Scope
 - Repo restructure beyond adding `cli/` and `docs/workflow-harness/` — skills stay in place
 - Any skill outside `skills/workflow/` (`craft/`, `shipping/` untouched)
-- Markdown fallback / CLI-optional compatibility mode — explicitly rejected; `zharness` is mandatory
+- Markdown fallback / CLI-optional compatibility mode — explicitly rejected by that initiative; superseded 2026-08: the chain is now fail-open and degrades to markdown-first playbooks when the binary is absent (see Version Gate above)
 
 This initiative's own roadmap is complete. Its consolidated history and the one-plan/one-DB convergence work that followed were both recorded in completed plans that `655c6ac` deleted; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md` for what was removed and how to retrieve it.
 

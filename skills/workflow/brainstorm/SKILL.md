@@ -12,7 +12,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.
 
-Resolve the invocation as `explore` or `lock` (`lock` covers lock-from-idea, lock-from-files, and refine), then run `zharness preflight brainstorm --mode {explore|lock} --json`. Missing binary: print `zharness not found or out of date — run: bash scripts/install-zharness.sh` and STOP. Otherwise check its `version` field — below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`): print the same message and STOP; a `dev` build always passes. If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path when non-empty.
+Resolve the invocation as `explore` or `lock` (`lock` covers lock-from-idea, lock-from-files, and refine), then run `zharness preflight brainstorm --mode {explore|lock} --json`. If `zharness` is missing from PATH or its `version` is below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), degrade, never halt: print one line naming the fallback and follow `docs/playbooks/brainstorm.md` directly from repo-local state (git, plans, scripts). If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path when non-empty.
 
 Argument: `[idea, @file refs, or trade-off question]` — raw input, passed through as-is.
 

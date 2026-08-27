@@ -9,7 +9,7 @@ A personal collection of [skills.sh](https://skills.sh)-compatible skills for Cl
 | skills/workflow/ | Eight skills for discovery, planning, execution, review, handoff, and Git workflow. |
 | skills/craft/ | Four skills for writing, GitHub research, skill authoring, and prompt improvement. |
 | skills/shipping/ | Two skills for CLI design and full-stack TypeScript monorepos. |
-| cli/ | The Go zharness CLI that records and rebuilds workflow state. |
+| cli/ | The Go zharness binary powering the workflow chain (ledger reconciliation until v0.15 slims it to installer/updater). |
 | rules/ | Global Claude Code rules installed by setup/install.sh. |
 | setup/ | Bootstrap files, hooks, settings, and installation logic. |
 | scripts/ | CLI installation, validation, statusline, dashboard, and documentation checks. |
@@ -100,13 +100,13 @@ The release installer requires an authenticated gh CLI and tar. It installs the 
 
 ## Workflow
 
-The workflow skills use zharness to make lifecycle state replayable and inspectable. The normal durable path is:
+The workflow skills use zharness for replayable enrichment wherever the binary is present; the durable record itself is the committed plan markdown under `docs/plans/`. The normal durable path is:
 
 ~~~text
 /brainstorm → /to-plan → /work → /check → /git → /handoff
 ~~~
 
-Initialize a project before using durable planning or execution:
+Legacy release setups may initialize per-machine state first — it is not a prerequisite for markdown-first use:
 
 ~~~bash
 cd /path/to/project
@@ -124,7 +124,7 @@ Use the smallest workflow mode that matches the work:
 /watzup                          # read-only resume and branch recap
 ~~~
 
-Every workflow stage runs a read-only zharness preflight check. Durable modes require an initialized, readable database and current managed docs; reduced modes can continue without them.
+Every workflow stage attempts a read-only zharness preflight check when the binary exists; without it, each stage degrades to its markdown-first playbook. Reduced modes can continue without any of them.
 
 ## zharness state model
 

@@ -1,7 +1,7 @@
 ## Harness
 
-Run `zharness --version`, then `zharness preflight <stage> [--mode <mode>] --json` for every workflow skill invocation. Follow a returned stop and recovery exactly.
+Work runs from this repository: committed markdown is the record, git hooks and repo scripts are the guards. Start at `docs/WORKFLOW.md`; route by work shape — read-only and bounded edits stay reduced and mutate nothing durable; durable planning, execution, checks, and handoffs follow the stage playbooks under `docs/playbooks/` and keep `docs/plans/active/*.md` append-only and true.
 
-Read `docs/WORKFLOW.md`, then only the returned stage playbook and the repository material relevant to the requested outcome — start that search at `docs/README.md`, this repository's authored documentation map; if it is absent, proceed without it, which is not an error. Repository docs, code, tests, and observable behavior are authoritative; the database is a lifecycle ledger and recovery index.
+If the `zharness` binary exists, `zharness preflight <stage> [--mode <mode>] --json` returns readiness, the playbook path, and drift recovery. A missing binary is not an error: read `docs/playbooks/{stage}.md` directly and continue.
 
-Read-only and bounded work may use reduced mode and must not mutate harness state. Durable planning, full execution, full checks, and durable handoffs require an initialized database. Claim completion only with executable or observable evidence.
+Repository docs, code, tests, and observable behavior are authoritative; any database present is only a lifecycle ledger and recovery index, never a second control plane — no task database, no parallel control-plane state.
