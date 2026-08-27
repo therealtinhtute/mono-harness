@@ -5,10 +5,14 @@ on:
     branches: [master]
     paths:
       - "cli/**"
+      - "docs/plans/**"
+      - "scripts/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
   pull_request:
     paths:
       - "cli/**"
+      - "docs/plans/**"
+      - "scripts/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
 
 jobs:
@@ -32,3 +36,26 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+  hook-guard:
+    # R4: re-run the v0.15 fail-closed guards (R2 proof re-execution + R3
+    # independent-judge rule) against pushed commits, so a local-hook bypass
+    # cannot land an APPROVED validation entry whose proofs do not pass.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Extract guard core from installer
+        run: |
+          awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh > /tmp/guard.sh
+          grep -q '^zharness_proof_reexec_file()' /tmp/guard.sh
+
+      - name: Run guards against pushed commit's plan changes
+        run: |
+          source /tmp/guard.sh
+          tmpdir=$(mktemp -d)
+          plans=$(git diff --name-only --diff-filter=ACM HEAD~1 HEAD -- 'docs/plans/active/*.md')
+          if [ -z "$plans" ]; then echo "no active-plan changes in HEAD"; exit 0; fi
+          zhuards_guard_plans "$plans" head "$tmpdir"
