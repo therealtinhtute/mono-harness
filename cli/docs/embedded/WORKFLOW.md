@@ -10,7 +10,7 @@ Repository docs, code, tests, and observable runtime behavior define current tru
 
 ## Context
 
-If the `zharness` binary exists, `zharness preflight <stage> [--mode <mode>] --json` returns readiness, the playbook path, and drift recovery; if it is absent, proceed straight to the table below. When a returned `playbook` is present, read that file and no other stage playbook.
+The lifecycle needs no binary: route through the table below and read only the named playbook. The `zharness` binary (install / update / uninstall) scaffolds and updates these managed docs; it plays no part in running a stage.
 
 | Stage | Playbook |
 |---|---|
@@ -21,8 +21,8 @@ If the `zharness` binary exists, `zharness preflight <stage> [--mode <mode>] --j
 | handoff | `docs/playbooks/handoff.md` |
 | watzup | `docs/playbooks/watzup.md` |
 
-`git` and `interview` may consult preflight but keep their skill-local procedure.
+`git` and `interview` keep their skill-local procedure and are never harness-gated.
 
 ## Execution boundary
 
-Reduced mode mutates nothing durable. Durable stages append to the active plan's markdown sections exactly as each playbook directs; while the binary exists its commands reconcile the ledger after that markdown write. Every proof claim must name actual command output or observable evidence. If repository tooling and a playbook disagree, trust the repository and report the docs mismatch.
+Reduced mode mutates nothing durable. Durable stages append to the active plan's markdown sections exactly as each playbook directs; nothing else writes them. Every proof claim must name actual command output or observable evidence. If repository tooling and a playbook disagree, trust the repository and report the docs mismatch.
