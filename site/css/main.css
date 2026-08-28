@@ -110,12 +110,11 @@ nav, .mast {
   flex-shrink: 0;
 }
 
-.pi-logo-nav {
-  height: 18px;
+.pi-logo-nav, .brand-logo-nav {
+  height: 20px;
   width: auto;
-  vertical-align: -3px;
-  margin-left: 2px;
-  color: var(--ink);
+  vertical-align: -4px;
+  margin: 0 3px;
 }
 
 .brand-name, .mast-title {
@@ -283,11 +282,12 @@ nav, .mast {
   padding: 0 0.04em;
 }
 
-.pi-logo-hero {
-  height: 0.74em;
+.pi-logo-hero, .brand-logo-hero {
+  height: 0.82em;
   width: auto;
   display: inline-block;
-  vertical-align: -0.04em;
+  vertical-align: -0.06em;
+  margin: 0 4px;
 }
 
 .wordmark em::after {
