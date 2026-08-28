@@ -128,14 +128,14 @@ updated: 2026-08-28
 - [2026-08-28 (planning)] (timeout strategy): chose the runtime fallback chain (timeout → gtimeout → unwrapped) over a hand-rolled watchdog and over requiring coreutils. The 300s bound is defensive, not load-bearing; on macOS the operator can interrupt a hung proof, and neither alternative justified its cost — one adds concurrency logic to a fail-closed guard, the other adds a mandatory dependency for every macOS contributor.
 - [2026-08-28 (execution)] (R5 satisfied by annotation, not rewrite): R5 as written called for repointing the 7 `DESIGN.md` citations inside the site plan. On execution that turned out to be the wrong instrument. Those citations sit in the site plan's Outcome, Authority, Approach and task `verify` fields — they are the historical record of what that work was actually built against, and `DESIGN.md` was deleted in `085c2d4` only AFTER the work finished. Rewriting them would falsify the record, and the doc-link gate never flagged them (they are inline code spans, not links). Instead an append-only Decisions entry was added to the site plan naming where the specification survives: the git blob `3e67b2c:DESIGN.md`, and its implemented form in `site/css/tokens.css` and `site/css/main.css`, which is the live authority going forward. The drift is closed; the record is intact.
 - [2026-08-28 (execution)] (scope widened by one defect, deliberately): the bash 3.2 associative-array break was outside this plan's stated scope, which named only `timeout` and `wc`. It was taken in anyway because it defeats the plan's own outcome — S1 says the fail-closed guard runs correctly on macOS, and a guard that kills its shell on the first old-side entry does not. Shipping v0.15.1 with it unfixed would have released a guard that is broken on the maintainer's own machine. The fix is the same file, the same class of defect, and the same intent; the phases and tasks above were left unedited and this note carries the deviation.
+- [2026-08-28 (correction)] (three proof commands were not reproducible): the first two Validation entries cited `zharness --version`, `zharness --help`, and `/bin/bash` major-version checks as proof commands. The CI hook-guard job re-executed them on a fresh Linux checkout and correctly rejected all three: there is no `zharness` binary in a checkout, and `/bin/bash` on Linux is 5.x, not 3.x. Those were assertions about this machine, not about the repository. A proof cited in a committed plan has to re-run anywhere the guard runs, or it blocks every future commit on every other machine. The three were converted to prose inside the same entries — the claims are preserved and still attributed, they simply no longer masquerade as executable proof. The remaining proofs are all repository-reproducible. The guard caught this, which is the guard working.
 
 ## Validation
 <!-- Append-only log of test runs, reviews, and gate checks. Format per check playbook. -->
 - [2026-08-28 (initiative gate)] verdict `APPROVED` — judge: `same-session` (lane: normal, so the independent-judge rule does not apply). S1 was proven directly by masking both wrappers off PATH: the clean proof was accepted (exit 0, with the unbounded warning emitted) and the sabotaged proof was rejected.
   - `bash scripts/test-guards.sh`
   - `bash scripts/verify-doc-links.sh`
-  - `zharness --version | grep -q '0.15.0'`
-  - `zharness --help 2>&1 | grep -qE '^  install' && ! zharness preflight --help >/dev/null 2>&1`
+  (p3 is a local-machine observation, not a portable proof, so it is recorded here as prose rather than as a proof bullet: `zharness --version` reports 0.15.0 and `zharness --help` lists only install / update / uninstall, with preflight / init / resume / audit / db all gone. A checkout has no binary installed, so asserting this as a proof command would reject every commit on any machine but this one.)
   - `test ! -e optimized_logo.svg && test -f site/assets/optimized_logo.svg`
   - `test -f docs/plans/completed/site-openpi-redesign.md && test ! -e docs/plans/active/site-openpi-redesign.md`
 - [2026-08-28 (portability re-gate)] verdict `APPROVED` — judge: `same-session` (lane: normal). Re-gate after the out-of-plan bash 3.2 fix. The S4 fixtures were mutation-tested: reintroducing `local -A` drops the suite to 12 passed / 1 failed, so they are not vacuous. This entry was itself re-executed by the fixed guard against an old side that already carried entries — the exact case that used to kill the shell.
@@ -143,7 +143,7 @@ updated: 2026-08-28
   - `bash scripts/verify-doc-links.sh`
   - `cd cli && go test ./...`
   - `! grep -nE '^[[:space:]]*local -A' scripts/install-git-hooks.sh`
-  - `/bin/bash -c 'echo ${BASH_VERSINFO[0]}' | grep -q 3`
+  (the legacy-bash observation is environment-dependent and is recorded as prose, not as a proof bullet: on this machine `/bin/bash` is 3.2.57, which is what the S4 fixtures exercise. CI runs bash 5.x there, where S4 skips by design, so asserting a bash major version as a proof command would reject every commit on Linux.)
 
 ## Current State
 
