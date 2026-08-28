@@ -36,18 +36,19 @@ Preserve all later-stage content already present in the plan. Once `to-plan` has
 3. **Compare options** — evaluate 2–3 viable paths, or identify 1–2 alternatives rejected by authoritative source files. State the recommendation and trade-offs before locking.
 4. **Clarify the boundary** — require a concrete outcome, actors, constraints, accepted requirements, non-goals, and checkable success conditions. Stop instead of inventing an unresolved product decision.
 5. **Choose the stable slug** — use a short initiative slug. The canonical active path is `docs/plans/active/{slug}.md`; do not create a second durable initiative markdown for the same work.
-6. **Create a new lock**:
+6. **Force the identity write (the stage's single forced write step)** — ensure `docs/PROJECT.md` exists: if absent, copy `cli/docs/embedded/templates/project.identity.md` into place. Fill every identity question inline; the lock does not complete while any question remains in unanswered `<...>` form — halt and name the unanswered questions. Only the owner-facing scope decision may justify pausing here; an unanswered PROJECT.md never locks.
+7. **Create a new lock**:
    - Confirm at most one non-empty plan exists under `docs/plans/active/`; if one exists, stop and name it — it must be completed or moved aside by the owner first.
    - Mint two unique identifier tokens locally (timestamp-suffixed tokens are acceptable): one as the plan's own `id`, one as `intake_id`.
    - Create `docs/plans/active/{slug}.md`; fill frontmatter with both IDs, `status: active`, lane, and dates, then fill the three owned sections.
    - Replace every unowned template placeholder with honest bootstrap state: `approach: not-planned`; `planning_status: not-planned`; phases, Progress, Decisions, and Validation as `none`; Current State IDs/blockers as `none`; and `exact_next_action: to-plan`.
-7. **Refine an existing lock** — read the active plan, preserve `id`, `intake_id`, lane unless reclassification is explicitly approved, and all non-owned sections; update the three owned sections in place and refresh `updated`.
-8. **Self-review** — remove all literal template placeholders so no literal fake lifecycle placeholders remain; confirm requirements are numbered and falsifiable; confirm Outcome, requirements, and Non-goals do not contradict; confirm rejected alternatives were surfaced; confirm the bootstrap state is honest; confirm no second markdown was created.
-9. **Review gate and handoff** — show the active plan path and concise decision summary. Explicit execution intent may satisfy the procedural gate when scope is bounded and no unresolved product decision, destructive action, or outward-facing action remains. Otherwise wait for approval before routing to `to-plan`.
+8. **Refine an existing lock** — read the active plan, preserve `id`, `intake_id`, lane unless reclassification is explicitly approved, and all non-owned sections; update the three owned sections in place and refresh `updated`. Re-check `docs/PROJECT.md`: if the refinement changes what the project is or how it is verified, update the affected identity answers in the same pass.
+9. **Self-review** — remove all literal template placeholders so no literal fake lifecycle placeholders remain; confirm `docs/PROJECT.md` carries no unanswered `<...>` question and no template marker; confirm requirements are numbered and falsifiable; confirm Outcome, requirements, and Non-goals do not contradict; confirm rejected alternatives were surfaced; confirm the bootstrap state is honest; confirm no second markdown was created.
+10. **Review gate and handoff** — show the active plan path, the answered `docs/PROJECT.md`, and a concise decision summary. Explicit execution intent may satisfy the procedural gate when scope is bounded and no unresolved product decision, destructive action, or outward-facing action remains. Otherwise wait for approval before routing to `to-plan`.
 
 ## Exit Conditions
 
 - Explore: one recommendation, rationale, and rejected alternatives in the response; zero durable writes.
-- Lock: exactly one active plan exists with unique plan/intake identifiers, complete owned sections, honest `not-planned`/`none` bootstrap state, and exact next action `to-plan`.
+- Lock: exactly one active plan exists with unique plan/intake identifiers, complete owned sections, an answered `docs/PROJECT.md` (no unanswered questions, no template marker), honest `not-planned`/`none` bootstrap state, and exact next action `to-plan`.
 - Refine: the same active plan and IDs remain, with later-stage sections preserved.
 - Durable next step: `to-plan` updates the same file.
