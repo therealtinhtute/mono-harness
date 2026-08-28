@@ -1,11 +1,18 @@
 package installer
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/therealtinhtute/skills/cli/internal/embedded"
 )
 
 func tempRepo(t *testing.T, git bool) string {
@@ -96,8 +103,11 @@ func TestInstall_Greenfield_ManagedSetAndBase(t *testing.T) {
 		t.Error("AGENTS.md block not installed correctly")
 	}
 	pj := rf(t, root, projectTarget)
-	if len(strings.Split(pj, "\n")) > 50 || strings.Contains(pj, "<ANSWERED>") && false {
-		t.Errorf("project template exceeds 50 lines:\n%s", pj)
+	if lines := strings.Split(strings.TrimRight(pj, "\n"), "\n"); len(lines) > 50 {
+		t.Errorf("project template exceeds 50 lines (%d):\n%s", len(lines), pj)
+	}
+	if !strings.Contains(pj, "<one sentence: what the product IS>") {
+		t.Error("project template lost its unanswered-question form")
 	}
 	if !strings.Contains(out, "greenfield") {
 		t.Errorf("expected greenfield note in report:\n%s", out)
@@ -202,7 +212,6 @@ func TestUpdate_FastForward_Kept_AutoMerge_ConflictAbort(t *testing.T) {
 	if got := rf(t, root, agentsTarget); got != snapAgents {
 		t.Errorf("--abort perturbed unrelated file AGENTS.md")
 	}
-	_ = snapWorkflow
 }
 
 func TestUpdate_Continue_FinalizesResolvedFile(t *testing.T) {
@@ -292,4 +301,175 @@ func runUpdateOK(t *testing.T, root string) string {
 		t.Fatalf("update failed: %v\n%s", err, sb.String())
 	}
 	return sb.String()
+}
+
+// Regression: a later hunk straddling the cursor after an overlap event must
+// be absorbed into the cluster, not strand the walker (judge finding F1).
+func TestThreeWay_StraddlingClusterTerminates(t *testing.T) {
+	base := make([]string, 15)
+	for i := range base {
+		base[i] = fmt.Sprintf("b%02d", i)
+	}
+	local := append([]string{}, base...)
+	copy(local[2:5], []string{"L2", "L3", "L4"})
+	copy(local[10:13], []string{"L10", "L11", "L12"})
+	up := append([]string{}, base...)
+	copy(up[4:11], []string{"U4", "U5", "U6", "U7", "U8", "U9", "U10"})
+
+	done := make(chan string, 1)
+	go func() {
+		merged, _ := threeWay(strings.Join(base, "\n")+"\n",
+			strings.Join(local, "\n")+"\n",
+			strings.Join(up, "\n")+"\n")
+		done <- merged
+	}()
+	select {
+	case merged := <-done:
+		if !strings.Contains(merged, conflictOpenTag) {
+			t.Errorf("overlapping disjoint-hunk edits must conflict:\n%s", merged)
+		}
+		for _, want := range []string{"L2", "L10", "U4"} {
+			if !strings.Contains(merged, want) {
+				t.Errorf("conflict dropped side content %q:\n%s", want, merged)
+			}
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("threeWay did not terminate — merge-walker hang (F1)")
+	}
+
+	// clean trace: base A/B/C, local edits B, upstream edits C — both kept
+	merged2, conflict2 := threeWay("A\nB\nC\n", "A\nB-local\nC\n", "A\nB\nC-up\n")
+	if conflict2 || !strings.Contains(merged2, "B-local") || !strings.Contains(merged2, "C-up") {
+		t.Errorf("disjoint edits must merge cleanly keeping both sides:\n%s (conflict=%v)", merged2, conflict2)
+	}
+
+	// zero-width insertion at the cursor must survive the skip loops
+	merged3, conflict3 := threeWay("l1\nl2\nl3\nl4\n", "# predating zharness\n", "l1\nl2\nl3\nl4\n\ntail\n")
+	if conflict3 || !strings.Contains(merged3, "predating zharness") || !strings.Contains(merged3, "tail") {
+		t.Errorf("whole-file local change plus zero-width upstream insertion lost a side:\n%s (conflict=%v)", merged3, conflict3)
+	}
+}
+
+// Regression: the AGENTS block merge must use the recorded base block as
+// ancestor; passing (local, want, want) made the conflict branch dead and
+// silently overwrote consumer edits inside the block (judge finding F2).
+func TestUpdate_AgentsBlock_UsesRecordedBase(t *testing.T) {
+	rawUp, err := embedded.FS.ReadFile("AGENTS.md")
+	if err != nil {
+		t.Fatalf("embedded AGENTS.md: %v", err)
+	}
+	consumerRewrite := "consumer rewrote this line"
+	upstreamRewrite := "upstream rewrote the same line"
+	if !strings.Contains(string(rawUp), "no parallel control-plane state") {
+		t.Fatal("fixture: anchor sentence not found in embedded AGENTS block")
+	}
+
+	t.Run("overlap stops with in-block markers", func(t *testing.T) {
+		root := tempRepo(t, true)
+		mustInstall(t, root)
+		// consumer and upstream rewrite the SAME ancestor line, before any
+		// reconcile: diff3 must stop instead of silently picking a side (F2)
+		consumerTweak := strings.Replace(rf(t, root, agentsTarget), "no parallel control-plane state", consumerRewrite, 1)
+		pf(t, root, agentsTarget, consumerTweak)
+		upV3 := strings.Replace(string(rawUp), "no parallel control-plane state", upstreamRewrite, 1)
+		withSource(t, map[string]string{"AGENTS.md": upV3})
+		if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
+			t.Fatal("expected in-block conflict rejection")
+		}
+		got := rf(t, root, agentsTarget)
+		if !strings.Contains(got, conflictOpenTag) || !strings.Contains(got, upstreamRewrite) || !strings.Contains(got, consumerRewrite) {
+			t.Errorf("in-block conflict lost a side (F2):\n%s", got)
+		}
+		var ab strings.Builder
+		if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
+			t.Fatalf("abort failed: %v", err)
+		}
+		if got := rf(t, root, agentsTarget); got != consumerTweak {
+			t.Errorf("--abort did not restore AGENTS.md bytes exactly")
+		}
+	})
+
+	t.Run("disjoint edits merge and stay idempotent", func(t *testing.T) {
+		root := tempRepo(t, true)
+		mustInstall(t, root)
+		consumerTweak := strings.Replace(rf(t, root, agentsTarget), "no parallel control-plane state", consumerRewrite, 1)
+		pf(t, root, agentsTarget, consumerTweak)
+		upV2 := string(rawUp) + "\nupstream-block-addition\n"
+		withSource(t, map[string]string{"AGENTS.md": upV2})
+		out := runUpdateOK(t, root)
+		got := rf(t, root, agentsTarget)
+		if !strings.Contains(got, consumerRewrite) || !strings.Contains(got, "upstream-block-addition") {
+			t.Errorf("block merge lost one side (F2):\n%s\nout:\n%s", got, out)
+		}
+		if !strings.Contains(got, blockBegin) || !strings.Contains(got, blockEnd) {
+			t.Errorf("block merge destroyed the markers:\n%s", got)
+		}
+		before := got
+		runUpdateOK(t, root) // second run with the same upstream: no churn
+		if got := rf(t, root, agentsTarget); got != before {
+			t.Errorf("update is not idempotent for the AGENTS block:\n%s", got)
+		}
+	})
+}
+
+// Regression: uninstall must restore a captured pre-install original even
+// when local == recorded base (e.g. after a fast-forward) — deleting it
+// destroyed consumer bytes (judge finding F3).
+func TestUninstall_RestoresPreInstallOriginal_AfterFastForward(t *testing.T) {
+	root := tempRepo(t, true)
+	pf(t, root, workflowTarget, wfUp1) // pre-existing, identical to upstream
+	withSource(t, map[string]string{"WORKFLOW.md": wfUp1})
+	mustInstall(t, root) // brownfield install captures the original
+
+	up2 := wfUp1 + "\nupstream-tail-v2\n"
+	withSource(t, map[string]string{"WORKFLOW.md": up2})
+	runUpdateOK(t, root)
+	if got := rf(t, root, workflowTarget); got != up2 {
+		t.Fatalf("fast-forward did not apply:\n%q", got)
+	}
+
+	var sb strings.Builder
+	if err := Uninstall(root, &sb); err != nil {
+		t.Fatalf("uninstall: %v", err)
+	}
+	if got := rf(t, root, workflowTarget); got != wfUp1 {
+		t.Errorf("uninstall deleted a file with a captured pre-install original instead of restoring it (F3):\n%q", got)
+	}
+}
+
+// Regression: --continue must commit the same-run refreshed base (draft)
+// and drop the stash; otherwise fast-forwarded files lose their ancestor
+// and the stash dir leaks (judge finding F4).
+func TestUpdate_Continue_KeepsSameRunRefreshes_DropsStash(t *testing.T) {
+	root := tempRepo(t, true)
+	withSource(t, map[string]string{"WORKFLOW.md": wfUp1})
+	mustInstall(t, root)
+
+	playUp := "# play: work (refreshed by upstream v2)\n"
+	conflictUp := strings.Replace(wfUp1, "keepme", "CONFLICT-A", 1) + "\nupstream-tail\n"
+	withSource(t, map[string]string{
+		"WORKFLOW.md":       conflictUp,
+		"playbooks/work.md": playUp,
+	})
+	pf(t, root, workflowTarget, strings.Replace(wfUp1, "keepme", "CONFLICT-B", 1))
+	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
+		t.Fatal("expected conflict rejection")
+	}
+
+	resolved := strings.Replace(wfUp1, "keepme", "resolved-both", 1) + "\nupstream-tail\n"
+	pf(t, root, workflowTarget, resolved)
+	runUpdateOKContinue(t, root)
+
+	if _, err := os.Stat(filepath.Join(root, stashDir)); !os.IsNotExist(err) {
+		t.Error("stash dir survived --continue (F4)")
+	}
+	man := rf(t, root, filepath.Join(baseDir, "manifest.json"))
+	sum := sha256.Sum256([]byte(playUp))
+	if !strings.Contains(man, hex.EncodeToString(sum[:])) {
+		t.Error("--continue dropped the same-run fast-forwarded base entry (F4)")
+	}
+	var manMap map[string]any
+	if err := json.Unmarshal([]byte(man), &manMap); err != nil {
+		t.Fatalf("manifest not valid JSON after --continue: %v", err)
+	}
 }

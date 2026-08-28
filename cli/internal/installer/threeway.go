@@ -19,7 +19,7 @@ func splitLines(s string) []string {
 }
 
 // diffHunks produces merged replacement hunks between base and other,
-// absorbing change regions separated by <=2 common lines so formatting
+// absorbing change regions separated by <=3 common lines so formatting
 // jitter never fabricates extra conflict sites.
 func diffHunks(base, other []string) []hunk {
 	n, m := len(base), len(other)
@@ -85,16 +85,24 @@ func overlapSpan(a, b hunk) bool {
 	return a.start < b.end && b.start < a.end
 }
 
-// renderRegion renders one side's version of ancestor region [u0,u1).
-func renderRegion(L []string, u0, u1 int, h hunk) []string {
-	clampLo, clampHi := minInt(u0, len(L)), minInt(u1, len(L))
-	hs, he := minInt(h.start, len(L)), minInt(h.end, len(L))
-	pre := L[clampLo:minInt(hs, clampHi)]
-	post := L[minInt(he, clampHi):clampHi]
-	out := make([]string, 0, len(pre)+len(h.lines)+len(post))
-	out = append(out, pre...)
-	out = append(out, h.lines...)
-	out = append(out, post...)
+// renderCluster renders one side's version of ancestor region [u0,u1) with
+// an ordered cluster of hunks applied.
+func renderCluster(L []string, u0, u1 int, hs []hunk) []string {
+	out := make([]string, 0, u1-u0)
+	pos := u0
+	for _, h := range hs {
+		if h.start > pos {
+			out = append(out, L[pos:minInt(h.start, len(L))]...)
+			pos = h.start
+		}
+		out = append(out, h.lines...)
+		if h.end > pos {
+			pos = h.end
+		}
+	}
+	if pos < u1 {
+		out = append(out, L[pos:minInt(u1, len(L))]...)
+	}
 	return out
 }
 
@@ -128,15 +136,15 @@ func threeWay(base, local, update string) (string, bool) {
 	cur := 0
 	il, iu := 0, 0
 
+walk:
 	for {
-		for il < len(HL) && HL[il].end <= cur {
+		// A hunk is only consumed once applied; a zero-width insertion
+		// exactly at cur is still pending and must stay selectable.
+		for il < len(HL) && (HL[il].end < cur || (HL[il].end == cur && HL[il].start < cur)) {
 			il++
 		}
-		for iu < len(HN) && HN[iu].end <= cur {
+		for iu < len(HN) && (HN[iu].end < cur || (HN[iu].end == cur && HN[iu].start < cur)) {
 			iu++
-		}
-		if il >= len(HL) && iu >= len(HN) {
-			break
 		}
 		var hl, hn *hunk
 		sl, sn := int(^uint(0)>>1), int(^uint(0)>>1)
@@ -153,9 +161,34 @@ func threeWay(base, local, update string) (string, bool) {
 		case hl != nil && hn != nil && overlapSpan(*hl, *hn):
 			u0 := minInt(sl, sn)
 			u1 := maxInt(hl.end, hn.end)
-			localSeg := renderRegion(L, u0, u1, *hl)
-			upSeg := renderRegion(L, u0, u1, *hn)
+			lcl := []hunk{*hl}
+			up := []hunk{*hn}
+			il++
+			iu++
+			// Absorb any later hunk from either side that reaches into
+			// the cluster; otherwise one straddling cur leaves the
+			// walker with nothing selectable and it spins forever.
+			for {
+				absorbed := false
+				for il < len(HL) && HL[il].start < u1 {
+					u1 = maxInt(u1, HL[il].end)
+					lcl = append(lcl, HL[il])
+					il++
+					absorbed = true
+				}
+				for iu < len(HN) && HN[iu].start < u1 {
+					u1 = maxInt(u1, HN[iu].end)
+					up = append(up, HN[iu])
+					iu++
+					absorbed = true
+				}
+				if !absorbed {
+					break
+				}
+			}
 			cur = emitBaseRange(&sb, L, cur, u0)
+			localSeg := renderCluster(L, u0, u1, lcl)
+			upSeg := renderCluster(L, u0, u1, up)
 			if equalLines(localSeg, upSeg) {
 				writeLines(&sb, localSeg)
 			} else {
@@ -167,8 +200,6 @@ func threeWay(base, local, update string) (string, bool) {
 				sb.WriteString(conflictCloseTag + "\n")
 			}
 			cur = maxInt(cur, u1)
-			il++
-			iu++
 		case hl != nil && sl <= sn:
 			cur = emitBaseRange(&sb, L, cur, hl.start)
 			writeLines(&sb, hl.lines)
@@ -180,8 +211,9 @@ func threeWay(base, local, update string) (string, bool) {
 			cur = maxInt(cur, hn.end)
 			iu++
 		default:
-			// nothing selectable at/after cursor: flush remainder
-			break
+			// nothing selectable at/after cursor (defensive; cluster
+			// absorption above prevents straddlers): flush remainder
+			break walk
 		}
 	}
 	for ; cur < len(L); cur++ {

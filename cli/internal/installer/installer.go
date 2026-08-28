@@ -372,8 +372,6 @@ func agentsSpan(content string) (int, int, bool) {
 	return bi, bi + ej + len(blockEnd), true
 }
 
-func agentsSpanAlias(c string) (int, int, bool) { return agentsSpan(c) }
-
 // canonicalAgentsBlock wraps an embedded AGENTS.md body into its on-disk form.
 func canonicalAgentsBlock(body string) string {
 	body = strings.TrimRight(body, "\n")
@@ -448,10 +446,4 @@ func containsLine(blob, want string) bool {
 		}
 	}
 	return false
-}
-
-// debug/test helper
-func loadUpstreamBytes(root, rel string) []byte {
-	b, _ := os.ReadFile(filepath.Join(root, upstreamDir, safePath(rel)+".bin"))
-	return b
 }

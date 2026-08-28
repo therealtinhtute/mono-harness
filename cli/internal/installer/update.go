@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/therealtinhtute/skills/cli/internal/embedded"
 )
 
 func sortStrings(s []string) { sort.Strings(s) }
@@ -131,6 +129,33 @@ func saveConflicts(root string, list []string) error {
 	}
 	sort.Strings(list)
 	return writeFileAtomic(filepath.Join(root, conflictsFile), []byte(strings.Join(list, "\n")+"\n"))
+}
+
+// The base draft records what this update run already refreshed (installed /
+// fast-forwarded / auto-merged) while conflicts are pending; --continue
+// commits it as the new base, --abort discards it with the stash.
+func saveBaseDraft(root string, files map[string][]byte) error {
+	b, err := jsonMarshal(files)
+	if err != nil {
+		return err
+	}
+	sp := filepath.Join(root, stashDir)
+	if err := os.MkdirAll(sp, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(sp, "basedraft.json"), b, 0o644)
+}
+
+func loadBaseDraft(root string) (map[string][]byte, bool) {
+	b, err := os.ReadFile(filepath.Join(root, stashDir, "basedraft.json"))
+	if err != nil {
+		return nil, false
+	}
+	var files map[string][]byte
+	if jsonUnmarshal(b, &files) != nil {
+		return nil, false
+	}
+	return files, true
 }
 
 func agentsBlockOf(content string) (string, bool) {
@@ -257,25 +282,34 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 		}
 	}
 
-	// AGENTS marked block (surgical, never a whole-file replace over prose)
+	// AGENTS marked block (surgical, never a whole-file replace over prose).
+	// All merge inputs use the canonical marker-inclusive block form so the
+	// comparison, the diff3 ancestor, and the on-disk span stay consistent.
 	blockB, _ := agentBlockBytes()
-	want := normalizeBlockTail(string(blockB))
+	upBody := string(blockB)
+	wantFull := normalizeBlockTail(canonicalAgentsBlock(upBody))
 	ap := filepath.Join(root, agentsTarget)
 	if localRaw, lerr := os.ReadFile(ap); lerr == nil {
 		content := string(localRaw)
 		curBlock, hasBlock := agentsBlockOf(content)
-		if curBlock != want {
+		curN := normalizeBlockTail(curBlock)
+		if curN != wantFull {
 			switch {
 			case !hasBlock:
-				repl, changed := applyAgentsBlock(content, want)
+				repl, changed := applyAgentsBlock(content, upBody)
 				if changed {
 					_ = writeFileAtomic(ap, []byte(repl))
+					baseFiles[agentsTarget] = []byte(canonicalAgentsBlock(upBody))
 					planned[agentsTarget] = "block appended"
 				}
 			case strings.Contains(curBlock, conflictOpenTag):
 				// already mid-resolution from an earlier pass
 			default:
-				merged, cflag := threeWayBlocks(content, curBlock, want)
+				var baseBlock string
+				if bb, tracked := baseFiles[agentsTarget]; tracked {
+					baseBlock = normalizeBlockTail(string(bb))
+				}
+				merged, cflag := threeWayBlocks(content, baseBlock, curN, wantFull)
 				if werr := writeFileAtomic(ap, []byte(merged)); werr != nil {
 					return werr
 				}
@@ -283,6 +317,11 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 					conflicts = append(conflicts, agentsTarget)
 					planned[agentsTarget] = "CONFLICT inside block"
 				} else {
+					// base = the upstream block the consumer just reconciled
+					// onto, never the merged output (merged output contains
+					// local drift; recording it would let a later upstream
+					// touch silently win those lines)
+					baseFiles[agentsTarget] = []byte(canonicalAgentsBlock(upBody))
 					planned[agentsTarget] = "block refreshed"
 				}
 			}
@@ -301,8 +340,12 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 	sort.Strings(names)
 
 	if len(conflicts) > 0 {
-		// stash + old base stay untouched so --abort restores exactly (R9)
+		// stash, old base, and an in-run base draft stay untouched so
+		// --abort restores exactly (R9); --continue finalizes from the draft
 		_ = saveConflicts(root, conflicts)
+		if derr := saveBaseDraft(root, baseFiles); derr != nil {
+			return derr
+		}
 		fmt.Fprintln(stdout, "update stopped — human resolution required:")
 		for _, n := range names {
 			fmt.Fprintf(stdout, "%-14s %s\n", classify(planned[n]), n)
@@ -330,6 +373,11 @@ func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *str
 		fmt.Fprintln(stdout, "continue: nothing pending.")
 		return nil
 	}
+	if draft, ok := loadBaseDraft(root); ok {
+		// same-run installed/fast-forwarded/auto-merged refreshes live in
+		// the draft; the on-disk base predates this update run
+		baseFiles = draft
+	}
 	var still []string
 	for _, rel := range pending {
 		if hasConflictMarkers(filepath.Join(root, rel)) {
@@ -340,7 +388,17 @@ func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *str
 		if lerr != nil {
 			return fmt.Errorf("resolved file vanished: %s", rel)
 		}
-		baseFiles[rel] = local
+		if rel == agentsTarget {
+			// base semantics for AGENTS.md: the canonical marked block,
+			// never the consumer's whole-file prose
+			if inner, ok := agentsBlockOf(string(local)); ok {
+				baseFiles[rel] = []byte(strings.TrimRight(inner, "\n"))
+			} else {
+				delete(baseFiles, rel) // resolution removed the block
+			}
+		} else {
+			baseFiles[rel] = local
+		}
 		fmt.Fprintf(stdout, "finalized  %s (resolution recorded as new base)\n", rel)
 	}
 	if len(still) > 0 {
@@ -349,48 +407,38 @@ func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *str
 	if err := saveBase(root, o.Version, baseFiles); err != nil {
 		return err
 	}
-	return saveConflicts(root, nil)
+	if err := saveConflicts(root, nil); err != nil {
+		return err
+	}
+	_ = os.RemoveAll(filepath.Join(root, stashDir))
+	return nil
 }
+func normalizeBlockTail(b string) string { return strings.TrimRight(b, "\n") + "\n" }
 
 // threeWayBlocks keeps everything outside the marked block intact and merges
-// only the block interior; on conflict the whole file carries markers scoped
-// to that region so --continue can detect resolution precisely.
-func threeWayBlocks(fileContent, localBlock, wantBlock string) (string, bool) {
+// only the block itself; baseBlock, localBlock, and wantBlock are all in the
+// canonical marker-inclusive form (baseBlock empty when unrecorded —
+// divergence then conflicts, since R18 never invents an ancestor). On
+// conflict the whole file carries markers scoped to that region so
+// --continue can detect resolution precisely.
+func threeWayBlocks(fileContent, baseBlock, localBlock, wantBlock string) (string, bool) {
 	i, jEnd, ok := agentsSpan(fileContent)
 	if !ok {
 		repl, _ := applyAgentsBlock(fileContent, localBlock)
 		return repl, false
 	}
-	merged, cflag := threeWay(normalizeBlockTail(localBlock), normalizeBlockTail(wantBlock), normalizeBlockTail(wantBlock))
-	_ = merged
+	merged, cflag := threeWay(normalizeBlockTail(baseBlock), normalizeBlockTail(localBlock), normalizeBlockTail(wantBlock))
 	if cflag {
 		var b strings.Builder
 		b.WriteString(conflictOpenTag + " inside marked block\n")
-		b.WriteString(wantBlock)
+		b.WriteString(strings.TrimRight(wantBlock, "\n") + "\n")
 		b.WriteString(conflictSepTag + "\n")
-		b.WriteString(localBlock)
+		b.WriteString(strings.TrimRight(localBlock, "\n") + "\n")
 		b.WriteString(conflictCloseTag + "\n")
 		return fileContent[:i] + b.String() + fileContent[jEnd:], true
 	}
-	return fileContent[:i] + wantBlock + fileContent[jEnd:], false
+	return fileContent[:i] + strings.TrimRight(merged, "\n") + fileContent[jEnd:], false
 }
-
-func normalizeBlockTail(b string) string { return strings.TrimRight(b, "\n") + "\n" }
-
-var _ = conflictSepTag
-
-func currentAgentsBlock(content string) (string, bool) {
-	si, ej, ok := agentsSpan(content)
-	if !ok {
-		return "", false
-	}
-	end := ej
-	if end < len(content) && content[end] == '\n' {
-		end++
-	}
-	return content[si:end], true
-}
-
 func reconcileGitignore(root string, wants []string) (string, error) {
 	gp := filepath.Join(root, gitignoreTarget)
 	now, err := os.ReadFile(gp)
@@ -413,7 +461,7 @@ func reconcileGitignore(root string, wants []string) (string, error) {
 // ------------------------------------------------------------ helpers ---
 
 func agentBlockBytes() ([]byte, error) {
-	return embedded.FS.ReadFile(agentsTarget)
+	return srcBytes(Target{Src: agentsTarget})
 }
 
 func ensureLines(blob string, wants []string) string {

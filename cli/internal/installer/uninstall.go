@@ -87,17 +87,19 @@ func removeManagedFile(root, rel string, upstream []byte, stdout *strings.Builde
 	if os.IsNotExist(err) {
 		return
 	}
+	orig, hasOrig := readOriginal(root, rel)
 	switch {
 	case isSame(local, upstream):
-		_ = os.Remove(dstP)
-		fmt.Fprintf(stdout, "removed   %s\n", rel)
-	default:
-		orig, hasOrig := readOriginal(root, rel)
-		if hasOrig && isSame(local, orig) {
+		if hasOrig {
 			_ = os.WriteFile(dstP, orig, 0o644)
 			fmt.Fprintf(stdout, "restored  %s (pre-install original)\n", rel)
-			return
+		} else {
+			_ = os.Remove(dstP)
+			fmt.Fprintf(stdout, "removed   %s\n", rel)
 		}
+	case hasOrig && isSame(local, orig):
+		fmt.Fprintf(stdout, "restored  %s (already at pre-install original)\n", rel)
+	default:
 		fmt.Fprintf(stdout, "KEPT      %s (locally modified; delete manually if intended)\n", rel)
 	}
 	_ = removeDirIfEmpty(filepath.Dir(dstP))
@@ -146,6 +148,3 @@ func removeDirIfEmpty(dir string) error {
 }
 
 func isSame(a, b []byte) bool { return bytesEqual(a, b) }
-
-var _ = fmt.Sprintf
-var _ = filepath.Join
