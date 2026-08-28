@@ -131,11 +131,21 @@ func saveConflicts(root string, list []string) error {
 	return writeFileAtomic(filepath.Join(root, conflictsFile), []byte(strings.Join(list, "\n")+"\n"))
 }
 
-// The base draft records what this update run already refreshed (installed /
-// fast-forwarded / auto-merged) while conflicts are pending; --continue
-// commits it as the new base, --abort discards it with the stash.
-func saveBaseDraft(root string, files map[string][]byte) error {
-	b, err := jsonMarshal(files)
+// The update draft records what this update run did while conflicts are
+// pending: Base carries the files already refreshed (installed /
+// fast-forwarded / auto-merged), Upstream carries the exact upstream bytes
+// each CONFLICTED file was being reconciled onto. --continue commits Base
+// plus the conflicted upstreams as the new base (the resolution itself
+// stays in the working tree as local drift, so the next unchanged-upstream
+// update can never fast-forward it away); --abort discards the draft with
+// the stash.
+type updateDraft struct {
+	Base     map[string][]byte
+	Upstream map[string][]byte
+}
+
+func saveBaseDraft(root string, d updateDraft) error {
+	b, err := jsonMarshal(d)
 	if err != nil {
 		return err
 	}
@@ -146,16 +156,26 @@ func saveBaseDraft(root string, files map[string][]byte) error {
 	return os.WriteFile(filepath.Join(sp, "basedraft.json"), b, 0o644)
 }
 
-func loadBaseDraft(root string) (map[string][]byte, bool) {
+func loadBaseDraft(root string) (updateDraft, bool) {
 	b, err := os.ReadFile(filepath.Join(root, stashDir, "basedraft.json"))
 	if err != nil {
+		return updateDraft{}, false
+	}
+	var d updateDraft
+	if jsonUnmarshal(b, &d) != nil {
+		return updateDraft{}, false
+	}
+	return d, true
+}
+
+// draftUpstream returns the conflict-time upstream bytes recorded for rel.
+func draftUpstream(root, rel string) ([]byte, bool) {
+	d, ok := loadBaseDraft(root)
+	if !ok {
 		return nil, false
 	}
-	var files map[string][]byte
-	if jsonUnmarshal(b, &files) != nil {
-		return nil, false
-	}
-	return files, true
+	up, ok := d.Upstream[rel]
+	return up, ok
 }
 
 func agentsBlockOf(content string) (string, bool) {
@@ -229,7 +249,7 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 
 	planned := map[string]string{}
 	conflicts := []string{}
-
+	upstreams := map[string][]byte{} // conflict-time upstream per conflicted file
 	for _, t := range targets {
 		newUp, uerr := srcBytes(t)
 		if uerr != nil {
@@ -271,6 +291,7 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 			}
 			if cflag {
 				conflicts = append(conflicts, t.Dst)
+				upstreams[t.Dst] = newUp
 				planned[t.Dst] = "CONFLICT"
 			} else {
 				baseFiles[t.Dst] = newUp
@@ -315,6 +336,7 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 				}
 				if cflag {
 					conflicts = append(conflicts, agentsTarget)
+					upstreams[agentsTarget] = []byte(canonicalAgentsBlock(upBody))
 					planned[agentsTarget] = "CONFLICT inside block"
 				} else {
 					// base = the upstream block the consumer just reconciled
@@ -340,10 +362,10 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 	sort.Strings(names)
 
 	if len(conflicts) > 0 {
-		// stash, old base, and an in-run base draft stay untouched so
-		// --abort restores exactly (R9); --continue finalizes from the draft
+		// stash, old base, and the in-run draft stay untouched so --abort
+		// restores exactly (R9); --continue finalizes from the draft
 		_ = saveConflicts(root, conflicts)
-		if derr := saveBaseDraft(root, baseFiles); derr != nil {
+		if derr := saveBaseDraft(root, updateDraft{Base: baseFiles, Upstream: upstreams}); derr != nil {
 			return derr
 		}
 		fmt.Fprintln(stdout, "update stopped — human resolution required:")
@@ -376,7 +398,7 @@ func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *str
 	if draft, ok := loadBaseDraft(root); ok {
 		// same-run installed/fast-forwarded/auto-merged refreshes live in
 		// the draft; the on-disk base predates this update run
-		baseFiles = draft
+		baseFiles = draft.Base
 	}
 	var still []string
 	for _, rel := range pending {
@@ -388,9 +410,14 @@ func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *str
 		if lerr != nil {
 			return fmt.Errorf("resolved file vanished: %s", rel)
 		}
-		if rel == agentsTarget {
-			// base semantics for AGENTS.md: the canonical marked block,
-			// never the consumer's whole-file prose
+		if up, ok := draftUpstream(root, rel); ok {
+			// base = the upstream version the consumer just reconciled onto
+			// (decision: never the merged output — recording the resolution
+			// would let the next unchanged-upstream update fast-forward it
+			// away). The resolution itself stays as working-tree drift.
+			baseFiles[rel] = up
+		} else if rel == agentsTarget {
+			// legacy fallback: canonical marked block, never whole-file prose
 			if inner, ok := agentsBlockOf(string(local)); ok {
 				baseFiles[rel] = []byte(strings.TrimRight(inner, "\n"))
 			} else {
@@ -399,7 +426,7 @@ func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *str
 		} else {
 			baseFiles[rel] = local
 		}
-		fmt.Fprintf(stdout, "finalized  %s (resolution recorded as new base)\n", rel)
+		fmt.Fprintf(stdout, "finalized  %s (resolution kept; upstream recorded as new base)\n", rel)
 	}
 	if len(still) > 0 {
 		return fmt.Errorf("markers still present in: %s", strings.Join(still, ", "))

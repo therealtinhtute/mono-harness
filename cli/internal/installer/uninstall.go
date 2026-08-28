@@ -81,7 +81,9 @@ func dropLine(blob, want string) string {
 	return out
 }
 
-func removeManagedFile(root, rel string, upstream []byte, stdout *strings.Builder) {
+// removeManagedFile compares against the recorded base (the last upstream
+// version the consumer reconciled onto), not the live embedded bytes.
+func removeManagedFile(root, rel string, base []byte, stdout *strings.Builder) {
 	dstP := filepath.Join(root, rel)
 	local, err := os.ReadFile(dstP)
 	if os.IsNotExist(err) {
@@ -89,7 +91,7 @@ func removeManagedFile(root, rel string, upstream []byte, stdout *strings.Builde
 	}
 	orig, hasOrig := readOriginal(root, rel)
 	switch {
-	case isSame(local, upstream):
+	case isSame(local, base):
 		if hasOrig {
 			_ = os.WriteFile(dstP, orig, 0o644)
 			fmt.Fprintf(stdout, "restored  %s (pre-install original)\n", rel)

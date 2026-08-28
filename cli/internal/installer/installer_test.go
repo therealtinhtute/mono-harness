@@ -380,12 +380,47 @@ func TestUpdate_AgentsBlock_UsesRecordedBase(t *testing.T) {
 		if !strings.Contains(got, conflictOpenTag) || !strings.Contains(got, upstreamRewrite) || !strings.Contains(got, consumerRewrite) {
 			t.Errorf("in-block conflict lost a side (F2):\n%s", got)
 		}
+		// both conflict sides are canonical marker-inclusive blocks, so the
+		// marked block must stay recognizable for --continue (agentsSpan)
+		if !strings.Contains(got, blockBegin) || !strings.Contains(got, blockEnd) {
+			t.Errorf("conflict region dropped the block markers:\n%s", got)
+		}
+		if _, ok := agentsBlockOf(got); !ok {
+			t.Error("agentsSpan cannot find the block inside the conflict region")
+		}
 		var ab strings.Builder
 		if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
 			t.Fatalf("abort failed: %v", err)
 		}
 		if got := rf(t, root, agentsTarget); got != consumerTweak {
 			t.Errorf("--abort did not restore AGENTS.md bytes exactly")
+		}
+	})
+
+	t.Run("conflict resolution continues and next update is inert", func(t *testing.T) {
+		root := tempRepo(t, true)
+		mustInstall(t, root)
+		consumerTweak := strings.Replace(rf(t, root, agentsTarget), "no parallel control-plane state", consumerRewrite, 1)
+		pf(t, root, agentsTarget, consumerTweak)
+		upV3 := strings.Replace(string(rawUp), "no parallel control-plane state", upstreamRewrite, 1)
+		withSource(t, map[string]string{"AGENTS.md": upV3})
+		if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
+			t.Fatal("expected in-block conflict rejection")
+		}
+		// resolve by keeping the consumer side, then --continue must record
+		// the canonical block as new base and the next update must be inert
+		pf(t, root, agentsTarget, consumerTweak)
+		runUpdateOKContinue(t, root)
+		if got := rf(t, root, agentsTarget); got != consumerTweak {
+			t.Errorf("--continue perturbed the resolved AGENTS block:\n%s", got)
+		}
+		if hasConflictMarkers(filepath.Join(root, agentsTarget)) {
+			t.Error("markers persisted past --continue on AGENTS.md")
+		}
+		withSource(t, map[string]string{"AGENTS.md": upV3})
+		runUpdateOK(t, root)
+		if got := rf(t, root, agentsTarget); got != consumerTweak {
+			t.Errorf("post-resolution update clobbered the resolved block:\n%s", got)
 		}
 	})
 
