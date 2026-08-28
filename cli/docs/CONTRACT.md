@@ -11,6 +11,16 @@ binary registers no subcommands — `zharness --help` shows root usage only.
 The command list in this contract therefore mirrors exactly what
 `cli/internal/interfaces/root.go` registers, and vice versa.
 
+## Command surface (v0.15)
+
+| Verb | Behavior |
+|---|---|
+| `install` | Projects the managed doc set (WORKFLOW, playbooks, AGENTS block, PROJECT identity scaffold, ignore entries), records upstream hashes under `.zharness/base/`, and prints a deterministic read-only brownfield report. Idempotent; exits 0. |
+| `update` | Three-way merge of the managed set against `.zharness/base/` (BASE = upstream at install/last finalize). Clean regions auto-merge; overlapping edits stop with in-file conflict markers and a non-zero exit; `--continue` finalizes resolved files; `--abort` restores the pre-update state byte-for-byte from the stash. Consumer files outside the managed set are never touched. |
+| `uninstall` | Removes managed files only. A file locally modified beyond both its base and upstream is left in place with a warning; consumer-owned bytes are never deleted (R12). |
+
+Shared flags: `--root <dir>` overrides the target repository (default: git toplevel of the working directory).
+
 ## Where the guarantees live now
 
 The two fail-closed guarantees moved out of the binary into the repository's

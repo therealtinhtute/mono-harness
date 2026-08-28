@@ -204,7 +204,7 @@ updated: 2026-08-27
       - S4 demonstrated
   - phase_slug: p3-installer
     story_id: 01M0ZABXKCPFV6ME0WPD9JW0TN
-    status: planned
+    status: in-progress
     goal: Build the three-verb binary — install, update, uninstall — with managed-set scaffolding, three-way merge, and read-only brownfield detection.
     depends_on: p2-delete-cli
     surfaces_allowed: cli/internal/**, cli/cmd/**, cli/docs/CONTRACT.md
@@ -337,6 +337,20 @@ updated: 2026-08-27
 - `2026-08-27T09:53:11Z` — session handoff. decision: accept judge #4 finding pair F-A/F-B (phase block had not been flipped and exact_next_action self-referenced the completed phase), fix them, and end this session at a resumable boundary: p0-fail-open, p1-hook-guard, p2-delete-cli all `done`/checked with independent-judge validation entries; p3-installer is armed as the next action with no pause required by the plan. rationale: owner instruction ended the session here (`handoff this session`); Current State below carries the full resume pointer.
 
 
+- `2026-08-28T01:23:50Z` — p3-installer W1, task implement zharness install. task_status: `DONE`. verification: greenfield git repo gets full managed set + .zharness/base manifest/upstream blobs + PROJECT template (<=50 lines) + no db; second run idempotent (10x current); consumer CLAUDE.md byte-unchanged in brownfield fixture.
+- `2026-08-28T01:23:50Z` — p3-installer W1, task deterministic brownfield detection read-only. task_status: `DONE`. verification: fixture with 2 active plans + workflow-state.yml prints reconcile advisory + foreign-state names, exit 0, nothing outside managed set written.
+- `2026-08-28T01:23:50Z` — p3-installer W2, task implement update three-way merge. task_status: `DONE`. verification: fast-forward / local-preserved (upstream unchanged) / disjoint auto-merge all green; overlapping edit stops with in-file markers + --continue finalizes resolution as new base + --abort restores stash byte-for-byte (stash collision bug found by test and fixed: keys now sha256(path)).
+- `2026-08-28T01:23:50Z` — p3-installer W2, task implement uninstall managed-only. task_status: `DONE`. verification: managed files removed; hand-written playbook + consumer harness.db survive (R12); wholly-created AGENTS.md deleted; modified-in-place file would be KEPT with warning.
+- `2026-08-28T01:23:50Z` — p3-installer gates. task_status: `DONE`. verification: R17 four checks green — doc-links 0 findings/8 known-removed; go build+vet+test ok (interfaces verb-count test = exactly install/update/uninstall); S4 rg zero after folding legacyDBName probe; kill-list bounded scan ACTIONABLE=0 (surviving verbs exempted); CLI smoke: --help lists 3 verbs, install idempotent on temp git repo.
+- `2026-08-28` — execution. decision: installer bookkeeping = manifest.json entries {path,sha256} + sha-named upstream blobs under .zharness/base/upstream. rationale: first draft keyed blobs by safe-encoded path names and loadBase rebuilt keys wrongly, silently emptying base for uninstall/update; content-addressed store is self-describing and collision-free.
+- `2026-08-28` — execution. decision: conflict path returns BEFORE saveBase/cleanup; success path persists base then drops stash. rationale: tests caught the first ordering persisting mutated base and deleting the stash on the conflict path, making --abort a no-op — exactly the guarantee R9 exists to keep.
+- `2026-08-28` — execution. decision: base semantics = last upstream the consumer reconciled onto (install bytes, fast-forward result, or finalized resolution), never the local drift. rationale: keeps diff3 ancestor deterministic and matches git's merge-commit model; local drift without recorded ancestor is never invented (R18).
+- `2026-08-28` — execution. decision: update test source provider via package-level srcBytesImpl hook rather than embedding tricks. rationale: in-package DI keeps embedded FS read-only truth while letting tests simulate any upstream version; no runtime flag surface added.
+
+
+- `2026-08-28T01:44:06Z` — session handoff. decision: end this session with p3-installer implementation complete and all local gates green (build/vet/test, S4 zero, doc-links, kill-list scan, CLI smoke) but WITHOUT the independent judge's validation entry — the judge #5 subagent spawn was interrupted twice by the environment, so p3 stays `in-progress` and no APPROVED entry is written, per the high-risk lane rule that the authoring session cannot certify its own work. Next session's first action: spawn judge #5 on this committed diff (scope: R8/R9/R10/R12/R18 checks + merge-walker correctness), then write the validation entry, flip p3 to checked, and proceed to p4-knowledge. rationale: landing the gated code now keeps the branch durable and reviewable; certification stays honest by staying absent.
+
+
 ## Validation
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
 - none
@@ -377,7 +391,7 @@ updated: 2026-08-27
 proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
 
 ## Current State and Next Action
-- active_phase: p2-delete-cli (checked — plan + independent judge entry above; next: p3-installer)
+- active_phase: p3-installer (implementation + local gates green, COMMITTED; judge #5 independent check pending — first action next session)
 - lifecycle_status: in-progress
 - latest_run_id: 01M11621XRW4NFF6QX5BD0S4R9 (p2); 01M1154XP8J7JKW2F1K57847DX (p1); 01M11036QNF018W57CBMC1ZG2K (p0)
 - latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; hardening round recorded on p1 run]
@@ -385,4 +399,4 @@ proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
 - latest_handoff_id: 01M115ENJWGB99VKRT387354X6 (p1 close-phase); 01M115ENJ3VK8V8ZEH0H11R7JR (p0 close-phase)
 - blockers: none
 - open_items: [guard v3 notes (O2 bullet-line verdict anchoring, O3 undated-entry visibility); non-spine git/interview warn-only refs sweep at p4 knowledge layer; S5 identity test + S7 byte measurement land in p4]
-- exact_next_action: work full phase p3-installer
+- exact_next_action: spawn judge #5 (goal-verify) on the p3 committed diff, then validation entry + flip checked; p4-knowledge follows

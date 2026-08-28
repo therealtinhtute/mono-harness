@@ -34,10 +34,15 @@ func Execute(version string) int {
 func NewRootCmd(version string) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "zharness",
-		Short:         "Installer for the markdown-first workflow harness",
+		Short:         "Installer/updater for the markdown-first workflow harness",
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	root.CompletionOptions.DisableDefaultCmd = true
+	root.SetHelpCommand(&cobra.Command{Use: "help", Hidden: true})
+	root.AddCommand(newInstallCmd(version))
+	root.AddCommand(newUpdateCmd(version))
+	root.AddCommand(newUninstallCmd())
 	return root
 }
