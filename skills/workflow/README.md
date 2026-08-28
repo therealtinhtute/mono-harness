@@ -8,7 +8,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 
 - **harness** — gone since v0.15. Markdown plus git is the system of record; the archive decision trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. Every skill attempts `zharness preflight` where available for one shared readiness/rail-guard decision; without the binary each degrades to its markdown-first playbook instead of failing. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) then follow the playbook path returned by preflight — or `docs/playbooks/{stage}.md` directly when it is absent; operating logic lives in those playbooks, not in the trigger.
+- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`; operating logic lives in those playbooks, not in the trigger. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
 - **cli** — `zharness`, the Go binary being reduced to install / update / uninstall for the managed doc set (`docs/plans/**`, playbooks, the AGENTS block). Lifecycle enforcement moved to repo scripts plus the pre-commit hook; nothing waits on the binary.
 
 ## Lifecycle
@@ -34,9 +34,11 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 
 The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (G1 of the SDLC gap analysis, deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill (G2 of the same analysis), not a retrofit onto `work` or `check`.
 
-## Version Gate
+## No Version Gate
 
-`MIN_ZHARNESS_VERSION = 0.8.1` (bumped from `0.4.1` after the `harness-memory-ceremony-convergence` initiative shipped as `cli/v0.8.1`, whose plan record was deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`: schema 6 to 9, `decision add`/`query decisions`, task-granularity `trace add`, `query checks`, atomic CLI-owned markdown writes for `trace`/`decision`/`check`/`handoff`, and the stage-shaped `context` packet in `preflight` that folds `--version`/`resume`/`query phases` into one call. A pre-`0.8.1` binary predates all of it — playbooks written against this version would silently degrade to manual bookkeeping the older CLI can't back). Every one of the 6 spine skills runs `zharness preflight {stage} --json` as its first readiness call when the binary is present — but `MIN_ZHARNESS_VERSION` is documentation, not a blocking gate: the response's own `version` field (`preflight`'s payload — no separate `zharness --version` round trip, F3 of the ceremony audit, deleted by `655c6ac`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`) only decides fresh vs degraded behavior. A missing binary or a version below `0.8.1` degrades instead of halting: print one fallback line and follow the stage's markdown-first playbook (`docs/playbooks/{stage}.md`) directly from repo-local state alone; a `dev` build (unreleased local build) simply behaves fresh.
+There is no binary in the execution path, so there is nothing to version-gate. Every spine skill reads `docs/playbooks/{stage}.md` from the repository it is running in, and that playbook is committed — a fresh clone with no `zharness` installed executes the same lifecycle as a fully provisioned machine.
+
+The `preflight`-based readiness call and its `MIN_ZHARNESS_VERSION` documentation gate (last set to `0.8.1`) were deleted in v0.15 along with the rest of the lifecycle command surface; see [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md). What `zharness` still does — `install` / `update` / `uninstall` — is scaffold and three-way-update the managed docs, which is a setup concern, not a per-stage one.
 
 ### Non-spine skills degrade instead of stopping
 
@@ -52,7 +54,7 @@ name: {skill-name}
 description: {unchanged from before this initiative — skills.sh discovery/trigger UX is Claude-facing content, stays here}
 ---
 
-Run `zharness preflight {stage} [--mode {mode}] --json`. Missing binary or `version` below MIN_ZHARNESS_VERSION (0.8.1): degrade, don't halt — print one fallback line and follow the returned `playbook` path directly, or `docs/playbooks/{stage}.md` when nothing was returned. If it returns `stop`, state the message and follow the exact recovery. Reduced mode must remain read-only.
+{Resolve the invocation mode when the stage has one, then} follow `docs/playbooks/{stage}.md` — it holds this stage's operating logic. Read `docs/WORKFLOW.md` first if the routing is unclear. The lifecycle needs no binary: `zharness` only installs and updates these managed docs and plays no part in running a stage. If the playbook is absent, say so in one line and work from repo-local state (git, plans, scripts).
 
 Defer to: {one line naming the skills this stage hands off to or resumes from}
 ```
