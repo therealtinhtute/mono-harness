@@ -91,23 +91,30 @@ zharness_run_proof() {                     # <command>
 
 zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
   local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out body verdict cmds scratch h efile header line
-  local -A OLDHASH=()
+  # Old-side entry hashes live in a file, not an associative array: `local -A`
+  # needs bash 4+, and macOS ships bash 3.2 as /bin/bash. There the declaration
+  # fails, the hex subscript is then evaluated as arithmetic, and the shell dies
+  # with "value too great for base" on the first old-side entry — taking the
+  # whole guard down with it. A file plus `grep -Fxq` is exact-match membership
+  # with identical semantics on every bash.
+  local oldhashes
 
   scratch=$(mktemp -d)
   mkdir -p "$scratch/o" "$scratch/n"
   zharness_dump_entries "$old" "$scratch/o"
   zharness_dump_entries "$new" "$scratch/n"
 
+  oldhashes="$scratch/oldhashes.txt"
+  : > "$oldhashes"
   for efile in "$scratch"/o/e*.txt; do
     [ -f "$efile" ] || continue
-    h=$(sha256sum "$efile" | cut -d' ' -f1)
-    OLDHASH["$h"]=1
+    sha256sum "$efile" | cut -d' ' -f1 >> "$oldhashes"
   done
 
   for efile in "$scratch"/n/e*.txt; do
     [ -f "$efile" ] || continue
     h=$(sha256sum "$efile" | cut -d' ' -f1)
-    [ -n "${OLDHASH[$h]:-}" ] && continue
+    grep -Fxq "$h" "$oldhashes" && continue
     body=$(cat "$efile")
     header=$(head -1 "$efile")
 

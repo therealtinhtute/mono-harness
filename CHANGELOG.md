@@ -28,6 +28,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   honest APPROVED entry.
 - Guard fixture suite: the entry-count assertion compares numerically, so
   BSD `wc -l` padding can no longer produce a false FAIL on macOS.
+- Pre-commit guard: the old-side entry set no longer uses a bash 4
+  associative array. The hook's shebang is `#!/bin/bash`, which on macOS is
+  bash 3.2: `local -A` failed there, the hex hash was then evaluated as an
+  arithmetic array subscript, and the shell died with "value too great for
+  base" on the first old-side entry — so every commit touching a plan that
+  already had a Validation entry was rejected with an opaque error. Membership
+  is now a hash file plus `grep -Fxq`, identical on every bash.
+- Guard fixture suite: the decisive accept and reject cases are re-run under a
+  legacy bash 3.x when one is present, so the guard core cannot regress into a
+  bash-4-only construct.
 
 ## [v0.15.0] — 2026-08-28 (breaking)
 
