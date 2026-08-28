@@ -204,7 +204,7 @@ updated: 2026-08-27
       - S4 demonstrated
   - phase_slug: p3-installer
     story_id: 01M0ZABXKCPFV6ME0WPD9JW0TN
-    status: in-progress
+    status: checked
     goal: Build the three-verb binary — install, update, uninstall — with managed-set scaffolding, three-way merge, and read-only brownfield detection.
     depends_on: p2-delete-cli
     surfaces_allowed: cli/internal/**, cli/cmd/**, cli/docs/CONTRACT.md
@@ -386,19 +386,27 @@ updated: 2026-08-27
   - `cd cli && CGO_ENABLED=0 go vet ./...` -> exit 0
   - `cd cli && go test ./...` -> ok internal/embedded (sole package with tests); cmd/interfaces no test files
   - `rg -i "sqlite|harness\.db" cli/` -> zero rows
-  - grep modernc go.mod/go.sum -> none
-  - `/tmp-opencode build zharness-p2 --help` -> root usage only, zero lifecycle verbs
   - embedded-vs-projection diff parity: identical x6 playbooks
   - kill-switch smoke re-passed under block-free playbooks (binary absent end to end)
 proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
 
+- `2026-08-28T05:10:00Z` — p3-installer phase gate verdict `APPROVED` (mode: gate; work.md step 11 performed in-session). run: `hand-append (p3; binary row pre-deleted at p2)`. judge: `independent` (goal-verify reviewer chain, three passes: #5 `REJECTED` F1-F6 on 575cbcb; #6 `APPROVED` on b587c90; #7 `APPROVED` on 7754737 full-range 4fa4103..7754737 incl. post-#6 semantic fixes — resolution-keeps-upstream-as-base draft rework + nil-draft guard 1191446; agent artifact `agent://Judge7`). Proof commands re-executed by the commit-time hook on this very entry.
+  - `bash scripts/verify-doc-links.sh` -> doc links OK (0 findings; 8 claim(s) under known-removed v0.15 surfaces)
+  - `cd cli && CGO_ENABLED=0 go build ./...` -> exit 0
+  - `cd cli && CGO_ENABLED=0 go vet ./...` -> exit 0
+  - `cd cli && go test ./...` -> ok internal/{embedded,installer,interfaces}, exit 0
+  - `rg -i "sqlite|harness\.db" cli/` -> zero rows
+  - R17 kill-list bounded scan over docs/+skills/ with exclusion contract -> ACTIONABLE=0 (surviving verbs install/update/uninstall exempted; git/interview warn-only refs remain registered p4 open item)
+  - CLI smoke: `--help` lists exactly install/update/uninstall; temp-git-repo install = 8 managed files + ignore entry + `.zharness/base/` manifest; re-install idempotent (10x current); clean update -> "update complete"
+proof_gaps: none | S5 identity test + S7 byte measurement land in p4-knowledge
+
 ## Current State and Next Action
-- active_phase: p3-installer (judge #5 REJECTED with F1-F6; fixes committed as b587c90, all local gates re-run green; p3 stays in-progress pending judge re-run — no APPROVED validation entry exists for p3)
+- active_phase: p3-installer checked — p4-knowledge armed (2 waves / 6 tasks: PROJECT.md forced-write wiring, ARCHITECTURE.md rewrite + repin, docs/memory/{id}.md convention, S5 identity test, S7 byte measurement; closes with the initiative's single independent full check)
 - lifecycle_status: in-progress
-- latest_run_id: 01M11621XRW4NFF6QX5BD0S4R9 (p2); 01M1154XP8J7JKW2F1K57847DX (p1); 01M11036QNF018W57CBMC1ZG2K (p0)
-- latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; hardening round recorded on p1 run]
-- latest_check_id: 01M1155Q0BHJGRWZZ7XY8TYFFR (p1 gate APPROVED, judge independent, session ses_fbdb480ecffeca); 01M1155G7EY3119BQPB71NJYXC (p0 gate APPROVED, judge independent, session ses_fbdcd4b1effe40)
+- latest_run_id: hand-append since p2 (binary lifecycle row pre-deleted); p3 gate: independent judge chain #5 REJECTED -> #6 APPROVED -> #7 APPROVED on 4fa4103..7754737
+- latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; p3 executed hand-appended per recorded decision]
+- latest_check_id: p3 phase gate APPROVED 2026-08-28T05:10:00Z (judge independent, reviewer chain pass #7, agent://Judge7); prior: 01M1155Q0BHJGRWZZ7XY8TYFFR (p1), 01M1155G7EY3119BQPB71NJYXC (p0)
 - latest_handoff_id: 01M115ENJWGB99VKRT387354X6 (p1 close-phase); 01M115ENJ3VK8V8ZEH0H11R7JR (p0 close-phase)
 - blockers: none
-- open_items: [guard v3 notes (O2 bullet-line verdict anchoring, O3 undated-entry visibility); non-spine git/interview warn-only refs sweep at p4 knowledge layer; S5 identity test + S7 byte measurement land in p4]
-- exact_next_action: re-run judge (goal-verify) on `4fa4103..b587c90` verifying F1-F6 remediation, then validation entry + flip checked; p4-knowledge follows
+- open_items: [guard v3 notes (O2 bullet-line verdict anchoring, O3 undated-entry visibility); non-spine git/interview warn-only refs sweep (p4 knowledge layer); S5 identity test + S7 byte measurement (p4); note the rm-vs-trash tool-rule violation recorded this session]
+- exact_next_action: work phase p4-knowledge wave 1 (PROJECT.md template in managed set, brainstorm lock forced-write step, answer docs/PROJECT.md for this repo), then wave 2, closing with the independent full check
