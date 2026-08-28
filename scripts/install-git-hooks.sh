@@ -49,7 +49,21 @@ zharness_dump_entries() {                  # <content-file> <outdir>
       if ($0 ~ /^- /) { n++; buf[n] = $0 }
       else if (n > 0) { buf[n] = buf[n] "\n" $0 }
     }
-    END { for (i = 1; i <= n; i++) print buf[i] > (out "/e" sprintf("%04d", i) ".txt") }
+    END {
+      for (i = 1; i <= n; i++) {
+        # Trim trailing whitespace before hashing. Blank lines between entries
+        # are absorbed into the entry above (the else-branch takes every
+        # non-"- " line), which is harmless while another "## " section follows
+        # the Validation block — both sides absorb the same blank line. But when
+        # Validation is the LAST section, the final entry ends at EOF with no
+        # trailing blank; appending a new entry below it gives it one, its
+        # SHA-256 changes, and R2 re-executes an entry nobody touched (#85).
+        # Both sides run through here, so trimming keeps untouched entries
+        # matched rather than invalidating them.
+        sub(/[[:space:]]+$/, "", buf[i])
+        print buf[i] > (out "/e" sprintf("%04d", i) ".txt")
+      }
+    }
   ' "$1"
 }
 
