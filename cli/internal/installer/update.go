@@ -165,6 +165,13 @@ func loadBaseDraft(root string) (updateDraft, bool) {
 	if jsonUnmarshal(b, &d) != nil {
 		return updateDraft{}, false
 	}
+	// a valid-JSON but truncated draft must not surface as a nil map
+	if d.Base == nil {
+		d.Base = map[string][]byte{}
+	}
+	if d.Upstream == nil {
+		d.Upstream = map[string][]byte{}
+	}
 	return d, true
 }
 
