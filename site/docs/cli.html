@@ -4,30 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The zharness CLI — mono-harness</title>
-  <meta name="description" content="The zharness CLI: command groups, flags, and the state model it records and rebuilds.">
+  <meta name="description" content="The zharness v0.15 CLI: the slim installer and updater for the markdown-first workflow harness.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;450;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
   <header class="mast">
     <div class="mast-inner">
-      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
-      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <div class="mast-brand">
+        <a href="../index.html" class="mast-logo-link" aria-label="mono-harness">
+          <svg class="pi-logo-nav" viewBox="165.29 165.29 469.07 469.07" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/>
+            <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/>
+          </svg>
+          <span class="mast-title">MONO-HARNESS</span>
+        </a>
+      </div>
       <nav class="mast-nav" aria-label="Primary">
         <ul>
-          <li><a href="../index.html">Overview</a></li>
-          <li><a href="installation.html">Install</a></li>
-          <li><a href="skills.html">Skills</a></li>
-          <li><a href="cli.html">CLI</a></li>
-          <li><a href="architecture.html">Architecture</a></li>
-          <li><a href="workflow.html">Workflow</a></li>
-          <li><a href="contributing.html">Contribute</a></li>
+          <li><a href="../index.html" class="nav-link">Overview</a></li>
+          <li><a href="installation.html" class="nav-link">Install</a></li>
+          <li><a href="skills.html" class="nav-link">Skills</a></li>
+          <li><a href="cli.html" aria-current="page" class="nav-link nav-link-active">CLI</a></li>
+          <li><a href="architecture.html" class="nav-link">Architecture</a></li>
+          <li><a href="workflow.html" class="nav-link">Workflow</a></li>
+          <li><a href="contributing.html" class="nav-link">Contribute</a></li>
         </ul>
       </nav>
-      <hr class="mast-rule" aria-hidden="true">
+      <div class="mast-actions">
+        <span class="badge">v0.15</span>
+        <a href="https://github.com/therealtinhtute/mono-harness" class="button-secondary button-sm" target="_blank" rel="noopener noreferrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
     </div>
   </header>
 
@@ -36,110 +51,275 @@
       <header class="page-head">
         <p class="kicker">docs &middot; cli</p>
         <h1>The zharness CLI</h1>
-        <p class="lede">A durable state harness for the workflow skill chain, written in Go and targeting Go 1.25 with CGO disabled. Every command supports <code>--json</code> for machine-readable output.</p>
+        <p class="lede">A focused Go binary for scaffolding, updating, and removing the managed markdown workflow doc set. Built for Go 1.25 with CGO disabled.</p>
       </header>
 
       <div class="prose">
-        <h2>Shape</h2>
-        <p>The CLI is a read/write surface over one invariant: markdown is the write target, the database row is derived from it. Read-only commands inspect state; mutating commands write markdown first, then derive a row &mdash; never the other way around. That is the guarantee that makes <code>zharness db rebuild</code> able to reconstruct the database from committed markdown alone.</p>
+        <h2>Architecture (v0.15)</h2>
+        <p>In <code>v0.15</code>, <code>zharness</code> is streamlined into a dedicated installer and updater binary. The previous runtime command surface and derived database layer were removed from source. State lives exclusively in git-committed markdown, and fail-closed safety guarantees live in repository pre-commit hooks.</p>
+        <p>The CLI registers exactly three verbs: <code>install</code>, <code>update</code>, and <code>uninstall</code>, alongside standard root flags <code>--help</code> and <code>--version</code>.</p>
       </div>
 
       <div class="specimen">
         <p class="specimen-label">Global flags</p>
         <div class="specimen-body">
           <div class="specimen-row">
+            <span class="specimen-key">--root &lt;dir&gt;</span>
+            <span>Target repository root directory (default: git toplevel of the working directory).</span>
+          </div>
+          <div class="specimen-row">
             <span class="specimen-key">--json</span>
-            <span>emit machine-readable JSON output.</span>
+            <span>Emit machine-readable JSON output for automated scripting.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">--dry-run</span>
+            <span>Simulate execution without modifying files on disk.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">--force</span>
+            <span>Override non-fatal safety guards during operations.</span>
           </div>
           <div class="specimen-row">
             <span class="specimen-key">-h, --help</span>
-            <span>help for any command.</span>
+            <span>Display command-line help for root or any verb.</span>
           </div>
           <div class="specimen-row">
             <span class="specimen-key">-v, --version</span>
-            <span>print the version.</span>
-          </div>
-          <div class="specimen-row">
-            <span class="specimen-key">--mode &lt;mode&gt;</span>
-            <span>stage mode on <code>preflight</code> (for example: explore, lock, simple, full, review).</span>
+            <span>Display the zharness binary version.</span>
           </div>
         </div>
       </div>
 
       <div class="prose">
         <h2>Commands</h2>
-        <p>Twenty-two top-level commands, grouped by what they touch.</p>
+        <p>The three verbs manage the lifecycle of canonical workflow files in target repositories.</p>
       </div>
 
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Behavior &amp; Guarantees</th>
+              <th>Exit Codes</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td><code>audit</code></td><td>Report pointer drift and lifecycle contract violations.</td></tr>
-            <tr><td><code>check</code></td><td>Check (gate verdict) operations.</td></tr>
-            <tr><td><code>completion</code></td><td>Generate the autocompletion script for the specified shell.</td></tr>
-            <tr><td><code>db</code></td><td>Database operations &mdash; <code>rebuild</code>, <code>status</code>.</td></tr>
-            <tr><td><code>decision</code></td><td>Decision operations.</td></tr>
-            <tr><td><code>handoff</code></td><td>Handoff (close-out record) operations.</td></tr>
-            <tr><td><code>help</code></td><td>Help about any command.</td></tr>
-            <tr><td><code>id</code></td><td>Mint a new ULID without mutating harness state.</td></tr>
-            <tr><td><code>import</code></td><td>Parse legacy <code>.kit/</code> state into DB rows (defaults to <code>.kit/</code>).</td></tr>
-            <tr><td><code>init</code></td><td>Create the root zharness database and safely scaffold managed docs.</td></tr>
-            <tr><td><code>intake</code></td><td>Record a new intake (SPEC lock trigger).</td></tr>
-            <tr><td><code>memory</code></td><td>Durable cross-session memory operations &mdash; <code>add</code>, <code>get</code>, <code>query</code>, <code>supersede</code>.</td></tr>
-            <tr><td><code>migrate</code></td><td>Apply schema migrations or migrate repository layout.</td></tr>
-            <tr><td><code>plan</code></td><td>Active-plan lifecycle operations &mdash; <code>complete</code>, <code>abandon</code>.</td></tr>
-            <tr><td><code>preflight</code></td><td>Resolve workflow stage readiness without mutating harness state.</td></tr>
-            <tr><td><code>query</code></td><td>Read-only views: state, phases, artifacts, check, checks, traces, decisions, handoff, plan.</td></tr>
-            <tr><td><code>resume</code></td><td>Snapshot of current position, drift, and readiness.</td></tr>
-            <tr><td><code>run</code></td><td>Run operations &mdash; <code>create</code>.</td></tr>
-            <tr><td><code>scaffold</code></td><td>Emit an artifact skeleton (frontmatter + section headers) for the agent to fill.</td></tr>
-            <tr><td><code>story</code></td><td>Record a new story (phase); slug = phase slug.</td></tr>
-            <tr><td><code>trace</code></td><td>Trace operations.</td></tr>
-            <tr><td><code>validate</code></td><td>Validate the durable lifecycle graph.</td></tr>
+            <tr>
+              <td><code>zharness install</code></td>
+              <td>Scaffolds the managed doc set (<code>WORKFLOW.md</code>, playbooks, <code>AGENTS.md</code> block, <code>PROJECT.md</code> identity, ignore entries). Records upstream base hashes in <code>.zharness/base/</code>. Prints a deterministic read-only brownfield report. Idempotent.</td>
+              <td><code>0</code> success, <code>1</code> error</td>
+            </tr>
+            <tr>
+              <td><code>zharness update</code></td>
+              <td>Executes a 3-way merge of the managed doc set against <code>.zharness/base/</code>. Clean regions auto-merge; overlapping local modifications stop with standard conflict markers. Consumer files outside the managed set are never touched.</td>
+              <td><code>0</code> clean, <code>1</code> error, <code>2</code> conflict</td>
+            </tr>
+            <tr>
+              <td><code>zharness uninstall</code></td>
+              <td>Removes managed workflow files only. Locally modified files that diverge from both base and upstream are preserved with a warning to protect user edits.</td>
+              <td><code>0</code> clean, <code>1</code> error, <code>3</code> warning</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <div class="prose">
-        <h2>Command groups</h2>
-        <p>The same commands, seen through the workflow that uses them.</p>
+        <h2>Command flags reference</h2>
+        <p>Specific flags available per verb.</p>
       </div>
 
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Group</th><th>Commands</th><th>Use</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Verb</th>
+              <th>Flag</th>
+              <th>Description</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td>Readiness</td><td><code>preflight</code> <code>resume</code></td><td>Resolve stage readiness and current position.</td></tr>
-            <tr><td>Planning</td><td><code>intake</code> <code>story</code> <code>scaffold</code></td><td>Record intake and phases, or create artifact skeletons.</td></tr>
-            <tr><td>Execution</td><td><code>run create</code> <code>trace add</code> <code>decision add</code></td><td>Record runs, task progress, and execution decisions.</td></tr>
-            <tr><td>Gates</td><td><code>check record</code> <code>handoff record</code></td><td>Record verdicts and close phases.</td></tr>
-            <tr><td>Inspection</td><td><code>query</code> <code>validate</code> <code>audit</code> <code>db status</code></td><td>Inspect state, lifecycle links, drift, and database health.</td></tr>
-            <tr><td>Recovery</td><td><code>import</code> <code>migrate layout</code> <code>db rebuild</code></td><td>Import legacy state or rebuild from replayable changesets.</td></tr>
+            <tr>
+              <td rowspan="4"><code>install</code></td>
+              <td><code>--scaffold</code></td>
+              <td>Generate missing project identity and workflow scaffolds.</td>
+            </tr>
+            <tr>
+              <td><code>--track-only</code></td>
+              <td>Record base hashes in <code>.zharness/base/</code> without writing template files.</td>
+            </tr>
+            <tr>
+              <td><code>--target &lt;dir&gt;</code></td>
+              <td>Specify custom installation target directory.</td>
+            </tr>
+            <tr>
+              <td><code>--skip-agents</code></td>
+              <td>Skip updating or appending the <code>AGENTS.md</code> capability block.</td>
+            </tr>
+            <tr>
+              <td rowspan="5"><code>update</code></td>
+              <td><code>--continue</code></td>
+              <td>Finalize update and update base hashes after manual resolution of conflict markers.</td>
+            </tr>
+            <tr>
+              <td><code>--abort</code></td>
+              <td>Restore the pre-update state byte-for-byte from the stash snapshot.</td>
+            </tr>
+            <tr>
+              <td><code>--theirs</code></td>
+              <td>Resolve conflicting chunks favoring upstream changes.</td>
+            </tr>
+            <tr>
+              <td><code>--ours</code></td>
+              <td>Resolve conflicting chunks favoring local workspace modifications.</td>
+            </tr>
+            <tr>
+              <td><code>--diff3</code></td>
+              <td>Render 3-way conflict markers including original base content.</td>
+            </tr>
+            <tr>
+              <td><code>uninstall</code></td>
+              <td><code>--purge</code></td>
+              <td>Force removal of all managed artifacts including tracking metadata in <code>.zharness/</code>.</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <div class="prose">
-        <h2>State model</h2>
-        <p>Where each kind of state lives, and its lifecycle.</p>
+        <h2>Exit codes contract</h2>
+        <p>The CLI uses semantic exit codes to signal operational status to scripts and CI pipelines.</p>
       </div>
 
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Path</th><th>Role</th><th>Lifecycle</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Exit Code</th>
+              <th>Status</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td><code>.kit/changesets/</code></td><td>ULID-named JSONL replay source for local harness state.</td><td>Gitignored local state.</td></tr>
-            <tr><td><code>harness.db</code></td><td>Materialized SQLite view rebuilt from changesets.</td><td>Gitignored local state.</td></tr>
-            <tr><td><code>cli/docs/embedded/</code></td><td>Canonical WORKFLOW.md, playbooks, and artifact templates shipped inside the CLI.</td><td>Tracked source.</td></tr>
-            <tr><td><code>docs/</code></td><td>Managed root-doc projection created by <code>zharness init</code>.</td><td>Generated; not edited as source.</td></tr>
-            <tr><td><code>docs/plans/active/</code></td><td>Durable initiative plans with requirements, phases, progress, decisions, validation, and current state.</td><td>Project-local workflow data.</td></tr>
+            <tr>
+              <td><code>0</code></td>
+              <td><code>SUCCESS</code></td>
+              <td>Operation completed cleanly with no conflicts or errors.</td>
+            </tr>
+            <tr>
+              <td><code>1</code></td>
+              <td><code>ERROR</code></td>
+              <td>General error (invalid flag, missing path, I/O failure, Git error).</td>
+            </tr>
+            <tr>
+              <td><code>2</code></td>
+              <td><code>CONFLICT</code></td>
+              <td><code>update</code> encountered merge conflicts; files written with conflict markers.</td>
+            </tr>
+            <tr>
+              <td><code>3</code></td>
+              <td><code>WARNING</code></td>
+              <td><code>uninstall</code> completed with warnings (e.g. locally modified files kept).</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <div class="prose">
-        <p>The database is a view. Changesets are the replay input, and <code>cli/docs/embedded/</code> is the source of truth for managed workflow documentation. The full contract, schema, and state reference live in the repository under <code>cli/docs/</code>, and the reasoning behind it all is under <a href="architecture.html">Architecture</a>.</p>
+        <h2>Terminal usage</h2>
+        <p>Common invocation patterns for installation, updates, and conflict resolution.</p>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">bash &mdash; zharness cli workflow</span>
+          <span class="badge">zharness</span>
+        </div>
+        <pre><code><span class="tok-cmt"># 1. Scaffold managed documentation into the repository</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">install</span>
+<span class="tok-out">scaffolded: docs/playbooks/brainstorm.md</span>
+<span class="tok-out">scaffolded: docs/playbooks/to-plan.md</span>
+<span class="tok-out">scaffolded: docs/playbooks/work.md</span>
+<span class="tok-out">scaffolded: docs/playbooks/check.md</span>
+<span class="tok-out">scaffolded: docs/playbooks/handoff.md</span>
+<span class="tok-out">scaffolded: docs/playbooks/watzup.md</span>
+<span class="tok-out">recorded base: .zharness/base/ (6 playbooks, WORKFLOW.md)</span>
+<span class="tok-out">exit: 0</span>
+
+<span class="tok-cmt"># 2. Update managed documentation with upstream releases</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span>
+<span class="tok-out">merging: docs/playbooks/work.md (clean)</span>
+<span class="tok-out">merging: docs/playbooks/check.md (conflict)</span>
+<span class="tok-flag">CONFLICT:</span> <span class="tok-out">docs/playbooks/check.md contains overlapping edits.</span>
+<span class="tok-cmt"># Resolve conflict markers and run: zharness update --continue</span>
+<span class="tok-cmt"># Or restore previous state with: zharness update --abort</span>
+<span class="tok-out">exit: 2</span>
+
+<span class="tok-cmt"># 3. Finalize after resolving conflict markers</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span> <span class="tok-flag">--continue</span>
+<span class="tok-out">finalized: docs/playbooks/check.md</span>
+<span class="tok-out">updated base: .zharness/base/check.md</span>
+<span class="tok-out">exit: 0</span>
+
+<span class="tok-cmt"># 4. Safe uninstallation</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">uninstall</span>
+<span class="tok-out">removed: docs/playbooks/brainstorm.md</span>
+<span class="tok-out">preserved: docs/playbooks/custom-notes.md (user-modified)</span>
+<span class="tok-out">exit: 0</span></code></pre>
+      </div>
+
+      <div class="prose">
+        <h2>State model &amp; Fail-closed guards</h2>
+        <p>Committed markdown is the only source of truth. System state and safety guarantees are partitioned cleanly across tracked files and Git hooks.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Surface</th>
+              <th>Role</th>
+              <th>Lifecycle &amp; Guarantees</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>docs/plans/active/*.md</code></td>
+              <td>Initiative plans containing requirements, phases, tasks, and progress.</td>
+              <td>Git-tracked markdown. Append-only sections.</td>
+            </tr>
+            <tr>
+              <td><code>docs/playbooks/*.md</code></td>
+              <td>Canonical stage execution procedures.</td>
+              <td>Projected from upstream; managed via <code>zharness update</code>.</td>
+            </tr>
+            <tr>
+              <td><code>docs/decisions/</code></td>
+              <td>Architecture Decision Records (ADRs).</td>
+              <td>Immutable numbered markdown records.</td>
+            </tr>
+            <tr>
+              <td><code>docs/memory/</code></td>
+              <td>Cross-session knowledge and durable decisions.</td>
+              <td>Durable markdown files.</td>
+            </tr>
+            <tr>
+              <td><code>.zharness/base/</code></td>
+              <td>Upstream hash snapshot recorded during install/finalize.</td>
+              <td>Used as BASE during 3-way updates.</td>
+            </tr>
+            <tr>
+              <td><code>scripts/install-git-hooks.sh</code></td>
+              <td>Fail-closed pre-commit validation hook.</td>
+              <td>1. Proof re-execution: runs validation commands in staged plan reviews.<br>2. Independent judge: rejects same-session reviews on high-risk lanes.</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </article>
   </main>

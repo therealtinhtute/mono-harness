@@ -4,30 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Contributing — mono-harness</title>
-  <meta name="description" content="Development loop, validation, build and test gates, and how to contribute.">
+  <meta name="description" content="Development workflow, skill validation, Go CLI testing, pre-commit hooks, and how to contribute to mono-harness.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;450;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
   <header class="mast">
     <div class="mast-inner">
-      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
-      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <div class="mast-brand">
+        <a href="../index.html" class="mast-logo-link" aria-label="mono-harness">
+          <svg class="pi-logo-nav" viewBox="165.29 165.29 469.07 469.07" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/>
+            <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/>
+          </svg>
+          <span class="mast-title">MONO-HARNESS</span>
+        </a>
+      </div>
       <nav class="mast-nav" aria-label="Primary">
         <ul>
-          <li><a href="../index.html">Overview</a></li>
-          <li><a href="installation.html">Install</a></li>
-          <li><a href="skills.html">Skills</a></li>
-          <li><a href="cli.html">CLI</a></li>
-          <li><a href="architecture.html">Architecture</a></li>
-          <li><a href="workflow.html">Workflow</a></li>
-          <li><a href="contributing.html">Contribute</a></li>
+          <li><a href="../index.html" class="nav-link">Overview</a></li>
+          <li><a href="installation.html" class="nav-link">Install</a></li>
+          <li><a href="skills.html" class="nav-link">Skills</a></li>
+          <li><a href="cli.html" class="nav-link">CLI</a></li>
+          <li><a href="architecture.html" class="nav-link">Architecture</a></li>
+          <li><a href="workflow.html" class="nav-link">Workflow</a></li>
+          <li><a href="contributing.html" aria-current="page" class="nav-link nav-link-active">Contribute</a></li>
         </ul>
       </nav>
-      <hr class="mast-rule" aria-hidden="true">
+      <div class="mast-actions">
+        <span class="badge">v0.15</span>
+        <a href="https://github.com/therealtinhtute/mono-harness" class="button-secondary button-sm" target="_blank" rel="noopener noreferrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
     </div>
   </header>
 
@@ -35,68 +50,142 @@
     <article>
       <header class="page-head">
         <p class="kicker">docs &middot; contribute</p>
-        <h1>Contributing</h1>
-        <p class="lede">Read <a href="https://github.com/therealtinhtute/mono-harness/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a> before opening a pull request. Report vulnerabilities privately through <a href="https://github.com/therealtinhtute/mono-harness/blob/master/SECURITY.md">SECURITY.md</a>. Never commit API keys, access tokens, private settings, or local harness state.</p>
+        <h1>Contributing Guide</h1>
+        <p class="lede">Guidelines for developing skills, modifying the Go CLI, running validation suites, and opening pull requests. Security disclosures should be submitted privately via <a href="https://github.com/therealtinhtute/mono-harness/blob/master/SECURITY.md">SECURITY.md</a>.</p>
       </header>
 
       <div class="prose">
-        <h2>Iterate on a skill</h2>
-        <p>Add the directory to Claude Code and edit the skill directly under <code>skills/</code>. Keep <code>SKILL.md</code> focused on routing and execution; move deep detail into <code>references/</code> and reusable logic into <code>scripts/</code>.</p>
+        <h2>Developing Skills</h2>
+        <p>Skills are located under <code>skills/&lt;group&gt;/&lt;name&gt;/</code>. Every skill requires a primary <code>SKILL.md</code> file with YAML frontmatter conforming to the <a href="https://skills.sh">skills.sh</a> specification. Keep the root file focused on routing and execution boundaries; move in-depth operational detail into <code>references/</code> and helper scripts into <code>scripts/</code>.</p>
       </div>
 
       <div class="specimen">
-        <p class="specimen-label">Local iteration</p>
+        <p class="specimen-label">Skill Directory Convention</p>
         <div class="specimen-body">
-          <pre><code>claude-code add-dir /path/to/mono-harness</code></pre>
+          <div class="specimen-row">
+            <span class="specimen-key">SKILL.md</span>
+            <span>Frontmatter (name, model, description, triggers) + concise execution instructions.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">references/</span>
+            <span>Optional markdown documents for deep domain knowledge, loaded progressively.</span>
+          </div>
+          <div class="specimen-row">
+            <span class="specimen-key">scripts/</span>
+            <span>Optional deterministic bash/python scripts executed by the agent for mechanical steps.</span>
+          </div>
         </div>
       </div>
 
       <div class="prose">
-        <h2>Validate a skill</h2>
+        <h2>Validating Skills</h2>
+        <p>Validate skill structure, YAML frontmatter syntax, trigger definitions, and referenced file existence using the validation script:</p>
       </div>
 
-      <div class="specimen">
-        <p class="specimen-label">Validation</p>
-        <div class="specimen-body">
-          <pre><code>bash scripts/validate-skill.sh skills/workflow/work/SKILL.md</code></pre>
+      <div class="terminal-block">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">bash &mdash; validate skills</span>
+          <span class="badge">test</span>
         </div>
+        <pre><code><span class="tok-cmt"># Validate a single skill</span>
+<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> skills/workflow/work/SKILL.md
+
+<span class="tok-cmt"># Validate all skills in repository</span>
+<span class="tok-prm">$</span><span class="tok-kw">for</span> skill <span class="tok-kw">in</span> skills/*/*/SKILL.md; <span class="tok-kw">do</span> <span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> <span class="tok-str">"$skill"</span>; <span class="tok-kw">done</span></code></pre>
       </div>
 
       <div class="prose">
-        <h2>Build and test the CLI</h2>
-        <p>The CLI targets Go 1.25 and builds with CGO disabled. The GitHub Actions workflow runs the same build, vet, and test gates for changes under <code>cli/</code>.</p>
+        <h2>CLI Development &amp; Testing</h2>
+        <p>The <code>zharness</code> CLI is implemented in Go 1.25 with <code>CGO_ENABLED=0</code> for portability. CI enforces zero test failures, clean <code>go vet</code>, and formatting compliance.</p>
       </div>
 
-      <div class="specimen">
-        <p class="specimen-label">Build, vet, test</p>
-        <div class="specimen-body">
-          <pre><code>cd cli
-CGO_ENABLED=0 go build ./...
-go vet ./...
-go test ./...</code></pre>
+      <div class="terminal-block">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">bash &mdash; build and test cli</span>
+          <span class="badge">go</span>
         </div>
+        <pre><code><span class="tok-cmt"># Navigate to CLI module</span>
+<span class="tok-prm">$</span><span class="tok-cmd">cd</span> cli
+
+<span class="tok-cmt"># Compile binary</span>
+<span class="tok-prm">$</span>CGO_ENABLED=<span class="tok-num">0</span> <span class="tok-cmd">go</span> build ./...
+
+<span class="tok-cmt"># Run static analysis</span>
+<span class="tok-prm">$</span><span class="tok-cmd">go</span> vet ./...
+
+<span class="tok-cmt"># Execute test suite</span>
+<span class="tok-prm">$</span><span class="tok-cmd">go</span> test <span class="tok-flag">-v</span> ./...</code></pre>
       </div>
 
       <div class="prose">
-        <h2>Check documentation references</h2>
-        <p>This checks repo-relative documentation claims against the files present in the checkout &mdash; backtick and markdown-link citations alike.</p>
+        <h2>Verifying Documentation References</h2>
+        <p>To avoid dead links and drift between code and documentation, run <code>verify-doc-links.sh</code>. It validates repo-relative paths in backticks and markdown links across all tracked documentation.</p>
       </div>
 
-      <div class="specimen">
-        <p class="specimen-label">Doc links</p>
-        <div class="specimen-body">
-          <pre><code>bash scripts/verify-doc-links.sh</code></pre>
+      <div class="terminal-block">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">bash &mdash; verify documentation links</span>
+          <span class="badge">docs</span>
         </div>
+        <pre><code><span class="tok-cmt"># Verify all documentation cross-references and claims</span>
+<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/verify-doc-links.sh</span></code></pre>
       </div>
 
       <div class="prose">
-        <h2>Before you open a PR</h2>
-        <p>The repository is MIT-licensed and ships a Contributor Covenant code of conduct. Two pre-commit habits keep the history clean: run the narrowest validation for what changed (a skill, the CLI, or the docs), and never stage secrets or local harness state. The full checklist lives in <code>CONTRIBUTING.md</code>.</p>
+        <h2>Pre-Commit Hooks &amp; Fail-Closed Guards</h2>
+        <p>Install the repository pre-commit hooks to ensure every commit satisfies the workflow guarantees:</p>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">bash &mdash; install git hooks</span>
+          <span class="badge">hooks</span>
+        </div>
+        <pre><code><span class="tok-cmt"># Install pre-commit hook into .git/hooks/</span>
+<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/install-git-hooks.sh</span></code></pre>
+      </div>
+
+      <div class="prose">
+        <p>The hook enforces two non-negotiable rules on staged commits:</p>
+        <ol>
+          <li><strong>Proof Re-execution:</strong> Any newly added plan review verdict of <code>APPROVED</code> or <code>APPROVE_WITH_REQUESTS</code> must have every nested proof command successfully re-executed by the hook before the commit is accepted.</li>
+          <li><strong>Independent Judge:</strong> Any plan in a <code>high-risk</code> lane requires an independent judge declaration; same-session reviews are rejected.</li>
+        </ol>
+      </div>
+
+      <div class="prose">
+        <h2>Pull Request Checklist</h2>
+        <p>Before opening a pull request on GitHub, verify:</p>
+        <ul>
+          <li>Run targeted checks for changed components (skills validator, <code>go test ./...</code>, or doc link checker).</li>
+          <li>Ensure all commit messages adhere to Conventional Commits format (e.g. <code>feat(cli): ...</code>, <code>fix(skills): ...</code>, <code>docs(site): ...</code>).</li>
+          <li>Never commit API keys, personal auth tokens, or private settings files.</li>
+        </ul>
       </div>
 
       <div class="cta">
-        <p class="cta__line">The repo is the source of truth &mdash; these pages are its index.</p>
-        <a class="cta__action" href="https://github.com/therealtinhtute/mono-harness">Open the repository</a>
+        <p class="cta__line">Ready to contribute? Explore the repository code.</p>
+        <a class="cta__action" href="https://github.com/therealtinhtute/mono-harness">View on GitHub</a>
       </div>
     </article>
   </main>
