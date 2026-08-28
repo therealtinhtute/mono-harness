@@ -3,7 +3,7 @@ id: 01M0ZHGV3PLANQK8M2VHZ5E9TA
 type: plan
 intake_id: 01M0ZHGV3INTK8M2VHZ5E9TA
 lane: high-risk
-status: active
+status: completed
 created: 2026-08-28
 updated: 2026-08-28
 ---
@@ -49,7 +49,7 @@ updated: 2026-08-28
 - phases:
   - phase_slug: g1-hardening
     story_id: 01M0ZHGV3PHAS8M2VHZ5E9TA
-    status: planned
+    status: done
     goal: Land the guard v3 hardenings, installer robustness fixes, and skills sweep with all gates green and an independent full review.
     depends_on: none
     surfaces_allowed: scripts/install-git-hooks.sh, scripts/test-guards.sh, .github/workflows/cli-ci.yml, cli/internal/installer/**, skills/workflow/git/**, skills/workflow/interview/**, docs/plans/**, this plan
@@ -101,16 +101,24 @@ updated: 2026-08-28
 
 <!-- Append-only durable entries record timestamp, phase, exact command/result/output, run_id, check_id, verdict, and proof_gaps. -->
 
-- none
-
+- `2026-08-28T08:40:00Z` — g1-hardening phase gate verdict `APPROVED` + the initiative's FULL check `FULL_CHECK_APPROVED` (Security PASS, Performance PASS, Architecture PASS, Code Quality PASS; 6 findings all P3 — grammar-reliance residuals, CI-skip vector inherent to in-repo guards, orphaned Step 1 heading). run: `hand-append (guards run from committed scripts)`. judge: `independent` (fresh-context reviewer agent `agent://LoudRoundworm`; empirically reproduced the pre-fix verdict-grammar hole on the 48349e7 core before approving). Proof commands re-executed by the commit-time hook — the FIRST time the guard genuinely re-executes this repository's entries, enabled by the v3 grammar fix recorded in Decisions.
+  - `bash scripts/verify-doc-links.sh` -> doc links OK (0 findings; 9 claim(s) under known-removed v0.15 surfaces)
+  - `cd cli && CGO_ENABLED=0 go build ./...` -> exit 0
+  - `cd cli && CGO_ENABLED=0 go vet ./...` -> exit 0
+  - `cd cli && go test ./...` -> ok internal/{embedded,installer,interfaces}, exit 0
+  - `bash scripts/test-guards.sh` -> guards: 11 passed, 0 failed
+  - `test "$(grep -rniE 'sqlite|harness\.db' cli/ | wc -l)" = 0` -> S4 zero rows, exit 0
+  - `test "$(grep -rn "zharness preflight" skills/workflow/git skills/workflow/interview | wc -l)" = 0` -> S6 sweep zero rows, exit 0
+proof_gaps: none
 ## Current State and Next Action
 
-- active_phase: g1-hardening (both waves executed, all local gates green; remaining check — the independent full review)
-- lifecycle_status: in-progress
+- active_phase: none
+- lifecycle_status: done
 - latest_run_id: hand-append (guards run from committed scripts; no binary rows)
 - latest_trace_ids: none
-- latest_check_id: none — full check pending (independent judge, lane high-risk)
-- latest_handoff_id: none
+- latest_check_id: g1-hardening gate APPROVED + FULL_CHECK_APPROVED 2026-08-28T08:40:00Z (judge independent, agent://LoudRoundworm)
+- latest_handoff_id: this entry (2026-08-28 initiative closure)
+- completed: g1-hardening `done` — O2 verdict line-anchoring, O3 undated-entry visibility, verdict-grammar fix, safePath injective + legacy fallback, diffHunks bounded cap, skills sweep; all gates green under the v3 guard itself
 - blockers: none
-- open_items: none
-- exact_next_action: run the independent full check (Security/Performance/Architecture/Code Quality) on the guard-v3 diff, then record the gate entry, flip g1-hardening done, and move the plan to completed
+- open_items: none (P3 advisories recorded in the gate entry: grammar-reliance residuals, in-repo CI skip vector, orphaned Step 1 heading in git workflow.md)
+- exact_next_action: none — initiative closed. Owner may merge `plan/zharness-v015-slim` into `master` (fast-forward) and cut a patch release when desired
