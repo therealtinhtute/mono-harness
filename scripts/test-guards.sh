@@ -76,8 +76,8 @@ lane: high-risk
 - after validation
 EOF
 zharness_dump_entries "$tmp/plan.md" "$tmp/out"
-count=$(ls "$tmp/out" | wc -l)
-[ "$count" = 2 ] &&
+count=$(ls "$tmp/out" | wc -l | tr -d '[:space:]')
+[ "$count" -eq 2 ] &&
 	ok "S2 undated entry split as its own entry (2 entries)" ||
 	bad "S2 expected 2 entries, got $count"
 

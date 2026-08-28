@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.15.1] — 2026-08-28
+
 ### Fixed
 
 - Pre-commit guard: the verdict token is read from a Validation entry's first
@@ -18,6 +20,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   falls back to a conservative whole-side hunk above an 8M-cell LCS cap.
 - Non-spine `git`/`interview` skills no longer reference binary commands
   deleted in v0.15.
+- Pre-commit guard: proof re-execution no longer depends on GNU `timeout`
+  being installed. The wrapper is resolved at call time (`timeout`, else
+  `gtimeout`, else the command runs unbounded with a warning), so a proof's
+  verdict follows its own exit code. On stock macOS every proof previously
+  exited 127 (`timeout: command not found`) and the guard rejected each
+  honest APPROVED entry.
+- Guard fixture suite: the entry-count assertion compares numerically, so
+  BSD `wc -l` padding can no longer produce a false FAIL on macOS.
 
 ## [v0.15.0] — 2026-08-28 (breaking)
 
