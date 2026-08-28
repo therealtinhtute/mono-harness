@@ -76,8 +76,8 @@ lane: high-risk
 - after validation
 EOF
 zharness_dump_entries "$tmp/plan.md" "$tmp/out"
-count=$(ls "$tmp/out" | wc -l)
-[ "$count" = 2 ] &&
+count=$(ls "$tmp/out" | wc -l | tr -d '[:space:]')
+[ "$count" -eq 2 ] &&
 	ok "S2 undated entry split as its own entry (2 entries)" ||
 	bad "S2 expected 2 entries, got $count"
 
@@ -177,6 +177,78 @@ if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-undated-fail.md" 
 	bad "S2 undated APPROVED entry must be re-executed (fail-case must reject)"
 else
 	ok "S2 undated APPROVED entry is now guarded (fail-case rejects)"
+fi
+
+# S4 portability: the pre-commit hook's shebang is `#!/bin/bash`, which on
+# macOS is bash 3.2 — no associative arrays, and a hex array subscript there is
+# evaluated as arithmetic and kills the shell. Re-run the two decisive cases
+# under a legacy bash if one is present, so the guard core can never regress
+# into a bash-4-only construct. Old side carries an entry in both cases: that
+# is what populates the hash set and what used to blow up.
+LEGACY_BASH=""
+for cand in /bin/bash /usr/local/bin/bash-3.2; do
+	if [ -x "$cand" ] && case "$("$cand" -c 'echo ${BASH_VERSINFO[0]}')" in 3) true ;; *) false ;; esac; then
+		LEGACY_BASH="$cand"
+		break
+	fi
+done
+
+if [ -n "$LEGACY_BASH" ]; then
+	cat > "$tmp/legacy-old.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — an entry already on record
+  - `true`
+EOF
+	cat > "$tmp/legacy-pass.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — an entry already on record
+  - `true`
+
+- `2026-08-28T00:00:00Z` — honest work, verdict `APPROVED`
+  - `true`
+EOF
+	cat > "$tmp/legacy-fail.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — an entry already on record
+  - `true`
+
+- `2026-08-28T00:00:00Z` — verdict `APPROVED` with a sabotaged proof
+  - `echo legacy-sabotage && false`
+EOF
+	legacy_run() {                            # <new-file>; echoes the guard exit code
+		"$LEGACY_BASH" -c '
+			source "$1" || exit 90
+			zharness_guard_entries_of_file p.md "$2" "$3" >/dev/null 2>&1
+		' _ "$GUARD" "$tmp/legacy-old.md" "$1"
+		echo $?
+	}
+
+	rc=$(legacy_run "$tmp/legacy-pass.md")
+	[ "$rc" = 0 ] &&
+		ok "S4 legacy bash ($("$LEGACY_BASH" -c 'echo $BASH_VERSION')): honest entry accepted" ||
+		bad "S4 legacy bash: honest entry must be accepted, guard exited $rc"
+
+	rc=$(legacy_run "$tmp/legacy-fail.md")
+	[ "$rc" != 0 ] &&
+		ok "S4 legacy bash: sabotaged entry rejected" ||
+		bad "S4 legacy bash: sabotaged entry must be rejected"
+else
+	echo "  skip - S4 legacy bash 3.x not found on this machine"
 fi
 
 rm -rf "$tmp" "$GUARD"

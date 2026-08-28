@@ -3,7 +3,7 @@ id: 01M0SITEOPIPLAN8M2VHZ5E9TB
 type: plan
 intake_id: 01M0SITEOPIINTK8M2VHZ5E9TB
 lane: normal
-status: active
+status: completed
 created: 2026-08-28
 updated: 2026-08-28
 ---
@@ -130,6 +130,7 @@ updated: 2026-08-28
 <!-- Append-only record of mid-flight decisions and trade-offs made during planning and execution. -->
 - [2026-08-28 05:08 UTC] (OpenPI Voice & Blueprint Layout): Kept zharness and mono-harness naming intact while fully adopting OpenPI blueprint design system and technical brand voice across all web documentation pages.
 - [2026-08-28 06:45 UTC] (OpenPI 99.99% Direct Style Match): User requested direct browser extraction and 99.99% style alignment with live https://tt-a1i.github.io/openpi/. Adding Phase 4 to active plan.
+- [2026-08-28 (closeout)] (DESIGN.md authority retired): `DESIGN.md` (257 lines) was deleted from the repository root in `085c2d4`, AFTER this plan finished executing against it. The Authority and Requirements sections above are left verbatim as the historical record of what the work was actually built against — rewriting them would falsify it. The specification now survives in two places: the git blob `3e67b2c:DESIGN.md`, and its implemented form in `site/css/tokens.css` and `site/css/main.css`, which are the live authority for the OpenPI token set going forward.
 
 ## Validation
 <!-- Append-only log of test runs, reviews, and gate checks. Format per check playbook. -->
@@ -145,6 +146,7 @@ updated: 2026-08-28
 
 - active_plan_id: 01M0SITEOPIPLAN8M2VHZ5E9TB
 - active_intake_id: 01M0SITEOPIINTK8M2VHZ5E9TB
-- active_phase: done
+- active_phase: done (p1, p2, p3 all done; the p4 style-fidelity work is recorded in Progress and Decisions)
 - blockers: none
-- exact_next_action: commit and push
+- open_items: none
+- exact_next_action: none — initiative closed. Shipped in `ce529ff`, `8b3dca5`, `c9a150a`, `e13ce26`; site is live on GitHub Pages.

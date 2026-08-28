@@ -16,7 +16,8 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 # Guards implemented here (zharness v0.15 p1-hook-guard, review-hardened v2):
 #   R2: re-execute every nested proof command of newly added ## Validation
 #       entries whose anchored verdict is APPROVED or APPROVE_WITH_REQUESTS
-#       (`sh -c`, 5-minute timeout each); any non-zero exit rejects, naming
+#       (`sh -c`, 5-minute timeout each where timeout/gtimeout is available,
+#       unbounded otherwise); any non-zero exit rejects, naming
 #       the failing command and its output tail. REQUEST_CHANGES proof is
 #       never re-executed. No pass marker is read.
 #   R3: reject `judge: same-session` on any newly added entry of a plan whose
@@ -72,25 +73,48 @@ zharness_entry_has_same_session() {        # <entry-body>, backticks stripped fi
   printf '%s\n' "$1" | sed 's/[`]//g' | grep -q 'judge:[[:blank:]]*same-session'
 }
 
+zharness_run_proof() {                     # <command>
+  # The 300s bound is defensive, not load-bearing. Resolve the wrapper at call
+  # time so the guard's verdict depends on the proof's own exit code: GNU
+  # `timeout` where present, coreutils `gtimeout` on macOS, otherwise run the
+  # command unwrapped. Without this, every proof on a stock macOS exits 127
+  # ("timeout: command not found") and the guard rejects each honest entry.
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 300 sh -c "$1" 2>&1
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout 300 sh -c "$1" 2>&1
+  else
+    echo "⚠️  no timeout/gtimeout on PATH — running proof unbounded (interrupt with Ctrl+C if it hangs)" >&2
+    sh -c "$1" 2>&1
+  fi
+}
+
 zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
   local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out body verdict cmds scratch h efile header line
-  local -A OLDHASH=()
+  # Old-side entry hashes live in a file, not an associative array: `local -A`
+  # needs bash 4+, and macOS ships bash 3.2 as /bin/bash. There the declaration
+  # fails, the hex subscript is then evaluated as arithmetic, and the shell dies
+  # with "value too great for base" on the first old-side entry — taking the
+  # whole guard down with it. A file plus `grep -Fxq` is exact-match membership
+  # with identical semantics on every bash.
+  local oldhashes
 
   scratch=$(mktemp -d)
   mkdir -p "$scratch/o" "$scratch/n"
   zharness_dump_entries "$old" "$scratch/o"
   zharness_dump_entries "$new" "$scratch/n"
 
+  oldhashes="$scratch/oldhashes.txt"
+  : > "$oldhashes"
   for efile in "$scratch"/o/e*.txt; do
     [ -f "$efile" ] || continue
-    h=$(sha256sum "$efile" | cut -d' ' -f1)
-    OLDHASH["$h"]=1
+    sha256sum "$efile" | cut -d' ' -f1 >> "$oldhashes"
   done
 
   for efile in "$scratch"/n/e*.txt; do
     [ -f "$efile" ] || continue
     h=$(sha256sum "$efile" | cut -d' ' -f1)
-    [ -n "${OLDHASH[$h]:-}" ] && continue
+    grep -Fxq "$h" "$oldhashes" && continue
     body=$(cat "$efile")
     header=$(head -1 "$efile")
 
@@ -123,7 +147,7 @@ zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
 
     while IFS= read -r cmd; do
       echo "🧪 re-executing proof [$header]: $cmd"
-      out=$(timeout 300 sh -c "$cmd" 2>&1) && rc_cmd=0 || rc_cmd=$?
+      out=$(zharness_run_proof "$cmd") && rc_cmd=0 || rc_cmd=$?
       if [ "${rc_cmd:-0}" -ne 0 ]; then
         failed=$((failed + 1))
         echo "" >&2
