@@ -233,7 +233,7 @@ updated: 2026-08-27
       - `zharness --help` lists exactly install, update, uninstall
   - phase_slug: p4-knowledge
     story_id: 01M0ZABXKQXK3GJGC20GZRFD9P
-    status: planned
+    status: checked
     goal: Land the knowledge layer — PROJECT.md with a forced write step, a rewritten ARCHITECTURE.md, memory as files — and measure S7.
     depends_on: p3-installer
     surfaces_allowed: docs/PROJECT.md, docs/ARCHITECTURE.md, docs/memory/, cli/docs/embedded/templates/, cli/docs/embedded/playbooks/brainstorm.md, cli/docs/embedded/playbooks/work.md
@@ -406,15 +406,25 @@ proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
   - `rg -i "sqlite|harness\.db" cli/` -> zero rows
   - R17 kill-list bounded scan over docs/+skills/ with exclusion contract -> ACTIONABLE=0 (surviving verbs install/update/uninstall exempted; git/interview warn-only refs remain registered p4 open item)
   - CLI smoke: `--help` lists exactly install/update/uninstall; temp-git-repo install = 8 managed files + ignore entry + `.zharness/base/` manifest; re-install idempotent (10x current); clean update -> "update complete"
-proof_gaps: none | S5 identity test + S7 byte measurement land in p4-knowledge
+proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
+
+- `2026-08-28T07:05:00Z` — p4-knowledge phase gate verdict `APPROVED` + the initiative's single independent FULL check `FULL_CHECK_APPROVED` (Security PASS, Performance PASS, Architecture PASS, Code Quality PASS; mode: `full`; 6 findings all P3 — 2 fixed same-session (stale AGENTS 'once those verbs ship' wording; dead os.Stdout keep-alive), 2 already deferred in open_items (O2/O3 guard v3), 2 recorded-not-fixed (safePath '__' theoretical collision; diffHunks LCS memory cliff, upstream-bounded)). run: `hand-append (p4)`. judge: `independent` (goal-verify reviewer, full diff bdee6a6..HEAD pre-nit-fixes 14 commits; agent artifact `agent://FullCheck`). Proof commands re-executed by the commit-time hook on this very entry.
+  - `bash scripts/verify-doc-links.sh` -> doc links OK (0 findings; 9 claim(s) under known-removed v0.15 surfaces)
+  - `cd cli && CGO_ENABLED=0 go build ./...` -> exit 0
+  - `cd cli && CGO_ENABLED=0 go vet ./...` -> exit 0
+  - `cd cli && go test ./...` -> ok internal/{embedded,installer,interfaces}, exit 0
+  - `rg -i "sqlite|harness\.db" cli/` -> zero rows
+  - S5 demonstrated: unprimed session answered what/architected/in-progress from PROJECT.md + plans alone (agent://S5Session)
+  - S7 demonstrated: NEW 10,968 B vs OLD 26,064 B = 42% <= 110% of the 0.14.0 baseline (method: audit 4 B/token, packet 10,381 B)
+proof_gaps: none
 
 ## Current State and Next Action
-- active_phase: p4-knowledge (both waves executed; S5 identity test PASS, S7 byte measurement PASS at 42% of baseline; remaining check — the initiative's single independent full review)
+- active_phase: p4-knowledge checked — all five phases of zharness v0.15 slim are checked/done; the initiative is complete pending the owner's handoff-closure decision
 - lifecycle_status: in-progress
-- latest_run_id: hand-append since p2 (binary lifecycle row pre-deleted); p3 gate: independent judge chain #5 REJECTED -> #6 APPROVED -> #7 APPROVED on 4fa4103..7754737
-- latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; p3 executed hand-appended per recorded decision]
-- latest_check_id: p3 phase gate APPROVED 2026-08-28T05:10:00Z (judge independent, reviewer chain pass #7, agent://Judge7); prior: 01M1155Q0BHJGRWZZ7XY8TYFFR (p1), 01M1155G7EY3119BQPB71NJYXC (p0)
+- latest_run_id: hand-append since p2 (binary lifecycle row pre-deleted); p4 gate + initiative full check: independent, agent://FullCheck on bdee6a6..1904a0c
+- latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; p3/p4 executed hand-appended per recorded decision]
+- latest_check_id: p4 phase gate APPROVED + FULL_CHECK_APPROVED 2026-08-28T07:05:00Z (judge independent); prior: p3 gate (agent://Judge7), 01M1155Q0BHJGRWZZ7XY8TYFFR (p1), 01M1155G7EY3119BQPB71NJYXC (p0)
 - latest_handoff_id: 01M115ENJWGB99VKRT387354X6 (p1 close-phase); 01M115ENJ3VK8V8ZEH0H11R7JR (p0 close-phase)
 - blockers: none
-- open_items: [guard v3 notes (O2 bullet-line verdict anchoring, O3 undated-entry visibility); non-spine git/interview warn-only refs sweep (p4 knowledge layer); S5 identity test + S7 byte measurement (p4); note the rm-vs-trash tool-rule violation recorded this session]
-- exact_next_action: run the initiative's single independent full check (Security/Performance/Architecture/Code Quality, goal-verify judge) on the full v0.15 diff, then record the p4 phase gate + handoff closure
+- open_items: [guard v3 notes (O2 bullet-line verdict anchoring, O3 undated-entry visibility); safePath '__' theoretical collision; diffHunks LCS memory cliff (upstream-bounded); note the rm-vs-trash tool-rule violation recorded this session]
+- exact_next_action: owner decision — handoff closure of the initiative (close-phase + plan status done + CHANGELOG/consumer pin notes if requested); no engineering action pending
