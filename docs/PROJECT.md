@@ -40,6 +40,4 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- no active plan — zharness v0.15.0 is released (breaking; consumers pin
-  v0.14.x) and the guard-v3 hardening batch is complete; history lives in
-  docs/plans/completed/
+- site-openpi-redesign: redesigning and overhauling the documentation website under `site/` with OpenPI blueprint design system and sync to v0.15 architecture.

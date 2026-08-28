@@ -4,82 +4,242 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Workflow — mono-harness</title>
-  <meta name="description" content="The durable workflow path and its reduced modes, from brainstorm to handoff.">
+  <meta name="description" content="The 6-stage lifecycle chain, playbook structure, reduced execution modes, and append-only state model in mono-harness.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;450;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
   <header class="mast">
     <div class="mast-inner">
-      <p class="mast-line">skills for AI agents &middot; workflow harness &middot; Go</p>
-      <p class="mast-name"><a href="../index.html">mono-harness</a></p>
+      <div class="mast-brand">
+        <a href="../index.html" class="mast-logo-link" aria-label="mono-harness">
+          <svg class="pi-logo-nav" viewBox="165.29 165.29 469.07 469.07" xmlns="http://www.w3.org/2000/svg">
+            <path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/>
+            <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/>
+          </svg>
+          <span class="mast-title">MONO-HARNESS</span>
+        </a>
+      </div>
       <nav class="mast-nav" aria-label="Primary">
         <ul>
-          <li><a href="../index.html">Overview</a></li>
-          <li><a href="installation.html">Install</a></li>
-          <li><a href="skills.html">Skills</a></li>
-          <li><a href="cli.html">CLI</a></li>
-          <li><a href="architecture.html">Architecture</a></li>
-          <li><a href="workflow.html">Workflow</a></li>
-          <li><a href="contributing.html">Contribute</a></li>
+          <li><a href="../index.html" class="nav-link">Overview</a></li>
+          <li><a href="installation.html" class="nav-link">Install</a></li>
+          <li><a href="skills.html" class="nav-link">Skills</a></li>
+          <li><a href="cli.html" class="nav-link">CLI</a></li>
+          <li><a href="architecture.html" class="nav-link">Architecture</a></li>
+          <li><a href="workflow.html" aria-current="page" class="nav-link nav-link-active">Workflow</a></li>
+          <li><a href="contributing.html" class="nav-link">Contribute</a></li>
         </ul>
       </nav>
-      <hr class="mast-rule" aria-hidden="true">
+      <div class="mast-actions">
+        <span class="badge">v0.15</span>
+        <a href="https://github.com/therealtinhtute/mono-harness" class="button-secondary button-sm" target="_blank" rel="noopener noreferrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
     </div>
   </header>
 
   <main>
     <article>
       <header class="page-head">
-        <p class="kicker">docs &middot; workflow</p>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <p class="kicker" style="margin: 0;">docs &middot; workflow</p>
+          <span class="badge">v0.15</span>
+        </div>
         <h1>Workflow</h1>
-        <p class="lede">The normal durable path from a rough idea to a persisted handoff, and the reduced modes for when the change is small enough not to need a ledger.</p>
+        <p class="lede">The durable lifecycle path from initial exploration to validated handoff, and the lightweight reduced modes for bounded changes.</p>
       </header>
 
       <div class="prose">
-        <h2>The durable path</h2>
-        <p>Each stage runs a read-only <code>zharness preflight</code> check first. Durable modes require an initialized, readable database and current managed docs; reduced modes continue without them.</p>
+        <h2>Lifecycle Architecture</h2>
+        <p>The workflow lifecycle requires no running daemon or database binary. <code>AGENTS.md</code> serves as the entry point, defining the shared workflow boundaries. Each stage delegates to a dedicated markdown playbook in <code>docs/playbooks/</code>, executing directly against the repository code and committed markdown plans.</p>
       </div>
 
-      <div class="trustflow" role="list">
-        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/brainstorm</p><p class="trustflow-step__body">explore options, lock requirements</p></div>
+      <div class="trustflow" role="list" style="margin: 28px 0;">
+        <div class="trustflow-step" role="listitem">
+          <p class="trustflow-step__label">/brainstorm</p>
+          <p class="trustflow-step__body">Explore trade-offs &amp; lock requirements</p>
+        </div>
         <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
-        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/to-plan</p><p class="trustflow-step__body">phases, waves, tasks, checks</p></div>
+        <div class="trustflow-step" role="listitem">
+          <p class="trustflow-step__label">/to-plan</p>
+          <p class="trustflow-step__body">Structure phases, story IDs &amp; waves</p>
+        </div>
         <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
-        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/work</p><p class="trustflow-step__body">execute, verify each task</p></div>
+        <div class="trustflow-step" role="listitem">
+          <p class="trustflow-step__label">/work</p>
+          <p class="trustflow-step__body">Execute wave-by-wave with verified proof</p>
+        </div>
         <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
-        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/check</p><p class="trustflow-step__body">gates and review</p></div>
+        <div class="trustflow-step" role="listitem">
+          <p class="trustflow-step__label">/check</p>
+          <p class="trustflow-step__body">Fail-closed review &amp; proof re-execution</p>
+        </div>
         <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
-        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/git</p><p class="trustflow-step__body">stage, commit, push, PR</p></div>
+        <div class="trustflow-step" role="listitem">
+          <p class="trustflow-step__label">/git</p>
+          <p class="trustflow-step__body">Conventional commit, push &amp; PR</p>
+        </div>
         <span class="trustflow-arrow" aria-hidden="true">&rarr;</span>
-        <div class="trustflow-step" role="listitem"><p class="trustflow-step__label">/handoff</p><p class="trustflow-step__body">persist state, next action</p></div>
-      </div>
-
-      <div class="prose">
-        <h2>Reduced modes</h2>
-        <p>Use the smallest mode that matches the work. Reduced work writes no lifecycle rows &mdash; the git diff plus captured proof are its durable evidence.</p>
-      </div>
-
-      <div class="specimen">
-        <p class="specimen-label">Reduced modes</p>
-        <div class="specimen-body">
-          <div class="specimen-row"><span class="specimen-key">/brainstorm explore</span><span>response-only exploration.</span></div>
-          <div class="specimen-row"><span class="specimen-key">/work simple &lt;task&gt;</span><span>bounded change, no lifecycle rows.</span></div>
-          <div class="specimen-row"><span class="specimen-key">/check bounded</span><span>response-only gate for bounded work.</span></div>
-          <div class="specimen-row"><span class="specimen-key">/watzup</span><span>read-only resume and branch recap.</span></div>
+        <div class="trustflow-step" role="listitem">
+          <p class="trustflow-step__label">/handoff</p>
+          <p class="trustflow-step__body">Persist session state &amp; next actions</p>
         </div>
       </div>
 
       <div class="prose">
-        <h2>The journey</h2>
-        <p>First run, initialize &mdash; <code>zharness init</code> creates the root <code>harness.db</code>, replays existing changesets, and scaffolds the managed docs. Then the durable path is a straight line: <code>/brainstorm &rarr; /to-plan &rarr; /work &rarr; /check &rarr; /git &rarr; /handoff</code>. At any point, <code>/watzup</code> reconstructs where things stand when a session comes back cold.</p>
-        <p>Durable memory is separate and opt-in. Record it only when a fact needs correcting, a lesson would otherwise be rediscovered, or an owner preference should persist. Bodies are committed markdown, so they never carry credentials or secrets &mdash; only that a secret exists, its scope, and where to fetch it.</p>
+        <h2>The 6 Playbooks</h2>
+        <p>The core lifecycle is governed by six projected playbooks located under <code>docs/playbooks/</code>:</p>
+      </div>
 
-        <h2>Boundaries</h2>
-        <p>Durable modes require an initialized database. Durable memory ships unwired from the spine playbooks by design &mdash; it is a store you reach for explicitly, not a default. And reduced modes, by design, leave no ledger: pick them for a bounded change, not for work that needs phases, waves, and a trace someone else will resume.</p>
+      <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin: 24px 0;">
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">1. brainstorm</h3>
+            <span class="badge">docs/playbooks/brainstorm.md</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Explores options, analyzes feasibility, and clarifies intent. In <code>lock</code> mode, creates the active initiative file at <code>docs/plans/active/{slug}.md</code> and verifies repository identity in <code>docs/PROJECT.md</code>.</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">2. to-plan</h3>
+            <span class="badge">docs/playbooks/to-plan.md</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Transforms locked specifications into executable implementation blueprints: defines technical approach, decomposition into phases, story IDs, dependency waves, and concrete verification checks.</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">3. work</h3>
+            <span class="badge">docs/playbooks/work.md</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Orchestrates implementation wave-by-wave. Dispatches independent tasks to subagents or executes inline, capturing observable evidence and recording step results in the active plan.</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">4. check</h3>
+            <span class="badge">docs/playbooks/check.md</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Pre-commit verification gate. Runs test suites, typecheckers, and linters; validates git diff cleanliness; re-runs proof commands; and enforces independent judge reviews on high-risk lanes.</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">5. handoff</h3>
+            <span class="badge">docs/playbooks/handoff.md</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Session state persistence. Summarizes completed waves, captures unresolved blockers, documents architectural decisions, and records immediate next actions in the active plan.</p>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">6. watzup</h3>
+            <span class="badge">docs/playbooks/watzup.md</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Cold session recap. Reads current git branch state, uncommitted changes, active plan progress, and recent handoff notes to recommend the precise next command without modifying any files.</p>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>Reduced Modes for Bounded Tasks</h2>
+        <p>Not every change warrants a full multi-wave initiative ledger. Reduced modes provide fast execution while maintaining rigor:</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30%;">Command</th>
+              <th style="width: 25%;">Scope</th>
+              <th>Behavior &amp; Persistence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/brainstorm explore</code></td>
+              <td>Ideation / Research</td>
+              <td>Response-only analysis. Evaluates trade-offs without writing a plan file to disk.</td>
+            </tr>
+            <tr>
+              <td><code>/work simple &lt;task&gt;</code></td>
+              <td>Single-step Fix / Small Change</td>
+              <td>Direct execution and verification without creating active plan files or multi-wave ledger rows.</td>
+            </tr>
+            <tr>
+              <td><code>/check bounded</code></td>
+              <td>Targeted Verification</td>
+              <td>Lightweight gate running relevant linters and unit tests for bounded changes.</td>
+            </tr>
+            <tr>
+              <td><code>/watzup</code></td>
+              <td>Session Inspection</td>
+              <td>Read-only inspection of git status, active plan, and handoff notes. Zero side effects.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <h2>Execution Boundary &amp; State Model</h2>
+        <p>The execution boundary in mono-harness is strictly append-only and file-driven:</p>
+        <ul>
+          <li><strong>Progress:</strong> Execution notes, subagent dispatches, and verification evidence append directly to <code>## Progress</code> in <code>docs/plans/active/{slug}.md</code>.</li>
+          <li><strong>Decisions:</strong> Architectural choices and deviations append to <code>## Decisions</code>.</li>
+          <li><strong>Validation:</strong> Quality gates, proof command outputs, and approval verdicts append to <code>## Validation</code>.</li>
+        </ul>
+        <p>Every proof claim must cite concrete command outputs or observable runtime evidence. Pre-commit hooks re-execute validation proofs fail-closed, ensuring that committed plans reflect reality.</p>
+      </div>
+
+      <div class="terminal-block">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">markdown &mdash; active plan structure</span>
+          <span class="badge">markdown</span>
+        </div>
+        <pre><code><span class="tok-cmd"># Plan:</span> <span class="tok-str">auth-token-refresh &mdash; Sliding Expiration Window</span>
+
+<span class="tok-kw">## Approach and Risks</span>
+<span class="tok-punct">-</span> Lane: <span class="tok-str">normal</span>
+<span class="tok-punct">-</span> Story: Refactor refresh token rotation with sliding expiration window.
+
+<span class="tok-kw">## Phases and Verification</span>
+<span class="tok-punct">-</span> Wave 1: Core token generator and crypto unit tests.
+<span class="tok-punct">-</span> Wave 2: HTTP middleware and integration tests.
+
+<span class="tok-kw">## Progress</span>
+<span class="tok-punct">-</span> <span class="tok-str">[2026-08-28 04:00 UTC] (p1-crypto):</span> `go test ./pkg/auth/...` passed (<span class="tok-num">14</span> tests, <span class="tok-num">0</span> failures).
+<span class="tok-punct">-</span> <span class="tok-str">[2026-08-28 04:30 UTC] (p2-middleware):</span> Middleware handles expired tokens with HTTP <span class="tok-num">401</span>.
+
+<span class="tok-kw">## Decisions</span>
+<span class="tok-punct">-</span> Chose 15-minute sliding window with 7-day absolute max expiration.
+
+<span class="tok-kw">## Validation</span>
+<span class="tok-punct">-</span> <span class="tok-cmd">verdict:</span> <span class="tok-str">APPROVED</span>
+<span class="tok-punct">-</span> <span class="tok-opt">judge:</span> <span class="tok-str">independent</span>
+<span class="tok-punct">-</span> Proofs:
+  <span class="tok-punct">-</span> `go test -race ./...` (exit <span class="tok-num">0</span>)
+  <span class="tok-punct">-</span> `golangci-lint run` (exit <span class="tok-num">0</span>)</code></pre>
+      </div>
+
+      <div class="cta">
+        <p class="cta__line">Ready to learn more about the underlying architecture or install the harness?</p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a class="button-primary" href="architecture.html">Read Architecture</a>
+          <a class="button-secondary" href="installation.html">Install Guide</a>
+        </div>
       </div>
     </article>
   </main>
