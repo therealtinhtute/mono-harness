@@ -259,7 +259,10 @@ echo "✅ v0.15 guards passed"
 echo ""
 echo "🔍 Validating changed skills..."
 
-changed_skills=$(git diff --cached --name-only | grep "kit/skills/.*/SKILL.md" || true)
+# Skills live at skills/<category>/<name>/SKILL.md. This grep used to say
+# "kit/skills/.*/SKILL.md" — a path this repo has never had — so the whole block
+# below was dead and every commit printed "No skill files changed".
+changed_skills=$(git diff --cached --name-only | grep -E '(^|/)skills/[^/]+/[^/]+/SKILL\.md$' || true)
 
 if [ -z "$changed_skills" ]; then
   echo "✅ No skill files changed"
@@ -271,15 +274,18 @@ while IFS= read -r skill_file; do
   if [ -f "$skill_file" ]; then
     echo "Checking: $skill_file"
     skill_dir=$(dirname "$skill_file")
-    if [ -f "kit/skills/scripts/validate-skill.sh" ]; then
-      if ! bash kit/skills/scripts/validate-skill.sh "$skill_file"; then
+    if [ -f "scripts/validate-skill.sh" ]; then
+      if ! bash scripts/validate-skill.sh "$skill_file"; then
         echo "❌ Validation failed: $skill_file"
         ((failed++))
       fi
     else
+      # Fallback when the validator is absent. Frontmatter only — the <role> and
+      # <security> tags this used to demand belong to the heavyweight skill
+      # format, not to the <=30-line thin triggers.
       if ! grep -q "^---" "$skill_file"; then echo "❌ Missing frontmatter: $skill_file"; ((failed++)); fi
-      if ! grep -q "<role>" "$skill_file"; then echo "❌ Missing <role> tag: $skill_file"; ((failed++)); fi
-      if ! grep -q "<security>" "$skill_file"; then echo "❌ Missing <security> tag: $skill_file"; ((failed++)); fi
+      if ! grep -q "^name:" "$skill_file"; then echo "❌ Missing name: $skill_file"; ((failed++)); fi
+      if ! grep -q "^description:" "$skill_file"; then echo "❌ Missing description: $skill_file"; ((failed++)); fi
     fi
   fi
 done <<< "$changed_skills"

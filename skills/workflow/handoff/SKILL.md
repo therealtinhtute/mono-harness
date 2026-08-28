@@ -1,17 +1,17 @@
 ---
 name: handoff
-version: "1.3.0"
+version: "1.4.0"
 model: sonnet
-description: "Prospective: persist current session state into the active plan's Current State section and a DB handoff row so the next session can resume without context loss."
+description: "Prospective: persist current session state into the active plan's Current State section so the next session can resume without context loss."
 argument-hint: "[context]"
 compatibility: Designed for Claude Code
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 Prefix your first line with `🥷` inline. Be direct: branch, blocker, next action first. No filler.
 
-Run `zharness preflight handoff --json`. If `zharness` is missing from PATH or its `version` is below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), degrade, never halt: print one line naming the fallback and follow `docs/playbooks/handoff.md` directly from repo-local state (git, plans, scripts). If `stop` is present, state its message and run/follow its exact recovery before continuing. Read and follow the returned `playbook` path.
+Follow `docs/playbooks/handoff.md` — it holds this stage's operating logic. Read `docs/WORKFLOW.md` first if the routing is unclear. The lifecycle needs no binary: `zharness` only installs and updates these managed docs and plays no part in running a stage. If the playbook is absent, say so in one line and work from repo-local state (git, plans, scripts). This stage appends to the plan's Current State section; there is no database row to write.
 
 Argument: `[context]` — optional additional context to include in the handoff, passed through as-is.
 

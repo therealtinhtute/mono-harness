@@ -1,5 +1,7 @@
 # Migrating to the zharness-backed workflow chain
 
+> **Historical — describes the 0.14.x harness.** Every command below (`init`, `import`, `validate`, `audit`, `query`, `db rebuild`, `preflight`) was deleted in v0.15, along with `harness.db` itself. Adopting the workflow chain today needs none of it: run `zharness install` to scaffold the managed docs, then follow `docs/WORKFLOW.md`. This page is kept because completed plans and decision records cite it as evidence of the pilot; read it as a record of what the 0.14.x line did, not as instructions. See [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) for what replaced it.
+
 This doc is the pilot-migration deliverable: install → import → validate → adopt, proven end-to-end on this repo's own real history. The original pilot-evidence log was removed by commit `655c6ac` and is retrievable at `655c6ac^`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`.
 
 ## Install
