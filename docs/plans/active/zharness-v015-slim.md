@@ -346,9 +346,11 @@ updated: 2026-08-27
 - `2026-08-28` — execution. decision: conflict path returns BEFORE saveBase/cleanup; success path persists base then drops stash. rationale: tests caught the first ordering persisting mutated base and deleting the stash on the conflict path, making --abort a no-op — exactly the guarantee R9 exists to keep.
 - `2026-08-28` — execution. decision: base semantics = last upstream the consumer reconciled onto (install bytes, fast-forward result, or finalized resolution), never the local drift. rationale: keeps diff3 ancestor deterministic and matches git's merge-commit model; local drift without recorded ancestor is never invented (R18).
 - `2026-08-28` — execution. decision: update test source provider via package-level srcBytesImpl hook rather than embedding tricks. rationale: in-package DI keeps embedded FS read-only truth while letting tests simulate any upstream version; no runtime flag surface added.
-
+- `2026-08-28` — execution. decision: AGENTS block merge inputs are all canonical marker-inclusive form, and a clean refresh records the upstream block — not the merged output — as base. rationale: judge #5 F2 found `(local, want, want)` made the conflict branch dead; fixing it exposed a second latent bug — `agentsBlockOf` returns marker-inclusive spans while `want` was the bare interior, so the comparison never matched, the merge deleted the markers, and the next run took the silent `!hasBlock` append path; and recording the merged output as base would let a later upstream touch silently win already-reconciled consumer lines.
+- `2026-08-28` — execution. decision: merge-walker skip loops may only consume applied hunks; overlap regions absorb every later hunk reaching into the cluster. rationale: judge #5 F1 proved a reachable infinite loop (`default: break` exits only the switch); the regression test then surfaced the inverse bug — zero-width insertions exactly at the cursor were swallowed silently, dropping upstream lines without conflict or error.
 
 - `2026-08-28T01:44:06Z` — session handoff. decision: end this session with p3-installer implementation complete and all local gates green (build/vet/test, S4 zero, doc-links, kill-list scan, CLI smoke) but WITHOUT the independent judge's validation entry — the judge #5 subagent spawn was interrupted twice by the environment, so p3 stays `in-progress` and no APPROVED entry is written, per the high-risk lane rule that the authoring session cannot certify its own work. Next session's first action: spawn judge #5 on this committed diff (scope: R8/R9/R10/R12/R18 checks + merge-walker correctness), then write the validation entry, flip p3 to checked, and proceed to p4-knowledge. rationale: landing the gated code now keeps the branch durable and reviewable; certification stays honest by staying absent.
+- `2026-08-28T03:30:00Z` — p3-installer judge #5 remediation. task_status: `DONE`. verification: judge #5 verdict `INDEPENDENT_CHECK_REJECTED` with F1-F6; all six fixed and committed as `b587c90` — walker cluster absorption (F1 hang, reproduced by judge), zero-width skip-loop bug (F1-adjacent, found by new regression test), AGENTS block base-ancestor merge (F2), uninstall restore of captured originals (F3), --continue base draft + stash cleanup (F4), test tautology + dead helpers (F5), gap doc mismatch (F6). Gates re-run green: go build/vet/test ./... (cli), verify-doc-links 0 findings, S4 rg zero, kill-list bounded scan ACTIONABLE=0, CLI smoke (install/idempotent/update) green. p3 stays `in-progress`; no APPROVED validation entry written — judge re-run on `4fa4103..b587c90` is the next gate.
 
 
 ## Validation
@@ -391,7 +393,7 @@ updated: 2026-08-27
 proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
 
 ## Current State and Next Action
-- active_phase: p3-installer (implementation + local gates green, COMMITTED; judge #5 independent check pending — first action next session)
+- active_phase: p3-installer (judge #5 REJECTED with F1-F6; fixes committed as b587c90, all local gates re-run green; p3 stays in-progress pending judge re-run — no APPROVED validation entry exists for p3)
 - lifecycle_status: in-progress
 - latest_run_id: 01M11621XRW4NFF6QX5BD0S4R9 (p2); 01M1154XP8J7JKW2F1K57847DX (p1); 01M11036QNF018W57CBMC1ZG2K (p0)
 - latest_trace_ids: [P0 W1-W3 + P1 W1-W2 flushed; hardening round recorded on p1 run]
@@ -399,4 +401,4 @@ proof_gaps: none | O2/O3 guard v3 notes remain scheduled in open_items
 - latest_handoff_id: 01M115ENJWGB99VKRT387354X6 (p1 close-phase); 01M115ENJ3VK8V8ZEH0H11R7JR (p0 close-phase)
 - blockers: none
 - open_items: [guard v3 notes (O2 bullet-line verdict anchoring, O3 undated-entry visibility); non-spine git/interview warn-only refs sweep at p4 knowledge layer; S5 identity test + S7 byte measurement land in p4]
-- exact_next_action: spawn judge #5 (goal-verify) on the p3 committed diff, then validation entry + flip checked; p4-knowledge follows
+- exact_next_action: re-run judge (goal-verify) on `4fa4103..b587c90` verifying F1-F6 remediation, then validation entry + flip checked; p4-knowledge follows
