@@ -12,8 +12,6 @@
 package interfaces
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +24,6 @@ func Execute(version string) int {
 		root.PrintErrln(err)
 		exit = 1
 	}
-	_ = os.Stdout // keep os import stable for future verb output plumbing
 	return exit
 }
 
