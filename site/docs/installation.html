@@ -7,80 +7,66 @@
   <meta name="description" content="Install mono-harness: full Claude Code bootstrap, skills only via skills.sh, or the zharness workflow binary.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;450;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
-  <header class="mast">
-    <div class="mast-inner">
-      <div class="mast-brand">
-        <a href="../index.html" class="mast-logo-link" aria-label="mono-harness">
-          <svg class="pi-logo-nav" viewBox="165.29 165.29 469.07 469.07" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/>
-            <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/>
-          </svg>
-          <span class="mast-title">MONO-HARNESS</span>
-        </a>
-      </div>
-      <nav class="mast-nav" aria-label="Primary">
-        <ul>
-          <li><a href="../index.html" class="nav-link">Overview</a></li>
-          <li><a href="installation.html" aria-current="page" class="nav-link nav-link-active">Install</a></li>
-          <li><a href="skills.html" class="nav-link">Skills</a></li>
-          <li><a href="cli.html" class="nav-link">CLI</a></li>
-          <li><a href="architecture.html" class="nav-link">Architecture</a></li>
-          <li><a href="workflow.html" class="nav-link">Workflow</a></li>
-          <li><a href="contributing.html" class="nav-link">Contribute</a></li>
-        </ul>
-      </nav>
-      <div class="mast-actions">
-        <span class="badge">v0.15</span>
-        <a href="https://github.com/therealtinhtute/mono-harness" class="button-secondary button-sm" target="_blank" rel="noopener noreferrer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-          </svg>
-          GitHub
-        </a>
+  <div id="progress" aria-hidden="true"></div>
+
+  <!-- ============ NAVIGATION ============ -->
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-name">MONO<svg class="pi-logo-nav" viewBox="165.29 165.29 469.43 469.43" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/><path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/></svg>HARNESS</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">Overview</a>
+        <a href="installation.html" class="active">Install</a>
+        <a href="skills.html">Skills</a>
+        <a href="cli.html">CLI</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="workflow.html">Workflow</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="nav-cta" href="installation.html">zharness install</a>
       </div>
     </div>
-  </header>
+  </nav>
 
   <main>
     <article>
-      <header class="page-head">
-        <p class="kicker">docs &middot; installation</p>
-        <h1>Installation &amp; Setup</h1>
+      <header class="page-head reveal">
+        <p class="kicker">docs · installation</p>
+        <h1>Installation &amp; Setup<i>.</i></h1>
         <p class="lede">Three installation pathways: complete agent workbench bootstrap, standalone skill installation via skills.sh, or the zharness binary.</p>
       </header>
 
-      <div class="prose">
-        <h2>Prerequisites</h2>
+      <div class="prose reveal">
+        <h2>Prerequisites<i>.</i></h2>
         <p>Ensure your environment satisfies the base requirements before proceeding with installation:</p>
         <ul>
-          <li><strong>Node.js 18+</strong> &mdash; Required for skill discovery and global CLI execution.</li>
-          <li><strong>jq</strong> &mdash; Required for terminal statusline processing.</li>
-          <li><strong>Git</strong> &mdash; Version control for repository tracking and hooks.</li>
-          <li><strong>Go 1.25+</strong> (Optional) &mdash; Required only if compiling the <code>zharness</code> binary from source.</li>
-          <li><strong>SSH Access</strong> &mdash; Valid key configured for <code>git@github.com:therealtinhtute/mono-harness.git</code>.</li>
+          <li><strong>Node.js 18+</strong> — Required for skill discovery and global CLI execution.</li>
+          <li><strong>jq</strong> — Required for terminal statusline processing.</li>
+          <li><strong>Git</strong> — Version control for repository tracking and hooks.</li>
+          <li><strong>Go 1.25+</strong> (Optional) — Required only if compiling the <code>zharness</code> binary from source.</li>
+          <li><strong>SSH Access</strong> — Valid key configured for <code>git@github.com:therealtinhtute/mono-harness.git</code>.</li>
         </ul>
         <p>After installation, review <code>~/.claude/settings.json</code> and ensure <code>ANTHROPIC_AUTH_TOKEN</code> or relevant provider tokens are set in your shell environment.</p>
       </div>
 
-      <div class="prose">
-        <h2>Option A: Full Claude Code bootstrap</h2>
+      <div class="prose reveal">
+        <h2>Option A: Full Claude Code bootstrap<i>.</i></h2>
         <p>The recommended approach for setting up a full agent workstation. The bootstrap script deploys global agent instructions (<code>CLAUDE.md</code>), core rules, validation hooks, a settings template, the statusline script, and installs all 14 skills globally.</p>
       </div>
 
-      <div class="terminal-block">
+      <div class="terminal-block reveal">
         <div class="terminal-header">
           <div class="terminal-dots">
             <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
           </div>
-          <span class="terminal-title">bash &mdash; bootstrap installer</span>
-          <span class="badge">sh</span>
+          <span class="terminal-title">bash — bootstrap installer</span>
+          <button class="copy-btn" data-copy data-cmd="bash setup/install.sh">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># Clone repository to local workstation</span>
 <span class="tok-prm">$</span><span class="tok-cmd">git</span> clone git@github.com:therealtinhtute/mono-harness.git <span class="tok-path">~/mono-harness</span>
@@ -90,110 +76,110 @@
 <span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">setup/install.sh</span></code></pre>
       </div>
 
-      <div class="prose">
+      <div class="prose reveal">
         <p>Existing configuration files such as <code>~/.claude/settings.json</code> are safely preserved. Backups are created before replacing any global dotfiles.</p>
       </div>
 
-      <div class="prose">
-        <h2>Option B: Skills only (via skills.sh)</h2>
+      <div class="prose reveal">
+        <h2>Option B: Skills only (via skills.sh)<i>.</i></h2>
         <p>If you prefer to install only the skills without configuring global agent settings or rules, use the standard <code>skills.sh</code> package manager.</p>
       </div>
 
-      <div class="terminal-block">
+      <div class="terminal-block reveal">
         <div class="terminal-header">
           <div class="terminal-dots">
             <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
           </div>
-          <span class="terminal-title">bash &mdash; skills.sh package manager</span>
-          <span class="badge">npm</span>
+          <span class="terminal-title">bash — skills.sh package manager</span>
+          <button class="copy-btn" data-copy data-cmd="npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># Inspect published skills in repository without installing</span>
-<span class="tok-prm">$</span><span class="tok-cmd">npx</span> skills add git@github.com:therealtinhtute/mono-harness.git <span class="tok-flag">--list</span>
+<span class="tok-prm">$</span><span class="tok-cmd">npx</span> skills add git@github.com:therealtinhtute/mono-harness.git <span class="tok-kw">--list</span>
 
 <span class="tok-cmt"># Install all skills globally for Claude Code</span>
-<span class="tok-prm">$</span><span class="tok-cmd">npx</span> skills add git@github.com:therealtinhtute/mono-harness.git <span class="tok-flag">-a</span> claude-code <span class="tok-flag">-g</span> <span class="tok-flag">-y</span></code></pre>
+<span class="tok-prm">$</span><span class="tok-cmd">npx</span> skills add git@github.com:therealtinhtute/mono-harness.git <span class="tok-kw">-a</span> claude-code <span class="tok-kw">-g</span> <span class="tok-kw">-y</span></code></pre>
       </div>
 
-      <div class="prose">
-        <h2>Option C: zharness binary installation</h2>
+      <div class="prose reveal">
+        <h2>Option C: zharness binary installation<i>.</i></h2>
         <p>The <code>zharness</code> CLI manages the lifecycle of workflow playbooks, identity documents, and base hashes in target projects.</p>
       </div>
 
-      <div class="card-grid">
+      <div class="card-grid reveal">
         <div class="card">
-          <h3 style="margin:0 0 var(--space-xs) 0; font-family:var(--font-mono); font-size:var(--text-md); color:var(--color-primary);">Release Binary</h3>
-          <p style="margin:0 0 var(--space-sm) 0; font-size:var(--text-sm); color:var(--color-on-surface-variant);">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+            <h3 style="margin:0;">Release Binary</h3>
+            <span class="badge">Prebuilt</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:16px;">
             Download and install the prebuilt binary directly to <code>~/.local/bin/zharness</code> (Linux &amp; macOS on amd64 / arm64).
           </p>
           <div class="terminal-block" style="margin:0;">
             <pre><code><span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/install-zharness.sh</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-flag">--version</span></code></pre>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">--version</span></code></pre>
           </div>
         </div>
 
         <div class="card">
-          <h3 style="margin:0 0 var(--space-xs) 0; font-family:var(--font-mono); font-size:var(--text-md); color:var(--color-primary);">Build From Source</h3>
-          <p style="margin:0 0 var(--space-sm) 0; font-size:var(--text-sm); color:var(--color-on-surface-variant);">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
+            <h3 style="margin:0;">Build From Source</h3>
+            <span class="badge">Go 1.25</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:16px;">
             Compile the binary directly with Go 1.25 and CGO disabled.
           </p>
           <div class="terminal-block" style="margin:0;">
             <pre><code><span class="tok-prm">$</span><span class="tok-cmd">cd</span> cli
 <span class="tok-prm">$</span>CGO_ENABLED=<span class="tok-num">0</span> <span class="tok-cmd">go</span> build -o ~/.local/bin/zharness ./cmd/zharness
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-flag">--version</span></code></pre>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">--version</span></code></pre>
           </div>
         </div>
       </div>
 
-      <div class="prose">
-        <h2>First run: Project workflow setup</h2>
+      <div class="prose reveal">
+        <h2>First run: Project workflow setup<i>.</i></h2>
         <p>To enable the structured workflow in any target Git repository, complete these two steps:</p>
       </div>
 
-      <div class="specimen">
-        <p class="specimen-label">Repository Workflow Setup</p>
-        <div class="specimen-body">
-          <div class="specimen-row">
-            <span class="specimen-key">Step 1 &middot; Scaffold Docs</span>
-            <div>
-              <p style="margin:0 0 var(--space-xs) 0;">Run <code>zharness install</code> from the repository root. This scaffolds canonical playbooks into <code>docs/playbooks/</code>, creates <code>WORKFLOW.md</code>, adds the <code>AGENTS.md</code> capabilities block, and tracks upstream hashes under <code>.zharness/base/</code>.</p>
-              <code>zharness install</code>
-            </div>
-          </div>
-          <div class="specimen-row">
-            <span class="specimen-key">Step 2 &middot; Install Hooks</span>
-            <div>
-              <p style="margin:0 0 var(--space-xs) 0;">Install the repository pre-commit hook to enforce the two fail-closed safety guarantees (proof re-execution and independent judge for high-risk lanes).</p>
-              <code>bash scripts/install-git-hooks.sh</code>
-            </div>
-          </div>
+      <div class="spec reveal">
+        <div class="spec-row spec-head">
+          <div></div><div>Step</div><div>Action</div><div>Details</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">01</div>
+          <div class="spec-scene">Scaffold Docs</div>
+          <div class="spec-cell"><code>zharness install</code></div>
+          <div class="spec-cell">Scaffolds canonical playbooks into <code>docs/playbooks/</code>, creates <code>WORKFLOW.md</code>, adds <code>AGENTS.md</code> block.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">02</div>
+          <div class="spec-scene">Install Hooks</div>
+          <div class="spec-cell"><code>bash scripts/install-git-hooks.sh</code></div>
+          <div class="spec-cell">Installs repository pre-commit hook to enforce fail-closed proof re-execution and independent judge separation.</div>
         </div>
       </div>
 
-      <div class="prose">
-        <h2>Verification</h2>
+      <div class="prose reveal">
+        <h2>Verification<i>.</i></h2>
         <p>Verify that your installation is functional and ready for development work:</p>
       </div>
 
-      <div class="terminal-block">
+      <div class="terminal-block reveal">
         <div class="terminal-header">
           <div class="terminal-dots">
             <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
           </div>
-          <span class="terminal-title">bash &mdash; installation verification</span>
-          <span class="badge">verification</span>
+          <span class="terminal-title">bash — installation verification</span>
+          <button class="copy-btn" data-copy data-cmd="zharness --version">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># 1. Verify CLI installation</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-flag">--version</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">--version</span>
 <span class="tok-out">zharness version v0.15.0</span>
 
 <span class="tok-cmt"># 2. Verify CLI commands</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">install</span> <span class="tok-flag">--help</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span> <span class="tok-flag">--help</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">uninstall</span> <span class="tok-flag">--help</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">install</span> <span class="tok-kw">--help</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span> <span class="tok-kw">--help</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">uninstall</span> <span class="tok-kw">--help</span>
 
 <span class="tok-cmt"># 3. Test pre-commit hook enforcement</span>
 <span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/install-git-hooks.sh</span>
@@ -202,21 +188,19 @@
     </article>
   </main>
 
-  <footer class="foot-letter">
-    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
-    <nav class="foot-nav" aria-label="Footer">
-      <ul>
-        <li><a href="../index.html">Overview</a></li>
-        <li><a href="installation.html">Install</a></li>
-        <li><a href="skills.html">Skills</a></li>
-        <li><a href="cli.html">CLI</a></li>
-        <li><a href="architecture.html">Architecture</a></li>
-        <li><a href="workflow.html">Workflow</a></li>
-        <li><a href="contributing.html">Contribute</a></li>
-      </ul>
-    </nav>
-    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
-    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div class="foot-inner">
+      <span><strong style="color:var(--ink)">mono-harness</strong> · MIT License</span>
+      <a href="../index.html">Overview</a>
+      <a href="installation.html">Install</a>
+      <a href="skills.html">Skills</a>
+      <a href="cli.html">CLI</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="workflow.html">Workflow</a>
+      <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GitHub</a>
+      <span class="foot-note">mono-harness is an open-source AI agent engineering harness designed with architectural minimalism, committed markdown truth, and fail-closed pre-commit guards.</span>
+    </div>
   </footer>
 
   <script src="../js/main.js"></script>

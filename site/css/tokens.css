@@ -1,134 +1,65 @@
 /* OpenPI Blueprint Design System · tokens.css
- * Warm cream canvas (#f6f5f0), 30px blueprint grid, Space Grotesk + Instrument Serif + Inter + JetBrains Mono, #2b49d8 primary accent
+ * Warm cream canvas (#f6f5f0), 30px blueprint grid, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #2b49d8 cobalt blue accent
  */
 
 :root {
-  /* ── Canvas / Surface colors ────────────────────────────── */
-  --color-surface: #f6f5f0;
-  --color-surface-dim: #efeee7;
-  --color-surface-bright: #ffffff;
-  --color-surface-container-lowest: #f6f5f0;
-  --color-surface-container-low: #f6f5f0;
-  --color-surface-container: #efeee7;
-  --color-surface-container-high: #e9e8e0;
-  --color-surface-container-highest: #dcd8cb;
-  --color-on-surface: #12110e;
-  --color-on-surface-variant: #57544b;
-  --color-inverse-surface: #12110e;
-  --color-inverse-on-surface: #f6f5f0;
-  --color-outline: #dcd8cb;
-  --color-outline-variant: #c6c2b2;
-  --color-surface-tint: #124b68;
-  --color-background: #f6f5f0;
-  --color-on-background: #12110e;
-  --color-surface-variant: #dcd8cb;
+  /* ── Core OpenPI Color Palette ───────────────────────────── */
+  --paper: #F6F5F0;
+  --paper-2: #EFEEE7;
+  --paper-3: #E8E6DD;
+  --ink: #12110E;
+  --ink-soft: #57544B;
+  --ink-faint: #8B877B;
+  --rule: #DCD8CB;
+  --rule-dark: #C6C2B2;
+  --blue: #2B49D8;
+  --blue-ink: #2440C0;
+  --blue-light: #7D96FF;
+  --blue-glow: rgba(43, 73, 216, 0.12);
+  --yellow-mark: rgba(243, 224, 122, 0.65);
 
-  /* ── Brand & Accent colors ──────────────────────────────── */
-  --color-primary: #124b68;
-  --color-on-primary: #f6f5f0;
-  --color-primary-container: #8db5c8;
-  --color-on-primary-container: #12110e;
-  --color-inverse-primary: #8db5c8;
-  --color-secondary: #57544b;
-  --color-on-secondary: #f6f5f0;
-  --color-secondary-container: #a8a494;
-  --color-on-secondary-container: #12110e;
-  --color-tertiary: #0e3b52;
-  --color-on-tertiary: #f6f5f0;
-  --color-tertiary-container: #1b587a;
-  --color-on-tertiary-container: #f6f5f0;
-  --color-error: #d32f2f;
-  --color-on-error: #f6f5f0;
-  --color-error-container: #ffcdd2;
-  --color-on-error-container: #12110e;
+  /* ── Typography Families ─────────────────────────────────── */
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --grot: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+  --serif-en: "Instrument Serif", Georgia, serif;
+  --body: "Inter", system-ui, -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
 
-  /* ── Fixed Colors ───────────────────────────────────────── */
-  --color-primary-fixed: #8db5c8;
-  --color-primary-fixed-dim: #124b68;
-  --color-on-primary-fixed: #12110e;
-  --color-on-primary-fixed-variant: #124b68;
-  --color-secondary-fixed: #a8a494;
-  --color-secondary-fixed-dim: #57544b;
-  --color-on-secondary-fixed: #f6f5f0;
-  --color-on-secondary-fixed-variant: #57544b;
-  --color-tertiary-fixed: #1b587a;
-  --color-tertiary-fixed-dim: #0e3b52;
-  --color-on-tertiary-fixed: #f6f5f0;
-  --color-on-tertiary-fixed-variant: #0e3b52;
-
-  /* ── Backward Compatibility Aliases ─────────────────────── */
-  --color-paper: var(--color-surface);
-  --color-paper-2: var(--color-surface-container);
-  --color-paper-3: var(--color-surface-container-high);
-  --color-rule: var(--color-outline);
-  --color-rule-strong: var(--color-outline-variant);
-  --color-ink: var(--color-on-surface);
-  --color-ink-soft: var(--color-on-surface-variant);
-  --color-ink-faint: #787469;
-  --color-accent: var(--color-primary);
-  --color-accent-2: var(--color-secondary);
-  --color-tint-moss: rgba(18, 75, 104, 0.12);
-  --color-on-accent: var(--color-on-primary);
-
-  /* ── Typography: font-families ──────────────────────────── */
-  --font-display: 'Space Grotesk', -apple-system, sans-serif;
-  --font-headline: 'Instrument Serif', Georgia, serif;
-  --font-body: 'Inter', -apple-system, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Geist Mono', monospace;
-
-  /* ── Typography: scale ──────────────────────────────────── */
-  --text-display: clamp(2.75rem, 5vw + 1rem, 4.75rem);
-  --text-headline-lg: clamp(2.25rem, 3.5vw + 0.5rem, 2.875rem);
-  --text-headline-md: clamp(1.75rem, 2.5vw + 0.5rem, 2.125rem);
-  --text-title-lg: 1.625rem;
-  --text-body-lg: 1.125rem;
-  --text-body-md: 1rem;
-  --text-label-md: 0.84375rem; /* 13.5px */
-  --text-label-sm: 0.6875rem; /* 11px */
-
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
-  --text-h2: var(--text-headline-md);
-
-  /* ── Spacing scale ──────────────────────────────────────── */
+  /* ── Layout & Spacing ────────────────────────────────────── */
+  --max: 1240px;
+  --pad: clamp(20px, 4.5vw, 56px);
   --space-unit: 8px;
   --space-xs: 4px;
   --space-sm: 12px;
   --space-md: 24px;
   --space-lg: 40px;
   --space-xl: 64px;
-  --space-gutter: 24px;
-  --container-max: 1240px;
-  --content-max: 1240px;
-  --measure: 68ch;
-  --page-gutter: clamp(20px, 4.5vw, 56px);
-  --gap-section: clamp(40px, 5vw, 64px);
 
-  /* Spacing aliases */
-  --space-3xs: 2px;
-  --space-2xs: 4px;
-  --space-2xl: 64px;
-  --space-3xl: 96px;
-
-  /* ── Elevation & Shadows ────────────────────────────────── */
-  --elevation-sm: 0 1px 0 var(--color-outline);
-  --elevation-md: 0 20px 44px -24px rgba(18, 17, 14, 0.28);
-  --elevation-lg: 0 0 0 3px rgba(18, 75, 104, 0.15);
-  --shadow-soft: var(--elevation-md);
-
-  /* ── Border Radii ───────────────────────────────────────── */
-  --radius-sm: 3px;
-  --radius-default: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 999px;
-
-  /* ── Rules ──────────────────────────────────────────────── */
-  --rule-hair: 1px;
-  --rule-strong: 1px;
+  /* ── Compatibility Aliases ──────────────────────────────── */
+  --color-surface: var(--paper);
+  --color-surface-dim: var(--paper-2);
+  --color-surface-container: var(--paper-2);
+  --color-surface-container-high: var(--paper-3);
+  --color-on-surface: var(--ink);
+  --color-on-surface-variant: var(--ink-soft);
+  --color-outline: var(--rule);
+  --color-outline-variant: var(--rule-dark);
+  --color-primary: var(--blue);
+  --color-primary-container: var(--blue-glow);
+  --color-on-primary: var(--paper);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-dark);
+  --color-accent: var(--blue);
+  --color-blue: var(--blue);
+  --font-display: var(--grot);
+  --font-headline: var(--serif-en);
+  --font-body: var(--body);
+  --font-mono: var(--mono);
+  --container-max: var(--max);
+  --page-gutter: var(--pad);
 }

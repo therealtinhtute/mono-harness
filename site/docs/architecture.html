@@ -7,194 +7,188 @@
   <meta name="description" content="How the harness actually works after the v0.15 slim release: committed markdown is truth, three scaffolding verbs, two fail-closed pre-commit guards, and zero daemons.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;450;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/tokens.css">
   <link rel="stylesheet" href="../css/main.css">
 </head>
 <body>
-  <header class="mast">
-    <div class="mast-inner">
-      <div class="mast-brand">
-        <a href="../index.html" class="mast-logo-link" aria-label="mono-harness">
-          <svg class="pi-logo-nav" viewBox="165.29 165.29 469.07 469.07" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/>
-            <path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/>
-          </svg>
-          <span class="mast-title">MONO-HARNESS</span>
-        </a>
-      </div>
-      <nav class="mast-nav" aria-label="Primary">
-        <ul>
-          <li><a href="../index.html" class="nav-link">Overview</a></li>
-          <li><a href="installation.html" class="nav-link">Install</a></li>
-          <li><a href="skills.html" class="nav-link">Skills</a></li>
-          <li><a href="cli.html" class="nav-link">CLI</a></li>
-          <li><a href="architecture.html" aria-current="page" class="nav-link nav-link-active">Architecture</a></li>
-          <li><a href="workflow.html" class="nav-link">Workflow</a></li>
-          <li><a href="contributing.html" class="nav-link">Contribute</a></li>
-        </ul>
-      </nav>
-      <div class="mast-actions">
-        <span class="badge">v0.15</span>
-        <a href="https://github.com/therealtinhtute/mono-harness" class="button-secondary button-sm" target="_blank" rel="noopener noreferrer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-          </svg>
-          GitHub
-        </a>
+  <div id="progress" aria-hidden="true"></div>
+
+  <!-- ============ NAVIGATION ============ -->
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-name">MONO<svg class="pi-logo-nav" viewBox="165.29 165.29 469.43 469.43" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M165.29 165.29 H517.36 V400 H400 V517.36 H282.65 V634.72 H165.29 Z M282.65 282.65 V400 H400 V282.65 Z"/><path fill="currentColor" d="M517.36 400 H634.72 V634.72 H517.36 Z"/></svg>HARNESS</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">Overview</a>
+        <a href="installation.html">Install</a>
+        <a href="skills.html">Skills</a>
+        <a href="cli.html">CLI</a>
+        <a href="architecture.html" class="active">Architecture</a>
+        <a href="workflow.html">Workflow</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="nav-cta" href="installation.html">zharness install</a>
       </div>
     </div>
-  </header>
+  </nav>
 
   <main>
     <article>
-      <header class="page-head">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-          <p class="kicker" style="margin: 0;">docs &middot; architecture</p>
-          <span class="badge">v0.15</span>
-        </div>
-        <h1>Architecture</h1>
+      <header class="page-head reveal">
+        <p class="kicker">docs · architecture</p>
+        <h1>Architecture<i>.</i></h1>
         <p class="lede">How the harness actually works after the v0.15 &ldquo;slim&rdquo; release, and why it is shaped this way. Decisions that are expensive to reverse have their own records under <code>docs/decisions/</code>; this page describes the running system.</p>
       </header>
 
-      <div class="prose">
-        <h2>The One Idea</h2>
+      <div class="prose reveal">
+        <h2>The One Idea<i>.</i></h2>
         <p><strong>Committed markdown is the truth. The binary is a scaffolding tool, not a runtime.</strong></p>
         <p><code>zharness</code> owns exactly three verbs &mdash; <code>install</code>, <code>update</code>, <code>uninstall</code> &mdash; that manage a doc set inside a consumer git repository. The whole lifecycle (<code>brainstorm</code> &rarr; <code>to-plan</code> &rarr; <code>work</code> &rarr; <code>check</code> &rarr; <code>handoff</code>) runs from the committed markdown, repo scripts, and a pre-commit hook, with the binary absent from PATH. Delete the binary and every derived artifact, and the same lifecycle still executes, because the only irreplaceable bytes are the ones Git is already tracking.</p>
       </div>
 
-      <div class="terminal-block">
+      <div class="terminal-block reveal">
         <div class="terminal-header">
           <div class="terminal-dots">
             <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
-            <span class="terminal-dot"></span>
           </div>
-          <span class="terminal-title">zharness &mdash; three verbs</span>
-          <span class="badge">Go CLI</span>
+          <span class="terminal-title">zharness — architecture overview</span>
+          <span class="badge">Go 1.25</span>
         </div>
         <pre><code><span class="tok-path">cli/cmd/zharness</span>                 <span class="tok-cmt">one Go binary (cobra), three verbs</span>
-        <span class="tok-punct">|</span>
-        <span class="tok-punct">v</span>
+        <span class="tok-prm">|</span>
+        <span class="tok-prm">v</span>
 <span class="tok-cmd">install</span>                          <span class="tok-out">scaffolds the managed set, records a base, reports brownfield read-only</span>
 <span class="tok-cmd">update</span>                           <span class="tok-out">three-way merge of managed files onto the recorded base</span>
 <span class="tok-cmd">uninstall</span>                        <span class="tok-out">removes the managed set; consumer bytes are never destroyed</span></code></pre>
       </div>
 
-      <div class="prose">
-        <h2>The Three Verbs</h2>
+      <div class="prose reveal">
+        <h2>The Three Verbs<i>.</i></h2>
         <p>The Go CLI <code>zharness</code> operates strictly as a repository maintenance tool:</p>
       </div>
 
-      <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 20px 0;">
+      <div class="card-grid reveal">
         <div class="card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">zharness install</h3>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-family: var(--mono); font-size: 16px;">zharness install</h3>
             <span class="badge">Scaffold</span>
           </div>
-          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Scaffolds the managed doc set, writes the base manifest into <code>.zharness/base/</code>, and emits a read-only brownfield report. Never overwrites unmanaged files.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Scaffolds the managed doc set, writes the base manifest into <code>.zharness/base/</code>, and emits a read-only brownfield report. Never overwrites unmanaged files.</p>
         </div>
         <div class="card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">zharness update</h3>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-family: var(--mono); font-size: 16px;">zharness update</h3>
             <span class="badge">Sync</span>
           </div>
-          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Performs a diff3 three-way merge of upstream changes onto local files against the recorded base. Conflicting edits are flagged with standard git conflict markers.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Performs a diff3 three-way merge of upstream changes onto local files against the recorded base. Conflicting edits are flagged with standard git conflict markers.</p>
         </div>
         <div class="card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">zharness uninstall</h3>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-family: var(--mono); font-size: 16px;">zharness uninstall</h3>
             <span class="badge">Teardown</span>
           </div>
-          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">Safely removes managed files, restores original files backed up at install time, and preserves any locally modified consumer files with a warning.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Safely removes managed files, restores original files backed up at install time, and preserves any locally modified consumer files with a warning.</p>
         </div>
       </div>
 
-      <div class="prose">
+      <div class="prose reveal">
         <p><code>AllTargets</code> is the managed set: <code>docs/WORKFLOW.md</code>, <code>docs/PROJECT.md</code> (scaffolded from identity template), and the six playbooks. <code>AGENTS.md</code> is handled separately and surgically &mdash; only the marked <code>ZHARNESS</code> block inside it is swapped; consumer prose around it is untouched.</p>
-        <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries plus content-addressed upstream blobs. Update diffs local edits against that recorded base with a diff3 merge; overlapping edits stop with in-file conflict markers, resolved by a human via <code>--continue</code> (records the conflict-time upstream as the new base; the resolution stays as local drift) or discarded via <code>--abort</code> (stash restore, byte-for-byte).</p>
+        <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries plus content-addressed upstream blobs. Update diffs local edits against that recorded base with a diff3 merge; overlapping edits stop with in-file conflict markers, resolved by a human via <code>--continue</code> or discarded via <code>--abort</code>.</p>
+      </div>
 
-        <h2>The Two Fail-Closed Guards</h2>
+      <div class="prose reveal">
+        <h2>The Two Fail-Closed Guards<i>.</i></h2>
         <p>Exactly two fail-closed guarantees exist in the whole system, both in the pre-commit hook (<code>scripts/install-git-hooks.sh</code>, shared core between the <code># ZGUARD-CORE</code> markers):</p>
       </div>
 
-      <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin: 20px 0;">
+      <div class="card-grid reveal">
         <div class="card">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span class="badge">Guard 1</span>
-            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">Proof Re-execution</h3>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+            <span class="badge badge-blue">Guard 1</span>
+            <h3 style="margin: 0;">Proof Re-execution</h3>
           </div>
-          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">A newly added <code>## Validation</code> entry with verdict <code>APPROVED</code> (or <code>APPROVE_WITH_REQUESTS</code>) has every nested proof command re-executed by the pre-commit hook. Any non-zero exit immediately rejects the commit.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">A newly added <code>## Validation</code> entry with verdict <code>APPROVED</code> (or <code>APPROVE_WITH_REQUESTS</code>) has every nested proof command re-executed by the pre-commit hook. Any non-zero exit immediately rejects the commit.</p>
         </div>
         <div class="card">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-            <span class="badge">Guard 2</span>
-            <h3 style="margin: 0; font-family: var(--font-display); font-size: 1.15rem;">Independent Judge</h3>
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+            <span class="badge badge-blue">Guard 2</span>
+            <h3 style="margin: 0;">Independent Judge</h3>
           </div>
-          <p style="margin: 0; font-size: 0.9375rem; color: var(--color-ink-soft);">On an active plan marked <code>lane: high-risk</code>, a newly added Validation entry carrying <code>judge: same-session</code> is strictly rejected. High-risk changes mandate an independent session or reviewer.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">On an active plan marked <code>lane: high-risk</code>, a newly added Validation entry carrying <code>judge: same-session</code> is strictly rejected. High-risk changes mandate an independent session or reviewer.</p>
         </div>
       </div>
 
-      <div class="prose">
+      <div class="prose reveal">
         <p>CI workflows (<code>.github/workflows/cli-ci.yml</code>) re-run both checks on pushed commits, so bypassing local git hooks gains nothing. The hook reads staged bytes directly; there is no pass marker or hash that an authoring agent can forge.</p>
+      </div>
 
-        <h2>Embedded Doc Set &amp; Projection</h2>
+      <div class="prose reveal">
+        <h2>Embedded Doc Set &amp; Projection<i>.</i></h2>
         <p>The <code>zharness</code> binary carries two embedded filesystems under <code>cli/docs/embedded/</code>:</p>
         <ul>
           <li><strong>The Managed Set:</strong> <code>AGENTS.md</code>, <code>WORKFLOW.md</code>, and <code>playbooks/</code>. Projected into <code>docs/</code> upon install or update. <code>docs/playbooks/*.md</code> is a byte-identical projection of the embedded source: edit <code>cli/docs/embedded/</code>, never the projection.</li>
           <li><strong>Templates:</strong> <code>templates/</code> &mdash; emitted on demand (e.g. <code>PROJECT.md</code> identity template), never projected automatically.</li>
         </ul>
+      </div>
 
-        <h2>State Model: What Lives Where</h2>
+      <div class="prose reveal">
+        <h2>State Model: What Lives Where<i>.</i></h2>
         <p>The state model is entirely filesystem-driven and Git-native:</p>
       </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 35%;">Path</th>
-              <th>Nature &amp; Purpose</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>docs/plans/active/*.md</code></td>
-              <td><strong>Authoritative</strong> &mdash; the one active initiative record; append-only <code>## Progress</code> / <code>## Decisions</code> / <code>## Validation</code>.</td>
-            </tr>
-            <tr>
-              <td><code>docs/PROJECT.md</code></td>
-              <td><strong>Authoritative</strong> &mdash; repository identity, filled at the <code>brainstorm lock</code> step.</td>
-            </tr>
-            <tr>
-              <td><code>docs/memory/*.md</code></td>
-              <td><strong>Authoritative</strong> &mdash; project memory as markdown files; agents search and grep directly (<code>docs/memory/{id}.md</code>).</td>
-            </tr>
-            <tr>
-              <td><code>docs/decisions/</code>, <code>docs/research/</code>, <code>docs/audit/</code></td>
-              <td><strong>Authoritative</strong> &mdash; permanent architecture decision records and research logs.</td>
-            </tr>
-            <tr>
-              <td><code>docs/playbooks/</code>, <code>docs/WORKFLOW.md</code></td>
-              <td><strong>Projected</strong> &mdash; projected from <code>cli/docs/embedded/</code>; updated via <code>zharness update</code>.</td>
-            </tr>
-            <tr>
-              <td><code>.zharness/base/</code></td>
-              <td><strong>Installer Bookkeeping</strong> &mdash; base manifest (<code>manifest.json</code>) + content-addressed blobs for diff3 merges; gitignored.</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="spec reveal">
+        <div class="spec-row spec-head">
+          <div></div><div>Path</div><div>Classification</div><div>Purpose &amp; Guarantees</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">01</div>
+          <div class="spec-scene"><code>docs/plans/active/*.md</code></div>
+          <div class="spec-cell"><span class="badge">Authoritative</span></div>
+          <div class="spec-cell">The single active initiative record; append-only Progress, Decisions, and Validation.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">02</div>
+          <div class="spec-scene"><code>docs/PROJECT.md</code></div>
+          <div class="spec-cell"><span class="badge">Authoritative</span></div>
+          <div class="spec-cell">Repository identity and architecture scope, locked during brainstorm phase.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">03</div>
+          <div class="spec-scene"><code>docs/memory/*.md</code></div>
+          <div class="spec-cell"><span class="badge">Authoritative</span></div>
+          <div class="spec-cell">Project memory as markdown files; agents search and grep directly.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">04</div>
+          <div class="spec-scene"><code>docs/decisions/</code></div>
+          <div class="spec-cell"><span class="badge">Authoritative</span></div>
+          <div class="spec-cell">Permanent architecture decision records (ADRs) with sequential numbering.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">05</div>
+          <div class="spec-scene"><code>docs/playbooks/</code></div>
+          <div class="spec-cell"><span class="badge">Projected</span></div>
+          <div class="spec-cell">Projected from <code>cli/docs/embedded/</code>; synchronized via <code>zharness update</code>.</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">06</div>
+          <div class="spec-scene"><code>.zharness/base/</code></div>
+          <div class="spec-cell"><span class="badge">Bookkeeping</span></div>
+          <div class="spec-cell">Base manifest (<code>manifest.json</code>) and upstream blobs for diff3 merges; gitignored.</div>
+        </div>
       </div>
 
-      <div class="prose">
-        <h2>Historical Note: Deletion of SQLite in v0.15</h2>
-        <p>In versions prior to v0.15 (the 0.14.x series), the harness utilized a local SQLite database (<code>harness.db</code>) as a derived index for tables such as <code>managed_docs</code>, <code>plan_index</code>, and <code>memories</code>, alongside legacy CLI commands (<code>preflight</code>, <code>init</code>, <code>db rebuild</code>, <code>check record</code>) and conflict scratchdirs under <code>.kit/</code>.</p>
-        <p>In the v0.15 &ldquo;slim&rdquo; release, the database, background runtime assumptions, and legacy commands were completely deleted. The resulting architecture is zero-daemon and zero-database: committed markdown files are the sole source of truth, and the Go binary is strictly a three-verb scaffolding tool.</p>
+      <div class="prose reveal">
+        <h2>Evolution &amp; Simplicity in v0.15<i>.</i></h2>
+        <p>In versions prior to v0.15, the harness utilized secondary derived indexes, complex caching layers, and background runtime assumptions.</p>
+        <p>In the v0.15 &ldquo;slim&rdquo; release, all secondary indexes, background runtime assumptions, and legacy commands were completely eliminated. The resulting architecture is zero-daemon and zero-database: committed markdown files are the sole source of truth, and the Go binary is strictly a three-verb scaffolding tool.</p>
       </div>
 
-      <div class="cta">
-        <p class="cta__line">Ready to see how the playbooks and workflow run?</p>
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <div class="pull-quote reveal">
+        Ready to see how the playbooks and workflow run?<br />
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
           <a class="button-primary" href="workflow.html">View Workflow</a>
           <a class="button-secondary" href="cli.html">Explore CLI Verbs</a>
         </div>
@@ -202,21 +196,19 @@
     </article>
   </main>
 
-  <footer class="foot-letter">
-    <p class="foot-letter__close">Yours,<br><span class="foot-letter__sign">&mdash; mono-harness</span></p>
-    <nav class="foot-nav" aria-label="Footer">
-      <ul>
-        <li><a href="../index.html">Overview</a></li>
-        <li><a href="installation.html">Install</a></li>
-        <li><a href="skills.html">Skills</a></li>
-        <li><a href="cli.html">CLI</a></li>
-        <li><a href="architecture.html">Architecture</a></li>
-        <li><a href="workflow.html">Workflow</a></li>
-        <li><a href="contributing.html">Contribute</a></li>
-      </ul>
-    </nav>
-    <p class="foot-letter__ps">P.S. &mdash; every command and count on these pages is real: it comes from <code>zharness --help</code> and the repository itself.</p>
-    <p class="foot-letter__meta">MIT &middot; <a href="https://github.com/therealtinhtute/mono-harness">github.com/therealtinhtute/mono-harness</a></p>
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div class="foot-inner">
+      <span><strong style="color:var(--ink)">mono-harness</strong> · MIT License</span>
+      <a href="../index.html">Overview</a>
+      <a href="installation.html">Install</a>
+      <a href="skills.html">Skills</a>
+      <a href="cli.html">CLI</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="workflow.html">Workflow</a>
+      <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GitHub</a>
+      <span class="foot-note">mono-harness is an open-source AI agent engineering harness designed with architectural minimalism, committed markdown truth, and fail-closed pre-commit guards.</span>
+    </div>
   </footer>
 
   <script src="../js/main.js"></script>

@@ -123,11 +123,13 @@ updated: 2026-08-28
 <!-- Append-only log of execution events. Format: - [date timestamp] (phase-slug): description -->
 - [2026-08-28 05:10 UTC] (p1-design-tokens-and-styles): Overhauled site/css/tokens.css, site/css/main.css, and site/js/main.js with full OpenPI design tokens (warm cream canvas #f6f5f0, 30px 5% opacity blueprint grid, Space Grotesk + Instrument Serif + Inter + JetBrains Mono, #2b49d8 primary button pills, technical cards, terminal blocks).
 - [2026-08-28 05:12 UTC] (p2-content-sync-and-pages): Synchronized all 7 HTML pages (site/index.html and site/docs/*.html) with OpenPI layout, modern Google Fonts links, and v0.15 architecture (3 CLI verbs, 2 fail-closed pre-commit guards, markdown-first truth, 14 skills catalog, 0 SQLite).
+- [2026-08-28 06:50 UTC] (p4-openpi-live-style-fidelity): Extracted direct style rules from live https://tt-a1i.github.io/openpi/ and https://github.com/tt-a1i/openpi. Upgraded tokens.css, main.css, main.js, index.html, and all 6 docs pages (installation, skills, cli, architecture, workflow, contributing) to achieve 99.99% OpenPI fidelity (30px blueprint grid, noise filter overlay, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #2B49D8 cobalt blue, interactive typewriter terminal, scroll progress bar, spec tables, routing lines, safety lists, and minimal footer). Verified in headless browser.
 - [2026-08-28 05:14 UTC] (p3-verification-and-polish): Verified zero broken links across all HTML files (7 files checked, 0 errors), verified bash scripts/verify-doc-links.sh (0 findings), and confirmed legacy SQLite scan clean.
 
 ## Decisions
 <!-- Append-only record of mid-flight decisions and trade-offs made during planning and execution. -->
 - [2026-08-28 05:08 UTC] (OpenPI Voice & Blueprint Layout): Kept zharness and mono-harness naming intact while fully adopting OpenPI blueprint design system and technical brand voice across all web documentation pages.
+- [2026-08-28 06:45 UTC] (OpenPI 99.99% Direct Style Match): User requested direct browser extraction and 99.99% style alignment with live https://tt-a1i.github.io/openpi/. Adding Phase 4 to active plan.
 
 ## Validation
 <!-- Append-only log of test runs, reviews, and gate checks. Format per check playbook. -->
@@ -135,10 +137,14 @@ updated: 2026-08-28
   - `bash scripts/verify-doc-links.sh`
   - `node -e 'const fs=require("fs"),p=require("path");["index.html","docs/architecture.html","docs/workflow.html","docs/cli.html","docs/skills.html","docs/installation.html","docs/contributing.html"].forEach(f=>{const c=fs.readFileSync("site/"+f,"utf8"),m=c.match(/href="([^"#:]+)"/g)||[];m.forEach(h=>{const t=h.slice(6,-1);if(!fs.existsSync(p.resolve("site",p.dirname(f),t)))throw new Error(f+" -> "+t)})});console.log("all site links OK")'`
   - `node -e 'const fs=require("fs");["index.html","docs/architecture.html","docs/workflow.html","docs/cli.html","docs/skills.html","docs/installation.html","docs/contributing.html"].forEach(f=>{const c=fs.readFileSync("site/"+f,"utf8");if(/harness\.db/i.test(c)&&!/historical/i.test(c))throw new Error("found unhandled harness.db in "+f)});console.log("legacy terms clean")'`
+- [2026-08-28 07:00 UTC] (site-openpi-redesign): verdict: APPROVED
+  - `! grep -ri "harness\.db\|sqlite\|preflight" site/`
+  - `node -e 'const fs=require("fs"),p=require("path");["index.html","docs/architecture.html","docs/workflow.html","docs/cli.html","docs/skills.html","docs/installation.html","docs/contributing.html"].forEach(f=>{const c=fs.readFileSync("site/"+f,"utf8"),m=c.match(/href="([^"#:]+)"/g)||[];m.forEach(h=>{const t=h.slice(6,-1);if(!fs.existsSync(p.resolve("site",p.dirname(f),t)))throw new Error(f+" -> "+t)})});console.log("all site links OK")'`
+  - `bash scripts/test-guards.sh`
 ## Current State
 
 - active_plan_id: 01M0SITEOPIPLAN8M2VHZ5E9TB
 - active_intake_id: 01M0SITEOPIINTK8M2VHZ5E9TB
 - active_phase: done
 - blockers: none
-- exact_next_action: check
+- exact_next_action: commit and push
