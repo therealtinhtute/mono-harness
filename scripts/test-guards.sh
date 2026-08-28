@@ -251,6 +251,46 @@ else
 	echo "  skip - S4 legacy bash 3.x not found on this machine"
 fi
 
+# S5 / #85: entry hashes must not depend on trailing blank lines. When
+# `## Validation` is the final section, the last entry ends at EOF; appending a
+# new entry below gives it a trailing blank line. Before the fix that changed
+# its hash and R2 re-executed an entry nobody had touched. The old-side proof
+# carries an observable side effect so a re-run is visible in the output.
+cat > "$tmp/tail-old.md" <<'EOF'
+---
+lane: normal
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — entry already on record, verdict `APPROVED`
+  - `echo MARKER-OLD-ENTRY-RERUN`
+EOF
+cat > "$tmp/tail-new.md" <<'EOF'
+---
+lane: normal
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — entry already on record, verdict `APPROVED`
+  - `echo MARKER-OLD-ENTRY-RERUN`
+
+- `2026-08-28T00:00:00Z` — newly appended entry, verdict `APPROVED`
+  - `true`
+EOF
+s5out=$(zharness_guard_entries_of_file p.md "$tmp/tail-old.md" "$tmp/tail-new.md" 2>&1)
+s5rc=$?
+[ "$s5rc" -eq 0 ] &&
+	ok "S5 appending to a trailing Validation section is accepted" ||
+	bad "S5 append must be accepted, guard exited $s5rc"
+
+if printf '%s' "$s5out" | grep -q MARKER-OLD-ENTRY-RERUN; then
+	bad "S5 untouched entry was re-executed (#85: trailing blank line changed its hash)"
+else
+	ok "S5 untouched entry is not re-executed when a sibling is appended"
+fi
+
 rm -rf "$tmp" "$GUARD"
 echo
 echo "guards: $pass passed, $fail failed"
