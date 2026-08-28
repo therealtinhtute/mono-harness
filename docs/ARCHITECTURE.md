@@ -1,88 +1,58 @@
 # Architecture
 
-<!-- zharness:pin 1f296887f6dedc53604a9d75ef83be4f857d44ce -->
+<!-- zharness:pin 64ce9ab9f249bbdb3a9aa6437f650432a672d954 -->
 
-How the harness actually works, and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
+How the harness actually works after the v0.15 "slim" release, and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
 
 ## The one idea
 
-Committed markdown is the truth. Everything else is derived from it and can be thrown away.
+Committed markdown is the truth. The binary is a scaffolding tool, not a runtime.
 
-That single constraint explains most of the design. The SQLite database is an index, not a store. The projected playbooks are a copy, not a source. The `.kit/` directory is scratch, not state. If you deleted every derived artifact and re-ran the CLI, you would get the same system back, because the only irreplaceable bytes are the ones git is already tracking.
+`zharness` owns exactly three verbs — install, update, uninstall — that manage a doc set inside a consumer git repository. The whole lifecycle (brainstorm → to-plan → work → check → handoff) runs from the committed markdown, repo scripts, and a pre-commit hook, with the binary absent from PATH. Delete the binary and every derived artifact, and the same lifecycle still executes, because the only irreplaceable bytes are the ones git is already tracking.
 
-## The four surfaces
+## The three verbs
 
 ```
-skills/workflow/*/SKILL.md   thin trigger  ->  runs `zharness preflight <stage> --json`
+cli/cmd/zharness                 one Go binary (cobra), three verbs
         |
         v
-docs/playbooks/<stage>.md    the procedure ->  projected from the binary, never hand-edited
-        |
-        v
-zharness (Go binary)         the guardrail ->  writes markdown, derives the DB row
-        |
-        v
-docs/plans/active/*.md       the truth     ->  committed; harness.db is rebuilt from it
+install                          scaffolds the managed set, records a base, reports brownfield read-only
+update                           three-way merge of managed files onto the recorded base
+uninstall                        removes the managed set; consumer bytes are never destroyed
 ```
 
-A spine skill contains no operating logic. It version-gates the binary, calls `preflight`, and reads whatever playbook path comes back. The logic lives in the playbook, which is a file — so any agent that can read a file and run a CLI executes the same lifecycle, with no dependence on a particular vendor's skill format.
+`AllTargets` (`cli/internal/installer/installer.go:65`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the six playbooks. `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
 
-## Markdown first, then the row
+State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries plus content-addressed upstream blobs. Update diffs local edits against that recorded base with a diff3 merge (`cli/internal/installer/threeway.go`); overlapping edits stop with in-file conflict markers, resolved by a human via `--continue` (records the conflict-time upstream as the new base; the resolution stays as local drift) or discarded via `--abort` (stash restore, byte-for-byte). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
 
-Every lifecycle write goes to markdown before it goes to the database, and the ordering is deliberate rather than incidental.
+The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`docs/playbooks/brainstorm.md` step 6).
 
-`cli/internal/application/plan_write.go:36` states the rule directly: markdown is the write target and the DB row is derived from it. A SQL transaction cannot span a file write, so the guarantee is one-directional by construction — a failed markdown write leaves zero rows behind it (`cli/internal/application/trace.go:65`), while a DB failure after a successful markdown write leaves the markdown line as the durable fact, recoverable by rebuild. The error text says exactly that: *"plan markdown recorded, but db write failed"*.
+## The two fail-closed guards
 
-The consequence worth internalizing: **a field that lands only in the database and never in markdown disappears on the next rebuild.** That is the test any new mutating command has to pass.
+Exactly two fail-closed guarantees exist in the whole system, both in the pre-commit hook (`scripts/install-git-hooks.sh`, shared core between the `# ZGUARD-CORE` markers):
 
-## `harness.db` is an index
+1. **Proof re-execution** — a newly added `## Validation` entry with verdict `APPROVED` (or `APPROVE_WITH_REQUESTS`) has every nested proof command re-executed by the hook; any non-zero exit rejects the commit.
+2. **Independent judge** — on a `lane: high-risk` plan, a new Validation entry carrying `judge: same-session` is rejected.
 
-`cli/internal/application/rebuild.go:73` reconstructs the entire database from committed plan markdown alone. The file is gitignored, and losing it costs nothing.
+`.github/workflows/cli-ci.yml` re-runs both checks on pushed commits, so bypassing local hooks gains nothing. The hook reads staged bytes itself; there is no pass marker an authoring agent could forge.
 
-Rebuild is honest about what it cannot recover, which is the useful part of reading its doc comment. Trace and decision entries come back with freshly minted IDs — content preserved, identity not — because nothing else in the schema references them. A run is reconstructed only when a Validation entry backreferences it, since that is the one entry shape carrying the run's story slug, and `runs.story_slug` is `NOT NULL`. A run mentioned only by a trace and never checked has no recoverable slug and is dropped, with dependent rows getting a `NULL` run_id rather than a dangling one.
+## Embedded doc set and projection
 
-Three derived indexes share one column shape — path, SHA256, updated_at:
+The binary carries two embedded filesystems (`cli/docs/embedded/`): the managed set (`AGENTS.md`, `WORKFLOW.md`, `playbooks/`) and, separately, `templates/` — emitted on demand, never projected. `docs/playbooks/*.md` is a byte-identical projection of the embedded source: edit `cli/docs/embedded/`, never the projection.
 
-| Table | Indexes | Migration |
-|---|---|---|
-| `managed_docs` | the projected doc set under `docs/` | `cli/internal/infrastructure/migrations.go:131` |
-| `plan_index` | active plans under `docs/plans/` | `cli/internal/infrastructure/migrations.go:218` |
-| `memories` | memory entries under `docs/memory/` | `cli/internal/infrastructure/migrations.go:237` |
-
-Staleness is always a hash comparison, never a timestamp guess.
-
-## Managed docs: projection with conflict staging
-
-The binary carries two embedded filesystems, and the split is the whole mechanism.
-
-`cli/docs/embedded/embed.go:9` declares `FS` — `AGENTS.md`, `WORKFLOW.md`, and `playbooks/`. This set is projected into the consumer repo's `docs/` at `init` (`cli/internal/application/init.go:33`) and hash-tracked. `cli/docs/embedded/embed.go:18` declares `Templates` separately, on purpose: templates are never projected, only emitted when `zharness scaffold` asks for one.
-
-`SyncManagedDocs` (`cli/internal/application/managed_docs.go:43`) compares three values per file — the recorded hash, the hash on disk, and the hash of the embedded content. Unchanged files are refreshed silently. A file the consumer edited locally is **not** overwritten: it is staged as a conflict under `.kit/conflicts/` and the sync reports it (`cli/internal/application/managed_docs.go:56`), unless `--force-docs` is passed.
-
-One property matters for anything that removes a file from the embedded set. `planManagedDocActions` (`cli/internal/application/managed_docs.go:107`) drives its iteration by walking the embedded filesystem, not by reading the `managed_docs` table. A row whose path is no longer embedded is simply never visited — it does not error, and no local file is deleted. There is no prune path, and nothing in this package removes anything: deprojecting a doc leaves an inert orphan in already-initialized repos rather than breaking them.
-
-## Exactly one active plan
-
-`ResolveActivePlan` (`cli/internal/application/plan_resolve.go:73`) is the single entry point for obtaining the active plan. Six call sites use it and nothing bypasses it: `cli/internal/application/plan_query.go:68`, `cli/internal/application/plan_write.go:22`, `cli/internal/application/resume.go:156`, `cli/internal/application/plan_lifecycle.go:53`, `cli/internal/application/plan_lifecycle.go:94`, `cli/internal/application/validate.go:446`.
-
-It never returns a bare error for the two interesting cases. Zero plans yields `Stop{Code: "none"}` with the recovery `brainstorm lock`. Two or more yields `Stop{Code: "ambiguous"}` with a bounded candidate list built from frontmatter previews — plan bodies are never read to disambiguate, because reading them is the unbounded cost the contract exists to prevent.
-
-The enforced invariant is *at most* one active plan. Zero is a legitimate idle state and produces no validation finding. See [`docs/decisions/0002-single-active-plan-resolver.md`](decisions/0002-single-active-plan-resolver.md).
-
-## Preflight is the only entry point
-
-Every spine stage begins with `zharness preflight <stage> --json`. It resolves readiness without mutating anything and returns the playbook path, the lifecycle position, and any drift.
-
-When the database or the projected docs are missing, preflight returns a `stop` whose recovery is `zharness init` (`cli/internal/application/preflight.go:76`). Skills do not self-scaffold; they run the recovery they are handed. The stage-to-playbook mapping lives in one table, `preflightPlaybooks` at `cli/internal/interfaces/preflight.go:23` — stages absent from it own no harness entity and get no playbook back.
-
-## What lives where
+## Markdown-only lifecycle state
 
 | Path | Nature |
 |---|---|
-| `docs/plans/` | authoritative — the initiative record |
-| `docs/decisions/` | authoritative — ADRs |
-| `docs/playbooks/`, `docs/WORKFLOW.md` | projected from the binary; edit `cli/docs/embedded/` instead |
-| `harness.db` | derived; gitignored; rebuild with `zharness db rebuild --yes` |
-| `.kit/` | per-machine scratch — cache, conflicts, logs; fully gitignored |
+| `docs/plans/active/*.md` | authoritative — the one active initiative; append-only `## Progress` / `## Decisions` / `## Validation` |
+| `docs/PROJECT.md` | authoritative — identity, answered at the brainstorm lock |
+| `docs/memory/*.md` | memory as files; agents grep directly (`docs/memory/{id}.md`) |
+| `docs/decisions/`, `docs/research/`, `docs/audit/` | authoritative records |
+| `docs/playbooks/`, `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/` instead |
+| `.zharness/` | installer bookkeeping (base manifest + blobs); gitignored |
 
-`docs/README.md` carries the complete ownership table.
+Task execution status lives only in append-only `## Progress`; task definitions carry no status fields. Bookkeeping is hand-appended — the binary writes no plan rows.
+
+## Historical note (pre-v0.15, explicitly historical)
+
+The 0.14.x architecture — a `preflight <stage>` entry point, a SQLite store under `harness.db` serving as a derived index (`managed_docs`, `plan_index`, `memories` tables, `db rebuild`), conflict staging under `.kit/`, and CLI proof verification via `check record` — was deleted in v0.15. Consumers who depend on it can pin the 0.14.x release; its proof-verification contract survives verbatim in the pre-commit hook (see [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md)).

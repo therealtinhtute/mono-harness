@@ -32,7 +32,7 @@ Preserve all later-stage content already present in the plan. Once `to-plan` has
 ## Steps
 
 1. **Resolve intent and classification** — choose input type (`new-spec`, `spec-slice`, `change-request`, `new-initiative`, `maintenance`, or `harness-improvement`), lane (`tiny`, `normal`, or `high-risk`), applicable risk flags, and affected surfaces.
-2. **Gather minimum authority** — read named source files and repository instructions. Discovery may clarify scope but must not expand it.
+2. **Gather minimum authority** — read named source files and repository instructions. Check prior durable lessons first: `grep -ri "<topic keywords>" docs/memory/` — memory is plain committed files, retrieved by direct grep, never a database. Discovery may clarify scope but must not expand it.
 3. **Compare options** — evaluate 2–3 viable paths, or identify 1–2 alternatives rejected by authoritative source files. State the recommendation and trade-offs before locking.
 4. **Clarify the boundary** — require a concrete outcome, actors, constraints, accepted requirements, non-goals, and checkable success conditions. Stop instead of inventing an unresolved product decision.
 5. **Choose the stable slug** — use a short initiative slug. The canonical active path is `docs/plans/active/{slug}.md`; do not create a second durable initiative markdown for the same work.
