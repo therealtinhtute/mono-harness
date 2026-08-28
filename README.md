@@ -9,7 +9,7 @@ A personal collection of [skills.sh](https://skills.sh)-compatible skills for Cl
 | skills/workflow/ | Eight skills for discovery, planning, execution, review, handoff, and Git workflow. |
 | skills/craft/ | Four skills for writing, GitHub research, skill authoring, and prompt improvement. |
 | skills/shipping/ | Two skills for CLI design and full-stack TypeScript monorepos. |
-| cli/ | The Go zharness binary powering the workflow chain (ledger reconciliation until v0.15 slims it to installer/updater). |
+| cli/ | The Go zharness binary — install / update / uninstall for the markdown-first workflow harness (v0.15 slimmed the CLI to exactly these three verbs). |
 | rules/ | Global Claude Code rules installed by setup/install.sh. |
 | setup/ | Bootstrap files, hooks, settings, and installation logic. |
 | scripts/ | CLI installation, validation, statusline, dashboard, and documentation checks. |
@@ -106,14 +106,18 @@ The workflow skills use zharness for replayable enrichment wherever the binary i
 /brainstorm → /to-plan → /work → /check → /git → /handoff
 ~~~
 
-Legacy release setups may initialize per-machine state first — it is not a prerequisite for markdown-first use:
+Scaffolding a consumer repository is the installer's job now:
 
 ~~~bash
 cd /path/to/project
-zharness init --json
+zharness install
 ~~~
 
-zharness init creates the root harness.db, replays existing changesets, and scaffolds the managed workflow docs under docs/.
+`zharness install` scaffolds the managed workflow docs under `docs/`, records a
+base for three-way updates, and prints a read-only brownfield report. Consumers
+who still need the legacy per-machine lifecycle can pin the `v0.14.x` release —
+its `zharness init` created `harness.db` and replayed changesets; v0.15 needs
+none of that.
 
 Use the smallest workflow mode that matches the work:
 
@@ -124,7 +128,9 @@ Use the smallest workflow mode that matches the work:
 /watzup                          # read-only resume and branch recap
 ~~~
 
-Every workflow stage attempts a read-only zharness preflight check when the binary exists; without it, each stage degrades to its markdown-first playbook. Reduced modes can continue without any of them.
+The workflow needs no binary: every stage is a markdown playbook under
+`docs/playbooks/`. The `zharness` binary only scaffolds and updates the managed
+docs — install / update / uninstall, nothing else.
 
 ## zharness state model
 
@@ -139,7 +145,10 @@ Committed markdown is the whole system of record; a legacy per-machine index is 
 
 ## CLI quick reference
 
-`zharness --help` documents the installed surface. Since v0.15 the lifecycle lives in markdown plus repo scripts (`scripts/record-check.sh`, `scripts/install-git-hooks.sh`); the binary's install / update / uninstall verbs arrive with phase p3-installer.
+`zharness --help` documents the installed surface: exactly install / update /
+uninstall. The lifecycle itself lives in markdown plus repo scripts
+(`scripts/record-check.sh`, `scripts/install-git-hooks.sh`) and runs with the
+binary absent from PATH.
 
 ## Development
 

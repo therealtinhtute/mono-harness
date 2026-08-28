@@ -1,6 +1,6 @@
 # Architecture
 
-<!-- zharness:pin 64ce9ab9f249bbdb3a9aa6437f650432a672d954 -->
+<!-- zharness:pin 2d4bc5a2015113cd85c3134b04bffc18f94887d1 -->
 
 How the harness actually works after the v0.15 "slim" release, and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
 

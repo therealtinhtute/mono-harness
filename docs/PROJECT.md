@@ -40,6 +40,6 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- plan: docs/plans/active/zharness-v015-slim.md (p3-installer checked;
-  p4-knowledge in progress — PROJECT.md wiring, ARCHITECTURE.md rewrite,
-  memory-as-files, S5/S7 signals)
+- no active plan — zharness v0.15.0 is released (breaking; consumers pin
+  v0.14.x) and the guard-v3 hardening batch is complete; history lives in
+  docs/plans/completed/

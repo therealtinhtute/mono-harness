@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Pre-commit guard: the verdict token is read from a Validation entry's first
+  line and now matches the repository's `verdict \`APPROVED\`` grammar —
+  previously every real APPROVED entry was silently skipped by the guard.
+- Pre-commit guard: Validation entries without a leading timestamp are now
+  visible to both fail-closed guards.
+- Installer: `.zharness/base/original/` naming is collision-free (with a
+  legacy fallback so v0.15.0-captured originals still restore), and diff3
+  falls back to a conservative whole-side hunk above an 8M-cell LCS cap.
+- Non-spine `git`/`interview` skills no longer reference binary commands
+  deleted in v0.15.
+
 ## [v0.15.0] — 2026-08-28 (breaking)
 
 ### Changed
