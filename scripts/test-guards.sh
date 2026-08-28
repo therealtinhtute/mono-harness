@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# Fixture tests for the ZGUARD-CORE guard (guard-v3 plan R1/R2; keeps the v2
+# hardening semantics honest). Extracts the core exactly like CI does, then
+# asserts observable guard behavior. Run: bash scripts/test-guards.sh
+set -u
+cd "$(dirname "$0")/.."
+
+GUARD=$(mktemp)
+awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' \
+	scripts/install-git-hooks.sh > "$GUARD"
+grep -q '^zharness_guard_entries_of_file()' "$GUARD" || {
+	echo "FAIL - guard core extraction failed"; exit 1; }
+# shellcheck disable=SC1090
+source "$GUARD"
+
+pass=0
+fail=0
+ok() { pass=$((pass + 1)); echo "  ok  - $1"; }
+bad() { fail=$((fail + 1)); echo "  FAIL - $1"; }
+
+# S1 / R1: a verdict token quoted in a sub-bullet cannot shadow the
+# entry's own first-line verdict (the guard-v3 first-line rule).
+v=$(zharness_anchored_verdict '- `2026-08-28T00:00:00Z` — gate verdict `APPROVED` (mode: gate)
+  - quoted prior review: verdict: REQUEST_CHANGES
+  - `true`')
+[ "$v" = "APPROVED" ] &&
+	ok "S1 sub-bullet prose does not shadow first-line APPROVED" ||
+	bad "S1 expected APPROVED, got '$v'"
+
+# R1 converse: a genuine first-line REQUEST_CHANGES still wins.
+v=$(zharness_anchored_verdict '- `2026-08-28T00:00:00Z` — review verdict: REQUEST_CHANGES
+  - quoted earlier: verdict: APPROVED
+  - `false`')
+[ "$v" = "REQUEST_CHANGES" ] &&
+	ok "S1 genuine first-line REQUEST_CHANGES respected" ||
+	bad "S1 converse expected REQUEST_CHANGES, got '$v'"
+
+# R1 grammar: both verdict token forms are recognized.
+v=$(zharness_anchored_verdict '- `2026-08-28T00:00:00Z` — gate verdict: `APPROVE_WITH_REQUESTS`')
+[ "$v" = "APPROVE_WITH_REQUESTS" ] &&
+	ok "R1 colon form recognized" ||
+	bad "R1 colon form expected APPROVE_WITH_REQUESTS, got '$v'"
+
+v=$(zharness_anchored_verdict '- `2026-08-28T00:00:00Z` — gate verdict `APPROVED` (no colon)')
+[ "$v" = "APPROVED" ] &&
+	ok "R1 backtick form recognized" ||
+	bad "R1 backtick form expected APPROVED, got '$v'"
+
+# R1: no verdict token on the first line -> empty (entry ignored), even
+# when the body prose mentions one.
+v=$(zharness_anchored_verdict '- `2026-08-28T00:00:00Z` — narrative entry
+  - sub-bullet mentions verdict: APPROVED')
+[ -z "$v" ] &&
+	ok "R1 verdictless first line yields no verdict despite body prose" ||
+	bad "R1 expected empty verdict, got '$v'"
+
+# S2 / R2: an entry without a leading timestamp is still split out as its
+# own entry; indented lines continue the current entry.
+tmp=$(mktemp -d)
+mkdir -p "$tmp/out"
+cat > "$tmp/plan.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- undated APPROVED entry for the fixture, verdict `APPROVED`
+  - `true`
+
+- `2026-08-28T00:00:00Z` — dated sibling entry
+  - `true`
+
+## Current State and Next Action
+
+- after validation
+EOF
+zharness_dump_entries "$tmp/plan.md" "$tmp/out"
+count=$(ls "$tmp/out" | wc -l)
+[ "$count" = 2 ] &&
+	ok "S2 undated entry split as its own entry (2 entries)" ||
+	bad "S2 expected 2 entries, got $count"
+
+if [ -f "$tmp/out/e0001.txt" ] && head -1 "$tmp/out/e0001.txt" | grep -q "^- undated"; then
+	ok "S2 undated entry is first, full text preserved"
+else
+	bad "S2 undated entry content wrong"
+fi
+
+# S3 / R6 parity: fail-case rejects, pass-case accepts, same-session on a
+# high-risk lane rejects. Fixtures mirror the repository's real entry
+# grammar (verdict `APPROVED`, no colon) and carry frontmatter.
+cat > "$tmp/old.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+EOF
+cat > "$tmp/new-fail.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- `2026-08-28T00:00:00Z` — new gate verdict `APPROVED` with a sabotaged proof
+  - `echo sabotaged-proof && false`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-fail.md" 2>/dev/null; then
+	bad "S3 fail-case must reject"
+else
+	ok "S3 fail-case (sabotaged proof) rejects"
+fi
+
+cat > "$tmp/new-pass.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- `2026-08-28T00:00:00Z` — new gate verdict `APPROVED` with a clean proof
+  - `true`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-pass.md" 2>/dev/null; then
+	ok "S3 pass-case accepts"
+else
+	bad "S3 pass-case must accept"
+fi
+
+cat > "$tmp/new-judge.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- `2026-08-28T00:00:00Z` — gate verdict `APPROVED` judged same-session
+  - judge: `same-session`
+  - `true`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-judge.md" 2>/dev/null; then
+	bad "S3 same-session on high-risk lane must reject"
+else
+	ok "S3 same-session judge on high-risk lane rejects"
+fi
+
+# S2/R2 end-to-end: a newly added UNDATED APPROVED entry is visible to the
+# whole guard flow and its proofs are re-executed (fail-case rejects).
+cat > "$tmp/new-undated-fail.md" <<'EOF'
+---
+lane: high-risk
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- undated entry, verdict `APPROVED`, invisible to the v2 guard
+  - `echo undated-sabotage && false`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-undated-fail.md" 2>/dev/null; then
+	bad "S2 undated APPROVED entry must be re-executed (fail-case must reject)"
+else
+	ok "S2 undated APPROVED entry is now guarded (fail-case rejects)"
+fi
+
+rm -rf "$tmp" "$GUARD"
+echo
+echo "guards: $pass passed, $fail failed"
+[ "$fail" -eq 0 ]

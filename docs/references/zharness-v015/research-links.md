@@ -1,7 +1,7 @@
 # Research anchors: zharness v0.15
 
 > **Archive — the external sources the v0.13 and v0.15 plans were argued from**, gathered
-> 2026-08-26. The merged plan at `docs/plans/active/zharness-v015-slim.md` names these in its
+> 2026-08-26. The merged plan at `docs/plans/completed/zharness-v015-slim.md` names these in its
 > Authority section by title; this file records where each one lives.
 >
 > **Verification status is stated per row.** A row marked *title only* means the source was

@@ -1,13 +1,13 @@
 # Archive: zharness v0.15 plan, pre-review draft (superseded)
 
-> **Archive — not a live plan.** This is `docs/plans/active/zharness-v015-slim.md` as it
+> **Archive — not a live plan.** This is `docs/plans/completed/zharness-v015-slim.md` as it
 > stood on 2026-08-26 before the read-only review, the `/interview` pass, and the merge
 > with v0.13. It carried 7 success signals, 10 requirements, 7 non-goals,
 > `approach: not-planned`, and `phases: none`.
 >
 > The review found 4 blockers against this draft — see `docs/references/zharness-v015/review-findings.md`.
 > The 7 decisions that closed them are in `docs/references/zharness-v015/interview-spec.md`.
-> The live plan is `docs/plans/active/zharness-v015-slim.md`.
+> The live plan is `docs/plans/completed/zharness-v015-slim.md`.
 >
 > Kept because the review's evidence column cites this file by line number; without it those
 > citations point at content that no longer exists.

@@ -10,7 +10,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
 
-Read and follow `{baseDir}/references/workflow.md` — this skill's own procedure, not a harness-projected playbook, because `git` owns no harness entity and `zharness preflight git --json` therefore returns no `playbook` path. Run that preflight anyway for its Step 0 gate-verdict warning; a missing binary or one below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`) means printing `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)` and proceeding straight to Core Workflow with Step 0 skipped. Any `stop` it returns is noted the same way and never blocks — Git operations remain non-mutating to harness state.
+Read and follow `{baseDir}/references/workflow.md` — this skill's own procedure, not a harness-projected playbook. `git` owns no harness entity; no harness command gates this skill. Proceed straight to Core Workflow.
 
 <role>
 Act as a git operations specialist. Handle staging, committing, pushing, pull requests, and merges

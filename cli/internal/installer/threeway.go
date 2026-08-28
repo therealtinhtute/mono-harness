@@ -18,11 +18,24 @@ func splitLines(s string) []string {
 	return strings.Split(strings.TrimSuffix(s, "\n"), "\n")
 }
 
+// lcsCellCap bounds the quadratic LCS matrix allocated by diffHunks:
+// 8M cells ≈ 64 MB of int on 64-bit — far above anything a managed doc
+// legitimately reaches, far below the OOM cliff a ballooned consumer file
+// would otherwise hit.
+const lcsCellCap = 8_000_000
+
 // diffHunks produces merged replacement hunks between base and other,
 // absorbing change regions separated by <=3 common lines so formatting
 // jitter never fabricates extra conflict sites.
 func diffHunks(base, other []string) []hunk {
 	n, m := len(base), len(other)
+	// R4: the LCS matrix is quadratic in (n+1)*(m+1) ints. Above the cap,
+	// fall back to a single whole-side hunk — bounded memory, conservative
+	// merge semantics (any opposing change overlaps and conflicts rather
+	// than silently merging against an approximated diff).
+	if (n+1)*(m+1) > lcsCellCap {
+		return []hunk{{start: 0, end: n, lines: append([]string{}, other...)}}
+	}
 	lcs := make([][]int, n+1)
 	for i := range lcs {
 		lcs[i] = make([]int, m+1)

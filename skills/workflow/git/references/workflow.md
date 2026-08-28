@@ -1,19 +1,19 @@
 # git skill: workflow reference
 
 > This is the `git` skill's own procedure, not a harness-projected playbook. It
-> is not part of the embedded doc set, `zharness init` never writes it, and
-> `preflight git` returns no playbook path. Edit it here — `cli/docs/embedded/playbooks/`
-> holds no `git` entry upstream to change. A stale `git.md` under a repository's
-> `docs/playbooks/` is a leftover projection from before the deprojection; see
+> is not part of the embedded doc set and `zharness install` never writes it.
+> Edit it here — `cli/docs/embedded/playbooks/` holds no `git` entry upstream
+> to change. A stale `git.md` under a repository's `docs/playbooks/` is a
+> leftover projection from before the deprojection; see
 > `docs/workflow-harness/migration.md`.
 
 ## Purpose
 
-Git operations with conventional commits: staging, committing, pushing, pull requests, and merges. `git` owns no harness entity (`skills/workflow/README.md`'s skill-to-command mapping) — a missing, stale, or broken harness never blocks it; harness enrichment (Step 0) is a warn-only extra, not a gate.
+Git operations with conventional commits: staging, committing, pushing, pull requests, and merges. `git` owns no harness entity — a missing, stale, or broken harness never blocks it; Git operations remain non-mutating to harness state.
 
 ## Preconditions
 
-1. Run `zharness preflight git --json`. Missing binary: print `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)`, skip Step 0 below, and proceed to Core Workflow regardless. Otherwise check its `version` field — a `dev` build or any build at or above MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`) unlocks Step 0; below it, print the same one-line warning, skip Step 0, and proceed. Any `stop` `preflight` returns (including a corrupted database) is noted the same way and never blocks — Git operations remain non-mutating to harness state.
+None. No harness command gates this skill; proceed straight to Core Workflow.
 
 ## Arguments
 
@@ -22,11 +22,6 @@ Git operations with conventional commits: staging, committing, pushing, pull req
 - `pr [to-branch] [from-branch]` — create a pull request (defaults: `main`, current branch)
 - `merge [to-branch] [from-branch]` — merge branches (defaults: `main`, current branch)
 
-## Core Workflow
-
-### Step 0: Check latest gate verdict (warn, never block)
-
-Run `zharness query check --latest --json`. If it returns `verdict: REQUEST_CHANGES`, or the command fails (no binary, `db_unreadable`, or no check recorded yet), print a one-line warning naming the verdict or the reason it's unavailable, then proceed anyway. Only `APPROVED` or `APPROVE_WITH_REQUESTS` proceeds silently.
 
 ### Step 1: Stage + analyze
 
@@ -144,8 +139,6 @@ Merge from `origin/{FROM_BRANCH}`, never the local branch — this ensures only 
 
 ## Command Reference
 
-- `zharness preflight git --json`
-- `zharness query check --latest --json` (Step 0, warn-only)
 - `gh pr create --base {branch} --head {branch} --title "..." --body "..."`
 
 ## Exit Conditions

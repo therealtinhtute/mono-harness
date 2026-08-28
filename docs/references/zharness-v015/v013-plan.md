@@ -1,7 +1,7 @@
 # Archive: zharness v0.13 "slim" plan (superseded)
 
 > **Archive — not a live plan.** Authored 2026-08-26 and superseded the same day by
-> `docs/plans/active/zharness-v015-slim.md`. It lived at
+> `docs/plans/completed/zharness-v015-slim.md`. It lived at
 > `.kit/plans/2026-08-26-zharness-v013-slim/plan.md`, which `.gitignore` excludes, so it
 > reached no clone and no CI run. Copied here verbatim so the merged plan's Authority
 > section can cite a real committed path instead of absorbing it inline.

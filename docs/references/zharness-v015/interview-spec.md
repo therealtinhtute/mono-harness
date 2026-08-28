@@ -7,7 +7,7 @@
 > This is the decision record that turned the pre-review draft
 > (`docs/references/zharness-v015/v015-original-plan.md`) plus its superseded predecessor
 > (`docs/references/zharness-v015/v013-plan.md`) into the single merged plan at
-> `docs/plans/active/zharness-v015-slim.md`.
+> `docs/plans/completed/zharness-v015-slim.md`.
 
 ---
 
@@ -111,7 +111,7 @@ plan's Authority section, and its phase diagram is the ancestor of the five phas
 title: zharness v0.15 "slim" — Installer-only binary, markdown-only state, fail-open
 status: validated
 interviewed: 2026-08-26
-supersedes: docs/plans/active/zharness-v015-slim.md, .kit/plans/2026-08-26-zharness-v013-slim/plan.md
+supersedes: docs/plans/completed/zharness-v015-slim.md, .kit/plans/2026-08-26-zharness-v013-slim/plan.md
 lane: high-risk
 ---
 

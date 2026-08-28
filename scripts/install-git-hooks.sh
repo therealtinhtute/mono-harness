@@ -29,6 +29,11 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 #   mentions cannot shadow it; proof bullets accept any indent >= 2 spaces;
 #   an approvable verdict citing zero proofs is rejected as malformed instead
 #   of being waved through.
+#   Hardening v3 (guard-v3 plan R1/R2): the verdict token is read from the
+#   entry's FIRST LINE only — a sub-bullet quoting another verdict can never
+#   select or shadow the entry's own; and an entry STARTS at any unindented
+#   `- ` line, the leading timestamp being optional, so undated entries are
+#   visible to both guards.
 
 zharness_lane_of() {                       # <content-file>
   awk '/^---$/{n++; next} n==1 && /^lane:/{sub(/^lane:[ \t]*/, ""); print; exit}' "$1"
@@ -40,16 +45,19 @@ zharness_dump_entries() {                  # <content-file> <outdir>
     $0 == "## Validation" {inv = 1; next}
     /^## / && inv         {exit}
     inv {
-      if ($0 ~ /^- `[0-9]{4}-/) { n++; buf[n] = $0 }
-      else if (n > 0)           { buf[n] = buf[n] "\n" $0 }
+      if ($0 ~ /^- /) { n++; buf[n] = $0 }
+      else if (n > 0) { buf[n] = buf[n] "\n" $0 }
     }
     END { for (i = 1; i <= n; i++) print buf[i] > (out "/e" sprintf("%04d", i) ".txt") }
   ' "$1"
 }
 
 zharness_anchored_verdict() {              # <entry-body>
-  printf '%s\n' "$1" \
-    | grep -oE '`?verdict`?[[:blank:]]*:[[:blank:]]*`?(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES)' \
+  # R1: the entry's verdict lives on its own first line — the unindented
+  # bullet that starts the entry. A verdict token quoted deeper in the body
+  # (sub-bullet, prose, quoted prior review) must not select or shadow it.
+  printf '%s\n' "$1" | head -1 \
+    | grep -oE '`?verdict`?[[:blank:]]*[:`][[:blank:]]*`?(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES)' \
     | grep -oE '(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES)' | head -1 || true
 }
 

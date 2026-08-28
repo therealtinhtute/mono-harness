@@ -508,3 +508,89 @@ func TestUpdate_Continue_KeepsSameRunRefreshes_DropsStash(t *testing.T) {
 		t.Fatalf("manifest not valid JSON after --continue: %v", err)
 	}
 }
+
+// R3 (guard-v3): the '_' -> "__" + '/' -> "_2F" mapping is injective —
+// distinct managed paths can never share an original-file name — and the
+// legacy v0.15.0 mapping ('/' -> "__") is still found on upgrade.
+func TestSafePath_Injective_AndLegacyFallback(t *testing.T) {
+	paths := []string{
+		"a/b.md", "a__b.md", "a_2Fb.md", "a/b__c.md", "a__b_2Fc.md",
+		"a/b/c.md", "a__b__c.md", workflowTarget, "docs/WORKFLOW_2.md",
+	}
+	seen := map[string]string{}
+	for _, p := range paths {
+		s := safePath(p)
+		if prev, dup := seen[s]; dup {
+			t.Fatalf("safePath collision: %q and %q both map to %q", prev, p, s)
+		}
+		seen[s] = p
+	}
+	if got, want := safePath("a/b.md"), "a_2Fb.md"; got != want {
+		t.Fatalf("safePath(a/b.md) = %q, want %q", got, want)
+	}
+	if legacySafePath("a/b.md") != legacySafePath("a__b.md") {
+		t.Fatal("fixture: legacy mapping must collide on these two paths")
+	}
+	if safePath("a/b.md") == safePath("a__b.md") {
+		t.Fatal("new mapping must separate the historically colliding paths")
+	}
+
+	// end-to-end: an original recorded under the LEGACY name is still
+	// found by readOriginal, and captureOriginal never overwrites it.
+	root := tempRepo(t, true)
+	origDir := filepath.Join(root, originalDir)
+	if err := os.MkdirAll(origDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	legacyBytes := []byte("legacy-recorded original\n")
+	legacyName := filepath.Join(origDir, legacySafePath("docs/x.md")+".orig")
+	if err := os.WriteFile(legacyName, legacyBytes, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, ok := readOriginal(root, "docs/x.md")
+	if !ok || string(got) != string(legacyBytes) {
+		t.Fatalf("legacy original not found: ok=%v got=%q", ok, got)
+	}
+	pf(t, root, "docs/x.md", "current bytes\n")
+	if err := captureOriginal(root, "docs/x.md"); err != nil {
+		t.Fatalf("captureOriginal: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(origDir, safePath("docs/x.md")+".orig")); !os.IsNotExist(err) {
+		t.Error("captureOriginal wrote a second original despite the legacy one")
+	}
+	if b, _ := os.ReadFile(legacyName); string(b) != string(legacyBytes) {
+		t.Error("captureOriginal perturbed the legacy original")
+	}
+}
+
+// R4 (guard-v3): above the LCS cell cap, diffHunks falls back to a single
+// whole-side hunk — bounded memory, conservative semantics.
+func TestDiffHunks_CapFallsBackToWholeSide(t *testing.T) {
+	big := make([]string, 3000) // (3001)^2 cells > lcsCellCap
+	for i := range big {
+		big[i] = fmt.Sprintf("line-%04d", i)
+	}
+	other := make([]string, len(big))
+	copy(other, big)
+	other[0] = "changed-top"
+	other[len(other)-1] = "changed-bottom"
+
+	hs := diffHunks(big, other)
+	if len(hs) != 1 {
+		t.Fatalf("cap fallback must yield exactly one whole-side hunk, got %d", len(hs))
+	}
+	h := hs[0]
+	if h.start != 0 || h.end != len(big) {
+		t.Errorf("fallback hunk must cover the whole base, got [%d,%d)", h.start, h.end)
+	}
+	if !equalLines(h.lines, other) {
+		t.Error("fallback hunk lines must equal the other side verbatim")
+	}
+
+	// below the cap the normal path still merges adjacent spans
+	small := []string{"a", "b", "c"}
+	hs = diffHunks(small, []string{"a", "B", "c"})
+	if len(hs) != 1 || hs[0].start != 1 || hs[0].end != 2 || hs[0].lines[0] != "B" {
+		t.Errorf("small-diff path changed: %+v", hs)
+	}
+}

@@ -10,11 +10,9 @@ metadata:
 Prefix your first line with `🥷` inline. Be direct, be relentless. No filler.
 Technical interviewer. Grill, not build. Read-only.
 
-<version-gate>
-`interview` owns no harness entity (`skills/workflow/README.md`'s skill-to-command mapping) — a missing, stale, or broken harness never blocks it; it feeds `brainstorm`/`to-plan` and stays read-only regardless. Run `zharness --version`. A `dev` build, or any build at or above MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`), unlocks the preflight check below. Otherwise print one line — `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh)` — and proceed straight to the interview.
-
-If the version gate passed, run `zharness preflight interview --json`. Any `stop` it returns is noted the same way and does not block; proceed regardless of readiness — the interview always stays read-only.
-</version-gate>
+<read-only-gate>
+`interview` owns no harness entity — a missing, stale, or broken harness never blocks it; it feeds `brainstorm`/`to-plan` and stays read-only regardless. No harness command gates this skill; proceed straight to the interview.
+</read-only-gate>
 
 <instructions>
 Using AskUserQuestion tool, interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.

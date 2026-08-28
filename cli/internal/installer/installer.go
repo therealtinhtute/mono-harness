@@ -145,7 +145,30 @@ func joinOrNone(xs []string) string {
 	return strings.Join(xs, ", ")
 }
 
-func safePath(p string) string { return strings.ReplaceAll(p, "/", "__") }
+// safePath maps a managed relative path to a flat, collision-free file
+// name component: '_' -> "__" and '/' -> "_2F". The two replacement
+// images form a prefix-free code, so the mapping is injective — distinct
+// managed paths can never collide under .zharness/base/original/.
+func safePath(p string) string {
+	return strings.NewReplacer("_", "__", "/", "_2F").Replace(p)
+}
+
+// legacySafePath is the v0.15.0 mapping ('/' -> "__"), which was NOT
+// injective. Kept only so originals captured by that release still
+// protect uninstall after an upgrade.
+func legacySafePath(p string) string { return strings.ReplaceAll(p, "/", "__") }
+
+// findOriginal returns the on-disk original path for dst, preferring the
+// current mapping and falling back to the legacy one.
+func findOriginal(root, dst string) (string, bool) {
+	for _, name := range []string{safePath(dst) + ".orig", legacySafePath(dst) + ".orig"} {
+		p := filepath.Join(root, originalDir, name)
+		if _, err := os.Stat(p); err == nil {
+			return p, true
+		}
+	}
+	return "", false
+}
 
 func shaSum(b []byte) []byte {
 	h := sha256.Sum256(b)
@@ -237,10 +260,11 @@ func captureOriginal(root, dst string) error {
 	if _, err := os.Stat(src); err != nil {
 		return nil // did not exist; uninstall may delete it outright
 	}
-	dstP := filepath.Join(root, originalDir, safePath(dst)+".orig")
-	if _, err := os.Stat(dstP); err == nil {
-		return nil // never overwrite a previously captured pristine
+	// never overwrite a previously captured pristine under either mapping
+	if _, ok := findOriginal(root, dst); ok {
+		return nil
 	}
+	dstP := filepath.Join(root, originalDir, safePath(dst)+".orig")
 	b, err := os.ReadFile(src)
 	if err != nil {
 		return err
@@ -252,7 +276,11 @@ func captureOriginal(root, dst string) error {
 }
 
 func readOriginal(root, dst string) ([]byte, bool) {
-	b, err := os.ReadFile(filepath.Join(root, originalDir, safePath(dst)+".orig"))
+	p, ok := findOriginal(root, dst)
+	if !ok {
+		return nil, false
+	}
+	b, err := os.ReadFile(p)
 	if err != nil {
 		return nil, false
 	}

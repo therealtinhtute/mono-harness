@@ -1,6 +1,6 @@
 # zharness v0.15 "slim" — reference material
 
-Supporting material for `docs/plans/active/zharness-v015-slim.md`. Everything here is an
+Supporting material for `docs/plans/completed/zharness-v015-slim.md`. Everything here is an
 **archive**: a record of how that plan reached its current shape. None of it is a live plan,
 and none of its line-number citations track the repository as it changes.
 

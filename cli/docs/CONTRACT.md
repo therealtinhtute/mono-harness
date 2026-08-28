@@ -5,7 +5,7 @@
 `zharness` is being reduced to an installer/updater binary. This release
 (v0.15) deletes the entire lifecycle command surface and the derived-database layer from source;
 the `install`, `update`, and `uninstall` verbs land in phase
-`p3-installer` of `docs/plans/active/zharness-v015-slim.md`. Until then the
+`p3-installer` of `docs/plans/completed/zharness-v015-slim.md`. Until then the
 binary registers no subcommands — `zharness --help` shows root usage only.
 
 The command list in this contract therefore mirrors exactly what
