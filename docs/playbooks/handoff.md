@@ -36,6 +36,7 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
      - `absorb: adr <path>` and/or `absorb: guard <path>` and/or `absorb: memory <id>` naming artifacts that already exist.
      If a class-of-failure or expensive-to-reverse decision exists and no ADR or guard yet records it, **stop**. Do not `git mv`. Write the ADR or encode the guard first. This step does not write `docs/memory/` unless `work.md`'s three memory triggers already fired.
    - Move the plan out of active state yourself: set frontmatter `status: completed`, refresh `updated`, and `git mv docs/plans/active/{slug}.md docs/plans/completed/{slug}.md`. Do not copy — exactly one file may represent the initiative afterwards, and the completed path must contain the same plan ID.
+   - A completed plan is a run log, not project knowledge: cite the ADR or guard, never `docs/plans/completed/{slug}.md`. After absorb, it may later be deleted when no one still needs the waves, verify commands, or dead ends; if unsure, keep. Do not delete it as part of this close.
 7. **Verify continuity quality** — branch captured, anchors match the plan's own entries, phase statuses match the plan, blockers are specific, one exact next action exists, sensitive data is absent, and exactly one plan file represents the initiative.
 
 ## Exit Conditions
