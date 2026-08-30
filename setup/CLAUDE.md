@@ -13,10 +13,10 @@ User: technical engineer, cross-stack, non-native English speaker.
 ## Workflow (non-trivial: 3+ steps or multi-file)
 
 1. Explore → read relevant files
-2. Plan → short numbered plan in `.kit/plans/`, wait for confirmation
+2. Plan → active plan in `docs/plans/active/{slug}.md`, wait for confirmation
 3. Implement → test after each meaningful step
 4. Verify → prove it works
-5. Close → mark done, update `.kit/HANDOFF.md` if needed
+5. Close → mark done, invoke `handoff` (moves plan to `docs/plans/completed/`)
 
 ## Questioning
 
@@ -26,13 +26,13 @@ Never fabricate API behavior or external system behavior.
 
 ## Output Conventions
 
-All generated artifacts → `.kit/`. Plans → `.kit/plans/{date}-{slug}/`. Reports → `.kit/reports/{skill}/`.
+Plans → `docs/plans/active/{slug}.md` (completed: `docs/plans/completed/{slug}.md`). Reports → `.kit/reports/{skill}/`.
 
 ## Session Hygiene
 
 - Compact at ~50% context; `/clear` and restart at ~70%.
 - After any correction → save to memory system.
-- At session end → update `.kit/HANDOFF.md`.
+- At session end → invoke `handoff` or update active plan.
 
 ## Subagents
 
