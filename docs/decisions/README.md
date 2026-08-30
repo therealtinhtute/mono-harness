@@ -2,7 +2,7 @@
 
 Architecture decisions that are already made, already implemented, and expensive to reverse. Each one exists because the reasoning was otherwise reachable only through a commit message or a session transcript.
 
-An ADR here is a record, not a proposal. It is written after the decision has landed in code, and it states what was decided, why, what was rejected, and what it costs. Nothing in this directory is a plan — plans live in `docs/plans/`.
+An ADR here is a record, not a proposal. It is written after the decision has landed in code, and it states what was decided, why, what was rejected, and what it costs. Nothing in this directory is a plan — plans live in `docs/plans/`. ADRs are the absorb path for expensive-to-reverse decisions; a completed plan is a run log, not project knowledge.
 
 ## Index
 

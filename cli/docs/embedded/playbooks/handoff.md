@@ -31,6 +31,10 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
 6. **Complete the initiative only after final phase closure**:
    - Before closing the final phase, require every prior phase to be `done` and the final phase's latest Validation verdict to carry mode `full` — the initiative's one required complete Security, Performance, Architecture, and Code Quality review (R4 of the SDLC token-cache audit); a gate-depth verdict alone does not satisfy this, no matter how clean. There is no alternative or early-completion condition.
    - Close the final phase through Step 5. Only after the plan shows every phase `done`, update Current State with final anchors, `active_phase: none`, `blockers: none`, `open_items: none`, and an exact closure next action.
+   - **Absorb before leaving `active/`** — append to `## Decisions` exactly one absorb line:
+     - `absorb: none` when the next session does not need a new rule, ADR, or guard from this run; or
+     - `absorb: adr <path>` and/or `absorb: guard <path>` and/or `absorb: memory <id>` naming artifacts that already exist.
+     If a class-of-failure or expensive-to-reverse decision exists and no ADR or guard yet records it, **stop**. Do not `git mv`. Write the ADR or encode the guard first. This step does not write `docs/memory/` unless `work.md`'s three memory triggers already fired.
    - Move the plan out of active state yourself: set frontmatter `status: completed`, refresh `updated`, and `git mv docs/plans/active/{slug}.md docs/plans/completed/{slug}.md`. Do not copy — exactly one file may represent the initiative afterwards, and the completed path must contain the same plan ID.
 7. **Verify continuity quality** — branch captured, anchors match the plan's own entries, phase statuses match the plan, blockers are specific, one exact next action exists, sensitive data is absent, and exactly one plan file represents the initiative.
 
@@ -47,3 +51,4 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
 - Closing with a failed/mismatched check or unresolved proof gap.
 - Completing the initiative before every phase is `done`.
 - Copying the plan to completed while leaving an active duplicate.
+- `git mv` to completed without an `absorb:` line in `## Decisions`.

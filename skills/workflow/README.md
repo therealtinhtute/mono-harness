@@ -72,6 +72,8 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `handoff` | Current State and Next Action, phase closure | playbook + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |
 | `git` / `interview` | no plan sections | enrichment optional, never blocking |
+| `encode-invariant` | no plan sections | non-spine; pattern `docs/patterns/encoding-invariants.md`; never blocking on a missing binary |
+| `improve-harness` | no plan sections | non-spine; template `docs/templates/harness-improvement.md`; never blocking on a missing binary |
 
 ## Scope
 

@@ -40,4 +40,4 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- macos-guard-portability: making the fail-closed proof guard run correctly on macOS (no GNU `timeout`), fixing the BSD `wc` false-FAIL in the guard fixture suite, and closing the drift left by the v0.15 and site work.
+- none (absorb-encode-protocol closed)
