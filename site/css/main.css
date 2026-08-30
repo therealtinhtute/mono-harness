@@ -1,6 +1,6 @@
 /* OpenPI Blueprint Design System · main.css
  * 99.99% faithful implementation of OpenPI design language
- * Warm cream canvas (#f6f5f0), 30px blueprint grid, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #2b49d8 blue
+ * Warm cream canvas (#f6f5f0), 30px blueprint grid, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #124b68 blue
  */
 
 *, *::before, *::after {
@@ -515,7 +515,7 @@ code {
 
 .install-cmd:hover {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(43, 73, 216, 0.12);
+  box-shadow: 0 0 0 3px var(--blue-glow);
 }
 
 .install-cmd .prompt {
@@ -833,7 +833,7 @@ h3 {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--blue-ink);
-  background: rgba(43, 73, 216, 0.07);
+  background: rgba(18, 75, 104, 0.08);
   padding: 1.5px 5px;
   border-radius: 4px;
 }
@@ -1123,7 +1123,7 @@ h3 {
 .badge-blue {
   border-color: var(--blue);
   color: var(--blue-ink);
-  background: rgba(43, 73, 216, 0.08);
+  background: rgba(18, 75, 104, 0.10);
 }
 
 /* ---------- buttons ---------- */
@@ -1241,7 +1241,7 @@ article {
 .final .sec-tag { color: #7A7666; }
 .final .sec-head { border-bottom-color: var(--paper); }
 .final h2 { color: var(--paper); max-width: 22ch; }
-.final h2 i { color: #8FA8FF; font-style: italic; }
+.final h2 i { color: var(--blue-light); font-style: italic; }
 
 .final .install-cmd {
   margin-top: 48px;
@@ -1253,13 +1253,13 @@ article {
 }
 
 .final .install-cmd:hover {
-  border-color: #8FA8FF;
-  box-shadow: 0 0 0 3px rgba(143, 168, 255, 0.18);
+  border-color: var(--blue-light);
+  box-shadow: 0 0 0 3px rgba(82, 140, 174, 0.22);
 }
 
-.final .install-cmd .prompt { color: #8FA8FF; }
+.final .install-cmd .prompt { color: var(--blue-light); }
 .final .copy-btn { border-left-color: #3A382F; color: #7A7666; }
-.final .copy-btn:hover { color: #8FA8FF; }
+.final .copy-btn:hover { color: var(--blue-light); }
 
 .final-links {
   margin-top: 36px;

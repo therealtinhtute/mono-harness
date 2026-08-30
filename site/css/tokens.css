@@ -1,5 +1,5 @@
 /* OpenPI Blueprint Design System · tokens.css
- * Warm cream canvas (#f6f5f0), 30px blueprint grid, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #2b49d8 cobalt blue accent
+ * Warm cream canvas (#f6f5f0), 30px blueprint grid, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #124b68 deep blue accent
  */
 
 :root {
@@ -12,10 +12,10 @@
   --ink-faint: #8B877B;
   --rule: #DCD8CB;
   --rule-dark: #C6C2B2;
-  --blue: #2B49D8;
-  --blue-ink: #2440C0;
-  --blue-light: #7D96FF;
-  --blue-glow: rgba(43, 73, 216, 0.12);
+  --blue: #124B68;
+  --blue-ink: #0E3D55;
+  --blue-light: #528CAE;
+  --blue-glow: rgba(18, 75, 104, 0.14);
   --yellow-mark: rgba(243, 224, 122, 0.65);
 
   /* ── Typography Families ─────────────────────────────────── */
