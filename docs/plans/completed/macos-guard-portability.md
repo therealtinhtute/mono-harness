@@ -3,9 +3,9 @@ id: 01M0MACOSGUARDPLAN9K3XJ7
 type: plan
 intake_id: 01M0MACOSGUARDINTK9K3XJ7
 lane: normal
-status: active
+status: completed
 created: 2026-08-28
-updated: 2026-08-28
+updated: 2026-08-30
 ---
 
 # Plan: macos-guard-portability — fail-closed guard runs on macOS, drift closed out
@@ -144,12 +144,16 @@ updated: 2026-08-28
   - `cd cli && go test ./...`
   - `! grep -nE '^[[:space:]]*local -A' scripts/install-git-hooks.sh`
   (the legacy-bash observation is environment-dependent and is recorded as prose, not as a proof bullet: on this machine `/bin/bash` is 3.2.57, which is what the S4 fixtures exercise. CI runs bash 5.x there, where S4 skips by design, so asserting a bash major version as a proof command would reject every commit on Linux.)
+- [2026-08-30 (handoff closure)] mode `full` verdict `APPROVED` — judge: `same-session` (lane: normal). Owner closed this slot to lock the next initiative. p1–p3 already `done`; guard work landed in `#83` / `#86`. Same-session full review of the shipped hook: Security of `sh -c` proof execution was not independently re-verified as a new threat model; Performance has no new surface; Architecture still two ZGUARD-CORE guards; Code Quality = fixture suite green on this machine.
+  - `bash scripts/test-guards.sh`
+  - `bash scripts/verify-doc-links.sh`
 
 ## Current State
 
 - active_plan_id: 01M0MACOSGUARDPLAN9K3XJ7
 - active_intake_id: 01M0MACOSGUARDINTK9K3XJ7
-- active_phase: done (p1, p2, p3 all done)
+- active_phase: none
+- lifecycle_status: done
 - blockers: none
 - open_items: none
-- exact_next_action: commit the three phases on a branch and open a PR against `master`
+- exact_next_action: none (initiative completed; work is on `master` via `#83` / `#86`)
