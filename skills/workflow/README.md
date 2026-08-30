@@ -1,20 +1,18 @@
 # Workflow Harness — Concept
 
-The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, check, git, handoff`) is a harness-backed runtime: the 6 spine skills are thin triggers that defer to canonical playbooks embedded in the `zharness` binary. This doc locks the mental model.
-
-**Workflow chain UX is preserved.** Skill order, names, and intent do not change. What changes is *underneath*: every stage that matters gets a durable, machine-recorded, replayable trail instead of relying on markdown pointers alone.
+The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, check, git, handoff`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to playbooks in the repository. This doc locks the mental model.
 
 ## 4-Layer Model
 
-- **harness** — gone since v0.15. Markdown plus git is the system of record; the archive decision trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
+- **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 8 `SKILL.md` files under `skills/workflow/` that trigger the lifecycle for Claude Code and other skills.sh-compatible agents. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`; operating logic lives in those playbooks, not in the trigger. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
-- **cli** — `zharness`, the Go binary being reduced to install / update / uninstall for the managed doc set (`docs/plans/**`, playbooks, the AGENTS block). Lifecycle enforcement moved to repo scripts plus the pre-commit hook; nothing waits on the binary.
+- **skills** — the 8 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
+- **cli** — `zharness`, the Go binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.
 
 ## Lifecycle
 
 ### Intent → Intake — `brainstorm`
-A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections; The lane lives nowhere else — no separate store exists.
+A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections. The lane lives nowhere else — no separate store exists.
 
 ### Story/Plan — `to-plan`
 Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files — assigning one stable story identity per stable phase (a plain unique token written beside the phase).
@@ -32,17 +30,17 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 
 ## SDLC Stage Coverage
 
-The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (G1 of the SDLC gap analysis, deleted by `655c6ac` — see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill (G2 of the same analysis), not a retrofit onto `work` or `check`.
+The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (G1 of the SDLC gap analysis; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill, not a retrofit onto `work` or `check`.
 
 ## No Version Gate
 
 There is no binary in the execution path, so there is nothing to version-gate. Every spine skill reads `docs/playbooks/{stage}.md` from the repository it is running in, and that playbook is committed — a fresh clone with no `zharness` installed executes the same lifecycle as a fully provisioned machine.
 
-The `preflight`-based readiness call and its `MIN_ZHARNESS_VERSION` documentation gate (last set to `0.8.1`) were deleted in v0.15 along with the rest of the lifecycle command surface; see [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md). What `zharness` still does — `install` / `update` / `uninstall` — is scaffold and three-way-update the managed docs, which is a setup concern, not a per-stage one.
+The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold and three-way-update the managed docs, which is a setup concern, not a per-stage one.
 
-### Non-spine skills degrade instead of stopping
+### Non-spine skills do not stop on a missing binary
 
-A skill that owns no harness entity must not hard-stop on the harness. Of the 8 workflow skills, exactly two have no dedicated entity in the mapping table below: `git` and `interview`. Neither writes to the harness, so a missing, stale, or unreadable `zharness` is never a reason to refuse their actual work — staging and committing, or grilling an intent. Each prints one line noting harness enrichment is unavailable (the `git` gate-verdict warning, or nothing at all for `interview`) and proceeds regardless. The 6 spine skills now degrade the same way when the harness is absent: markdown plus git stays the system of record, so a missing binary costs bookkeeping convenience, never the ability to do the work.
+`git` and `interview` own no plan sections. A missing `zharness` binary is never a reason to refuse staging, committing, or grilling an intent. The 6 spine skills are the same: markdown plus git is the system of record.
 
 ## Thin-Trigger Template
 
@@ -59,8 +57,6 @@ description: {unchanged from before this initiative — skills.sh discovery/trig
 Defer to: {one line naming the skills this stage hands off to or resumes from}
 ```
 
-`references/` for a rewritten skill is pruned to only what the corresponding playbook does *not* absorb — most of it is deleted once the playbook is proven to carry the same content (diff-checked during `playbook-authoring`).
-
 ## Skill ↔ Plan-Section Mapping
 
 | Skill | Owns | Mechanism |
@@ -74,34 +70,3 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `git` / `interview` | no plan sections | enrichment optional, never blocking |
 | `encode-invariant` | no plan sections | non-spine; pattern `docs/patterns/encoding-invariants.md`; never blocking on a missing binary |
 | `improve-harness` | no plan sections | non-spine; template `docs/templates/harness-improvement.md`; never blocking on a missing binary |
-
-## Scope
-
-### In Scope (this initiative)
-- `cli/` Go module, release pipeline, install script
-- Rewrites of all 8 `skills/workflow/*` `SKILL.md` files + their references
-- Artifact template contracts (brainstorm/work/check/handoff references)
-- `docs/workflow-harness/`, this doc, root `README.md`, `CLAUDE.md` updates
-- Legacy `.kit/` import path and migration guide
-- Pilot run + evidence
-
-### Out of Scope
-- Repo restructure beyond adding `cli/` and `docs/workflow-harness/` — skills stay in place
-- Any skill outside `skills/workflow/` (`craft/`, `shipping/` untouched)
-- Markdown fallback / CLI-optional compatibility mode — explicitly rejected by that initiative; superseded 2026-08: the chain is now fail-open and degrades to markdown-first playbooks when the binary is absent (see Version Gate above)
-
-This initiative's own roadmap is complete. Its consolidated history and the one-plan/one-DB convergence work that followed were both recorded in completed plans that `655c6ac` deleted; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md` for what was removed and how to retrieve it.
-
-## Pilot Evidence & Go/No-Go
-
-Piloted 2026-07-17 by dogfooding this repo itself — real legacy `.kit/workflow-state.yml`-driven history, not a synthetic target. The full evidence log was deleted by `655c6ac` and remains retrievable at `655c6ac^`; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`.
-
-**Verdict: GO.**
-
-- `zharness init && zharness import && zharness query state --json` — **pass**. Derived state matched this repo's real pre-import `workflow-state.yml` (`current_phase`, `entry_phase`) exactly, on real history, not a fixture.
-- Rebuild-from-changesets (cross-machine resume mechanism) — **pass**. A scratch copy of `.kit/changesets/**` replayed through `zharness init` + `zharness db changeset apply` in ULID order produced a byte-identical `resume --json` to the original. Zero divergence.
-- `zharness validate` / `zharness audit` — **2 real gaps found, both filed, neither blocking**:
-  - [#24](https://github.com/therealtinhtute/skills/issues/24) — pilot-era gap #24 (archived with tag `v0.14.0`; `resume.go` and its STATE doc were removed in v0.15)
-  - [#25](https://github.com/therealtinhtute/skills/issues/25) — phases 1-6's RUN/CHECK/HANDOFF artifacts predate the harness and fail `validate`'s ULID cross-link checks (`entropy_score: 100`, zero DB-level `pointer_drift` — the gap is markdown frontmatter, not the harness itself)
-
-Neither gap breaks the chain's core promise: state derivation from legacy `.kit/` is correct, and the changeset-rebuild mechanism is proven byte-exact on this repo's own real history. Both gaps are scoped, filed, and routed to future planning cycles rather than hotfixed mid-pilot, per this phase's own rule.

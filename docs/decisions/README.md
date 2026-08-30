@@ -13,6 +13,7 @@ An ADR here is a record, not a proposal. It is written after the decision has la
 | [0003](0003-durable-memory-not-wired-into-playbooks.md) | Durable memory ships as an opt-in CLI surface, unwired from the spine playbooks | Accepted |
 | [0004](0004-docs-directory-deletion-655c6ac.md) | Recovery position after commit `655c6ac` deleted `docs/` | Accepted |
 | [0005](0005-authored-documentation-boundary.md) | Audit guards authored-document presence, not authored-document truth | Accepted |
+| [0006](0006-v015-authority.md) | v0.15 deleted the derived index; live authority is ARCHITECTURE + CONTRACT | Accepted |
 
 ## Writing a new one
 

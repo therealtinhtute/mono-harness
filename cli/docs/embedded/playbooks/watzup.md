@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Read-only session recap built from Git state, the committed plan at `docs/plans/active/{slug}.md`, and — when the binary happens to exist — the lifecycle ledger. It answers: what changed, where the initiative stands, what is risky, and what exact action comes next.
+Read-only session recap built from Git state and the committed plan at `docs/plans/active/{slug}.md`. It answers: what changed, where the initiative stands, what is risky, and what exact action comes next.
 
 ## Preconditions
 
@@ -12,9 +12,9 @@ Read-only session recap built from Git state, the committed plan at `docs/plans/
 ## Steps
 
 1. **Read branch state** — run `git status -sb`, `git log --oneline main..HEAD`, and `git rev-list --left-right --count main...HEAD`. Capture branch, ahead/behind, and staged/unstaged/untracked scope.
-2. **Read the plan by section** — never the whole file. Read `## Outcome` head, the entire `## Current State and Next Action` (blockers, open items, the recorded exact next action), and the last few bullet lines of `## Progress`, `## Decisions`, and `## Validation`. Read task execution status only from append-only `## Progress`, the sole task execution-status source; task definitions carry no status fields.
+2. **Read the plan by section** — never the whole file. Prefer `bash scripts/plan-slice.sh docs/plans/active/{slug}.md "{heading}"`. Read `## Outcome` head, the entire `## Current State and Next Action` (blockers, open items, the recorded exact next action), and the last few bullet lines of `## Progress`, `## Decisions`, and `## Validation`. Read task execution status only from append-only `## Progress`, the sole task execution-status source; task definitions carry no status fields.
 3. **Read WIP** — inspect the working-tree diff, capped at the most significant five files. Group coherent work themes and identify incomplete implementations or missing proof.
-4. **Assess risks** — report explicit plan blockers verbatim, missing tests, large uncommitted diffs, public-contract breaks, secrets, unsafe migrations. Ledger drift findings apply only when the optional packet below supplied them; never invent reassurance when proof is absent.
+4. **Assess risks** — report explicit plan blockers verbatim, missing tests, large uncommitted diffs, public-contract breaks, secrets, unsafe migrations. Never invent reassurance when proof is absent.
 5. **Recommend one action** — the active plan's exact next action when it still matches Git state; otherwise name the concrete reconciliation action.
 
 ## Output Shape

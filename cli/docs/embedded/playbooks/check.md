@@ -25,7 +25,7 @@ Only durable gate/full mode may:
 
 Preserve every phase/task definition; the phase lifecycle status is the only mutable field inside a planned phase. Append-only `## Progress` is the sole task execution-status source, so check reads task state there and never adds or updates task-definition status fields.
 
-Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, verdict, judge declaration, reviewing model identifier, and proof gaps — with every proof command written as a nested sub-bullet under the entry so the commit-time guard can find them. Validation is append-only; never replace earlier failed evidence or verdicts.
+Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, verdict, judge declaration, reviewing model identifier, proof gaps, and a grep-able `receipt:` block (`context_sources`, `policy`, `judge`, `judge_model`, `retries`, `rollback_point`, `failure_ledger: absent|{path}`, `not_independently_verified`) — with every proof command written as a nested sub-bullet under the entry so the commit-time guard can find them. Validation is append-only; never replace earlier failed evidence or verdicts.
 
 ## Review and Gate Steps
 
@@ -39,8 +39,8 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 8. **Append durable evidence first (mandatory)** — write the Validation entry into the active plan by hand: timestamp, phase slug, exact commands and results, verdict, judge, judge model, proof gaps, and nested sub-bullets carrying each proof command exactly as run. Never self-certify; cite only commands whose real output you captured. `REQUEST_CHANGES` entries may cite failing commands on purpose.
 9. **Commit-time proof guarantee** — no verifier runs here. The repository's pre-commit hook is the sole proof guarantee: it parses this Validation entry from staged bytes and re-executes every nested proof command itself before an APPROVED/APPROVE_WITH_REQUESTS verdict can be committed (`scripts/install-git-hooks.sh`; CI re-runs it). Cite only commands whose real output you captured, written as nested sub-bullets exactly as run — REQUEST_CHANGES entries may cite deliberately failing commands.
 10. **Synchronize durable plan state**:
-    - For `APPROVED` or `APPROVE_WITH_REQUESTS`, immediately set the phase status and Current State lifecycle status to `checked`, record the returned check ID if one was issued, complete the Validation entry's exact evidence, and route to closing `handoff` or `git`.
-    - For `REQUEST_CHANGES`, keep the phase and Current State lifecycle status `in-progress` to match the DB row whenever the binary exists (its recorded Validation entry carries that truth once the ledger is gone), record the findings as blockers/open items, and route back to `work`. When that ledger at docs/evals/failures.md exists, also append one ledger row per finding — durable gate/full only.
+    - For `APPROVED` or `APPROVE_WITH_REQUESTS`, immediately set the phase status and Current State lifecycle status to `checked`, complete the Validation entry's exact evidence and `receipt:` block, and route to closing `handoff` or `git`.
+    - For `REQUEST_CHANGES`, keep the phase and Current State lifecycle status `in-progress`, record the findings as blockers/open items, and route back to `work`. When that ledger at docs/evals/failures.md exists, also append one ledger row per finding — durable gate/full only.
 11. **Verify durable synchronization** — re-read the plan's Phases entry and require the statuses you wrote to appear there; catch partial writes by confirming Current State agrees with the Validation tail. `check` never marks a phase `done`.
 
 ## Response-Only Review and Bounded Gate
@@ -61,12 +61,12 @@ judge: independent | same-session
 judge_model: {model identifier}
 blockers: N critical, N major
 verification: exact command -> pass | fail | not-run
-check_id: ULID | not-recorded
+receipt: context_sources / policy / judge / judge_model / retries / rollback_point / failure_ledger: absent|{path} / not_independently_verified
 proof_gaps: none | exact missing classes
 ```
 
 ## Exit Conditions
 
-- Gate: automated checks, plan alignment, required-proof evaluation ran; the Validation entry landed with judge/model declared and a `same-session` judge naming what it did not independently verify; the mirrored check row (when the binary exists) was recorded; and plan statuses match what you wrote (`checked` for a clean verdict, `in-progress` for `REQUEST_CHANGES`). The complete manual review is not part of gate.
+- Gate: automated checks, plan alignment, required-proof evaluation ran; the Validation entry landed with judge/model declared, a `receipt:` block, and a `same-session` judge naming what it did not independently verify; and plan statuses match what you wrote (`checked` for a clean verdict, `in-progress` for `REQUEST_CHANGES`). The complete manual review is not part of gate.
 - Full: every gate condition holds and the complete Security, Performance, Architecture, and Code Quality review ran.
 - Review or bounded/simple: the response contains honest proof and verdict with zero plan, report, or markdown writes.

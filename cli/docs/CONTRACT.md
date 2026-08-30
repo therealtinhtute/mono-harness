@@ -2,11 +2,10 @@
 
 ## What the binary is
 
-`zharness` is being reduced to an installer/updater binary. This release
-(v0.15) deletes the entire lifecycle command surface and the derived-database layer from source;
-the `install`, `update`, and `uninstall` verbs land in phase
-`p3-installer` of `docs/plans/completed/zharness-v015-slim.md`. Until then the
-binary registers no subcommands — `zharness --help` shows root usage only.
+`zharness` is an installer/updater binary. v0.15 deleted the lifecycle
+command surface and the derived-database layer from source. The binary
+registers exactly three verbs — `install`, `update`, and `uninstall` —
+as listed below and in `cli/internal/interfaces/root.go`.
 
 The command list in this contract therefore mirrors exactly what
 `cli/internal/interfaces/root.go` registers, and vice versa.
@@ -42,11 +41,19 @@ the CI job both extract that block verbatim, so neither can drift from the
 other. `.github/workflows/cli-ci.yml` re-runs them against pushed commits,
 covering anyone who bypasses local hooks.
 
+Tool allow/deny is the **host** agent runtime (Claude/Pi/Codex), not this
+binary. Default shape the host should own: READ files allowed; RUN TESTS
+inside a sandbox; WRITE inside the workspace; NETWORK scoped by task;
+DEPLOY and DELETE DATA require approval. zharness authorizes only
+managed-doc `install`/`update`/`uninstall` and, via the hook, commits of
+clean Validation entries.
+
 Repository scripts:
 
 - `scripts/install-git-hooks.sh` — installs the hooks (also embeds the guard core)
 - `scripts/record-check.sh` — optional convenience runner for proof commands;
   it holds no guarantee
+- `scripts/plan-slice.sh` — optional plan-section reader; holds no guarantee
 
 ## What carries the state
 

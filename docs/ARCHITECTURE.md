@@ -27,14 +27,17 @@ State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries 
 
 The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`docs/playbooks/brainstorm.md` step 6).
 
-## The two fail-closed guards
+## The fail-closed guards
 
-Exactly two fail-closed guarantees exist in the whole system, both in the pre-commit hook (`scripts/install-git-hooks.sh`, shared core between the `# ZGUARD-CORE` markers):
+Fail-closed guarantees live in the pre-commit hook (`scripts/install-git-hooks.sh`, shared core between the `# ZGUARD-CORE` markers):
 
 1. **Proof re-execution** — a newly added `## Validation` entry with verdict `APPROVED` (or `APPROVE_WITH_REQUESTS`) has every nested proof command re-executed by the hook; any non-zero exit rejects the commit.
 2. **Independent judge** — on a `lane: high-risk` plan, a new Validation entry carrying `judge: same-session` is rejected.
+3. **At most one active plan** — more than one non-empty file under `docs/plans/active/` is rejected; zero is a valid idle state.
 
-`.github/workflows/cli-ci.yml` re-runs both checks on pushed commits, so bypassing local hooks gains nothing. The hook reads staged bytes itself; there is no pass marker an authoring agent could forge.
+`.github/workflows/cli-ci.yml` re-runs these checks on pushed commits, so bypassing local hooks gains nothing. The hook reads staged bytes itself; there is no pass marker an authoring agent could forge.
+
+Tool allow/deny is the host runtime’s job, not zharness: READ files by default, RUN TESTS in a sandbox, WRITE inside the workspace, NETWORK scoped by task, DEPLOY and DELETE DATA behind approval. This binary only installs the doc set and the hook only gates Validation commits.
 
 ## Embedded doc set and projection
 

@@ -36,7 +36,7 @@ Preserve every other section. After a phase/task definition is written, it is im
 
 - Scope comes from the active plan; planning cannot add product behavior.
 - Phase slugs and story IDs are stable after creation.
-- Phase/task definitions are immutable after planning; work/check/handoff may change only phase lifecycle status to mirror their DB transitions while the ledger exists, marking them in this file alone once it is gone.
+- Phase/task definitions are immutable after planning; work/check/handoff may change only that phase's lifecycle status in this file.
 - Append-only `## Progress` is the sole task execution-status source; task definitions contain no status fields.
 - Phases are ordered by real dependency and risk reduction, not arbitrary size.
 - Waves expose executable coordination; tasks expose exact proof.

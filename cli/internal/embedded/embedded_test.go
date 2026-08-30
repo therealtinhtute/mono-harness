@@ -105,7 +105,7 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"one `story_id` per listed phase",
 				"docs/plans/active/{slug}.md",
 				"After a phase/task definition is written, it is immutable",
-				"only phase lifecycle status to mirror their DB transitions while the ledger exists",
+				"work/check/handoff may change only that phase's lifecycle status in this file",
 				"Do not add task status fields",
 				"never write parallel task/phase state anywhere else",
 				"Append-only `## Progress` is the sole task execution-status source",
@@ -232,6 +232,11 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 		"--close-phase",
 		"Optional index-sync",
 		legacyDBName,
+		"lifecycle ledger",
+		"DB-mirroring",
+		"mirrored check row",
+		"check_id: ULID",
+		"latest_run_id",
 	}
 
 	for _, tt := range tests {

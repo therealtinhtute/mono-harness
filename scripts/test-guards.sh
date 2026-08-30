@@ -10,6 +10,8 @@ awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' \
 	scripts/install-git-hooks.sh > "$GUARD"
 grep -q '^zharness_guard_entries_of_file()' "$GUARD" || {
 	echo "FAIL - guard core extraction failed"; exit 1; }
+grep -q '^zharness_guard_at_most_one_active_plan()' "$GUARD" || {
+	echo "FAIL - R5 one-plan guard missing from core"; exit 1; }
 # shellcheck disable=SC1090
 source "$GUARD"
 
@@ -158,6 +160,64 @@ else
 	ok "S3 same-session judge on high-risk lane rejects"
 fi
 
+cat > "$tmp/new-full-ss.md" <<'EOF'
+---
+lane: normal
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- [2026-08-30 (initiative close)] mode `full` verdict `APPROVED` — judge: `same-session`
+  - `true`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-full-ss.md" 2>/dev/null; then
+	bad "H3 mode full + same-session must reject"
+else
+	ok "H3 mode full + same-session rejects"
+fi
+
+cat > "$tmp/new-gate-ss.md" <<'EOF'
+---
+lane: normal
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- [2026-08-30 (gate)] mode `gate` verdict `APPROVED` — judge: `same-session`
+  - `true`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-gate-ss.md" 2>/dev/null; then
+	ok "H3 mode gate + same-session on normal lane accepts"
+else
+	bad "H3 mode gate + same-session must accept"
+fi
+
+cat > "$tmp/new-gate-quote-full.md" <<'EOF'
+---
+lane: normal
+---
+
+## Validation
+
+- `2026-08-27T00:00:00Z` — older entry, already on record
+  - `true`
+
+- [2026-08-30 (gate)] mode `gate` verdict `APPROVED` — judge: `same-session`
+  - prior close quoted: mode: full
+  - `true`
+EOF
+if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-gate-quote-full.md" 2>/dev/null; then
+	ok "H3 quoted mode-full in a gate sub-bullet still accepts"
+else
+	bad "H3 quoted mode-full in body must not reject a gate entry"
+fi
+
 # S2/R2 end-to-end: a newly added UNDATED APPROVED entry is visible to the
 # whole guard flow and its proofs are re-executed (fail-case rejects).
 cat > "$tmp/new-undated-fail.md" <<'EOF'
@@ -290,6 +350,35 @@ if printf '%s' "$s5out" | grep -q MARKER-OLD-ENTRY-RERUN; then
 else
 	ok "S5 untouched entry is not re-executed when a sibling is appended"
 fi
+
+# R5: at most one non-empty docs/plans/active/*.md. Zero is idle. Empty files
+# do not count. No `local -A`.
+r5=$(mktemp -d)
+mkdir -p "$r5/docs/plans/active"
+if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
+	ok "R5 zero active plans accepted"
+else
+	bad "R5 zero must accept"
+fi
+printf 'one\n' > "$r5/docs/plans/active/one.md"
+if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
+	ok "R5 one active plan accepted"
+else
+	bad "R5 one must accept"
+fi
+printf 'two\n' > "$r5/docs/plans/active/two.md"
+if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
+	bad "R5 two active plans must reject"
+else
+	ok "R5 two active plans rejected"
+fi
+: > "$r5/docs/plans/active/two.md"
+if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
+	ok "R5 empty second file does not count"
+else
+	bad "R5 empty second file must not reject"
+fi
+rm -rf "$r5"
 
 rm -rf "$tmp" "$GUARD"
 echo

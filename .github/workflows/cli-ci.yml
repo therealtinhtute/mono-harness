@@ -51,9 +51,14 @@ jobs:
         run: |
           awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh > /tmp/guard.sh
           grep -q '^zharness_guard_entries_of_file()' /tmp/guard.sh
+          grep -q '^zharness_guard_at_most_one_active_plan()' /tmp/guard.sh
 
       - name: Guard fixture tests (guard-v3)
         run: bash scripts/test-guards.sh
+      - name: At most one active plan
+        run: |
+          source /tmp/guard.sh
+          zharness_guard_at_most_one_active_plan "$GITHUB_WORKSPACE"
       - name: Run guards against pushed commit's plan changes
         run: |
           source /tmp/guard.sh

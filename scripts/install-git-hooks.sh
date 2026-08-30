@@ -13,7 +13,7 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 # Two wrappers feed it pairs of plan-file contents:
 #   - pre-commit: staged blob vs HEAD blob ("reads staged bytes, trusts no marker")
 #   - CI job:     pushed HEAD blob vs parent blob
-# Guards implemented here (zharness v0.15 p1-hook-guard, review-hardened v2):
+# Guards implemented here (zharness v0.15 p1-hook-guard, review-hardened v2, R5 one-plan):
 #   R2: re-execute every nested proof command of newly added ## Validation
 #       entries whose anchored verdict is APPROVED or APPROVE_WITH_REQUESTS
 #       (`sh -c`, 5-minute timeout each where timeout/gtimeout is available,
@@ -87,6 +87,12 @@ zharness_entry_has_same_session() {        # <entry-body>, backticks stripped fi
   printf '%s\n' "$1" | sed 's/[`]//g' | grep -q 'judge:[[:blank:]]*same-session'
 }
 
+zharness_entry_has_full_mode() {           # first line only, backticks stripped
+  # Same first-line rule as verdicts: a quoted `mode: full` in a sub-bullet
+  # of a gate entry must not look like the entry's own mode.
+  printf '%s\n' "$1" | head -1 | sed 's/[`]//g' | grep -qE 'mode:[[:blank:]]*full|[[:space:]]mode[[:blank:]]+full'
+}
+
 zharness_run_proof() {                     # <command>
   # The 300s bound is defensive, not load-bearing. Resolve the wrapper at call
   # time so the guard's verdict depends on the proof's own exit code: GNU
@@ -143,6 +149,16 @@ zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
       continue
     fi
 
+    if zharness_entry_has_full_mode "$body" && zharness_entry_has_same_session "$body"; then
+      failed=$((failed + 1))
+      echo "" >&2
+      echo "❌ H3 FULL-JUDGE GUARD REJECTED: $path" >&2
+      echo "   a newly added ## Validation entry declares mode: full and a" >&2
+      echo "   same-session judge. An independent judge is required for full." >&2
+      echo "   offending entry starts: $header" >&2
+      continue
+    fi
+
     verdict=$(zharness_anchored_verdict "$body")
     case "$verdict" in
       APPROVED|APPROVE_WITH_REQUESTS) ;;
@@ -176,6 +192,26 @@ zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
 
   rm -rf "$scratch"
   [ "$failed" -eq 0 ]
+}
+
+zharness_guard_at_most_one_active_plan() { # <repo-root>
+  # R5: at most one non-empty file under docs/plans/active/. Zero is idle.
+  # No associative arrays — bash 3.2 safe (same constraint as the hash file).
+  local root="$1" n=0 names="" f
+  [ -n "$root" ] || return 1
+  for f in "$root"/docs/plans/active/*.md; do
+    [ -f "$f" ] || continue
+    [ -s "$f" ] || continue
+    n=$((n + 1))
+    names="$names ${f#$root/}"
+  done
+  if [ "$n" -gt 1 ]; then
+    echo "❌ R5 ACTIVE-PLAN GUARD REJECTED: more than one non-empty file under docs/plans/active/" >&2
+    echo "   paths:$names" >&2
+    echo "   git mv the finished plan to docs/plans/completed/ and keep at most one active." >&2
+    return 1
+  fi
+  return 0
 }
 
 zhuards_guard_plans() {                    # <path-list-space-separated> <staged|head> <dir-for-temp>
@@ -258,6 +294,9 @@ echo "🔍 v0.15 guards on staged plans..."
 plans=$(git diff --cached --name-only --diff-filter=ACM -- 'docs/plans/active/*.md')
 [ -n "$plans" ] && printf 'staged plans:\n%s\n' "$plans"
 guard_failed=0
+if ! zharness_guard_at_most_one_active_plan "$ROOT"; then
+  guard_failed=1
+fi
 if [ -n "$plans" ] && ! zhuards_guard_plans "$plans" staged "$tmpdir"; then
   guard_failed=1
 fi
