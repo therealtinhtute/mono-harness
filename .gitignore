@@ -15,3 +15,5 @@ __pycache__/
 
 # opencode session state (tool-local, never repo content)
 .opencode/
+# zharness v0.15 managed set
+/.zharness/
