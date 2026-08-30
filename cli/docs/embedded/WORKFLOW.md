@@ -26,3 +26,5 @@ The lifecycle needs no binary: route through the table below and read only the n
 ## Execution boundary
 
 Reduced mode mutates nothing durable. Durable stages append to the active plan's markdown sections exactly as each playbook directs; nothing else writes them. Every proof claim must name actual command output or observable evidence. If repository tooling and a playbook disagree, trust the repository and report the docs mismatch.
+
+escalate_when: ask the owner and stop — locked schema or requirements would change; the same verification command failed twice; a product rule conflicts.

@@ -68,3 +68,11 @@ Referenced by Full-Mode Execution steps 6-7 when recording a task's execution st
 | `DONE_WITH_CONCERNS` | Verified with a surfaced concern | Record concern; continue only with acceptance |
 | `NEEDS_CONTEXT` | Required information is absent | Stop and obtain context |
 | `BLOCKED` | Cannot finish inside authority or proof boundary | Stop with `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, or `BLOCKED_CONTRACT_DRIFT` |
+
+## escalate_when
+
+Ask the owner and stop. Do not invent.
+
+- locked schema or requirements would change
+- the same verification command failed twice
+- a product rule conflicts
