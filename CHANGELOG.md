@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.16.2] — 2026-08-30
+
+### Changed
+
+- Handoff close: after absorb and `git mv`, a completed plan is a run log
+  (cite the ADR or guard, never the completed path). It may later be deleted
+  when no recovery audience remains; if unsure, keep. Deletion is not part
+  of close.
+
 ## [v0.16.1] — 2026-08-30
 
 ### Added
