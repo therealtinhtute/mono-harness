@@ -4,9 +4,9 @@
 ## What is this project?
 - zharness: an install/update/uninstall binary that scaffolds and maintains a
   markdown-first workflow harness (playbooks, identity docs, guards) in a
-  consumer git repository. The v0.15 "slim" release deletes SQLite and every
-  lifecycle command — the whole lifecycle runs from committed markdown, repo
-  scripts, and a pre-commit hook, with the binary absent from PATH.
+  consumer git repository. v0.15 deleted SQLite and every lifecycle command.
+  v0.16 is the protocol on that surface: absorb at close, at most one active
+  plan, independent judge for `full` checks. The binary stays off the PATH.
 
 ## Who is it for?
 - The owner and contributor agents working in this repository, plus consumers
@@ -30,8 +30,8 @@
 ## Architecture in one breath
 - runtime shape: one Go binary (`cli/cmd/zharness`) exposing exactly install /
   update / uninstall; everything else is git-committed markdown under `docs/`
-  plus two fail-closed guards in the pre-commit hook (proof re-execution and
-  the independent-judge rule).
+  plus fail-closed pre-commit guards (proof re-execution, high-risk and full
+  independent-judge, at most one active plan).
 - where state lives: `docs/plans/active/*.md` (append-only Progress /
   Decisions / Validation) and `.zharness/base/` (manifest + content-addressed
   upstream blobs) — no SQLite anywhere.

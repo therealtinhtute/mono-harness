@@ -13,7 +13,7 @@ Start here. Every document in this repository is reachable from this page, and e
 | Write or edit a skill or a rule | [`docs/prompt-engineering-principles.md`](prompt-engineering-principles.md) |
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
 | See what is being built right now | the one plan under [`docs/plans/active/`](plans/active) — empty means nothing is in flight |
-| See what was built before | [`docs/plans/completed/`](plans/completed), most recently [`docs-architecture.md`](plans/completed/docs-architecture.md) |
+| See what was built before | [`docs/plans/completed/`](plans/completed), most recently [`absorb-encode-protocol.md`](plans/completed/absorb-encode-protocol.md) |
 | Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md) |
 
 ## Ownership
@@ -36,6 +36,11 @@ Three classes, and the class determines who is allowed to edit the file.
 | `docs/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
 | `docs/research/` | authored | external-literature evidence that requirements cite as authority; describes the outside world, not this repository |
+| `docs/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
+| `docs/patterns/` | authored | how to encode an accepted rule as a native guard |
+| `docs/templates/` | authored | copy-from templates (not the installer `templates/`) |
+| `docs/memory/` | authored | optional session memory files |
+| `docs/references/` | authored | frozen snapshots (including `zharness-v015/`) |
 
 An existing path under `docs/` that is missing from this table is a defect in this table.
 

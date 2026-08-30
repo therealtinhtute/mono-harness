@@ -24,7 +24,7 @@ Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and
 `check` runs the automated gate, evaluates the required-proof matrix for the plan's lane (tiny/normal/high-risk), and appends a deterministic verdict with nested proof-command sub-bullets to the plan's Validation section; the pre-commit hook re-executes every cited proof itself at commit time and rejects false claims. Missing required proof always fails, naming the missing evidence.
 
 ### Handoff/Resume — `handoff`, `watzup`
-`handoff` updates the plan's Current State and Next Action directly and, on final clean closure, moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders a session-start recap from Git state plus the plan alone.
+`handoff` updates the plan's Current State and Next Action directly and, on final clean closure, records an `absorb:` line then moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders a session-start recap from Git state plus the plan alone.
 
 `git` and `interview` sit outside this spine — see mapping table below.
 
@@ -65,7 +65,7 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `to-plan` | Approach and Risks, Phases and Verification (story tokens) | playbook + hand-edited markdown |
 | `work` | Progress, Decisions (append-only) | playbook + hand-edited markdown |
 | `check` | Validation (append-only) | playbook + nested proof sub-bullets |
-| `handoff` | Current State and Next Action, phase closure | playbook + `git mv` on completion |
+| `handoff` | Current State and Next Action, phase closure | playbook + absorb line + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |
 | `git` / `interview` | no plan sections | enrichment optional, never blocking |
 | `encode-invariant` | no plan sections | non-spine; pattern `docs/patterns/encoding-invariants.md`; never blocking on a missing binary |

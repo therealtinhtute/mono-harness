@@ -117,14 +117,20 @@ npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g
 
 No skill runs during installation.
 
-## v0.15
+## v0.16
 
-The former lifecycle CLI and SQLite ended in v0.15. Pin `v0.14.x` to keep
-that binary. Existing `harness.db` files are consumer-owned; nothing here
-deletes them.
+Protocol on the v0.15 three-verb binary: absorb at handoff close, at most
+one active plan, independent judge for `full` checks. Pin `v0.14.x` to keep
+the old lifecycle CLI. Existing `harness.db` files are consumer-owned;
+nothing here deletes them.
 
 See [`cli/docs/CONTRACT.md`](cli/docs/CONTRACT.md) and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## v0.15
+
+Breaking cut: the lifecycle CLI and SQLite were deleted. The three verbs
+remain. Pin `v0.14.x` if you still need that binary.
 
 ## Development
 

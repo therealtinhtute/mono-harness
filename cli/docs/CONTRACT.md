@@ -1,16 +1,16 @@
-# zharness contract — v0.15 (slim)
+# zharness contract — v0.16
 
 ## What the binary is
 
 `zharness` is an installer/updater binary. v0.15 deleted the lifecycle
-command surface and the derived-database layer from source. The binary
-registers exactly three verbs — `install`, `update`, and `uninstall` —
-as listed below and in `cli/internal/interfaces/root.go`.
+command surface and the derived-database layer from source. v0.16 does not
+change that surface. The binary registers exactly three verbs — `install`,
+`update`, and `uninstall` — as listed below and in `cli/internal/interfaces/root.go`.
 
 The command list in this contract therefore mirrors exactly what
 `cli/internal/interfaces/root.go` registers, and vice versa.
 
-## Command surface (v0.15)
+## Command surface (unchanged since v0.15)
 
 | Verb | Behavior |
 |---|---|
@@ -22,20 +22,27 @@ Shared flags: `--root <dir>` overrides the target repository (default: git tople
 
 ## Where the guarantees live now
 
-The two fail-closed guarantees moved out of the binary into the repository's
-**pre-commit hook**, which reads staged bytes and trusts no marker an agent
-writes:
+Fail-closed guarantees live in the repository's **pre-commit hook**, which
+reads staged bytes and trusts no marker an agent writes:
 
 1. **Proof re-execution** — a newly added `## Validation` entry whose verdict
    is `APPROVED` or `APPROVE_WITH_REQUESTS` must have every nested proof
    command re-executed by the hook (`sh -c`, 5-minute timeout each, exit 0);
    any failure rejects the commit naming the command and its output tail.
    Proof of a `REQUEST_CHANGES` entry is never re-executed.
-2. **Independent judge** — a newly added entry carrying a same-session judge
-   declaration into a plan whose frontmatter sets `lane: high-risk` is
-   rejected; lane is read from plan frontmatter directly.
+2. **Independent judge (high-risk)** — a newly added entry carrying a
+   same-session judge declaration into a plan whose frontmatter sets
+   `lane: high-risk` is rejected; lane is read from plan frontmatter directly.
+3. **Independent judge (full)** — a newly added Validation entry whose first
+   line declares `mode: full` and which also carries a same-session judge is
+   rejected, on every lane.
+4. **At most one active plan** — more than one non-empty file under
+   `docs/plans/active/` is rejected; zero is a valid idle state.
 
-Both guards are implemented once in `scripts/install-git-hooks.sh` between
+Handoff absorb is playbook protocol, not a hook: close cannot `git mv`
+without an `absorb:` line. Missing absorb is not a commit rejection.
+
+These guards are implemented once in `scripts/install-git-hooks.sh` between
 the `# ZGUARD-CORE-BEGIN` / `# ZGUARD-CORE-END` markers; the local hook and
 the CI job both extract that block verbatim, so neither can drift from the
 other. `.github/workflows/cli-ci.yml` re-runs them against pushed commits,

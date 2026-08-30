@@ -2,7 +2,7 @@
 
 <!-- zharness:pin 2d4bc5a2015113cd85c3134b04bffc18f94887d1 -->
 
-How the harness actually works after the v0.15 "slim" release, and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
+How the harness actually works as of v0.16 (binary surface from the v0.15 "slim" cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
 
 ## The one idea
 
@@ -32,10 +32,13 @@ The installer is also the onboarding probe: `install` prints a deterministic, re
 Fail-closed guarantees live in the pre-commit hook (`scripts/install-git-hooks.sh`, shared core between the `# ZGUARD-CORE` markers):
 
 1. **Proof re-execution** — a newly added `## Validation` entry with verdict `APPROVED` (or `APPROVE_WITH_REQUESTS`) has every nested proof command re-executed by the hook; any non-zero exit rejects the commit.
-2. **Independent judge** — on a `lane: high-risk` plan, a new Validation entry carrying `judge: same-session` is rejected.
-3. **At most one active plan** — more than one non-empty file under `docs/plans/active/` is rejected; zero is a valid idle state.
+2. **Independent judge (high-risk)** — on a `lane: high-risk` plan, a new Validation entry carrying `judge: same-session` is rejected.
+3. **Independent judge (full)** — a newly added Validation entry that declares `mode: full` and `judge: same-session` is rejected, on every lane.
+4. **At most one active plan** — more than one non-empty file under `docs/plans/active/` is rejected; zero is a valid idle state.
 
 `.github/workflows/cli-ci.yml` re-runs these checks on pushed commits, so bypassing local hooks gains nothing. The hook reads staged bytes itself; there is no pass marker an authoring agent could forge.
+
+Handoff absorb is playbook protocol, not a hook: final close writes `absorb: none` or names an existing ADR/guard/memory. An unabsorbed class-of-failure stops before `git mv`.
 
 Tool allow/deny is the host runtime’s job, not zharness: READ files by default, RUN TESTS in a sandbox, WRITE inside the workspace, NETWORK scoped by task, DEPLOY and DELETE DATA behind approval. This binary only installs the doc set and the hook only gates Validation commits.
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Architecture — mono-harness</title>
-  <meta name="description" content="How the harness actually works after the v0.15 slim release: committed markdown is truth, three scaffolding verbs, two fail-closed pre-commit guards, and zero daemons.">
+  <meta name="description" content="How the harness actually works as of v0.16: committed markdown is truth, three scaffolding verbs, fail-closed pre-commit guards, and zero daemons.">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +40,7 @@
       <header class="page-head reveal">
         <p class="kicker">docs · architecture</p>
         <h1>Architecture<i>.</i></h1>
-        <p class="lede">How the harness actually works after the v0.15 &ldquo;slim&rdquo; release, and why it is shaped this way. Decisions that are expensive to reverse have their own records under <code>docs/decisions/</code>; this page describes the running system.</p>
+        <p class="lede">How the harness actually works as of v0.16 (binary surface from the v0.15 &ldquo;slim&rdquo; cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under <code>docs/decisions/</code>; this page describes the running system.</p>
       </header>
 
       <div class="prose reveal">
@@ -100,8 +100,8 @@
       </div>
 
       <div class="prose reveal">
-        <h2>The Two Fail-Closed Guards<i>.</i></h2>
-        <p>Exactly two fail-closed guarantees exist in the whole system, both in the pre-commit hook (<code>scripts/install-git-hooks.sh</code>, shared core between the <code># ZGUARD-CORE</code> markers):</p>
+        <h2>The Fail-Closed Guards<i>.</i></h2>
+        <p>Fail-closed guarantees live in the pre-commit hook (<code>scripts/install-git-hooks.sh</code>, shared core between the <code># ZGUARD-CORE</code> markers):</p>
       </div>
 
       <div class="card-grid reveal">
@@ -119,10 +119,24 @@
           </div>
           <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">On an active plan marked <code>lane: high-risk</code>, a newly added Validation entry carrying <code>judge: same-session</code> is strictly rejected. High-risk changes mandate an independent session or reviewer.</p>
         </div>
+        <div class="card">
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+            <span class="badge badge-blue">Guard 3</span>
+            <h3 style="margin: 0;">Independent Judge (full)</h3>
+          </div>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">A newly added Validation entry that declares <code>mode: full</code> and <code>judge: same-session</code> is rejected, on every lane. Full checks require an independent judge.</p>
+        </div>
+        <div class="card">
+          <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px;">
+            <span class="badge badge-blue">Guard 4</span>
+            <h3 style="margin: 0;">At Most One Active Plan</h3>
+          </div>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">More than one non-empty file under <code>docs/plans/active/</code> is rejected; zero is a valid idle state.</p>
+        </div>
       </div>
 
       <div class="prose reveal">
-        <p>CI workflows (<code>.github/workflows/cli-ci.yml</code>) re-run both checks on pushed commits, so bypassing local git hooks gains nothing. The hook reads staged bytes directly; there is no pass marker or hash that an authoring agent can forge.</p>
+        <p>CI workflows (<code>.github/workflows/cli-ci.yml</code>) re-run these checks on pushed commits, so bypassing local git hooks gains nothing. The hook reads staged bytes directly; there is no pass marker or hash that an authoring agent can forge. Handoff absorb is playbook protocol, not a hook: final close writes <code>absorb: none</code> or names an existing ADR/guard/memory.</p>
       </div>
 
       <div class="prose reveal">

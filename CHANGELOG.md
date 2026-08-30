@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.16.0] — 2026-08-30
+
+### Added
+
+- Handoff absorb gate: an initiative cannot `git mv` to `completed/` without
+  an `absorb:` line in `## Decisions` (`absorb: none` is valid). A
+  class-of-failure or expensive-to-reverse decision must already live in an
+  ADR or a native guard.
+- Pre-commit R5: at most one non-empty file under `docs/plans/active/`; zero
+  is a valid idle state.
+- Pre-commit H3: a newly added `mode: full` Validation entry that also
+  declares `judge: same-session` is rejected. Full checks require an
+  independent judge.
+- Source-repo skills `encode-invariant` and `improve-harness` (not part of
+  `zharness install`).
+- `LICENSE` (MIT), `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+  and `.github/dependabot.yml`.
+
+### Changed
+
+- Consumer `README.md` and `AGENTS.md` rewritten around the three-verb
+  installer. Workflow diagrams no longer mention `zharness init` or a local
+  database.
+- Live contract and architecture describe the v0.16 protocol. The binary
+  surface is unchanged from v0.15: `install` / `update` / `uninstall`.
+
+### Fixed
+
+- Guard entry hashes no longer depend on trailing blank lines, which had
+  re-executed the previous Validation entry on every append.
+- Skill validation actually runs on `skills/<category>/<name>/SKILL.md`.
+  Load-time errors stay fail-closed; format checks are warnings.
+
 ## [v0.15.1] — 2026-08-28
 
 ### Fixed
@@ -68,12 +101,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - New consumers need no initialization at all: markdown plus git is the whole
   system of record.
 
-## [Unreleased]
-
-### Added
-
-- `LICENSE` (MIT), matching the license already declared in `README.md`.
-- `SECURITY.md` with vulnerability reporting instructions.
-- `CONTRIBUTING.md` with setup and pre-commit gate instructions.
-- `CODE_OF_CONDUCT.md` (Contributor Covenant v2.1).
-- `.github/dependabot.yml` for Go modules and GitHub Actions.

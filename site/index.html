@@ -214,7 +214,8 @@
 
     <div class="safety-list reveal">
       <div class="safety-item"><span class="s-key">guard.proof_reexec</span><span class="s-val">Verification proofs inside APPROVED validation entries are re-executed during pre-commit; failed proofs reject the commit.</span></div>
-      <div class="safety-item"><span class="s-key">guard.independent_judge</span><span class="s-val">High-risk changes require an independent judge session; self-approval in the authoring session is fail-closed rejected.</span></div>
+      <div class="safety-item"><span class="s-key">guard.independent_judge</span><span class="s-val">High-risk changes require an independent judge session; self-approval in the authoring session is fail-closed rejected. A mode:full check is rejected unless the judge is independent, on every lane.</span></div>
+      <div class="safety-item"><span class="s-key">guard.one_active_plan</span><span class="s-val">At most one non-empty file may exist under docs/plans/active/; zero is a valid idle state.</span></div>
       <div class="safety-item"><span class="s-key">runtime.zero_daemons</span><span class="s-val">No background processes, resident sockets, or lingering services required to run the development lifecycle.</span></div>
       <div class="safety-item"><span class="s-key">storage.zero_database</span><span class="s-val">No hidden databases or binary stores; all plans, tasks, and memories reside in human-readable committed markdown.</span></div>
       <div class="safety-item"><span class="s-key">context.clean_window</span><span class="s-val">Zero resident model tools crowding the system prompt until explicitly invoked or triggered by workflow.</span></div>
@@ -238,9 +239,9 @@
       <div class="cmd-row"><div class="c">zharness <span class="blue">install</span></div><div class="d">Scaffold the managed documentation set and playbooks into the current repository</div></div>
       <div class="cmd-row"><div class="c">zharness <span class="blue">update</span></div><div class="d">Update the managed doc set while preserving existing plans and repository modifications</div></div>
       <div class="cmd-row"><div class="c">zharness <span class="blue">uninstall</span></div><div class="d">Cleanly remove the managed doc set and restore clean repository state</div></div>
-      <div class="cmd-row"><div class="c">npx skills add <span class="blue">therealtinhtute/mono-harness</span></div><div class="d">Mount all 14 mono-harness skills into your current AI agent workspace</div></div>
+      <div class="cmd-row"><div class="c">npx skills add <span class="blue">therealtinhtute/mono-harness</span></div><div class="d">Mount all 16 mono-harness skills into your current AI agent workspace</div></div>
       <div class="cmd-row"><div class="c">bash <span class="blue">setup/install.sh</span></div><div class="d">Run the complete global Claude Code bootstrap (CLAUDE.md, rules, statusline, skills)</div></div>
-      <div class="cmd-row"><div class="c">bash <span class="blue">scripts/test-guards.sh</span></div><div class="d">Execute the 11/11 fail-closed pre-commit guard regression test suite</div></div>
+      <div class="cmd-row"><div class="c">bash <span class="blue">scripts/test-guards.sh</span></div><div class="d">Execute the fail-closed pre-commit guard fixture suite</div></div>
     </div>
   </div>
 </section>

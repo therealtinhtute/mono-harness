@@ -42,8 +42,8 @@
     { cls: "t-cmd", text: "zharness install" },
     { cls: "t-ok", text: "✓ scaffolded docs/ · committed markdown is truth" },
     { cls: "t-cmd", text: "npx skills add therealtinhtute/mono-harness" },
-    { cls: "t-out", text: "● 14 skills mounted · zero resident daemons" },
-    { cls: "t-out", text: "● fail-closed guards active · 11/11 tests pass" }
+    { cls: "t-out", text: "● 16 skills mounted · zero resident daemons" },
+    { cls: "t-out", text: "● fail-closed guards active · fixture suite green" }
   ];
 
   var termTimer = null;

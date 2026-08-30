@@ -18,5 +18,4 @@ validation material.
   changes, validation, and unresolved risks.
 
 The `zharness` binary is install / update / uninstall only. It does not run
-the lifecycle. There is no task database. Do not create parallel control-plane
-state.
+the lifecycle. There is no task database. There is no parallel control-plane state.

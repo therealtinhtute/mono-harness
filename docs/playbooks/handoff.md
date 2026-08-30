@@ -29,7 +29,7 @@ Refresh frontmatter `updated`. Keep `status: active` and the active path for inc
    - Set that phase's plan status and Current State lifecycle status to `done`, record final anchors, and re-read the plan to confirm internal agreement.
    - If a dependent phase remains, keep frontmatter `status: active` and the same active path. Set the exact next action to `work full phase {next-phase-slug}`; do not complete or move the initiative.
 6. **Complete the initiative only after final phase closure**:
-   - Before closing the final phase, require every prior phase to be `done` and the final phase's latest Validation verdict to carry mode `full` — the initiative's one required complete Security, Performance, Architecture, and Code Quality review (R4 of the SDLC token-cache audit); a gate-depth verdict alone does not satisfy this, no matter how clean. There is no alternative or early-completion condition.
+   - Before closing the final phase, require every prior phase to be `done` and the final phase's latest Validation verdict to carry mode `full` and `judge: independent` — the initiative's one required complete Security, Performance, Architecture, and Code Quality review (R4 of the SDLC token-cache audit); a gate-depth verdict alone does not satisfy this, no matter how clean. There is no alternative or early-completion condition.
    - Close the final phase through Step 5. Only after the plan shows every phase `done`, update Current State with final anchors, `active_phase: none`, `blockers: none`, `open_items: none`, and an exact closure next action.
    - **Absorb before leaving `active/`** — append to `## Decisions` exactly one absorb line:
      - `absorb: none` when the next session does not need a new rule, ADR, or guard from this run; or
