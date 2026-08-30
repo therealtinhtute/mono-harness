@@ -40,4 +40,4 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- none (absorb-encode-protocol closed)
+- none (escalate-when closed)
