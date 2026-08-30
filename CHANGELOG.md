@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.16.1] — 2026-08-30
+
+### Added
+
+- `escalate_when` on `work.md` and `WORKFLOW.md`: ask the owner and stop
+  when locked schema or requirements would change, the same verification
+  command failed twice, or a product rule conflicts. Retry cap stays one
+  targeted fix. Not a plan field. Not a hook.
+
 ## [v0.16.0] — 2026-08-30
 
 ### Added
