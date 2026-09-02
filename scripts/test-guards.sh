@@ -380,6 +380,29 @@ else
 fi
 rm -rf "$r5"
 
+# record-check.sh: convenience runner, not the guarantee. Pass/fail keep the
+# proof's exit code; timeout → gtimeout → unbounded (stock macOS has neither).
+rc_out=$(bash scripts/record-check.sh -- true 2>&1)
+rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$rc_out" | grep -q "PASS" &&
+	ok "record-check true exits 0" ||
+	bad "record-check true expected 0, got $rc"
+rc_out=$(bash scripts/record-check.sh -- false 2>&1)
+rc=$?
+[ "$rc" -eq 1 ] &&
+	ok "record-check false exits 1" ||
+	bad "record-check false expected 1, got $rc"
+rc_bin=$(mktemp -d)
+ln -s "$(command -v sh)" "$rc_bin/sh"
+ln -s "$(command -v tail)" "$rc_bin/tail"
+ln -s "$(command -v sed)" "$rc_bin/sed"
+rc_out=$(PATH="$rc_bin" /bin/bash scripts/record-check.sh -- true 2>&1)
+rc=$?
+[ "$rc" -eq 0 ] && printf '%s' "$rc_out" | grep -q "no timeout/gtimeout" &&
+	ok "record-check isolated PATH warns and exits 0" ||
+	bad "record-check isolated PATH expected warning+0, got $rc (out: $rc_out)"
+rm -rf "$rc_bin"
+
 rm -rf "$tmp" "$GUARD"
 echo
 echo "guards: $pass passed, $fail failed"
