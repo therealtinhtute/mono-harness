@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.16.3] — 2026-09-02
+
+### Changed
+
+- `check.md` gate: if `scripts/record-check.sh` exists, run proofs through
+  it (timeout → gtimeout → unbounded; 3-line pass / 10-line fail tail).
+  If it is absent, capture to a temp file, print the same tails, and keep
+  the command's exit code. Nested Validation bullets still cite the raw
+  commands so the hook re-executes them.
+
+### Fixed
+
+- `scripts/record-check.sh`: same timeout resolver as the pre-commit hook,
+  so stock macOS no longer fails with `timeout: command not found`.
+
+### Added
+
+- `docs/audit/wave-session-ab-protocol.md`: paired worktree A/B for
+  same-session vs wave-boundary restart. Does not change `work.md` step 11.
+
 ## [v0.16.2] — 2026-08-30
 
 ### Changed
