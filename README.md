@@ -17,7 +17,7 @@ Copy the block into the consumer repository chat when you want the agent to
 install, refresh, or work with zharness.
 
 ```text
-Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to merge the latest playbooks. Never put plans in .kit/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle.
+Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to merge the latest playbooks. Never put plans in .kit/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.
 ```
 
 ## What it solves
@@ -69,9 +69,9 @@ The managed set is:
 - a `docs/PROJECT.md` identity scaffold;
 - `.zharness/base/` for three-way updates.
 
-It does not install application architecture, product policy, skills, git
-hooks, credentials, a database, schemas, orchestration, or background
-processes.
+It does not write `CLAUDE.md`. It does not install application architecture,
+product policy, skills, git hooks, credentials, a database, schemas,
+orchestration, or background processes.
 
 ## Install
 
