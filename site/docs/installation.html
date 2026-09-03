@@ -57,6 +57,22 @@
       </div>
 
       <div class="prose reveal">
+        <h2>Give this to a coding agent<i>.</i></h2>
+        <p>Copy the block below into the consumer repository chat when you want the agent to install, refresh, or work with <code>zharness</code> on its own.</p>
+      </div>
+
+      <div class="terminal-block reveal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="terminal-dot"></span>
+          </div>
+          <span class="terminal-title">prompt — bootstrap this repository</span>
+          <button class="copy-btn" data-copy data-cmd="Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md and the AGENTS.md block merge instead). Never put plans in .kit/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.">COPY</button>
+        </div>
+        <pre><code>Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md and the AGENTS.md block merge instead). Never put plans in .kit/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.</code></pre>
+      </div>
+
+      <div class="prose reveal">
         <h2>Option A: Full Claude Code bootstrap<i>.</i></h2>
         <p>The recommended approach for setting up a full agent workstation. The bootstrap script deploys global agent instructions (<code>CLAUDE.md</code>), core rules, validation hooks, a settings template, the statusline script, and installs all 16 skills globally.</p>
       </div>
