@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.17.0] — 2026-09-03
+
+### Fixed
+
+- `zharness update`: a playbook or `docs/WORKFLOW.md` with no recorded
+  merge base — `.zharness/base/` lost, or predating base tracking — used to
+  stay stuck on stale content forever (R18 refused to invent an ancestor).
+  These files are pure upstream mirrors, never a legitimate consumer
+  customization surface, so `install`/`update` now fresh-overwrite them
+  unconditionally: no diff, no compare, no conflict. Three-way merge stays
+  for `docs/PROJECT.md` and the marked `AGENTS.md` block, the two managed
+  files consumers do own. See `docs/decisions/0007-fresh-overwrite-for-playbooks-and-workflow.md`.
+
+### Changed
+
+- Hand-edits to a playbook or `WORKFLOW.md` are now silently discarded on
+  the next `zharness update`, with no conflict marker warning first — the
+  accepted cost of the fix above.
+
 ## [v0.16.3] — 2026-09-02
 
 ### Changed
