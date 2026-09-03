@@ -61,7 +61,7 @@
         <span class="tok-prm">|</span>
         <span class="tok-prm">v</span>
 <span class="tok-cmd">install</span>                          <span class="tok-out">scaffolds the managed set, records a base, reports brownfield read-only</span>
-<span class="tok-cmd">update</span>                           <span class="tok-out">three-way merge of managed files onto the recorded base</span>
+<span class="tok-cmd">update</span>                           <span class="tok-out">fresh-overwrites playbooks/WORKFLOW.md; three-way merges PROJECT.md and the AGENTS.md block onto the recorded base</span>
 <span class="tok-cmd">uninstall</span>                        <span class="tok-out">removes the managed set; consumer bytes are never destroyed</span></code></pre>
       </div>
 
@@ -83,7 +83,7 @@
             <h3 style="margin: 0; font-family: var(--mono); font-size: 16px;">zharness update</h3>
             <span class="badge">Sync</span>
           </div>
-          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Performs a diff3 three-way merge of upstream changes onto local files against the recorded base. Conflicting edits are flagged with standard git conflict markers.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Playbooks and <code>WORKFLOW.md</code> are pure upstream mirrors — always overwritten, no merge, no conflict. <code>PROJECT.md</code> and the <code>AGENTS.md</code> block still get a diff3 three-way merge against the recorded base, flagged with standard git conflict markers on overlap.</p>
         </div>
         <div class="card">
           <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
