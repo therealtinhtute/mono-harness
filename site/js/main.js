@@ -126,6 +126,10 @@
   if (track && track.children.length > 0) {
     track.innerHTML += track.innerHTML;
   }
+  var heroTrack = document.getElementById("hero-marquee-track");
+  if (heroTrack && heroTrack.children.length > 0) {
+    heroTrack.innerHTML += heroTrack.innerHTML;
+  }
 
   /* 6. Active Nav Link Detection */
   var path = location.pathname.replace(/\/+$/, "");
