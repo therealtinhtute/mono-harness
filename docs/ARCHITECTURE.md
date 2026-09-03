@@ -17,7 +17,7 @@ cli/cmd/zharness                 one Go binary (cobra), three verbs
         |
         v
 install                          scaffolds the managed set, records a base, reports brownfield read-only
-update                           three-way merge of managed files onto the recorded base
+update                           fresh-overwrites playbooks/WORKFLOW.md; three-way merges PROJECT.md and the AGENTS.md block onto the recorded base
 uninstall                        removes the managed set; consumer bytes are never destroyed
 ```
 

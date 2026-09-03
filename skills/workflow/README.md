@@ -36,7 +36,7 @@ The workflow chain covers plan → code → verify → commit/PR. Deployment, re
 
 There is no binary in the execution path, so there is nothing to version-gate. Every spine skill reads `docs/playbooks/{stage}.md` from the repository it is running in, and that playbook is committed — a fresh clone with no `zharness` installed executes the same lifecycle as a fully provisioned machine.
 
-The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold and three-way-update the managed docs, which is a setup concern, not a per-stage one.
+The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold the managed docs, fresh-overwriting playbooks/WORKFLOW.md and three-way-merging PROJECT.md and the AGENTS.md block, which is a setup concern, not a per-stage one.
 
 ### Non-spine skills do not stop on a missing binary
 

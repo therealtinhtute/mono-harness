@@ -46,8 +46,9 @@ const (
 // Target is one managed-file mapping from an embedded source path to a
 // destination path inside the consuming repository.
 type Target struct {
-	Src string // path inside embedded.FS (or embedded.Templates)
-	Dst string // repo-root-relative destination
+	Src   string // path inside embedded.FS (or embedded.Templates)
+	Dst   string // repo-root-relative destination
+	Merge bool   // true: three-way merge with consumer edits; false: always overwrite with upstream bytes
 }
 
 func playbookTargets() ([]Target, error) {
@@ -69,7 +70,7 @@ func AllTargets() ([]Target, error) {
 	}
 	all := append([]Target{
 		{Src: "WORKFLOW.md", Dst: workflowTarget},
-		{Src: projectTemplate, Dst: projectTarget},
+		{Src: projectTemplate, Dst: projectTarget, Merge: true},
 	}, tg...)
 	return all, nil
 }
@@ -318,6 +319,17 @@ func Install(root, version string, stdout *strings.Builder) error {
 			return err
 		}
 		dstP := filepath.Join(root, t.Dst)
+		if !t.Merge {
+			// Pure upstream mirror (playbooks, WORKFLOW.md): always overwrite,
+			// no diff against what's on disk.
+			if err := writeFileAtomic(dstP, up); err != nil {
+				return err
+			}
+			fmt.Fprintf(stdout, "installed  %s\n", t.Dst)
+			files[t.Dst] = up
+			paths = append(paths, t.Dst)
+			continue
+		}
 		local, lerr := os.ReadFile(dstP)
 		switch {
 		case os.IsNotExist(lerr):

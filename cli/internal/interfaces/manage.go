@@ -58,7 +58,7 @@ func newUpdateCmd(version string) *cobra.Command {
 	var cont, abort bool
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Three-way merge the managed doc set with local edits (conflicts stop for human resolution)",
+		Short: "Refresh playbooks/WORKFLOW.md from upstream; three-way merge PROJECT.md and the AGENTS.md block (conflicts stop for human resolution)",
 		RunE: func(c *cobra.Command, args []string) error {
 			if cont && abort {
 				return fmt.Errorf("--continue and --abort are mutually exclusive")

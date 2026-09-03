@@ -20,7 +20,7 @@ Start here. Every document in this repository is reachable from this page, and e
 
 Three classes, and the class determines who is allowed to edit the file.
 
-- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/` for the updater's three-way merge. Edit the embedded source and cut a release; a local edit is staged as an update conflict, never silently overwritten.
+- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/`. Edit the embedded source and cut a release. `docs/WORKFLOW.md` and the stage playbooks are pure mirrors: the updater always overwrites them with upstream bytes, discarding any local edit with no conflict. `docs/PROJECT.md` is the one managed file the updater still three-way-merges — a local edit there is staged as an update conflict, never silently overwritten.
 - **authored** — written by hand, never embedded, never regenerated. The consumer owns the content; repository scripts (not a binary verdict) watch whether any authored markdown remains, and semantic correctness belongs to the author or external tooling.
 - **scaffold-once** — written by the managed-set installer only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
 

@@ -154,34 +154,65 @@ func TestInstall_Brownfield_ReportOnlyPreservesBytes(t *testing.T) {
 	}
 }
 
+// Install() on a repo where a fresh-overwrite target (playbook or
+// WORKFLOW.md) already exists with drifted content — e.g. hand-edited before
+// zharness ever ran — must overwrite it with upstream bytes unconditionally,
+// not report "drifted ... left untouched" the way the old whole-file
+// drift branch did. That message is only reachable for Merge: true targets
+// (docs/PROJECT.md) now.
+func TestInstall_FreshOverwriteTargets_DriftedLocalFileOverwritten(t *testing.T) {
+	root := tempRepo(t, true)
+	pf(t, root, workflowTarget, "pre-existing hand-edited WORKFLOW.md\n")
+	pf(t, root, playbookDirTgt+"/work.md", "pre-existing hand-edited playbook\n")
+
+	out := mustInstall(t, root)
+
+	if got := rf(t, root, workflowTarget); got == "pre-existing hand-edited WORKFLOW.md\n" {
+		t.Error("WORKFLOW.md drift left untouched; fresh-overwrite target must always install upstream bytes")
+	}
+	if got := rf(t, root, playbookDirTgt+"/work.md"); got == "pre-existing hand-edited playbook\n" {
+		t.Error("playbook drift left untouched; fresh-overwrite target must always install upstream bytes")
+	}
+	if strings.Contains(out, "drifted") {
+		t.Errorf("fresh-overwrite targets must never report drifted:\n%s", out)
+	}
+	if !strings.Contains(out, "installed  "+workflowTarget) {
+		t.Errorf("expected installed report for %s:\n%s", workflowTarget, out)
+	}
+}
+
+// docs/PROJECT.md is the only remaining Target.Merge == true whole-file
+// target (playbooks and WORKFLOW.md fresh-overwrite unconditionally, see
+// TestUpdate_FreshOverwrite_PlaybooksAndWorkflow_IgnoreLocalEdits), so it is
+// the fixture for the three-way-merge state machine below.
 func TestUpdate_FastForward_Kept_AutoMerge_ConflictAbort(t *testing.T) {
 	root := tempRepo(t, true)
-	withSource(t, map[string]string{"WORKFLOW.md": wfUp1})
+	withSource(t, map[string]string{projectTemplate: wfUp1})
 	mustInstall(t, root)
 
 	up2 := wfUp1 + "\nappended-by-upstream\n"
-	withSource(t, map[string]string{"WORKFLOW.md": up2})
+	withSource(t, map[string]string{projectTemplate: up2})
 	runUpdateOK(t, root)
-	if got := rf(t, root, workflowTarget); got != up2 {
+	if got := rf(t, root, projectTarget); got != up2 {
 		t.Fatalf("fast-forward mismatch:\n%q", got)
 	}
 
 	localOnly := strings.Replace(up2, "keepme", "kept-local-edit", 1)
-	pf(t, root, workflowTarget, localOnly)
-	withSource(t, map[string]string{"WORKFLOW.md": up2}) // unchanged vs stored
+	pf(t, root, projectTarget, localOnly)
+	withSource(t, map[string]string{projectTemplate: up2}) // unchanged vs stored
 	runUpdateOK(t, root)
-	if got := rf(t, root, workflowTarget); got != localOnly {
+	if got := rf(t, root, projectTarget); got != localOnly {
 		t.Error("local-only edit clobbered although upstream was unchanged")
 	}
 
 	autoUp := wfUp1 + "\nMERGE-INSERT-BY-UPSTREAM\n"
-	withSource(t, map[string]string{"WORKFLOW.md": autoUp})
+	withSource(t, map[string]string{projectTemplate: autoUp})
 	beforeLocal := localOnly
 	var sb strings.Builder
 	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &sb); err != nil {
 		t.Fatalf("auto-merge update failed: %v\n%s", err, sb.String())
 	}
-	merged := rf(t, root, workflowTarget)
+	merged := rf(t, root, projectTarget)
 	if merged == beforeLocal || strings.Contains(merged, conflictOpenTag) {
 		t.Errorf("expected clean auto-merge:\n%s", merged)
 	}
@@ -189,16 +220,16 @@ func TestUpdate_FastForward_Kept_AutoMerge_ConflictAbort(t *testing.T) {
 		t.Errorf("auto-merge lost one side:\n%s", merged)
 	}
 
-	snapWorkflow := merged
+	snapProject := merged
 	snapAgents := rf(t, root, agentsTarget)
 	conflictUp := strings.Replace(wfUp1, "keepme", "CONFLICT-A", 1) + "\nappended-by-upstream\n"
-	conflictLocal := strings.Replace(snapWorkflow, "keepme", "CONFLICT-B", 1)
-	pf(t, root, workflowTarget, conflictLocal)
-	withSource(t, map[string]string{"WORKFLOW.md": conflictUp})
+	conflictLocal := strings.Replace(snapProject, "keepme", "CONFLICT-B", 1)
+	pf(t, root, projectTarget, conflictLocal)
+	withSource(t, map[string]string{projectTemplate: conflictUp})
 	if o := (&updateOptions{Root: root, Version: "t"}); RunUpdate(*o, &strings.Builder{}) == nil {
 		t.Fatal("expected conflict rejection")
 	}
-	if got := rf(t, root, workflowTarget); !strings.Contains(got, conflictOpenTag) {
+	if got := rf(t, root, projectTarget); !strings.Contains(got, conflictOpenTag) {
 		t.Fatalf("conflict markers missing after rejected update:\n%s", got)
 	}
 
@@ -206,11 +237,42 @@ func TestUpdate_FastForward_Kept_AutoMerge_ConflictAbort(t *testing.T) {
 	if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
 		t.Fatalf("abort failed: %v", err)
 	}
-	if got := rf(t, root, workflowTarget); got != conflictLocal {
-		t.Errorf("--abort did not restore workflow bytes exactly")
+	if got := rf(t, root, projectTarget); got != conflictLocal {
+		t.Errorf("--abort did not restore project bytes exactly")
 	}
 	if got := rf(t, root, agentsTarget); got != snapAgents {
 		t.Errorf("--abort perturbed unrelated file AGENTS.md")
+	}
+}
+
+// Playbooks and WORKFLOW.md are pure upstream mirrors (Target.Merge ==
+// false): update always overwrites them with upstream bytes, ignoring any
+// local edit and never producing a conflict.
+func TestUpdate_FreshOverwrite_PlaybooksAndWorkflow_IgnoreLocalEdits(t *testing.T) {
+	root := tempRepo(t, true)
+	withSource(t, map[string]string{"WORKFLOW.md": wfUp1})
+	mustInstall(t, root)
+
+	pf(t, root, workflowTarget, "totally different hand-edited content\n")
+	up2 := wfUp1 + "\nupstream-v2\n"
+	withSource(t, map[string]string{"WORKFLOW.md": up2})
+	runUpdateOK(t, root)
+	if got := rf(t, root, workflowTarget); got != up2 {
+		t.Errorf("expected fresh overwrite to win over local edit:\n%q", got)
+	}
+
+	pf(t, root, playbookDirTgt+"/work.md", "hand-edited playbook\n")
+	playUp := "# play: work (v2)\n"
+	withSource(t, map[string]string{
+		"WORKFLOW.md":       up2,
+		"playbooks/work.md": playUp,
+	})
+	var sb strings.Builder
+	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &sb); err != nil {
+		t.Fatalf("update failed: %v\n%s", err, sb.String())
+	}
+	if got := rf(t, root, playbookDirTgt+"/work.md"); got != playUp {
+		t.Errorf("playbook local edit should be silently discarded, got:\n%q", got)
 	}
 }
 
@@ -477,22 +539,22 @@ func TestUninstall_RestoresPreInstallOriginal_AfterFastForward(t *testing.T) {
 // and the stash dir leaks (judge finding F4).
 func TestUpdate_Continue_KeepsSameRunRefreshes_DropsStash(t *testing.T) {
 	root := tempRepo(t, true)
-	withSource(t, map[string]string{"WORKFLOW.md": wfUp1})
+	withSource(t, map[string]string{projectTemplate: wfUp1})
 	mustInstall(t, root)
 
 	playUp := "# play: work (refreshed by upstream v2)\n"
 	conflictUp := strings.Replace(wfUp1, "keepme", "CONFLICT-A", 1) + "\nupstream-tail\n"
 	withSource(t, map[string]string{
-		"WORKFLOW.md":       conflictUp,
+		projectTemplate:     conflictUp,
 		"playbooks/work.md": playUp,
 	})
-	pf(t, root, workflowTarget, strings.Replace(wfUp1, "keepme", "CONFLICT-B", 1))
+	pf(t, root, projectTarget, strings.Replace(wfUp1, "keepme", "CONFLICT-B", 1))
 	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
 		t.Fatal("expected conflict rejection")
 	}
 
 	resolved := strings.Replace(wfUp1, "keepme", "resolved-both", 1) + "\nupstream-tail\n"
-	pf(t, root, workflowTarget, resolved)
+	pf(t, root, projectTarget, resolved)
 	runUpdateOKContinue(t, root)
 
 	if _, err := os.Stat(filepath.Join(root, stashDir)); !os.IsNotExist(err) {

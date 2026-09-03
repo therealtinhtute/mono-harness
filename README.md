@@ -67,7 +67,7 @@ The managed set is:
 - a compact `AGENTS.md` entrypoint (marked `ZHARNESS` block only);
 - `docs/WORKFLOW.md` and the six stage playbooks;
 - a `docs/PROJECT.md` identity scaffold;
-- `.zharness/base/` for three-way updates.
+- `.zharness/base/` for update tracking (fresh-overwrite for playbooks/WORKFLOW.md, three-way merge for PROJECT.md and the AGENTS.md block).
 
 It does not write `CLAUDE.md`. It does not install application architecture,
 product policy, skills, git hooks, credentials, a database, schemas,
@@ -101,11 +101,14 @@ zharness update --abort
 zharness uninstall
 ```
 
-The updater stores the exact upstream base under `.zharness/base/` and
-three-way-merges. If local and upstream edits overlap, it stops with conflict
-markers. After a human resolves them, `--continue`. `--abort` restores the
-pre-update bytes. Uninstall removes managed files only; consumer-owned bytes
-are never deleted.
+`docs/WORKFLOW.md` and the stage playbooks are pure upstream mirrors: update
+always overwrites them with the latest bytes, discarding any local edit with
+no merge and no conflict. `docs/PROJECT.md` and the marked `AGENTS.md` block
+still three-way-merge against the exact upstream base under `.zharness/base/`;
+if local and upstream edits overlap there, it stops with conflict markers.
+After a human resolves them, `--continue`. `--abort` restores the pre-update
+bytes. Uninstall removes managed files only; consumer-owned bytes are never
+deleted.
 
 ## Optional skills
 

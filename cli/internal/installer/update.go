@@ -262,8 +262,20 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 		if uerr != nil {
 			return fmt.Errorf("embed read %s: %w", t.Src, uerr)
 		}
-		oldBase, tracked := baseFiles[t.Dst]
 		dstP := filepath.Join(root, t.Dst)
+
+		if !t.Merge {
+			// Pure upstream mirror (playbooks, WORKFLOW.md): always overwrite,
+			// no diff, no merge, no conflict possible.
+			if werr := writeFileAtomic(dstP, newUp); werr != nil {
+				return werr
+			}
+			baseFiles[t.Dst] = newUp
+			planned[t.Dst] = "refreshed"
+			continue
+		}
+
+		oldBase, tracked := baseFiles[t.Dst]
 		local, lerr := os.ReadFile(dstP)
 
 		switch {
@@ -518,7 +530,7 @@ func classify(note string) string {
 		return "conflict:"
 	case note == "installed":
 		return "installed:"
-	case note == "fast-forwarded":
+	case note == "fast-forwarded", note == "refreshed":
 		return "updated:"
 	default:
 		return "left:"
