@@ -25,9 +25,15 @@ None. No harness command gates this skill; proceed straight to Core Workflow.
 
 ### Step 1: Stage + analyze
 
+Review what changed first, then stage explicit paths — never a blanket stage, which the Anti-Patterns section below forbids for catching `.env`, secrets, and `node_modules`.
+
 ```bash
-git add -A && git diff --cached --stat && git diff --cached --name-only
+git status --porcelain
+git add path/to/file1 path/to/file2
+git diff --cached --stat && git diff --cached --name-only
 ```
+
+Leave anything you did not mean to commit unstaged; if `git status --porcelain` lists a path you cannot account for, ask before staging it.
 
 ### Step 2: Security check
 
@@ -41,7 +47,11 @@ Also warn on staged files matching `.env`/`.env.*` (except `.env.example`), `*.k
 
 ### Step 3: Split decision
 
-Group staged files by kind (`docs:` for `.md`/`.txt`, `test:` for test/spec paths, `config:` for `.claude/` files, `deps:` for `package.json`/lockfiles, `code:` for everything else).
+Group staged files by kind (`docs:` for `.md`/`.txt`, `test:` for test/spec paths, `config:` for `.claude/` files, `deps:` for dependency manifests and lockfiles, `code:` for everything else).
+
+`deps:` covers every stack, not just Node: `package.json` with `package-lock.json`/`yarn.lock`/`pnpm-lock.yaml`, `go.mod` with `go.sum`, `Cargo.toml` with `Cargo.lock`, and `pyproject.toml` with `requirements*.txt`/`poetry.lock`/`uv.lock`. A manifest always commits together with its lockfile — splitting them produces a commit that resolves to different dependency versions than the one that was tested.
+
+A changed `*_test.go` commits with the source file it covers when both changed, rather than splitting into `test:` and `code:`. Go places `foo_test.go` beside `foo.go` in the same package, so the split yields two commits, neither of which builds and passes on its own. The same applies to any stack that co-locates a test with its source (`foo.spec.ts` beside `foo.ts`, `foo_test.py` beside `foo.py`); a test directory that mirrors the tree separately (`tests/`, `__tests__/`) still splits normally.
 
 **Single commit:** same type/scope, files ≤ 3, lines ≤ 50.
 **Multiple commits:** mixed types/scopes — one commit per group (`chore(config)`, `chore(deps)`, `test`, `feat`/`fix` for `code:`, `docs`). Reset and re-stage per group: `git reset && git add file1 file2 && git commit -m "type(scope): desc"`.
