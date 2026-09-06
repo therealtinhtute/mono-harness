@@ -6,12 +6,16 @@ on:
     paths:
       - "cli/**"
       - "docs/plans/**"
+      - "docs/playbooks/**"
+      - "docs/WORKFLOW.md"
       - "scripts/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
   pull_request:
     paths:
       - "cli/**"
       - "docs/plans/**"
+      - "docs/playbooks/**"
+      - "docs/WORKFLOW.md"
       - "scripts/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
 
