@@ -29,7 +29,13 @@ Preserve the initiative definition, planned approach, every phase/task definitio
 
 ## Full-Mode Execution
 
-1. **Load state from the plan file** — slice `docs/plans/active/{slug}.md` by section, never whole-file (`bash scripts/plan-slice.sh docs/plans/active/{slug}.md "{heading}"`): read the target phase's block under `## Phases and Verification` for its waves/tasks/checks definition, then read the tails of `## Progress`/`## Decisions` to see what already happened in that phase. Select the requested phase or the first non-done phase whose dependencies are done. Treat a phase-status disagreement between Current State and the phase blocks as a stop requiring reconciliation. With no non-empty active plan at all, stop and recommend `brainstorm lock`.
+1. **Load state from the plan file** — slice `docs/plans/active/{slug}.md` by section, never whole-file. If `scripts/plan-slice.sh` exists, slice with it (`bash scripts/plan-slice.sh docs/plans/active/{slug}.md "{heading}"`). If it is absent — the consumer default, since `zharness install` distributes no scripts — extract the heading range with `awk` instead and still never read the whole file:
+
+   ```sh
+   awk '/^## {heading}$/{on=1;next} on&&/^## /{exit} on' docs/plans/active/{slug}.md
+   ```
+
+   Either way, read the target phase's block under `## Phases and Verification` for its waves/tasks/checks definition, then read the tails of `## Progress`/`## Decisions` to see what already happened in that phase. Select the requested phase or the first non-done phase whose dependencies are done. Treat a phase-status disagreement between Current State and the phase blocks as a stop requiring reconciliation. With no non-empty active plan at all, stop and recommend `brainstorm lock`.
 2. **Check boundaries** — compare the requested diff and working tree against phase/task touched and avoided surfaces. Stop with `BLOCKED_CONTRACT_DRIFT` if work is already outside authority. Stop with `BLOCKED_VERIFICATION` if a task lacks a check.
 3. **Start the run** — set that phase's plan status to `in-progress`, update Current State to the same phase/status, note the start timestamp as the run anchor, and keep the phase-start fact inside your first wave-1 `## Progress` entry with `task_status=in-progress`. Do not continue while statuses disagree.
 4. **Confirm the wave** — restate the phase goal, selected wave, tasks, and checks. Ask only when the plan does not identify the next incomplete wave unambiguously.
