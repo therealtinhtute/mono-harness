@@ -656,3 +656,85 @@ func TestDiffHunks_CapFallsBackToWholeSide(t *testing.T) {
 		t.Errorf("small-diff path changed: %+v", hs)
 	}
 }
+
+// identityPreEdit is the shipped templates/project.identity.md exactly as it
+// stood before the gate-slot rewrite (commit aba7057). It is the base a
+// consumer installed against, so the update under test replays the real
+// upgrade path rather than a synthetic one.
+const identityPreEdit = `# PROJECT — identity (answer inline; this is the single forced write step at
+# brainstorm lock; keep the whole file at or under 50 lines)
+
+## What is this project?
+- <one sentence: what the product IS>
+
+## Who is it for?
+- <primary users/teams>
+
+## Non-goals
+- <explicitly excluded scope>
+
+## How do we run the tests?
+- ` + "`<exact verification command(s)>`" + `
+
+## Architecture in one breath
+- runtime shape: <...>
+- where state lives: <...>
+- entrypoints: <...>
+
+## What are we working on right now?
+- plan: docs/plans/active/<slug>.md (<status>)
+`
+
+// TestUpdate_IdentityTemplateGateSlots_ConflictsAndAborts proves the claim
+// behind replacing (not appending) the tests question: a consumer who filled
+// the old template in gets a real conflict on update — the notification an
+// append would never produce — and --abort restores their file byte for byte.
+func TestUpdate_IdentityTemplateGateSlots_ConflictsAndAborts(t *testing.T) {
+	// Capture the real shipped template before any withSource call: two
+	// withSource calls layer, and the first override would become prev.
+	postEdit, err := srcBytesImpl(Target{Src: projectTemplate})
+	if err != nil {
+		t.Fatalf("read shipped %s: %v", projectTemplate, err)
+	}
+	if !strings.Contains(string(postEdit), "## What are the gate commands?") {
+		t.Fatalf("shipped template lacks the gate section under test:\n%s", postEdit)
+	}
+
+	root := tempRepo(t, true)
+	withSource(t, map[string]string{projectTemplate: identityPreEdit})
+	mustInstall(t, root)
+
+	// A consumer answers the old question in place — the case an appended
+	// section would auto-merge straight past.
+	filled := strings.Replace(
+		identityPreEdit,
+		"- `<exact verification command(s)>`",
+		"- `pnpm test`",
+		1,
+	)
+	if filled == identityPreEdit {
+		t.Fatal("fixture did not fill the tests answer")
+	}
+	pf(t, root, projectTarget, filled)
+
+	withSource(t, map[string]string{projectTemplate: string(postEdit)})
+	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
+		t.Fatal("expected the gate-slot rewrite to conflict with a filled answer")
+	}
+
+	got := rf(t, root, projectTarget)
+	if !strings.Contains(got, conflictOpenTag) {
+		t.Fatalf("conflict markers missing after rejected update:\n%s", got)
+	}
+	if conflicts := rf(t, root, conflictsFile); !strings.Contains(conflicts, projectTarget) {
+		t.Errorf("%s does not name %s:\n%s", conflictsFile, projectTarget, conflicts)
+	}
+
+	var ab strings.Builder
+	if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
+		t.Fatalf("abort failed: %v\n%s", err, ab.String())
+	}
+	if got := rf(t, root, projectTarget); got != filled {
+		t.Errorf("--abort did not restore the consumer's filled identity file byte for byte:\n%q", got)
+	}
+}

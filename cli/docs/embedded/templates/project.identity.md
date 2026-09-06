@@ -10,8 +10,13 @@
 ## Non-goals
 - <explicitly excluded scope>
 
-## How do we run the tests?
-- `<exact verification command(s)>`
+## What are the gate commands?
+- run from: <repository root, or the exact directory each command needs>
+- tests: `<command>` or n/a
+- types: `<command>` or n/a
+- lint: `<command>` or n/a
+- build: `<command>` or n/a
+- format: `<command>` or n/a
 
 ## Architecture in one breath
 - runtime shape: <...>

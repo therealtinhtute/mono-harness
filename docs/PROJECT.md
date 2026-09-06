@@ -21,9 +21,14 @@
 - No scanning or merging of `~/.claude`, `~/.codex`, `~/.agents`,
   `~/.config/opencode` (except the single codex config line in R7).
 
-## How do we run the tests?
-- `bash scripts/verify-doc-links.sh`
-- `cd cli && go build ./... && go vet ./... && go test ./...`
+## What are the gate commands?
+- run from: the repository root
+- tests: `cd cli && go test ./...`
+- types: n/a (the Go compiler is the type gate; `build:` covers it)
+- lint: `cd cli && go vet ./...`
+- build: `cd cli && go build ./...`
+- format: `gofmt -l cli`
+- also required: `bash scripts/verify-doc-links.sh`
 - Phase gates per plan: doc links, go tests, S4 `rg -i "sqlite|harness\.db" cli/`
   = 0, kill-list bounded scan = 0 actionable, kill-switch smoke.
 
@@ -40,4 +45,4 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- none (escalate-when closed)
+- plan: docs/plans/active/multi-stack-harness-readiness.md (active, in-progress)
