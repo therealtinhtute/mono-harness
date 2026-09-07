@@ -2,6 +2,24 @@
 
 A personal collection of [skills.sh](https://skills.sh)-compatible skills for Claude Code and other AI agents, backed by a durable local workflow harness.
 
+## Goals
+
+- **Portable execution, not Claude-specific.** The six spine skills are thin triggers under 20 lines each; the operating logic lives in playbooks embedded in the CLI binary. Any agent that can read a file and run a CLI executes the same lifecycle.
+- **Lifecycle state that outlives the session.** Runs, task progress, decisions, check verdicts, and handoffs are recorded by zharness instead of living in a chat transcript, so the next session resumes from recorded state rather than from recall.
+- **Ceremony proportional to the work.** A one-line fix should not cost a plan, a phase, and a report. Bounded modes write no lifecycle rows; the full durable path exists for work that earns it.
+- **One writer per fact.** cli/docs/embedded/ is the source for managed workflow docs, docs/ is its generated projection, and harness.db is a view rebuilt from changesets. Each fact has exactly one place it is authored.
+- **Gates before the commit, not after.** scripts/verify-doc-links.sh and cd cli && go test ./... both pass before anything lands.
+- **Operator defaults stated out loud.** rules/ encodes how this operator wants an agent to behave, as reviewable files rather than habits repeated per session.
+
+## Non-goals
+
+- **Not a product or a framework.** This is one person's harness. Interfaces change when they should; there is no stability promise for zharness flags, skill names, or the database schema.
+- **harness.db is not durable memory.** It is gitignored, per-machine, and disposable by construction — rebuildable from changesets, never a backup. Anything that must outlive the working copy belongs in tracked markdown or in git history.
+- **No hosted or shared state.** The CLI makes no network calls. Everything the harness knows lives in the working copy.
+- **Not a replacement for git.** The harness records intent and lifecycle; git remains the record of what changed.
+- **No automatic remediation.** check records a verdict and validate reports findings; deciding what to do about them stays with the operator.
+- **Not a marketplace.** Skills here install from this repository over SSH. They are not published to a registry or versioned for third-party consumers.
+
 ## What this repository contains
 
 | Area | Contents |
