@@ -35,6 +35,11 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 #   select or shadow the entry's own; and an entry STARTS at any unindented
 #   `- ` line, the leading timestamp being optional, so undated entries are
 #   visible to both guards.
+#   PHASE-DONE: a plan staged/pushed under docs/plans/completed/ whose Current
+#   State declares lifecycle_status: completed must show every phase
+#   status: done in ## Phases and Verification. Found 2026-09-07: a handoff
+#   moved a plan to completed/ with 4 of 7 phases still reading status:
+#   checked, contradicting its own Current State claim on a bare re-read.
 
 zharness_lane_of() {                       # <content-file>
   awk '/^---$/{n++; next} n==1 && /^lane:/{sub(/^lane:[ \t]*/, ""); print; exit}' "$1"
@@ -214,6 +219,35 @@ zharness_guard_at_most_one_active_plan() { # <repo-root>
   return 0
 }
 
+zharness_guard_completed_plan_phases_done() { # <path> <content-file>
+  # A plan whose Current State declares lifecycle_status: completed must show
+  # every phase status: done in ## Phases and Verification — otherwise the
+  # plan contradicts its own closing claim on a bare re-read. No section found
+  # is not a violation (lenient like R5's empty-file case); only a demonstrated
+  # contradiction rejects.
+  local path="$1" file="$2" lifecycle bad_phases
+  lifecycle=$(awk '
+    /^## Current State and Next Action/ {f=1; next}
+    /^## / {f=0}
+    f && /lifecycle_status:/ {sub(/.*lifecycle_status:[[:space:]]*/, ""); print; exit}
+  ' "$file")
+  [ "$lifecycle" = "completed" ] || return 0
+  bad_phases=$(awk '
+    /^## Phases and Verification/ {f=1; next}
+    /^## / {f=0}
+    f && /phase_slug:/ {sub(/.*phase_slug:[[:space:]]*/, ""); slug=$0}
+    f && /^[[:space:]]*status:/ {sub(/.*status:[[:space:]]*/, ""); if ($0 != "done") print slug ": " $0}
+  ' "$file")
+  if [ -n "$bad_phases" ]; then
+    echo "" >&2
+    echo "❌ PHASE-DONE GUARD REJECTED: $path" >&2
+    echo "   lifecycle_status: completed but not every phase is done:" >&2
+    printf '%s\n' "$bad_phases" | sed 's/^/     /' >&2
+    return 1
+  fi
+  return 0
+}
+
 zhuards_guard_plans() {                    # <path-list-space-separated> <staged|head> <dir-for-temp>
   local plans="$1" mode="$2" tmp="$3" f rc=0
   for f in $plans; do
@@ -299,6 +333,15 @@ if ! zharness_guard_at_most_one_active_plan "$ROOT"; then
 fi
 if [ -n "$plans" ] && ! zhuards_guard_plans "$plans" staged "$tmpdir"; then
   guard_failed=1
+fi
+
+completed_plans=$(git diff --cached --name-only --diff-filter=ACM -- 'docs/plans/completed/*.md')
+if [ -n "$completed_plans" ]; then
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    git show ":$f" > "$tmpdir/completed.md"
+    zharness_guard_completed_plan_phases_done "$f" "$tmpdir/completed.md" || guard_failed=1
+  done <<< "$completed_plans"
 fi
 
 if [ "$guard_failed" -gt 0 ]; then

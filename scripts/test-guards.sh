@@ -12,6 +12,8 @@ grep -q '^zharness_guard_entries_of_file()' "$GUARD" || {
 	echo "FAIL - guard core extraction failed"; exit 1; }
 grep -q '^zharness_guard_at_most_one_active_plan()' "$GUARD" || {
 	echo "FAIL - R5 one-plan guard missing from core"; exit 1; }
+grep -q '^zharness_guard_completed_plan_phases_done()' "$GUARD" || {
+	echo "FAIL - PHASE-DONE guard missing from core"; exit 1; }
 # shellcheck disable=SC1090
 source "$GUARD"
 
@@ -379,6 +381,74 @@ else
 	bad "R5 empty second file must not reject"
 fi
 rm -rf "$r5"
+
+# PHASE-DONE: a completed plan whose lifecycle_status: completed must show
+# every phase status: done.
+pd=$(mktemp -d)
+cat > "$pd/all-done.md" <<'EOF'
+## Phases and Verification
+
+- phase_slug: alpha
+  story_id: X1
+  status: done
+
+- phase_slug: beta
+  story_id: X2
+  status: done
+
+## Current State and Next Action
+
+- lifecycle_status: completed
+EOF
+if zharness_guard_completed_plan_phases_done p.md "$pd/all-done.md" 2>/dev/null; then
+	ok "PHASE-DONE all phases done + completed accepts"
+else
+	bad "PHASE-DONE all phases done + completed must accept"
+fi
+
+cat > "$pd/mixed.md" <<'EOF'
+## Phases and Verification
+
+- phase_slug: alpha
+  story_id: X1
+  status: checked
+
+- phase_slug: beta
+  story_id: X2
+  status: done
+
+## Current State and Next Action
+
+- lifecycle_status: completed
+EOF
+pd_out=$(zharness_guard_completed_plan_phases_done p.md "$pd/mixed.md" 2>&1)
+pd_rc=$?
+if [ "$pd_rc" -ne 0 ]; then
+	ok "PHASE-DONE mixed statuses under completed rejects"
+else
+	bad "PHASE-DONE mixed statuses under completed must reject"
+fi
+printf '%s' "$pd_out" | grep -q "alpha: checked" &&
+	ok "PHASE-DONE names the offending phase and its status" ||
+	bad "PHASE-DONE must name the offending phase, got: $pd_out"
+
+cat > "$pd/in-progress.md" <<'EOF'
+## Phases and Verification
+
+- phase_slug: alpha
+  story_id: X1
+  status: checked
+
+## Current State and Next Action
+
+- lifecycle_status: in-progress
+EOF
+if zharness_guard_completed_plan_phases_done p.md "$pd/in-progress.md" 2>/dev/null; then
+	ok "PHASE-DONE non-completed lifecycle is a no-op regardless of phase status"
+else
+	bad "PHASE-DONE non-completed lifecycle must not reject"
+fi
+rm -rf "$pd"
 
 # record-check.sh: convenience runner, not the guarantee. Pass/fail keep the
 # proof's exit code; timeout → gtimeout → unbounded (stock macOS has neither).

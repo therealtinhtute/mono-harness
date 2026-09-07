@@ -56,6 +56,7 @@ jobs:
           awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh > /tmp/guard.sh
           grep -q '^zharness_guard_entries_of_file()' /tmp/guard.sh
           grep -q '^zharness_guard_at_most_one_active_plan()' /tmp/guard.sh
+          grep -q '^zharness_guard_completed_plan_phases_done()' /tmp/guard.sh
 
       - name: Guard fixture tests (guard-v3)
         run: bash scripts/test-guards.sh
@@ -70,3 +71,15 @@ jobs:
           plans=$(git diff --name-only --diff-filter=ACM HEAD~1 HEAD -- 'docs/plans/active/*.md')
           if [ -z "$plans" ]; then echo "no active-plan changes in HEAD"; exit 0; fi
           zhuards_guard_plans "$plans" head "$tmpdir"
+      - name: Completed plan phase consistency
+        run: |
+          source /tmp/guard.sh
+          completed=$(git diff --name-only --diff-filter=ACM HEAD~1 HEAD -- 'docs/plans/completed/*.md')
+          if [ -z "$completed" ]; then echo "no completed-plan changes in HEAD"; exit 0; fi
+          failed=0
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            git show "HEAD:$f" > /tmp/completed.md
+            zharness_guard_completed_plan_phases_done "$f" /tmp/completed.md || failed=1
+          done <<< "$completed"
+          exit $failed
