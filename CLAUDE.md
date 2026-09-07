@@ -21,7 +21,9 @@ This is the personal mono-harness repository for `therealtinhtute` — a `skills
 │   │   ├── check/
 │   │   ├── git/
 │   │   ├── handoff/
-│   │   └── watzup/
+│   │   ├── watzup/
+│   │   ├── encode-invariant/
+│   │   └── improve-harness/
 │   ├── shipping/           # Build & ship code
 │   │   ├── create-cli/
 │   │   └── turbo-mono-platform/
@@ -91,7 +93,7 @@ brainstorm → to-plan → work → check → git → handoff  (new work)
 
 `interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `to-plan`, or between `to-plan` and `work`.
 
-State underneath this pipeline is harness-backed: durable SQLite (`harness.db`, gitignored, repo root) materialized from local ULID-named changesets in `.kit/changesets/` (also gitignored — per-machine state, rebuilt via `zharness init`, not committed), read/written via the `zharness` CLI — not a hand-edited `workflow-state.yml` pointer file. The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines): they version-gate on `zharness`, call `zharness preflight <stage> --json`, and follow whatever playbook path it returns — canonical playbooks are embedded in the CLI binary and scaffolded into `docs/playbooks/` by `zharness init` — the operating logic lives there, not in the skill files, so any agent that can read a file and run a CLI can execute the same lifecycle. See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for adopting it on a legacy project.
+State underneath this pipeline is committed markdown: the plan documents under `docs/plans/active/{slug}.md` (moved to `docs/plans/completed/` on closure) are the record, and fail-closed pre-commit guards in `scripts/install-git-hooks.sh` enforce proof re-execution, an independent judge on high-risk and on `full` checks, and at most one active plan. There is no database — the SQLite store and the whole lifecycle command surface were deleted in v0.15 (see `docs/ARCHITECTURE.md`). The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines) that route straight to `docs/playbooks/<stage>.md`; the operating logic lives there, not in the skill files, so any agent that can read a file and run git can execute the same lifecycle with no binary installed. `zharness` itself is now three verbs — `install` / `update` / `uninstall` — which scaffold that managed doc set, fresh-overwriting playbooks/WORKFLOW.md on update and three-way-merging only `docs/PROJECT.md` and the `AGENTS.md` block. See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for the historical 0.14.x adoption path.
 
 ## Prompt Engineering Reference
 
@@ -103,3 +105,7 @@ When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent inst
 - **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, optional `references/` and `scripts/` directories.
 - **rules/ directory:** Source-of-truth for rules installed to `~/.claude/rules/`. Keep in sync with installed versions.
 - **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/mono-harness.git`) as long as local SSH keys are configured.
+
+<!-- ZHARNESS:BEGIN -->
+@AGENTS.md
+<!-- ZHARNESS:END -->

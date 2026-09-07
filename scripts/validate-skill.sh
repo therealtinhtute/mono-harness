@@ -1,5 +1,19 @@
 #!/bin/bash
 # validate-skill.sh - Validate skill structure and quality
+#
+# Errors (exit 1) are reserved for things that break a skill at load time:
+# malformed frontmatter, a missing name/description, or a `name` that does not
+# match its directory. Everything else is a warning.
+#
+# The XML-section, security-block, examples and "Defer To Instead" checks used
+# to be errors. They encoded the heavyweight skill format, which the spine
+# skills deliberately abandoned for the <=30-line thin-trigger shape — a
+# trigger whose whole body is one routing sentence has no room for them and is
+# not defective for lacking them. As errors they failed 8 of 14 skills in this
+# repo, which is why the pre-commit hook that called this script was left
+# pointing at a stale `kit/skills/` path and never actually ran. They remain as
+# warnings: still worth seeing on a full authored skill, never a reason to
+# block a commit.
 
 set -euo pipefail
 
@@ -167,6 +181,13 @@ else
     fi
   fi
 
+  declared_name=$(sed -n 's/^name:[[:space:]]*//p' "$SKILL_FILE" | head -1 | tr -d '"'"'"'"' | tr -d '[:space:]')
+  if [ -n "$declared_name" ] && [ "$declared_name" != "$SKILL_NAME" ]; then
+    echo "  ❌ 'name' is '$declared_name' but the directory is '$SKILL_NAME' — they must match"
+    inc ERRORS
+    FRONTMATTER_PASS=false
+  fi
+
   if ! grep -q "^version:" "$SKILL_FILE"; then
     echo "  ⚠️  Missing 'version' field"
     inc WARNINGS
@@ -197,8 +218,8 @@ if grep -q "<security>" "$SKILL_FILE" || grep -q "## Security" "$SKILL_FILE"; th
   echo "  ✅ Has security section"
   has_security=true
 else
-  echo "  ❌ Missing security section (CRITICAL)"
-  inc ERRORS
+  echo "  ⚠️  Missing security section (authored skills only; thin triggers have none)"
+  inc WARNINGS
 fi
 
 if grep -q "<context>" "$SKILL_FILE"; then
@@ -261,7 +282,7 @@ if [ "$has_security" = true ]; then
     SECURITY_PASS=false
   fi
 else
-  echo "  ❌ No security section to validate"
+  echo "  ℹ️  No security section to validate"
 fi
 
 echo ""
@@ -280,8 +301,8 @@ elif [ "$EXAMPLE_COUNT" -ge 1 ]; then
   echo "  ⚠️  Only $EXAMPLE_COUNT examples (target: 3+)"
   inc WARNINGS
 else
-  echo "  ❌ No examples found"
-  inc ERRORS
+  echo "  ⚠️  No examples found (authored skills only)"
+  inc WARNINGS
 fi
 
 echo ""
@@ -301,8 +322,8 @@ if grep -q "Defer To Instead" "$SKILL_FILE"; then
     inc WARNINGS
   fi
 else
-  echo "  ❌ Missing 'Defer To Instead' section"
-  inc ERRORS
+  echo "  ⚠️  Missing 'Defer To Instead' section (thin triggers use a 'Defer to:' line)"
+  inc WARNINGS
 fi
 
 echo ""

@@ -11,7 +11,7 @@
 set -euo pipefail
 
 REPO="therealtinhtute/mono-harness"
-INSTALL_DIR="${HOME}/.local/bin"
+INSTALL_DIR="${ZHARNESS_INSTALL_DIR:-${HOME}/.local/bin}"
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "error: gh (GitHub CLI) is required and not on PATH" >&2
@@ -38,12 +38,31 @@ esac
 
 tag="${1:-}"
 if [ -z "$tag" ]; then
-  tag=$(gh release list --repo "$REPO" --limit 50 --json tagName,name,isDraft \
-    --jq '[.[] | select(.isDraft==false) | select(.name | startswith("zharness "))][0].tagName')
-  if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+  rows=$(gh release list --repo "$REPO" --limit 50 --json tagName,name,isDraft,createdAt \
+    --jq '[.[] | select(.name | startswith("zharness ")) | [.isDraft, .createdAt, .tagName] | @tsv] | .[]')
+  newest_published_tag=""
+  newest_published_at=""
+  newest_draft_at=""
+  while IFS=$'\t' read -r is_draft created_at row_tag; do
+    [ -n "$row_tag" ] || continue
+    if [ "$is_draft" = "true" ]; then
+      if [[ -z "$newest_draft_at" || "$created_at" > "$newest_draft_at" ]]; then
+        newest_draft_at="$created_at"
+      fi
+    elif [[ -z "$newest_published_at" || "$created_at" > "$newest_published_at" ]]; then
+      newest_published_at="$created_at"
+      newest_published_tag="$row_tag"
+    fi
+  done <<<"$rows"
+  if [ -z "$newest_published_tag" ]; then
     echo "error: no zharness release found on $REPO" >&2
     exit 1
   fi
+  if [[ -n "$newest_draft_at" && "$newest_draft_at" > "$newest_published_at" ]]; then
+    echo "error: release still publishing — retry or pass an explicit tag" >&2
+    exit 1
+  fi
+  tag="$newest_published_tag"
 fi
 
 asset="zharness_${os}_${arch}.tar.gz"

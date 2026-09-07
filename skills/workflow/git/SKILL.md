@@ -10,7 +10,7 @@ metadata:
 
 Prefix your first line with `🥷` inline. Be direct: result or blocker first. No filler.
 
-Run `zharness preflight git --json`. Missing binary or below MIN_ZHARNESS_VERSION (`0.8.1` — see `skills/workflow/README.md`): print `harness unavailable: zharness not found or out of date (bash scripts/install-zharness.sh for gate-verdict warnings)` and proceed straight to Core Workflow (Step 0 of the playbook is skipped). Otherwise read and follow the returned `playbook` path (`docs/playbooks/git.md`) when non-empty; any `stop` it returns is noted the same way and never blocks — Git operations remain non-mutating to harness state.
+Read and follow `{baseDir}/references/workflow.md` — this skill's own procedure, not a harness-projected playbook. `git` owns no harness entity; no harness command gates this skill. Proceed straight to Core Workflow.
 
 <role>
 Act as a git operations specialist. Handle staging, committing, pushing, pull requests, and merges
@@ -52,12 +52,13 @@ Sacrifice grammar for concision. Pass token-efficiency rules to subagents.
 ## Arguments
 - `cm`: Stage files & create commits
 - `cp`: Stage files, create commits and push
-- `pr`: Create Pull Request [to-branch] [from-branch] (defaults: main, current)
-- `merge`: Merge [to-branch] [from-branch] (defaults: main, current)
+- `pr`: Create Pull Request [to-branch] [from-branch] (defaults: the repository's resolved base branch, current branch)
+- `merge`: Merge [to-branch] [from-branch] (defaults: the repository's resolved base branch, current branch)
 </context>
 
 <references>
 Load as needed from `{baseDir}/references/`:
+- `workflow.md` — the git operating procedure this skill follows
 - `branch-management.md` — naming, lifecycle, strategies
 - `gh-cli-guide.md` — GitHub CLI commands reference beyond PR creation
 </references>

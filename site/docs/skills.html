@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skills Catalog — mono-harness</title>
+  <meta name="description" content="The fourteen skills: eight workflow, four craft, two shipping. Markdown-first AI agent skills compatible with skills.sh and Claude Code.">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+  <div id="progress" aria-hidden="true"></div>
+
+  <!-- ============ NAVIGATION ============ -->
+  <nav>
+    <div class="nav-inner">
+      <a class="brand" href="../index.html">
+        <span class="brand-name">MONO<svg class="brand-logo-nav" viewBox="0 0 1254 1254" role="img" aria-hidden="true"><defs><linearGradient id="logoGradientNav" x1="18%" y1="15%" x2="88%" y2="82%"><stop offset="0%" stop-color="#0789B2"/><stop offset="55%" stop-color="#0BA8C8"/><stop offset="100%" stop-color="#18C6E1"/></linearGradient></defs><path d="M 394.5 114.0 Q 384.0 112.0 291.0 168.0 Q 198.0 224.0 193.0 229.0 Q 188.0 234.0 186.0 238.5 Q 184.0 243.0 183.5 315.5 Q 183.0 388.0 183.5 418.0 Q 184.0 448.0 186.0 452.5 Q 188.0 457.0 193.0 462.0 Q 198.0 467.0 289.0 520.0 Q 380.0 573.0 389.0 572.5 Q 398.0 572.0 444.5 543.5 Q 491.0 515.0 503.0 510.5 Q 515.0 506.0 533.5 504.0 Q 552.0 502.0 567.0 504.5 Q 582.0 507.0 599.0 515.0 Q 616.0 523.0 630.0 535.5 Q 644.0 548.0 654.0 564.5 Q 664.0 581.0 668.5 599.5 Q 673.0 618.0 671.5 638.5 Q 670.0 659.0 662.0 678.0 Q 654.0 697.0 641.0 712.0 Q 628.0 727.0 611.5 737.0 Q 595.0 747.0 577.5 751.0 Q 560.0 755.0 537.5 752.5 Q 515.0 750.0 503.5 745.0 Q 492.0 740.0 447.0 711.0 Q 402.0 682.0 392.0 680.5 Q 382.0 679.0 290.5 733.0 Q 199.0 787.0 193.0 793.0 Q 187.0 799.0 185.5 803.0 Q 184.0 807.0 184.0 908.5 Q 184.0 1010.0 186.5 1015.5 Q 189.0 1021.0 192.5 1024.5 Q 196.0 1028.0 284.5 1080.5 Q 373.0 1133.0 378.0 1135.0 Q 383.0 1137.0 389.5 1137.0 Q 396.0 1137.0 487.5 1083.5 Q 579.0 1030.0 584.0 1025.5 Q 589.0 1021.0 592.0 1012.5 Q 595.0 1004.0 595.0 936.0 Q 595.0 868.0 597.5 855.0 Q 600.0 842.0 605.0 830.5 Q 610.0 819.0 616.0 810.0 Q 622.0 801.0 639.0 786.0 Q 656.0 771.0 666.5 766.0 Q 677.0 761.0 691.5 757.5 Q 706.0 754.0 721.5 754.0 Q 737.0 754.0 748.5 756.5 Q 760.0 759.0 772.0 764.5 Q 784.0 770.0 846.5 809.0 Q 909.0 848.0 918.5 850.0 Q 928.0 852.0 933.0 850.5 Q 938.0 849.0 1024.0 798.0 Q 1110.0 747.0 1114.5 738.0 Q 1119.0 729.0 1119.0 635.5 Q 1119.0 542.0 1116.0 535.0 Q 1113.0 528.0 1108.5 524.0 Q 1104.0 520.0 1019.5 469.5 Q 935.0 419.0 929.0 417.0 Q 923.0 415.0 915.0 416.5 Q 907.0 418.0 845.0 456.5 Q 783.0 495.0 771.0 500.0 Q 759.0 505.0 745.0 507.5 Q 731.0 510.0 717.5 509.5 Q 704.0 509.0 690.5 505.5 Q 677.0 502.0 666.5 497.0 Q 656.0 492.0 649.0 487.0 Q 642.0 482.0 630.0 469.0 Q 618.0 456.0 611.5 444.0 Q 605.0 432.0 601.0 414.0 Q 597.0 396.0 597.0 319.5 Q 597.0 243.0 594.0 236.5 Q 591.0 230.0 498.0 173.0 Q 405.0 116.0 394.5 114.0" fill="url(#logoGradientNav)"/></svg>HARNESS</span>
+      </a>
+      <div class="nav-links">
+        <a href="../index.html">Overview</a>
+        <a href="installation.html">Install</a>
+        <a href="skills.html" class="active">Skills</a>
+        <a href="cli.html">CLI</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="workflow.html">Workflow</a>
+        <a href="contributing.html">Contribute</a>
+        <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="nav-cta" href="installation.html">zharness install</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <article>
+      <header class="page-head reveal">
+        <p class="kicker">docs · skills</p>
+        <h1>Skills Catalog<i>.</i></h1>
+        <p class="lede">Fourteen skills organized into three distinct groups: Workflow, Craft, and Shipping. Each skill is packaged as a standard <code>SKILL.md</code> directory with optional <code>references/</code> and <code>scripts/</code> for progressive detail.</p>
+      </header>
+
+      <div class="prose reveal">
+        <h2>Overview<i>.</i></h2>
+        <p>The skills adhere to the <a href="https://skills.sh" target="_blank" rel="noopener">skills.sh</a> specification and operate across Claude Code and other agent environments. Thin triggers front the skills, referencing canonical execution procedures in <code>docs/playbooks/</code> to guarantee repeatable, transparent execution across all agent sessions.</p>
+      </div>
+
+      <div class="strip reveal" style="margin: 28px 0;">
+        <div><b>Workflow (8)</b><span>Core lifecycle: brainstorm, to-plan, work, check, handoff, watzup, git, interview.</span></div>
+        <div><b>Craft (4)</b><span>Precision tools: write, librarian, create-skill, prompt-leverage.</span></div>
+        <div><b>Shipping (2)</b><span>Domain specialists: create-cli, turbo-mono-platform.</span></div>
+        <div><b>100% Markdown</b><span>Plain text instructions with progressive reference loading.</span></div>
+      </div>
+
+      <div class="prose reveal">
+        <h2>Workflow Skills (8)<i>.</i></h2>
+        <p>Workflow skills govern the full lifecycle of a development initiative: requirement locking, phased planning, wave execution, quality gates, and git operations.</p>
+      </div>
+
+      <div class="card-grid reveal">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">brainstorm</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Explore design options, evaluate architecture trade-offs, and lock requirements into <code>docs/plans/active/{slug}.md</code>.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/brainstorm</code><br>
+            <strong>Output:</strong> Locked spec in active plan
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">to-plan</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Translate a locked specification into execution phases, dependency waves, explicit tasks, and verifier checks.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/to-plan</code><br>
+            <strong>Output:</strong> Phased execution roadmap in active plan
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">work</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Execute approved plan tasks wave-by-wave, run targeted verifications per task, and update progress in the plan ledger.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/work</code><br>
+            <strong>Output:</strong> Verified code changes &amp; task updates
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">check</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Pre-commit and pre-merge gatekeeper. Runs automated test suites, linters, security audits, and architectural validation.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/check</code><br>
+            <strong>Output:</strong> Gate verdict (APPROVED / REQUEST_CHANGES)
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">handoff</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Persist session state, current progress, decisions made, and the exact next step into the active plan for seamless resumption.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/handoff</code><br>
+            <strong>Output:</strong> Current State block in active plan
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">watzup</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Recap session position: inspects branch state, committed and uncommitted changes, and active handoffs to recommend next actions.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/watzup</code><br>
+            <strong>Output:</strong> State summary and prioritized next steps
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">git</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Git operations with Conventional Commits. Handles surgical staging, secret scans, branch management, and pull request creation.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/git [commit|push|pr]</code><br>
+            <strong>Output:</strong> Atomic commits and clean pull requests
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">interview</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Grill intent through structured questions. Systematically walks every branch of a decision tree before implementation begins.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/interview [topic]</code><br>
+            <strong>Output:</strong> Disambiguated requirements and constraints
+          </div>
+        </div>
+      </div>
+
+      <div class="prose reveal">
+        <h2>Craft Skills (4)<i>.</i></h2>
+        <p>Craft skills focus on authoring quality, external repository investigation, skill engineering, and prompt refinement.</p>
+      </div>
+
+      <div class="card-grid reveal">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">write</h3>
+            <span class="badge">craft</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Write and edit English and Vietnamese prose that sounds natural, concise, and audience-aware. Eliminates robotic AI filler.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/write</code><br>
+            <strong>Output:</strong> Polished documentation or UI copy
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">librarian</h3>
+            <span class="badge">craft</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Research external repositories via the GitHub CLI. Searches code, locates symbol definitions, and gathers citations without cloning.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/librarian [owner/repo]</code><br>
+            <strong>Output:</strong> Evidence-backed code citations
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">create-skill</h3>
+            <span class="badge">craft</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Create or upgrade agent skills adhering to the skills.sh standard. Generates structured <code>SKILL.md</code>, references, and validation tests.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/create-skill</code><br>
+            <strong>Output:</strong> Validated skill directory and metadata
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">prompt-leverage</h3>
+            <span class="badge">craft</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Strengthen raw, ambiguous prompts into execution-ready instruction sets with strict role boundaries, context, and criteria.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/prompt-leverage</code><br>
+            <strong>Output:</strong> Structured prompt specification
+          </div>
+        </div>
+      </div>
+
+      <div class="prose reveal">
+        <h2>Shipping Skills (2)<i>.</i></h2>
+        <p>Shipping skills provide domain expertise for full-stack platforms and CLI tooling.</p>
+      </div>
+
+      <div class="card-grid reveal">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">create-cli</h3>
+            <span class="badge">shipping</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Architect developer CLI tools: command hierarchies, flag naming, POSIX/GNU conventions, config loading, and packaging roadmaps.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/create-cli</code><br>
+            <strong>Output:</strong> CLI specification and architecture roadmap
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">turbo-mono-platform</h3>
+            <span class="badge">shipping</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Full-stack TypeScript monorepo specialist: Turborepo, Next.js, Hono, tRPC, Drizzle ORM, Supabase, Tailwind CSS, and shadcn/ui.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/turbo-mono-platform</code><br>
+            <strong>Output:</strong> Scaffolded packages, schemas, and endpoints
+          </div>
+        </div>
+      </div>
+
+      <div class="prose reveal">
+        <h2>Reference Table<i>.</i></h2>
+        <p>Summary of all 16 skills, their classification, and intended operational roles.</p>
+      </div>
+
+      <div class="spec reveal">
+        <div class="spec-row spec-head">
+          <div></div><div>Skill</div><div>Group</div><div>Primary Role</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">01</div>
+          <div class="spec-scene"><code>brainstorm</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Requirements exploration and plan specification lock</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">02</div>
+          <div class="spec-scene"><code>to-plan</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Phased decomposition, waves, and verifier check definitions</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">03</div>
+          <div class="spec-scene"><code>work</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Wave-by-wave task execution and per-task validation</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">04</div>
+          <div class="spec-scene"><code>check</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Pre-commit quality gate, test suites, and security checks</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">05</div>
+          <div class="spec-scene"><code>handoff</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Cross-session state persistence and next-action recording</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">06</div>
+          <div class="spec-scene"><code>watzup</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Branch and handoff recap for immediate context recovery</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">07</div>
+          <div class="spec-scene"><code>git</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Conventional commit staging, branch workflow, and PRs</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">08</div>
+          <div class="spec-scene"><code>interview</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Structured requirements grilling and intent resolution</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">09</div>
+          <div class="spec-scene"><code>write</code></div>
+          <div class="spec-cell"><span class="badge">Craft</span></div>
+          <div class="spec-cell">Audience-aware, non-robotic English and Vietnamese prose</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">10</div>
+          <div class="spec-scene"><code>librarian</code></div>
+          <div class="spec-cell"><span class="badge">Craft</span></div>
+          <div class="spec-cell">Remote GitHub code investigation and citation discovery</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">11</div>
+          <div class="spec-scene"><code>create-skill</code></div>
+          <div class="spec-cell"><span class="badge">Craft</span></div>
+          <div class="spec-cell">Authoring and validating skills.sh compliant skills</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">12</div>
+          <div class="spec-scene"><code>prompt-leverage</code></div>
+          <div class="spec-cell"><span class="badge">Craft</span></div>
+          <div class="spec-cell">Prompt engineering and execution specification design</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">13</div>
+          <div class="spec-scene"><code>create-cli</code></div>
+          <div class="spec-cell"><span class="badge">Shipping</span></div>
+          <div class="spec-cell">Command-line interface architecture and distribution design</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">14</div>
+          <div class="spec-scene"><code>turbo-mono-platform</code></div>
+          <div class="spec-cell"><span class="badge">Shipping</span></div>
+          <div class="spec-cell">Turborepo and full-stack TypeScript monorepo architecture</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">15</div>
+          <div class="spec-scene"><code>encode-invariant</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">Turn an accepted rule into a native guard with positive and negative proof</div>
+        </div>
+        <div class="spec-row">
+          <div class="spec-idx">16</div>
+          <div class="spec-scene"><code>improve-harness</code></div>
+          <div class="spec-cell"><span class="badge">Workflow</span></div>
+          <div class="spec-cell">One friction, one intervention; no improvement claim without a fresh-session rerun</div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div class="foot-inner">
+      <span><strong style="color:var(--ink)">mono-harness</strong> · MIT License</span>
+      <a href="../index.html">Overview</a>
+      <a href="installation.html">Install</a>
+      <a href="skills.html">Skills</a>
+      <a href="cli.html">CLI</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="workflow.html">Workflow</a>
+      <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GitHub</a>
+      <span class="foot-note">mono-harness is an open-source AI agent engineering harness designed with architectural minimalism, committed markdown truth, and fail-closed pre-commit guards.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+/* OpenPI Blueprint Design System · tokens.css
+ * Warm cream canvas (#f6f5f0), 30px blueprint grid, Instrument Serif + Space Grotesk + Inter + JetBrains Mono, #124b68 deep blue accent
+ */
+
+:root {
+  /* ── Core OpenPI Color Palette ───────────────────────────── */
+  --paper: #F6F5F0;
+  --paper-2: #EFEEE7;
+  --paper-3: #E8E6DD;
+  --ink: #12110E;
+  --ink-soft: #57544B;
+  --ink-faint: #8B877B;
+  --rule: #DCD8CB;
+  --rule-dark: #C6C2B2;
+  --blue: #124B68;
+  --blue-ink: #0E3D55;
+  --blue-light: #528CAE;
+  --blue-glow: rgba(18, 75, 104, 0.14);
+  --yellow-mark: rgba(243, 224, 122, 0.65);
+
+  /* ── Typography Families ─────────────────────────────────── */
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --grot: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+  --serif-en: "Instrument Serif", Georgia, serif;
+  --body: "Inter", system-ui, -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+
+  /* ── Layout & Spacing ────────────────────────────────────── */
+  --max: 1240px;
+  --pad: clamp(20px, 4.5vw, 56px);
+  --space-unit: 8px;
+  --space-xs: 4px;
+  --space-sm: 12px;
+  --space-md: 24px;
+  --space-lg: 40px;
+  --space-xl: 64px;
+
+  /* ── Compatibility Aliases ──────────────────────────────── */
+  --color-surface: var(--paper);
+  --color-surface-dim: var(--paper-2);
+  --color-surface-container: var(--paper-2);
+  --color-surface-container-high: var(--paper-3);
+  --color-on-surface: var(--ink);
+  --color-on-surface-variant: var(--ink-soft);
+  --color-outline: var(--rule);
+  --color-outline-variant: var(--rule-dark);
+  --color-primary: var(--blue);
+  --color-primary-container: var(--blue-glow);
+  --color-on-primary: var(--paper);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-dark);
+  --color-accent: var(--blue);
+  --color-blue: var(--blue);
+  --font-display: var(--grot);
+  --font-headline: var(--serif-en);
+  --font-body: var(--body);
+  --font-mono: var(--mono);
+  --container-max: var(--max);
+  --page-gutter: var(--pad);
+}

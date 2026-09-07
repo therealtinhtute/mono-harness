@@ -18,8 +18,8 @@
 
 ### Create
 ```bash
-git checkout main
-git pull origin main
+git checkout <base-branch>
+git pull origin <base-branch>
 git checkout -b feature/new-feature
 ```
 
@@ -28,9 +28,9 @@ git checkout -b feature/new-feature
 # Regular commits
 git add <files> && git commit -m "feat(scope): description"
 
-# Stay current with main
+# Stay current with <base-branch>
 git fetch origin
-git rebase origin/main
+git rebase origin/<base-branch>
 ```
 
 ### Before Merge

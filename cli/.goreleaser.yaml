@@ -29,7 +29,7 @@ checksum:
 release:
   github:
     owner: therealtinhtute
-    name: skills
+    name: mono-harness
   prerelease: auto
   name_template: "zharness {{.Version}}"
 

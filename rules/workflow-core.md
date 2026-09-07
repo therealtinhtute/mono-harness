@@ -3,7 +3,7 @@
 Invoke these skills proactively at the right moment — user does not need to type the slash command.
 
 ## Session Start
-- Session has uncommitted changes, or `zharness resume` reports `drifted`/`in-progress` → invoke `watzup` before answering.
+- Session has uncommitted changes, or an active plan under `docs/plans/active/` is mid-phase → invoke `watzup` before answering.
 
 ## Diagnosing Problems
 - Error, crash, regression, or "it's not working" before any fix attempt → invoke `hunt`.

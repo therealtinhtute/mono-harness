@@ -1,236 +1,197 @@
 # mono-harness
 
-A personal collection of [skills.sh](https://skills.sh)-compatible skills for Claude Code and other AI agents, backed by a durable local workflow harness.
+Turn a git repository into a legible, agent-ready workspace.
+
+`zharness` installs a small repository protocol and a safe updater. The
+repository remains the system of record: product documents, decisions, plans,
+code, tests, CI, and runtime evidence define the work.
+
+It is not a task database, story tracker, agent orchestrator, or application
+runtime. The binary scaffolds docs; it does not run the lifecycle.
+
+Start with [`AGENTS.md`](AGENTS.md), then [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
+
+## Give this to a coding agent
+
+Copy the block into the consumer repository chat when you want the agent to
+install, refresh, or work with zharness.
+
+```text
+Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md and the AGENTS.md block merge instead). Never put plans in .kit/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.
+```
+
+## What it solves
+
+Coding agents often fail for ordinary engineering reasons:
+
+- important intent exists only in chat;
+- the repository does not identify authoritative documents;
+- small changes acquire unnecessary process;
+- long changes lose decisions and recovery context;
+- completion is claimed without behavior-level proof; and
+- an agent invents product policy when the request leaves a material choice
+  open.
+
+zharness provides a compact entrypoint, a navigable repository map, durable
+plans only when work needs them, and playbooks that stay reduced for read-only
+and bounded work.
 
 ## Goals
 
-- **Portable execution, not Claude-specific.** The six spine skills are thin triggers under 20 lines each; the operating logic lives in playbooks embedded in the CLI binary. Any agent that can read a file and run a CLI executes the same lifecycle.
-- **Lifecycle state that outlives the session.** Runs, task progress, decisions, check verdicts, and handoffs are recorded by zharness instead of living in a chat transcript, so the next session resumes from recorded state rather than from recall.
-- **Ceremony proportional to the work.** A one-line fix should not cost a plan, a phase, and a report. Bounded modes write no lifecycle rows; the full durable path exists for work that earns it.
-- **One writer per fact.** cli/docs/embedded/ is the source for managed workflow docs, docs/ is its generated projection, and harness.db is a view rebuilt from changesets. Each fact has exactly one place it is authored.
-- **Gates before the commit, not after.** scripts/verify-doc-links.sh and cd cli && go test ./... both pass before anything lands.
-- **Operator defaults stated out loud.** rules/ encodes how this operator wants an agent to behave, as reviewable files rather than habits repeated per session.
+- **The repository stays the system of record.** Plans, decisions, and
+  validation live in tracked markdown that a human can read and git can
+  history. `harness.db` is a derived index, reconstructible from committed
+  content by `zharness db rebuild`.
+- **Process proportional to the work.** A read-only question and a
+  multi-session refactor should not cost the same ceremony. Reduced playbook
+  paths write no lifecycle rows; durable plans exist only for work that needs
+  recovery context.
+- **Invariants enforced, not assumed.** Where a rule can be checked it is
+  checked — `validate` and the plan guards fail on violation rather than
+  letting a broken state travel silently.
+- **Portable across agents.** The spine skills are thin triggers; the
+  operating logic sits in playbooks the CLI scaffolds into the repository.
+  Any agent that reads a file and runs a CLI follows the same protocol.
+- **Diagnostics that name the next action.** A finding states the violating
+  item, the rule it breaks, its authority, and what to do — never a bare
+  validation failure.
+- **Safe to adopt and to leave.** `install`/`update`/`uninstall` manage only
+  the doc set, merging rather than clobbering the files a project owns.
 
 ## Non-goals
 
-- **Not a product or a framework.** This is one person's harness. Interfaces change when they should; there is no stability promise for zharness flags, skill names, or the database schema.
-- **harness.db is not durable memory.** It is gitignored, per-machine, and disposable by construction — rebuildable from changesets, never a backup. Anything that must outlive the working copy belongs in tracked markdown or in git history.
-- **No hosted or shared state.** The CLI makes no network calls. Everything the harness knows lives in the working copy.
-- **Not a replacement for git.** The harness records intent and lifecycle; git remains the record of what changed.
-- **No automatic remediation.** check records a verdict and validate reports findings; deciding what to do about them stays with the operator.
-- **Not a marketplace.** Skills here install from this repository over SSH. They are not published to a registry or versioned for third-party consumers.
+- **Not a task database, tracker, or orchestrator.** zharness scaffolds and
+  checks documents. It does not run the lifecycle, assign work, or drive an
+  agent.
+- **`harness.db` is not durable memory.** It is gitignored and per-machine,
+  disposable by construction. Anything that must outlive the working copy
+  belongs in tracked markdown or in git history.
+- **No hosted or shared state.** The CLI makes no network calls. Everything
+  the harness knows lives in the working copy.
+- **Not a replacement for git.** The harness records intent and validation;
+  git remains the record of what changed.
+- **No derived-fact documents.** Routes, environment variables, and file
+  inventories are not hand-maintained in `docs/` — the code is authoritative
+  for what can be re-derived from it.
+- **No automatic remediation.** Gates report verdicts and findings; deciding
+  what to do about them stays with the operator.
 
-## What this repository contains
+## Default workflow
 
-| Area | Contents |
-| --- | --- |
-| skills/workflow/ | Eight skills for discovery, planning, execution, review, handoff, and Git workflow. |
-| skills/craft/ | Four skills for writing, GitHub research, skill authoring, and prompt improvement. |
-| skills/shipping/ | Two skills for CLI design and full-stack TypeScript monorepos. |
-| cli/ | The Go zharness CLI that records and rebuilds workflow state. |
-| rules/ | Global Claude Code rules installed by setup/install.sh. |
-| setup/ | Bootstrap files, hooks, settings, and installation logic. |
-| scripts/ | CLI installation, validation, statusline, dashboard, and documentation checks. |
-| assets/ | README visuals and workflow diagrams. |
+```text
+read-only request
+  -> inspect the smallest authoritative surface
+  -> answer with evidence
 
-Each skill has a required SKILL.md and may include references/ or scripts/ for progressive detail.
+bounded change
+  -> inspect authority and affected behavior
+  -> implement the smallest coherent change
+  -> run relevant proof
 
-## Installation
+multi-session or coordinated change
+  -> create docs/plans/active/<plan>.md
+  -> keep decisions, progress, recovery, and validation current
+  -> move the validated plan to docs/plans/completed/
 
-### Full Claude Code bootstrap
+material product ambiguity
+  -> stop before mutation
+  -> present the concrete choice and consequences
+```
 
-Prerequisites:
+A typo does not need a plan. A migration spanning sessions does.
 
-- Node.js 18+
-- jq for the statusline
-- SSH access to git@github.com:therealtinhtute/mono-harness.git
+## What gets installed
 
-~~~bash
-git clone git@github.com:therealtinhtute/mono-harness.git ~/mono-harness
-cd ~/mono-harness
-bash setup/install.sh
-~~~
+The managed set is:
 
-The installer:
+- a compact `AGENTS.md` entrypoint (marked `ZHARNESS` block only);
+- `docs/WORKFLOW.md` and the six stage playbooks;
+- a `docs/PROJECT.md` identity scaffold;
+- `.zharness/base/` for update tracking (fresh-overwrite for playbooks/WORKFLOW.md, three-way merge for PROJECT.md and the AGENTS.md block).
 
-- installs the global CLAUDE.md, rules, hooks, settings template, and statusline;
-- backs up files before replacing them;
-- preserves an existing ~/.claude/settings.json instead of overwriting it;
-- installs all repository skills globally through npx skills add.
+It does not write `CLAUDE.md`. It does not install application architecture,
+product policy, skills, git hooks, credentials, a database, schemas,
+orchestration, or background processes.
 
-After installation, review ~/.claude/settings.json and configure ANTHROPIC_AUTH_TOKEN as required by your environment.
+## Install
 
-### Skills only
+From a target repository, with `zharness` on PATH:
 
-List the published skills without installing them:
+```bash
+zharness install
+```
 
-~~~bash
-npx skills add git@github.com:therealtinhtute/mono-harness.git --list
-~~~
+Get the binary once per machine (`gh` + `tar`; Linux or macOS, amd64 or arm64):
 
-Install all skills for Claude Code:
-
-~~~bash
-npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
-~~~
-
-### Install zharness
-
-Install the latest release of the workflow CLI:
-
-~~~bash
+```bash
 bash scripts/install-zharness.sh
 zharness --version
-~~~
+```
 
-The release installer requires an authenticated gh CLI and tar. It installs the binary to ~/.local/bin/zharness for Linux or macOS on amd64 or arm64.
+`install` is idempotent. It records upstream hashes, prints a read-only
+brownfield report, and exits 0. Use `--root <dir>` when cwd is not the
+consumer repo.
 
-## Skill catalog
+## Maintain an installation
 
-### Workflow
+```bash
+zharness update
+zharness update --continue
+zharness update --abort
+zharness uninstall
+```
 
-| Skill | Purpose |
-| --- | --- |
-| [brainstorm](skills/workflow/brainstorm/SKILL.md) | Explore options and lock requirements into an active plan. |
-| [to-plan](skills/workflow/to-plan/SKILL.md) | Turn a locked plan into phases, waves, tasks, and checks. |
-| [work](skills/workflow/work/SKILL.md) | Execute approved work and verify each task. |
-| [check](skills/workflow/check/SKILL.md) | Run gates and review changes before shipping. |
-| [handoff](skills/workflow/handoff/SKILL.md) | Persist current state and the exact next action. |
-| [watzup](skills/workflow/watzup/SKILL.md) | Reconstruct branch, lifecycle, and handoff state. |
-| [git](skills/workflow/git/SKILL.md) | Stage, commit, push, and prepare pull requests. |
-| [interview](skills/workflow/interview/SKILL.md) | Resolve ambiguous intent through structured questions. |
+`docs/WORKFLOW.md` and the stage playbooks are pure upstream mirrors: update
+always overwrites them with the latest bytes, discarding any local edit with
+no merge and no conflict. `docs/PROJECT.md` and the marked `AGENTS.md` block
+still three-way-merge against the exact upstream base under `.zharness/base/`;
+if local and upstream edits overlap there, it stops with conflict markers.
+After a human resolves them, `--continue`. `--abort` restores the pre-update
+bytes. Uninstall removes managed files only; consumer-owned bytes are never
+deleted.
 
-### Craft
+## Optional skills
 
-| Skill | Purpose |
-| --- | --- |
-| [write](skills/craft/write/SKILL.md) | Write and edit concise English or Vietnamese prose. |
-| [librarian](skills/craft/librarian/SKILL.md) | Research code and evidence in external GitHub repositories. |
-| [create-skill](skills/craft/create-skill/SKILL.md) | Create or improve Claude skills with references and validation. |
-| [prompt-leverage](skills/craft/prompt-leverage/SKILL.md) | Turn rough prompts into execution-ready instructions. |
+Skills are not part of `zharness install`. They live in this source repository:
 
-### Shipping
+```bash
+npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
+```
 
-| Skill | Purpose |
-| --- | --- |
-| [create-cli](skills/shipping/create-cli/SKILL.md) | Design CLI commands, flags, I/O, errors, and delivery strategy. |
-| [turbo-mono-platform](skills/shipping/turbo-mono-platform/SKILL.md) | Work across the Turborepo, Next.js, Hono, tRPC, Drizzle, and Postgres stack. |
+No skill runs during installation.
 
-## Workflow
+## v0.16
 
-The workflow skills use zharness to make lifecycle state replayable and inspectable. The normal durable path is:
+Protocol on the v0.15 three-verb binary: absorb at handoff close, at most
+one active plan, independent judge for `full` checks. Pin `v0.14.x` to keep
+the old lifecycle CLI. Existing `harness.db` files are consumer-owned;
+nothing here deletes them.
 
-~~~text
-/brainstorm → /to-plan → /work → /check → /git → /handoff
-~~~
+See [`cli/docs/CONTRACT.md`](cli/docs/CONTRACT.md) and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Initialize a project before using durable planning or execution:
+## v0.15
 
-~~~bash
-cd /path/to/project
-zharness init --json
-~~~
-
-zharness init creates the root harness.db, replays existing changesets, and scaffolds the managed workflow docs under docs/.
-
-Use the smallest workflow mode that matches the work:
-
-~~~text
-/brainstorm explore              # response-only exploration
-/work simple <concrete task>     # bounded change, no lifecycle rows
-/check bounded                   # response-only gate for bounded work
-/watzup                          # read-only resume and branch recap
-~~~
-
-Every workflow stage runs a read-only zharness preflight check. Durable modes require an initialized, readable database and current managed docs; reduced modes can continue without them.
-
-## zharness state model
-
-| Path | Role | Lifecycle |
-| --- | --- | --- |
-| .kit/changesets/ | ULID-named JSONL replay source for local harness state. | Gitignored local state. |
-| harness.db | Materialized SQLite view rebuilt from changesets. | Gitignored local state. |
-| cli/docs/embedded/ | Canonical WORKFLOW.md, playbooks, and artifact templates shipped inside the CLI. | Tracked source. |
-| docs/ | Managed root-doc projection created by zharness init. | Generated; do not edit as source. |
-| docs/plans/active/ | Durable initiative plans containing requirements, phases, progress, decisions, validation, and current state. | Project-local workflow data. |
-
-The database is a view. Changesets are the replay input, and cli/docs/embedded/ is the source of truth for managed workflow documentation.
-
-## CLI quick reference
-
-All commands support --json for machine-readable output.
-
-| Group | Commands | Use |
-| --- | --- | --- |
-| Readiness | preflight, resume, next | Resolve stage readiness, current position, and routing. |
-| Planning | intake, story, scaffold | Record intake and phases or create artifact skeletons. |
-| Execution | run create, trace add, decision add | Record runs, task progress, and execution decisions. |
-| Gates | check record, handoff record, intervention | Record verdicts, close phases, or apply an explicit human override. |
-| Inspection | query, validate, audit, db status | Inspect state, lifecycle links, drift, and database health. |
-| Recovery | import, migrate layout, db rebuild, db changeset apply | Import legacy state or rebuild from replayable changesets. |
-
-Detailed contracts live in [cli/docs/CONTRACT.md](cli/docs/CONTRACT.md), [cli/docs/STATE.md](cli/docs/STATE.md), and [cli/docs/SCHEMA.md](cli/docs/SCHEMA.md).
+Breaking cut: the lifecycle CLI and SQLite were deleted. The three verbs
+remain. Pin `v0.14.x` if you still need that binary.
 
 ## Development
 
-### Iterate on a skill locally
-
-~~~bash
-claude-code add-dir /path/to/mono-harness
-~~~
-
-Edit the skill directly under skills/. Keep SKILL.md focused on routing and execution; move deep detail into references/ and reusable logic into scripts/.
-
-### Validate a skill
-
-~~~bash
-bash scripts/validate-skill.sh skills/workflow/work/SKILL.md
-~~~
-
-Replace the path with the skill being changed.
-
-### Build and test the CLI
-
-The CLI targets Go 1.25 and builds with CGO disabled:
-
-~~~bash
-cd cli
-CGO_ENABLED=0 go build ./...
-go vet ./...
-go test ./...
-~~~
-
-The GitHub Actions workflow runs the same build, vet, and test gates for changes under cli/.
-
-### Check documentation references
-
-~~~bash
+```bash
+cd cli && CGO_ENABLED=0 go build ./... && go vet ./... && go test ./...
 bash scripts/verify-doc-links.sh
-~~~
+bash scripts/test-guards.sh
+```
 
-This checks repo-relative documentation claims against the files present in the checkout.
-
-## Repository map
-
-~~~text
-.
-├── skills/
-│   ├── workflow/       # lifecycle and Git workflow skills
-│   ├── craft/          # writing, research, skill, and prompt skills
-│   └── shipping/       # CLI and full-stack engineering skills
-├── cli/
-│   ├── cmd/zharness/   # CLI entrypoint
-│   ├── internal/       # interfaces, application, domain, infrastructure
-│   └── docs/embedded/  # canonical managed docs and templates
-├── rules/              # globally installed Claude Code rules
-├── setup/              # bootstrap config, hooks, and installer
-├── scripts/            # validation, installation, and local tooling
-└── assets/             # README and workflow visuals
-~~~
+This repository is the source of the binary, the embedded playbooks, and the
+skills. Edit playbooks in `cli/docs/embedded/playbooks/`, then copy to
+`docs/playbooks/`. Machine-wide Claude Code bootstrap is `setup/install.sh`;
+that is not how a consumer app repo receives zharness.
 
 ## Contributing and security
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report vulnerabilities privately through [SECURITY.md](SECURITY.md). Never commit API keys, access tokens, private settings, or local harness state.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+Report vulnerabilities privately through [SECURITY.md](SECURITY.md).
 
 ## License
 
