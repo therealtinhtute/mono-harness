@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.18.0] — 2026-09-07
+
+### Added
+
+- `feat(installer)`: Identity template now defines explicit slots for `run from:`,
+  `tests:`, `types:`, `lint:`, `build:`, and `format:` (accepting `n/a`). Deliberately
+  conflicts on `zharness update` for repositories using the legacy template to prompt
+  owner re-configuration.
+- `test(cli)`: Automated embedded-to-projected parity test `TestProjectionParity`
+  under `cli/docs/embedded/parity_test.go` running in CI to enforce the byte-identical
+  playbook invariant.
+- `skills`: Payload-local `references/` directories added to `encode-invariant` and
+  `improve-harness` to eliminate external doc-tree dependencies in consumer checkouts.
+
+### Changed
+
+- `docs/PROJECT.md`: Format gate changed from bare `gofmt -l cli` to `test -z "$(gofmt -l cli)"`
+  so unformatted Go files reliably fail the gate.
+- `git` skill: Dynamic base branch resolution for `/git pr` and `/git merge` verifying
+  remote tracking branches (`refs/remotes/origin/`) before local heads; stack-neutral
+  staging and lockfile grouping for Go (`go.mod`/`go.sum`), Rust (`Cargo.toml`/`Cargo.lock`),
+  and Python (`pyproject.toml`/`uv.lock`/`poetry.lock`); co-located tests commit with the source they cover.
+- `playbooks`: Proof re-execution contract in `check.md` explicitly documents inherited
+  exported environment variables; `watzup.md` resolves base branch dynamically;
+  `brainstorm.md` adds a `zharness install` absence branch for consumer checkouts.
+
+### Fixed
+
+- `git` skill: PR creation no longer collapses `$BASE` to current branch `$HEAD` in
+  single-branch, shallow, or worktree checkouts lacking a local default branch checkout.
+
 ## [v0.17.0] — 2026-09-03
 
 ### Fixed
