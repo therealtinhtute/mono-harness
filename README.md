@@ -36,6 +36,46 @@ zharness provides a compact entrypoint, a navigable repository map, durable
 plans only when work needs them, and playbooks that stay reduced for read-only
 and bounded work.
 
+## Goals
+
+- **The repository stays the system of record.** Plans, decisions, and
+  validation live in tracked markdown that a human can read and git can
+  history. `harness.db` is a derived index, reconstructible from committed
+  content by `zharness db rebuild`.
+- **Process proportional to the work.** A read-only question and a
+  multi-session refactor should not cost the same ceremony. Reduced playbook
+  paths write no lifecycle rows; durable plans exist only for work that needs
+  recovery context.
+- **Invariants enforced, not assumed.** Where a rule can be checked it is
+  checked — `validate` and the plan guards fail on violation rather than
+  letting a broken state travel silently.
+- **Portable across agents.** The spine skills are thin triggers; the
+  operating logic sits in playbooks the CLI scaffolds into the repository.
+  Any agent that reads a file and runs a CLI follows the same protocol.
+- **Diagnostics that name the next action.** A finding states the violating
+  item, the rule it breaks, its authority, and what to do — never a bare
+  validation failure.
+- **Safe to adopt and to leave.** `install`/`update`/`uninstall` manage only
+  the doc set, merging rather than clobbering the files a project owns.
+
+## Non-goals
+
+- **Not a task database, tracker, or orchestrator.** zharness scaffolds and
+  checks documents. It does not run the lifecycle, assign work, or drive an
+  agent.
+- **`harness.db` is not durable memory.** It is gitignored and per-machine,
+  disposable by construction. Anything that must outlive the working copy
+  belongs in tracked markdown or in git history.
+- **No hosted or shared state.** The CLI makes no network calls. Everything
+  the harness knows lives in the working copy.
+- **Not a replacement for git.** The harness records intent and validation;
+  git remains the record of what changed.
+- **No derived-fact documents.** Routes, environment variables, and file
+  inventories are not hand-maintained in `docs/` — the code is authoritative
+  for what can be re-derived from it.
+- **No automatic remediation.** Gates report verdicts and findings; deciding
+  what to do about them stays with the operator.
+
 ## Default workflow
 
 ```text
