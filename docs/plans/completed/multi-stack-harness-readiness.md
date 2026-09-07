@@ -257,7 +257,7 @@ updated: 2026-09-07
 - phases:
   - phase_slug: projection-parity-gate
     story_id: 01M0MULTISTACKHRNS1P9K4XJ2
-    status: checked
+    status: done
     goal: one-byte drift between `cli/docs/embedded/` and its projection under
       `docs/` fails an automated check that CI actually runs on a
       projection-only change, and the audit documents this plan cites exist on
@@ -309,7 +309,7 @@ updated: 2026-09-07
 
   - phase_slug: playbook-truth
     story_id: 01M0MULTISTACKHRNS2P9K4XJ2
-    status: checked
+    status: done
     goal: the three spine playbooks stop asserting things that are false
       outside a Node repository with a `main` branch and an installed hook —
       resolved base branch, written-down proof re-execution contract, honest
@@ -391,7 +391,7 @@ updated: 2026-09-07
 
   - phase_slug: identity-gate-slots
     story_id: 01M0MULTISTACKHRNS3P9K4XJ2
-    status: checked
+    status: done
     goal: the identity template asks one question per gate class instead of one
       question about tests, this repository answers the new shape, and the
       resulting `zharness update` conflict is proven to be recoverable.
@@ -452,7 +452,7 @@ updated: 2026-09-07
 
   - phase_slug: git-skill-multistack
     story_id: 01M0MULTISTACKHRNS4P9K4XJ2
-    status: checked
+    status: done
     goal: the `git` skill stages explicit paths instead of contradicting its own
       Anti-Patterns section, and classifies Go, Rust, and Python dependency and
       test files correctly. Satisfies R10, R11, R12.
