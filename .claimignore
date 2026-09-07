@@ -16,3 +16,18 @@ skills/workflow/git/scripts/branch-cleanup.sh   # historical audit measurement (
 
 skills/workflow/work/references/examples.md  # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
 skills/workflow/work/references/routing.md   # historical audit measurement (docs/audit/workflow-harness-ceremony-audit.md); deleted as orphaned reference (F5, docs/audit/sdlc-token-cache-audit.md) in p1-quick-wins of sdlc-token-optimization
+
+# --- historical record, deleted with docs/ in 655c6ac ----------------------
+# Same category as the audit-measurement entries above: a playbook, a history
+# section, or an audit cites a path as it existed when measured. Rewriting the
+# citation would falsify the record rather than repair a link. Content is
+# recoverable at 655c6ac^.
+docs/audit/workflow-harness-ceremony-audit.md  # ceremony audit cited by docs/playbooks/{watzup,handoff,check,work}.md and skills/workflow/README.md (F3)
+docs/audit/sdlc-token-cache-audit.md           # token/cache audit cited by docs/playbooks/{handoff,check,work}.md
+docs/audit/sdlc-gap-analysis.md                # G1/G2 declared-non-goal citations in skills/workflow/README.md
+docs/evals/failures.md                         # eval failure log cited by docs/playbooks/check.md
+docs/prompt-engineering-principles.md          # prior authority cited by docs/audit/consumer-adoption-audit.md as measured
+docs/plans/completed/harness-memory-ceremony-convergence.md  # MIN_ZHARNESS_VERSION provenance in skills/workflow/README.md
+docs/plans/completed/workflow-harness-history-2026-07.md     # consolidated initiative history in skills/workflow/README.md
+docs/plans/completed/harness-convergence-pass-v3.md          # one-plan/one-DB convergence history in skills/workflow/README.md
+docs/workflow-harness/pilot-evidence/2026-07-17-lab-skills-import.md  # pilot evidence cited by skills/workflow/README.md

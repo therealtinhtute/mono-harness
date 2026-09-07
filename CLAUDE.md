@@ -35,8 +35,10 @@ This is the personal mono-harness repository for `therealtinhtute` — a `skills
 │   ├── english.md             # English coaching
 │   ├── execution-discipline.md # Lean tool-call economy, check-in cadence, stop-don't-guess
 │   └── karpathy-guidelines.md # Karpathy coding principles
-├── docs/                   # Repo-wide reference docs
-│   └── prompt-engineering-principles.md  # Prompting principles for writing skills/rules
+├── docs/                   # Playbook projection, plans, and audit records
+│   ├── playbooks/          # Scaffolded by zharness init from the CLI's embedded copies
+│   ├── plans/              # Durable initiative plans (active and completed)
+│   └── audit/              # Measurement records
 ├── scripts/                # Repo utility scripts
 │   ├── setup-statusline.sh    # Statusline installer
 │   ├── generate-dashboard.sh  # Dashboard generation
@@ -91,11 +93,7 @@ brainstorm → to-plan → work → check → git → handoff  (new work)
 
 `interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `to-plan`, or between `to-plan` and `work`.
 
-State underneath this pipeline is harness-backed: durable SQLite (`harness.db`, gitignored, repo root) is written directly by the `zharness` CLI's lifecycle commands and is reconstructable from committed plan markdown alone via `zharness db rebuild` — not a hand-edited `workflow-state.yml` pointer file, and not replayed from a changeset log. `.kit/` holds only per-machine state (invocation logs, conflict scratch, cache — all gitignored), rebuilt via `zharness init`, never committed. The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines): they version-gate on `zharness`, call `zharness preflight <stage> --json`, and follow whatever playbook path it returns — canonical playbooks are embedded in the CLI binary and scaffolded into `docs/playbooks/` by `zharness init` — the operating logic lives there, not in the skill files, so any agent that can read a file and run a CLI can execute the same lifecycle. See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for adopting it on a legacy project.
-
-## Prompt Engineering Reference
-
-When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent instruction file, read `docs/prompt-engineering-principles.md` first. It covers: context engineering principles, formatting syntax (XML vs Markdown, bullets vs paragraphs), language rules, few-shot patterns, anti-patterns, and cross-model awareness.
+State underneath this pipeline is harness-backed: durable SQLite (`harness.db`, gitignored, repo root) is written directly by the `zharness` CLI's lifecycle commands and is reconstructable from committed plan markdown alone via `zharness db rebuild` — not a hand-edited `workflow-state.yml` pointer file, and not replayed from a changeset log. `.kit/` holds only per-machine state (invocation logs, conflict scratch, cache — all gitignored), rebuilt via `zharness init`, never committed. The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines): they version-gate on `zharness`, call `zharness preflight <stage> --json`, and follow whatever playbook path it returns — canonical playbooks are embedded in the CLI binary and scaffolded into `docs/playbooks/` by `zharness init` — the operating logic lives there, not in the skill files, so any agent that can read a file and run a CLI can execute the same lifecycle. See `skills/workflow/README.md` for the full model.
 
 ## Architecture Notes
 
