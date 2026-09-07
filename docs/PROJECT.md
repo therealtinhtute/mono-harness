@@ -27,7 +27,7 @@
 - types: n/a (the Go compiler is the type gate; `build:` covers it)
 - lint: `cd cli && go vet ./...`
 - build: `cd cli && go build ./...`
-- format: `gofmt -l cli`
+- format: `test -z "$(gofmt -l cli)"`
 - also required: `bash scripts/verify-doc-links.sh`
 - Phase gates per plan: doc links, go tests, S4 `rg -i "sqlite|harness\.db" cli/`
   = 0, kill-list bounded scan = 0 actionable, kill-switch smoke.
