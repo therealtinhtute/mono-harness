@@ -52,8 +52,8 @@ Sacrifice grammar for concision. Pass token-efficiency rules to subagents.
 ## Arguments
 - `cm`: Stage files & create commits
 - `cp`: Stage files, create commits and push
-- `pr`: Create Pull Request [to-branch] [from-branch] (defaults: main, current)
-- `merge`: Merge [to-branch] [from-branch] (defaults: main, current)
+- `pr`: Create Pull Request [to-branch] [from-branch] (defaults: the repository's resolved base branch, current branch)
+- `merge`: Merge [to-branch] [from-branch] (defaults: the repository's resolved base branch, current branch)
 </context>
 
 <references>

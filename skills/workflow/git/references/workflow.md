@@ -19,8 +19,8 @@ None. No harness command gates this skill; proceed straight to Core Workflow.
 
 - `cm` — stage files & create commit(s)
 - `cp` — stage, commit, and push
-- `pr [to-branch] [from-branch]` — create a pull request (defaults: `main`, current branch)
-- `merge [to-branch] [from-branch]` — merge branches (defaults: `main`, current branch)
+- `pr [to-branch] [from-branch]` — create a pull request (defaults: the repository's resolved base branch, current branch)
+- `merge [to-branch] [from-branch]` — merge branches (defaults: the repository's resolved base branch, current branch)
 
 
 ### Step 1: Stage + analyze
@@ -85,9 +85,17 @@ PRs are based on **remote** diffs, not local — local diff includes unpushed ch
 
 ```bash
 git fetch origin && git push -u origin HEAD 2>/dev/null || true
-BASE=${TO_BRANCH:-main}
+BASE=$TO_BRANCH
+if [ -z "$BASE" ]; then
+  BASE=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')
+  [ -z "$BASE" ] || git show-ref --verify --quiet "refs/remotes/origin/$BASE" || git show-ref --verify --quiet "refs/heads/$BASE" || BASE=""
+  [ -n "$BASE" ] || for c in main master; do
+    { git show-ref --verify --quiet "refs/remotes/origin/$c" || git show-ref --verify --quiet "refs/heads/$c"; } && BASE=$c && break
+  done
+  [ -n "$BASE" ] || BASE=$(git branch --show-current)
+fi
 HEAD=$(git rev-parse --abbrev-ref HEAD)
-git log origin/$BASE...origin/$HEAD --oneline
+git log "origin/$BASE...origin/$HEAD" --oneline
 git diff origin/$BASE...origin/$HEAD --stat
 ```
 
