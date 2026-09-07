@@ -5,6 +5,6 @@ description: "Turn an accepted repository rule into the smallest native guard wi
 
 Prefix your first line with `🥷` inline. Be direct: authority and encoded scope first.
 
-Follow `docs/patterns/encoding-invariants.md` — it holds this skill's operating logic. Do not invent product policy. Stop if authority is missing. A missing `zharness` binary is never a reason to stop.
+Follow `references/encoding-invariants.md` — it holds this skill's operating logic. Do not invent product policy. Stop if authority is missing. A missing `zharness` binary is never a reason to stop.
 
 Defer to: `work` when an initiative is already locked; `handoff` absorb when closing a plan; `improve-harness` for friction experiments that are not yet accepted rules.
