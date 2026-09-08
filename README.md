@@ -50,8 +50,9 @@ and bounded work.
   paths write no lifecycle rows; durable plans exist only for work that needs
   recovery context.
 - **Invariants enforced, not assumed.** Where a rule can be checked it is
-  checked — `validate` and the plan guards fail on violation rather than
-  letting a broken state travel silently.
+  checked — the pre-commit and CI plan guards fail on violation rather than
+  letting a broken state travel silently. What they cannot check, they say so
+  in `docs/playbooks/check.md` instead of implying coverage.
 - **Portable across agents.** The spine skills are thin triggers; the
   operating logic sits in playbooks the CLI scaffolds into the repository.
   Any agent that reads a file and runs a CLI follows the same protocol.

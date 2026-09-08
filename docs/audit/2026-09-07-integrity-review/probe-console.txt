@@ -1,0 +1,21 @@
+REGRESSION TestAudit_F01_UninstallPreservesNewConsumerProse
+REGRESSION TestAudit_F04_AbortPreservesExistingEmptyFile
+REGRESSION TestAudit_F05_CorruptStashFailsAndRetainsRecovery
+REGRESSION TestAudit_F06_ReinstallDoesNotInventOriginal
+REGRESSION TestAudit_F07_UninstallPreservesPreexistingIgnoreRule
+PASS       TestAudit_Control_ExistingAgentsOriginalKeepsSurroundingProse
+PASS       TestAudit_Control_AbortRestoresNonemptyAndAbsent
+PASS       TestAudit_Control_SingleInstallGeneratedFileIsRemoved
+REGRESSION F02_completed_addition_requires_passing_proof
+PASS       control_false_proof_is_rejected
+PASS       control_incomplete_phase_is_rejected
+REGRESSION F02_completed_rename_requires_passing_proof
+REGRESSION F03_batch_push_must_check_earlier_plan_change
+PASS       control_earlier_push_proof_would_fail
+PASS       control_two_worktree_plans_rejected
+REGRESSION F08_two_staged_plans_must_be_rejected
+PASS       control_same_session_full_judge_rejected
+PASS       control_independent_full_true_proof_accepted
+REGRESSION L01_missing_judge_requires_schema_rejection
+REGRESSION L02_unparseable_verdict_requires_schema_rejection
+{"checks": 20, "pass": 9, "regressions": 11}

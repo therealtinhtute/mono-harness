@@ -1,0 +1,41 @@
+{
+  "reviewed_commit": "a45642227ea26ec72ea111ddb2fefd626e3026ab",
+  "retrieval": "Connected GitHub fetch_file; full checkout unavailable because GitHub DNS resolution failed",
+  "files": [
+    {
+      "path": "cli/internal/installer/installer.go",
+      "upstream_git_blob_sha": "fa1e38da983ac4d472cd6e5e0f6b10f7118ead88",
+      "local_copy": "selected original source excerpts; not a complete file",
+      "local_git_blob_sha": "36dbd0735215c7b27265ea7694b2c2e2059c01b6",
+      "local_sha256": "d7f106510d32a610fea956f513aa979650c8b90df14ed1c56143634ad9b941f1"
+    },
+    {
+      "path": "cli/internal/installer/update.go",
+      "upstream_git_blob_sha": "9e19762277ea04f8447777b5cf2ea320da8ac1e2",
+      "local_copy": "selected original source excerpts; not a complete file",
+      "local_git_blob_sha": "8cb72e0812651858bc02cf044922ca8a5e4e8a91",
+      "local_sha256": "5cada10cace70b3b674e61609cdc70f70eaf0f15a1a6d83af102268fc5f4c1cb"
+    },
+    {
+      "path": "cli/internal/installer/uninstall.go",
+      "upstream_git_blob_sha": "f7d0d6be87c553cd0a2167a522dca176fc302e6d",
+      "local_copy": "complete original file, blob hash verified",
+      "local_git_blob_sha": "f7d0d6be87c553cd0a2167a522dca176fc302e6d",
+      "local_sha256": "e23485b422188bcda415869981615c47da62ebe1bb9234aec918a92b0bdd4b10"
+    },
+    {
+      "path": "scripts/install-git-hooks.sh",
+      "upstream_git_blob_sha": "181b6ce622fa82577ba2eb63031e8996dae906d3",
+      "local_copy": "selected original source excerpts; not a complete file",
+      "local_git_blob_sha": "1b6736923fc0d3b1d665da9280392732b9d013c7",
+      "local_sha256": "662211911ab29d5992e44cd2846185ec2d7a5c3d99e01b7e29dd9918bc4da03a"
+    },
+    {
+      "path": ".github/workflows/cli-ci.yml",
+      "upstream_git_blob_sha": "057b511644c57366caa9c295c77539346b633091",
+      "local_copy": "complete original file, blob hash verified",
+      "local_git_blob_sha": "057b511644c57366caa9c295c77539346b633091",
+      "local_sha256": "b034c65ad96f3ccc9208d134d176e3a80821b5d989640e0fb2f4c7d38e21a7a4"
+    }
+  ]
+}

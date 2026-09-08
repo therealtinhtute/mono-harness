@@ -67,6 +67,29 @@ receipt: context_sources / policy / judge / judge_model / retries / rollback_poi
 proof_gaps: none | exact missing classes
 ```
 
+## What the Guards Cannot Check
+
+The pre-commit and CI guards re-execute proofs and reject a self-judged
+high-risk entry. They do not verify these, and a passing guard is not evidence
+of them:
+
+- **`judge: independent` is a declaration, not a proof.** The guard rejects an
+  entry that declares `same-session` on a high-risk lane or in `full` mode.
+  Nothing establishes that an entry claiming `independent` was actually judged
+  by anyone else. Independence is an honesty contract between the author and
+  the reader; treat the field as testimony.
+- **An unrecognized entry format is ignored, not rejected.** Verdict detection
+  reads the entry's first line for a `verdict:` or `` `verdict` `` token. An
+  entry that misspells the token, buries it in a sub-bullet, or invents a new
+  shape carries no verdict as far as the guard is concerned, so its proofs are
+  never re-executed. Silence from the guard can mean "clean" or "unparsed".
+- **A range guard compares endpoints.** An entry added and removed inside one
+  push or pull request never appears in that range's diff. History rewritten
+  before the base is likewise out of scope.
+
+Say which of these applies in the `proof_gaps:` line rather than letting a
+green guard imply coverage it does not have.
+
 ## Exit Conditions
 
 - Gate: automated checks, plan alignment, required-proof evaluation ran; the Validation entry landed with judge/model declared, a `receipt:` block, and a `same-session` judge naming what it did not independently verify; and plan statuses match what you wrote (`checked` for a clean verdict, `in-progress` for `REQUEST_CHANGES`). The complete manual review is not part of gate.
