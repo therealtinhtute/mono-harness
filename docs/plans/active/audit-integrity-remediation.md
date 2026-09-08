@@ -244,6 +244,19 @@ updated: 2026-09-08
           - task: Document L01 and L02 as stated limits in the check playbook's authority notes.
             verify: both limits are findable from `docs/playbooks/check.md` without reading the audit.
 
+## Current State and Next Action
+- active_phase: p1-ownership-ledger (blocks p2/p3/p4 by `depends_on`; all four implemented, none `checked`)
+- lifecycle_status: in-progress
+- latest_run_id: gate re-run 2026-09-08T10:10Z — `cd cli && go build/vet/test -count=1 ./...`, `bash scripts/test-guards.sh` (40/40), `bash scripts/verify-doc-links.sh` (0 findings), all pass
+- latest_check_id: none — no Validation entry exists; every `/check full` this session was `judge: same-session` (R3 forbids writing that on a `lane: high-risk` plan) or interrupted before writing one
+- latest_handoff_id: this entry (first Current State write for this plan)
+- completed: all four phases implemented and gate-proven with non-vacuity (revert-and-fail) evidence per mechanism, recorded in Progress; shipped to `origin/master` at `6e7427c` and released as `zharness` v0.20.0; installed fresh on this machine (binary + skills + rules) and round-tripped against a scratch repo with the released binary
+- blockers: no independent judge has run `/check full` on this plan. `full` + `lane: high-risk` requires `judge: independent`; the author of the diff cannot supply that. Unblock: a different session/reviewer runs `/check full`, verdict `APPROVED` or `APPROVE_WITH_REQUESTS`, entry appended to `## Validation`.
+- open_items:
+  - proof_gaps carried from every same-session check this session: `judge: independent` is a declaration the guard cannot verify; F04/F05 stash tests only gained a reversion proof this session (2026-09-08), not at original authorship.
+  - two friction points hit and worked around this session, not yet absorbed into a doc or guard: (1) `.git/hooks/pre-commit` was stale (predated the ZGUARD-CORE edits in this plan) and had to be reinstalled by hand before committing, or the new guards would not have run; nothing in the repo says "reinstall hooks after editing scripts/install-git-hooks.sh". (2) cutting a release requires pushing `cli/vX.Y.Z` (goreleaser then self-creates the bare `vX.Y.Z` tag) — pushing the bare tag by hand collides with that and fails the release workflow; this convention lives only in a comment inside `scripts/install-zharness.sh` and `.github/workflows/cli-release.yml`, not in CONTRIBUTING.md. Neither is a class-of-failure this plan's scope covers (surfaces_avoided excludes `scripts/**`/`.github/**` for the phases where I'd fix the first, and this plan doesn't touch CONTRIBUTING.md at all) — flagging for the next session or `improve-harness` rather than absorbing here.
+- exact_next_action: independent judge runs `/check full` on this plan. If clean (`APPROVED`/`APPROVE_WITH_REQUESTS`, `judge: independent`), `handoff` closes p1-p4 to `done` in dependency order and the initiative completes per playbook step 6 (absorb line + move to `docs/plans/completed/`). Do not write a same-session Validation entry to force this.
+
 ## Progress
 <!-- Append-only log of execution events. Format: - [date timestamp] (phase-slug): description -->
 - [2026-09-08 (planning)] (all): audit re-verified against live source before planning. All eight findings reproduce at `a451278`; `git diff --stat a456422..HEAD` shows the four commits since the audit base touched only CHANGELOG.md, CLAUDE.md, and README.md, so there is zero code drift from the reviewed revision. Two extras found beyond the audit: `README.md:53` cites a `validate` command absent from the three-verb binary, and `uninstall.go:49` prints an unconditional preservation guarantee that F01 and F07 falsify.
