@@ -38,8 +38,14 @@ func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
 
 // ---------------------------------------------------------------- stash ---
 
+// stash.tsv v2 is `path<TAB>blob<TAB>existed`. v1 omitted the third column,
+// which collided "absent" with "present but empty" — both became a zero-byte
+// blob, and restore read zero bytes as a deletion request (F04, ADR 0008).
 type stashEntry struct {
+	rel     string
+	name    string
 	existed bool
+	legacy  bool // v1 row: existence unknown, never inferred from length
 	data    []byte
 }
 
@@ -61,50 +67,109 @@ func stashCapture(root string, paths []string) error {
 		}
 		key := sha256.Sum256([]byte(rel))
 		name := hex.EncodeToString(key[:12]) + ".bin"
-		if existed {
-			if err := os.WriteFile(filepath.Join(sp, name), data, 0o644); err != nil {
-				return err
-			}
-		} else {
-			if err := os.WriteFile(filepath.Join(sp, name), nil, 0o644); err != nil {
-				return err
-			}
+		if err := os.WriteFile(filepath.Join(sp, name), data, 0o644); err != nil {
+			return err
 		}
-		fmt.Fprintf(&meta, "%s\t%s\n", rel, name)
+		fmt.Fprintf(&meta, "%s\t%s\t%s\n", rel, name, boolBit(existed))
 	}
 	return os.WriteFile(filepath.Join(sp, "stash.tsv"), []byte(meta.String()), 0o644)
 }
 
-func stashRestore(root string) error {
+func boolBit(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
+
+// stashLoad parses the inventory and reads every payload up front. Nothing is
+// written to the working tree until the whole inventory is known-good, so an
+// incomplete stash cannot be half-applied (F05).
+func stashLoad(root string) ([]stashEntry, []string, error) {
 	sp := filepath.Join(root, stashDir)
 	meta, err := os.ReadFile(filepath.Join(sp, "stash.tsv"))
+	if err != nil {
+		return nil, nil, err
+	}
+	var entries []stashEntry
+	var problems []string
+	for _, line := range strings.Split(strings.TrimRight(string(meta), "\n"), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) < 2 {
+			problems = append(problems, fmt.Sprintf("malformed stash record: %q", line))
+			continue
+		}
+		e := stashEntry{rel: parts[0], name: parts[1]}
+		switch {
+		case len(parts) == 2:
+			e.legacy = true
+		case parts[2] == "1":
+			e.existed = true
+		case parts[2] == "0":
+			e.existed = false
+		default:
+			problems = append(problems, fmt.Sprintf("%s: unreadable existence flag %q", e.rel, parts[2]))
+			continue
+		}
+		raw, rerr := os.ReadFile(filepath.Join(sp, e.name))
+		if rerr != nil {
+			problems = append(problems, fmt.Sprintf("%s: stash payload missing or unreadable (%s)", e.rel, e.name))
+			continue
+		}
+		e.data = raw
+		entries = append(entries, e)
+	}
+	return entries, problems, nil
+}
+
+// stashRestore returns the pre-update bytes for every captured path, or an
+// error naming exactly what could not be restored. On failure the stash
+// directory is left in place: the recovery data is the last copy of the
+// consumer's bytes and is never destroyed to make a failure look tidy.
+func stashRestore(root string) error {
+	sp := filepath.Join(root, stashDir)
+	entries, problems, err := stashLoad(root)
 	if os.IsNotExist(err) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(strings.TrimRight(string(meta), "\n"), "\n") {
-		if line == "" {
+	if len(problems) > 0 {
+		return fmt.Errorf("stash is incomplete; nothing was restored and %s was kept for recovery:\n  %s",
+			stashDir, strings.Join(problems, "\n  "))
+	}
+
+	var failed []string
+	var ambiguous []string
+	for _, e := range entries {
+		dst := filepath.Join(root, e.rel)
+		if e.legacy && len(e.data) == 0 {
+			// v1 cannot distinguish absent from empty. Deleting on a guess is
+			// the F04 defect; leave the path alone and say so.
+			ambiguous = append(ambiguous, e.rel)
 			continue
 		}
-		parts := strings.SplitN(line, "\t", 2)
-		if len(parts) != 2 {
+		if !e.legacy && !e.existed {
+			if rerr := os.Remove(dst); rerr != nil && !os.IsNotExist(rerr) {
+				failed = append(failed, fmt.Sprintf("%s: %v", e.rel, rerr))
+			}
 			continue
 		}
-		rel, name := parts[0], parts[1]
-		dst := filepath.Join(root, rel)
-		raw, rerr := os.ReadFile(filepath.Join(sp, name))
-		if rerr != nil {
-			continue
+		if werr := writeFileAtomic(dst, e.data); werr != nil {
+			failed = append(failed, fmt.Sprintf("%s: %v", e.rel, werr))
 		}
-		if len(raw) == 0 {
-			_ = os.Remove(dst)
-			continue
-		}
-		if err := writeFileAtomic(dst, raw); err != nil {
-			return err
-		}
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("restore failed for %d path(s); %s was kept for recovery:\n  %s",
+			len(failed), stashDir, strings.Join(failed, "\n  "))
+	}
+	if len(ambiguous) > 0 {
+		return fmt.Errorf("stash predates existence tracking; %d path(s) could not be restored unambiguously and were left as-is: %s\n  %s was kept — restore these from git if they are wrong",
+			len(ambiguous), strings.Join(ambiguous, ", "), stashDir)
 	}
 	return os.RemoveAll(sp)
 }
