@@ -14,6 +14,10 @@ grep -q '^zharness_guard_at_most_one_active_plan()' "$GUARD" || {
 	echo "FAIL - R5 one-plan guard missing from core"; exit 1; }
 grep -q '^zharness_guard_completed_plan_phases_done()' "$GUARD" || {
 	echo "FAIL - PHASE-DONE guard missing from core"; exit 1; }
+grep -q '^zharness_guard_revspec()' "$GUARD" || {
+	echo "FAIL - revision selector missing from core"; exit 1; }
+grep -q '^zharness_guard_plan_paths()' "$GUARD" || {
+	echo "FAIL - plan path selector missing from core"; exit 1; }
 # shellcheck disable=SC1090
 source "$GUARD"
 
@@ -381,6 +385,156 @@ else
 	bad "R5 empty second file must not reject"
 fi
 rm -rf "$r5"
+
+# ---------------------------------------------------------------------------
+# ADR 0009: revision selection is centralized. These fixtures need real git
+# history, so each builds a throwaway repo and runs the guard inside it.
+# ---------------------------------------------------------------------------
+gfix() { # <dir> — a repo with identity configured and nothing else
+	git -C "$1" init -q
+	git -C "$1" config user.email guard@test
+	git -C "$1" config user.name guard
+	git -C "$1" config commit.gpgsign false
+}
+gplan() { # <file> <marker-for-old-entry>
+	mkdir -p "$(dirname "$1")"
+	cat > "$1" <<EOF
+---
+lane: normal
+---
+
+## Validation
+
+- \`2026-09-01T00:00:00Z\` — first gate, verdict \`APPROVED\`
+  - \`echo $2\`
+EOF
+}
+
+# S6: a plan closing out moves active/ -> completed/. The entries it lands in
+# that same commit must be guarded (the old active/-only selector saw nothing),
+# and the entries it already carried must not be re-executed.
+s6=$(mktemp -d)
+gfix "$s6"
+gplan "$s6/docs/plans/active/p.md" MARKER-S6-OLD
+git -C "$s6" add -A >/dev/null && git -C "$s6" commit -qm base
+mkdir -p "$s6/docs/plans/completed"
+git -C "$s6" mv docs/plans/active/p.md docs/plans/completed/p.md
+cat >> "$s6/docs/plans/completed/p.md" <<'EOF'
+
+- `2026-09-02T00:00:00Z` — closing gate, verdict `APPROVED`
+  - `false`
+EOF
+git -C "$s6" add -A >/dev/null
+s6rev=$( cd "$s6" && zharness_guard_revspec staged )
+s6base=$(printf '%s' "$s6rev" | cut -f1)
+s6head=$(printf '%s' "$s6rev" | cut -f2)
+s6paths=$( cd "$s6" && zharness_guard_plan_paths "$s6base" "$s6head" )
+[ "$s6paths" = "docs/plans/completed/p.md" ] &&
+	ok "S6 selector sees a plan renamed into completed/" ||
+	bad "S6 selector returned '$s6paths', want docs/plans/completed/p.md"
+
+s6tmp=$(mktemp -d)
+s6out=$( cd "$s6" && zhuards_guard_plans "$s6paths" "$s6base" "$s6head" "$s6tmp" 2>&1 )
+s6rc=$?
+[ "$s6rc" -ne 0 ] &&
+	ok "S6 a failing proof landed with the closure is rejected" ||
+	bad "S6 closure entry must be guarded, guard exited $s6rc"
+if printf '%s' "$s6out" | grep -q MARKER-S6-OLD; then
+	bad "S6 the renamed plan's pre-existing entry was re-executed"
+else
+	ok "S6 rename resolves to the predecessor; old entries are not re-run"
+fi
+rm -rf "$s6" "$s6tmp"
+
+# S7: a push carrying two commits. The entry lands in the first of them, so a
+# HEAD~1..HEAD window never sees it; the range base does.
+s7=$(mktemp -d)
+gfix "$s7"
+printf 'seed\n' > "$s7/seed.txt"
+git -C "$s7" add -A >/dev/null && git -C "$s7" commit -qm seed
+s7base=$(git -C "$s7" rev-parse HEAD)
+gplan "$s7/docs/plans/active/p.md" MARKER-S7
+cat >> "$s7/docs/plans/active/p.md" <<'EOF'
+
+- `2026-09-02T00:00:00Z` — second gate, verdict `APPROVED`
+  - `false`
+EOF
+git -C "$s7" add -A >/dev/null && git -C "$s7" commit -qm "plan lands here"
+printf 'unrelated\n' > "$s7/other.txt"
+git -C "$s7" add -A >/dev/null && git -C "$s7" commit -qm "unrelated follow-up"
+s7head=$(git -C "$s7" rev-parse HEAD)
+
+s7prev=$( cd "$s7" && zharness_guard_plan_paths "$s7head~1" "$s7head" )
+[ -z "$s7prev" ] &&
+	ok "S7 the single-commit window is blind to the earlier commit's plan" ||
+	bad "S7 fixture is not exercising the gap: HEAD~1 window saw '$s7prev'"
+
+s7paths=$( cd "$s7" && zharness_guard_plan_paths "$s7base" "$s7head" )
+[ "$s7paths" = "docs/plans/active/p.md" ] &&
+	ok "S7 the range selector sees the plan across both commits" ||
+	bad "S7 range selector returned '$s7paths'"
+
+s7tmp=$(mktemp -d)
+( cd "$s7" && zhuards_guard_plans "$s7paths" "$s7base" "$s7head" "$s7tmp" ) >/dev/null 2>&1
+s7rc=$?
+[ "$s7rc" -ne 0 ] &&
+	ok "S7 the failing proof pushed two commits back is rejected" ||
+	bad "S7 range guard must reject, exited $s7rc"
+
+# revspec resolves that same range from the push event's before-SHA.
+s7rev=$( cd "$s7" && ZHARNESS_BEFORE_SHA="$s7base" ZHARNESS_HEAD_SHA="$s7head" \
+	zharness_guard_revspec push )
+[ "$s7rev" = "$(printf '%s\t%s' "$s7base" "$s7head")" ] &&
+	ok "revspec push resolves the event's before-SHA as the base" ||
+	bad "revspec push returned '$s7rev'"
+
+# Fail closed: no before-SHA, no default branch to fall back to.
+s7fc=$( cd "$s7" && ZHARNESS_BEFORE_SHA="" ZHARNESS_HEAD_SHA="$s7head" \
+	ZHARNESS_DEFAULT_BRANCH=origin/does-not-exist zharness_guard_revspec push 2>&1 )
+s7fcrc=$?
+[ "$s7fcrc" -ne 0 ] && printf '%s' "$s7fc" | grep -q "FAILED CLOSED" &&
+	ok "revspec with no resolvable base fails closed instead of guessing" ||
+	bad "revspec must fail closed, exited $s7fcrc (out: $s7fc)"
+
+if ( cd "$s7" && zharness_guard_revspec bogus ) >/dev/null 2>&1; then
+	bad "revspec must reject an unknown event"
+else
+	ok "revspec rejects an unknown event"
+fi
+rm -rf "$s7" "$s7tmp"
+
+# S8: the index is what becomes the commit, so the one-active-plan gate reads
+# staged blobs. An unstaged second plan is worktree noise, not a claim.
+s8=$(mktemp -d)
+gfix "$s8"
+mkdir -p "$s8/docs/plans/active"
+printf 'one\n' > "$s8/docs/plans/active/one.md"
+git -C "$s8" add -A >/dev/null && git -C "$s8" commit -qm one
+printf 'two\n' > "$s8/docs/plans/active/two.md"
+if zharness_guard_at_most_one_active_plan "$s8" staged 2>/dev/null; then
+	ok "S8 an unstaged second plan does not gate the commit"
+else
+	bad "S8 staged mode must ignore an unstaged worktree file"
+fi
+if zharness_guard_at_most_one_active_plan "$s8" 2>/dev/null; then
+	bad "S8 worktree mode must still see the second file (advisory)"
+else
+	ok "S8 worktree mode still reports the second file"
+fi
+git -C "$s8" add -A >/dev/null
+if zharness_guard_at_most_one_active_plan "$s8" staged 2>/dev/null; then
+	bad "S8 two staged plans must reject"
+else
+	ok "S8 two staged plans rejected"
+fi
+: > "$s8/docs/plans/active/two.md"
+git -C "$s8" add -A >/dev/null
+if zharness_guard_at_most_one_active_plan "$s8" staged 2>/dev/null; then
+	ok "S8 an empty staged second file does not count"
+else
+	bad "S8 empty staged second file must not reject"
+fi
+rm -rf "$s8"
 
 # PHASE-DONE: a completed plan whose lifecycle_status: completed must show
 # every phase status: done.

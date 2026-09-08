@@ -199,17 +199,29 @@ zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
   [ "$failed" -eq 0 ]
 }
 
-zharness_guard_at_most_one_active_plan() { # <repo-root>
+zharness_guard_at_most_one_active_plan() { # <repo-root> [worktree|staged]
   # R5: at most one non-empty file under docs/plans/active/. Zero is idle.
   # No associative arrays — bash 3.2 safe (same constraint as the hash file).
-  local root="$1" n=0 names="" f
+  # In staged mode the index is the subject: the commit is what gets published,
+  # so an unstaged or untracked worktree file is not yet a claim (ADR 0009).
+  local root="$1" source="${2:-worktree}" n=0 names="" f size
   [ -n "$root" ] || return 1
-  for f in "$root"/docs/plans/active/*.md; do
-    [ -f "$f" ] || continue
-    [ -s "$f" ] || continue
-    n=$((n + 1))
-    names="$names ${f#$root/}"
-  done
+  if [ "$source" = "staged" ]; then
+    while IFS= read -r f; do
+      [ -n "$f" ] || continue
+      size=$(git -C "$root" cat-file -s ":$f" 2>/dev/null) || continue
+      [ "${size:-0}" -gt 0 ] || continue
+      n=$((n + 1))
+      names="$names $f"
+    done <<< "$(git -C "$root" ls-files --cached -- 'docs/plans/active/*.md' 2>/dev/null)"
+  else
+    for f in "$root"/docs/plans/active/*.md; do
+      [ -f "$f" ] || continue
+      [ -s "$f" ] || continue
+      n=$((n + 1))
+      names="$names ${f#$root/}"
+    done
+  fi
   if [ "$n" -gt 1 ]; then
     echo "❌ R5 ACTIVE-PLAN GUARD REJECTED: more than one non-empty file under docs/plans/active/" >&2
     echo "   paths:$names" >&2
@@ -248,19 +260,86 @@ zharness_guard_completed_plan_phases_done() { # <path> <content-file>
   return 0
 }
 
-zhuards_guard_plans() {                    # <path-list-space-separated> <staged|head> <dir-for-temp>
-  local plans="$1" mode="$2" tmp="$3" f rc=0
+zharness_guard_revspec() {                 # <staged|push|pr> -> "<base>\t<head>"
+  # The single source of the revision under test (ADR 0009). No call site
+  # computes its own HEAD~1: a two-commit push, a squash-merge or a rebase
+  # makes that window skip the very entries the guard exists to re-execute.
+  # ":" as the head means the index.
+  local event="$1" base="" head="" default_branch="${ZHARNESS_DEFAULT_BRANCH:-origin/master}"
+  case "$event" in
+    staged)
+      printf 'HEAD\t:\n'
+      return 0
+      ;;
+    push)
+      head="${ZHARNESS_HEAD_SHA:-HEAD}"
+      base="${ZHARNESS_BEFORE_SHA:-}"
+      ;;
+    pr)
+      head="${ZHARNESS_HEAD_SHA:-HEAD}"
+      base=$(git merge-base "${ZHARNESS_BASE_REF:-}" "$head" 2>/dev/null) || base=""
+      ;;
+    *)
+      echo "❌ REVSPEC GUARD: unknown event '$event'" >&2
+      return 1
+      ;;
+  esac
+  # A branch creation reports the all-zero SHA; a force-push or a shallow
+  # clone reports a commit this checkout does not have. Neither is a base.
+  case "$base" in 0000000000000000000000000000000000000000) base="" ;; esac
+  if [ -n "$base" ] && ! git rev-parse --verify --quiet "${base}^{commit}" >/dev/null 2>&1; then
+    base=""
+  fi
+  if [ -z "$base" ]; then
+    base=$(git merge-base "$default_branch" "$head" 2>/dev/null) || base=""
+  fi
+  if [ -z "$base" ]; then
+    echo "❌ REVSPEC GUARD FAILED CLOSED: no base revision resolves for event '$event'." >&2
+    echo "   tried: ZHARNESS_BEFORE_SHA/ZHARNESS_BASE_REF, then merge-base with $default_branch." >&2
+    echo "   the checkout needs full history (actions/checkout fetch-depth: 0) to validate this range." >&2
+    return 1
+  fi
+  printf '%s\t%s\n' "$base" "$head"
+}
+
+zharness_guard_plan_paths() {              # <base> <head>
+  # Both namespaces. A plan closing out moves active/ -> completed/, and the
+  # entries it lands in that same commit are exactly the ones an active/-only
+  # selector never sees (ADR 0009). -M resolves a rename to its destination.
+  if [ "$2" = ":" ]; then
+    git diff --cached --name-only --diff-filter=ACMR -M -- \
+      'docs/plans/active/*.md' 'docs/plans/completed/*.md'
+  else
+    git diff --name-only --diff-filter=ACMR -M "$1" "$2" -- \
+      'docs/plans/active/*.md' 'docs/plans/completed/*.md'
+  fi
+}
+
+zharness_guard_old_blob() {                # <base> <path> <out-file>
+  # A plan moved active/ -> completed/ keeps its identity: compare against the
+  # predecessor path so a closure re-executes its new entries, not every entry
+  # the plan ever recorded. No predecessor found means an empty old side, which
+  # re-executes everything — the conservative direction.
+  local base="$1" path="$2" out="$3" alt
+  if git show "$base:$path" > "$out" 2>/dev/null; then return 0; fi
+  case "$path" in
+    docs/plans/completed/*)
+      alt="docs/plans/active/${path##*/}"
+      git show "$base:$alt" > "$out" 2>/dev/null && return 0
+      ;;
+  esac
+  : > "$out"
+}
+
+zhuards_guard_plans() {                    # <path-list-space-separated> <base> <head> <dir-for-temp>
+  local plans="$1" base="$2" head="$3" tmp="$4" f rc=0
   for f in $plans; do
-    case "$mode" in
-      staged)
-        git show "HEAD:$f" > "$tmp/old.md" 2>/dev/null || : > "$tmp/old.md"
-        git show ":$f"     > "$tmp/new.md"
-        ;;
-      head)
-        git show "HEAD~1:$f" > "$tmp/old.md" 2>/dev/null || : > "$tmp/old.md"
-        git show "HEAD:$f"   > "$tmp/new.md"
-        ;;
-    esac
+    zharness_guard_old_blob "$base" "$f" "$tmp/old.md"
+    if [ "$head" = ":" ]; then
+      git show ":$f" > "$tmp/new.md"
+    else
+      git show "$head:$f" > "$tmp/new.md" 2>/dev/null || : > "$tmp/new.md"
+    fi
     if ! zharness_guard_entries_of_file "$f" "$tmp/old.md" "$tmp/new.md"; then rc=1; fi
   done
   return $rc
@@ -325,23 +404,29 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir" "$_zhtmp"' EXIT
 
 echo "🔍 v0.15 guards on staged plans..."
-plans=$(git diff --cached --name-only --diff-filter=ACM -- 'docs/plans/active/*.md')
+revspec=$(zharness_guard_revspec staged) || exit 1
+gbase=$(printf '%s' "$revspec" | cut -f1)
+ghead=$(printf '%s' "$revspec" | cut -f2)
+plans=$(zharness_guard_plan_paths "$gbase" "$ghead")
 [ -n "$plans" ] && printf 'staged plans:\n%s\n' "$plans"
 guard_failed=0
-if ! zharness_guard_at_most_one_active_plan "$ROOT"; then
+if ! zharness_guard_at_most_one_active_plan "$ROOT" staged; then
   guard_failed=1
 fi
-if [ -n "$plans" ] && ! zhuards_guard_plans "$plans" staged "$tmpdir"; then
+# Worktree state is reported, not gated: only the index becomes the commit.
+if ! zharness_guard_at_most_one_active_plan "$ROOT" worktree >/dev/null 2>&1; then
+  echo "ℹ️  note: more than one non-empty docs/plans/active/*.md in the worktree (unstaged; not gating)."
+fi
+if [ -n "$plans" ] && ! zhuards_guard_plans "$plans" "$gbase" "$ghead" "$tmpdir"; then
   guard_failed=1
 fi
 
-completed_plans=$(git diff --cached --name-only --diff-filter=ACM -- 'docs/plans/completed/*.md')
-if [ -n "$completed_plans" ]; then
+if [ -n "$plans" ]; then
   while IFS= read -r f; do
-    [ -n "$f" ] || continue
+    case "$f" in docs/plans/completed/*) ;; *) continue ;; esac
     git show ":$f" > "$tmpdir/completed.md"
     zharness_guard_completed_plan_phases_done "$f" "$tmpdir/completed.md" || guard_failed=1
-  done <<< "$completed_plans"
+  done <<< "$plans"
 fi
 
 if [ "$guard_failed" -gt 0 ]; then
