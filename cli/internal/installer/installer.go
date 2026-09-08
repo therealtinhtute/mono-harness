@@ -310,12 +310,23 @@ func Install(root, version string, stdout *strings.Builder) error {
 	}
 	var paths []string
 
+	// Ownership is decided once per key and read from the ledger forever
+	// after (ADR 0008); seeding runs only when `prev` proves a prior install.
+	// The record is persisted before the first write so that an interrupted
+	// install cannot leave generated files on disk with no record of who
+	// made them.
+	own := loadOwnershipFor(root, targets, prev)
+	own.decideAll(root, targets)
+	if err := own.save(root); err != nil {
+		return err
+	}
+
 	for _, t := range targets {
 		up, err := srcBytes(t)
 		if err != nil {
 			return fmt.Errorf("embed read %s: %w", t.Src, err)
 		}
-		if err := captureOriginal(root, t.Dst); err != nil {
+		if err := captureIfPreexisting(root, own, t.Dst); err != nil {
 			return err
 		}
 		dstP := filepath.Join(root, t.Dst)
@@ -360,21 +371,21 @@ func Install(root, version string, stdout *strings.Builder) error {
 	existing, rerr := os.ReadFile(ap)
 	switch {
 	case os.IsNotExist(rerr):
-		if err := captureOriginal(root, agentsTarget); err != nil {
+		if err := captureIfPreexisting(root, own, agentsTarget); err != nil {
 			return err
 		}
 		if err := os.MkdirAll(filepath.Dir(ap), 0o755); err != nil {
 			return err
 		}
 		replBody, _ := applyAgentsBlock("", newBlock)
-		body := "# Agents\n\n" + replBody
+		body := agentsCreatedHeader + "\n\n" + replBody
 		if err := os.WriteFile(ap, []byte(body), 0o644); err != nil {
 			return err
 		}
 		fmt.Fprintf(stdout, "installed  %s (created)\n", agentsTarget)
 	default:
 		before := string(existing)
-		if err := captureOriginal(root, agentsTarget); err != nil {
+		if err := captureIfPreexisting(root, own, agentsTarget); err != nil {
 			return err
 		}
 		content, changed := applyAgentsBlock(before, newBlock)
@@ -390,12 +401,15 @@ func Install(root, version string, stdout *strings.Builder) error {
 	files[agentsTarget] = []byte(canonicalAgentsBlock(newBlock))
 	paths = append(paths, agentsTarget)
 
-	if err := appendGitignoreEntries(root, stdout); err != nil {
+	if err := appendGitignoreEntries(root, own, stdout); err != nil {
 		return err
 	}
 	paths = append(paths, gitignoreTarget)
 
-	return saveBase(root, version, files)
+	if err := saveBase(root, version, files); err != nil {
+		return err
+	}
+	return own.save(root)
 }
 
 // AgentsSpan locates the marked zharness block inclusive of both marker
@@ -439,7 +453,7 @@ var gitignoreWants = []string{
 	"/" + zharnessDir + "/",
 }
 
-func appendGitignoreEntries(root string, stdout *strings.Builder) error {
+func appendGitignoreEntries(root string, own *ownership, stdout *strings.Builder) error {
 	gp := filepath.Join(root, gitignoreTarget)
 	existing := ""
 	if b, err := os.ReadFile(gp); err == nil {
@@ -447,9 +461,11 @@ func appendGitignoreEntries(root string, stdout *strings.Builder) error {
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	if err := captureOriginal(root, gitignoreTarget); err != nil {
+	if err := captureIfPreexisting(root, own, gitignoreTarget); err != nil {
 		return err
 	}
+	// Provenance for these lines is already fixed and on disk (decideAll);
+	// here we only decide what still needs appending.
 	missing := false
 	for _, want := range gitignoreWants {
 		if !containsLine(existing, want) {
