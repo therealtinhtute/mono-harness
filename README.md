@@ -38,10 +38,13 @@ and bounded work.
 
 ## Goals
 
+- **Skills and the harness are one goal.** This repository builds an agent
+  skill set for the SDLC alongside `zharness`, the protocol that keeps that
+  lifecycle legible and portable across coding agents.
 - **The repository stays the system of record.** Plans, decisions, and
   validation live in tracked markdown that a human can read and git can
-  history. `harness.db` is a derived index, reconstructible from committed
-  content by `zharness db rebuild`.
+  history. There is no database — tracked markdown and git history are
+  the only record.
 - **Process proportional to the work.** A read-only question and a
   multi-session refactor should not cost the same ceremony. Reduced playbook
   paths write no lifecycle rows; durable plans exist only for work that needs
@@ -63,9 +66,8 @@ and bounded work.
 - **Not a task database, tracker, or orchestrator.** zharness scaffolds and
   checks documents. It does not run the lifecycle, assign work, or drive an
   agent.
-- **`harness.db` is not durable memory.** It is gitignored and per-machine,
-  disposable by construction. Anything that must outlive the working copy
-  belongs in tracked markdown or in git history.
+- **No database.** Anything that must outlive the working copy belongs
+  in tracked markdown or in git history.
 - **No hosted or shared state.** The CLI makes no network calls. Everything
   the harness knows lives in the working copy.
 - **Not a replacement for git.** The harness records intent and validation;
