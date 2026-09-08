@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.19.0] — 2026-09-08
+
+### Added
+
+- `feat(guards)`: New pre-commit/CI guard `zharness_guard_completed_plan_phases_done`
+  rejects a plan staged or pushed under `docs/plans/completed/` whose `Current
+  State` declares `lifecycle_status: completed` while any phase in `## Phases
+  and Verification` is not `status: done`.
+
 ## [v0.18.0] — 2026-09-07
 
 ### Added
