@@ -6,6 +6,12 @@
 **Fetch:** Pass 1 (`fetch.sh --use-proxy` on the status URL) returned a truncated local extract; the X Article URL 404’d. Pass 2 (`curl -sL https://defuddle.md/https://x.com/0xwhrrari/status/2093685107534000560`) returned the full article: 1814 words, YAML frontmatter, three diagrams (`HQ1mN7uXgAA5EmN.jpg` cover, `HQ1oAGxWsAAttaT.jpg` seven jobs, `HQ1pxJvWAAAXXOY.jpg` failure loop), inline schemas, and the 12-item checklist verbatim. Cover/job/failure diagrams were read as images. CTA/subscribe text is ignored.
 **Scope:** current v0.15 slim — binary = `install` / `update` / `uninstall`; lifecycle = committed markdown + repo scripts + two fail-closed git-hook guards. Prior audits under `docs/audit/` that still describe `preflight`, `harness.db`, `trace add`, or `check record` are dated 0.14 records. They are evidence of residue, not a description of the running system.
 **Method:** map the article’s seven jobs, dual-encoding rule, loop (3 attempts then human), change-receipt schema, Level 0–3 ladder, failure-class table, and the 12-item checklist onto live files. Every finding cites a path. No CLI lifecycle command was invoked; v0.15 no longer has one.
+**Status (2026-09-13):** H1, H2, and H3 are **closed** — each was shipped after this
+audit was written and the markers below were never flipped. Three findings read as open
+while the repository already enforced them. Per ADR 0005 this file is a dated record, so
+the original analysis is left intact; each closed finding carries a `**Closed.**` line
+naming what shipped. H4–H9 are unreviewed since 2026-08-30.
+
 **Non-goal:** do not resurrect the 0.14 control plane. The article’s own constraint is “the harness should be smaller than the failure surface it controls.” Do not add a GRAPH/coordination layer; the article lists it as a later shift, not a starting requirement.
 
 ---
@@ -129,7 +135,7 @@ The article’s load-bearing rule: important constraints are written twice — o
 | `judge: same-session` forbidden on `lane: high-risk` | `check.md` step 7 | Hook reads plan frontmatter `lane:` | **encoded twice** |
 | Doc citations resolve | playbooks / ARCHITECTURE | `scripts/verify-doc-links.sh` | **encoded twice** |
 | Deleted lifecycle CLI strings stay deleted | ARCHITECTURE historical note | `cli/internal/embedded/embedded_test.go` forbidden list (`zharness preflight`, `zharness query`, `check record`, …) | **encoded twice, incomplete kill list** |
-| At most one non-empty file under `docs/plans/active/` | `work.md:12`, `watzup.md:9`, `brainstorm.md` lock step 7 | Was `ResolveActivePlan` (`docs/decisions/0002-single-active-plan-resolver.md`). File `cli/internal/application/plan_resolve.go` is gone. Hook does not count active plans. | **prose only — H2** |
+| At most one non-empty file under `docs/plans/active/` | `work.md:12`, `watzup.md:9`, `brainstorm.md` lock step 7 | Was `ResolveActivePlan` (`docs/decisions/0002-single-active-plan-resolver.md`). File `cli/internal/application/plan_resolve.go` is gone. Now `zharness_guard_at_most_one_active_plan` (`scripts/install-git-hooks.sh:202`, CI at `cli-ci.yml:70`). | **encoded twice — H2 closed** |
 | Slice the plan, never whole-file | `work.md:32`, `watzup.md:15` | None. An agent that `Read`s the file pays the quadratic cost the 0.14 ceremony audit measured, with no CLI to slice it either. | **prose only** |
 | Bounded/simple creates no lifecycle markdown | zero-write rule in four playbooks | None. An agent can still append to the active plan during a typo fix. | **prose only** |
 | Memory bodies contain no secrets | `work.md` redaction rule | None. `docs/memory/` is committed markdown with no scanner in the hook. | **prose only** |
@@ -143,7 +149,9 @@ The two fail-closed guards are the article done right. Everything else in the le
 
 ## 5. Findings
 
-### [!] H1 — Live map describes a deleted control plane
+### [x] H1 — Live map describes a deleted control plane
+
+**Closed.** All four action items shipped: zero hits for `lifecycle ledger` / `DB-mirroring` / `latest_run_id` / `mirrored check row` / `check_id: ULID` across `docs/playbooks/` and `cli/docs/embedded/playbooks/`; `skills/workflow/README.md:1-5` is the 4-layer model; `docs/decisions/0006-v015-authority.md` exists; `cli/internal/embedded/embedded_test.go:227-237` forbids the concepts, not just the command strings.
 
 **Why.** The article’s job 2 is “a small root guide that tells the agent where to look.” A map that names tools that 404 is worse than a short map: the agent spends turns reconstructing a world that v0.15 deleted, then either invents ceremony or ignores the playbook.
 
@@ -171,7 +179,9 @@ The two fail-closed guards are the article done right. Everything else in the le
 4. Extend `embedded_test.go` forbidden substrings with `lifecycle ledger`, `DB-mirroring`, `harness.db`, `zharness memory`, `mirrored check row`.
 5. Leave `docs/audit/workflow-harness-ceremony-audit.md`, `sdlc-gap-analysis.md`, `sdlc-token-cache-audit.md`, `consumer-adoption-audit.md` untouched — they are point-in-time (ADR 0005). This file is the current score.
 
-### [!] H2 — “At most one active plan” is prose again
+### [x] H2 — “At most one active plan” is prose again
+
+**Closed.** `zharness_guard_at_most_one_active_plan` (`scripts/install-git-hooks.sh:202`) runs on staged and worktree state (`:413`, `:417`) and is re-run in CI (`.github/workflows/cli-ci.yml:70`). Level `CI` on the ladder, not prose.
 
 **Why.** Consumer-adoption D1 was: the harness assumed one active plan and did not enforce it; cost was an unbounded whole-file read. v0.14 fixed that in `ResolveActivePlan` (ADR 0002). v0.15 deleted the resolver and did not put the invariant into the hook. Playbooks say “stop and name every candidate.” That is the article’s “agent reads it, then eventually ignores one.”
 
@@ -192,7 +202,9 @@ test "$n" -le 1
 
 Wire that into ZGUARD-CORE or a sibling hook function extracted the same way as the two existing guards, with a fixture in `scripts/test-guards.sh`. Recovery copy: name both paths and say `git mv` the finished one to `docs/plans/completed/`. Do not add `zharness plan complete`.
 
-### [~] H3 — Same session invents, executes, and gates (except high-risk)
+### [x] H3 — Same session invents, executes, and gates (except high-risk)
+
+**Closed.** The drafted Action below shipped as R5 of `docs/plans/completed/audit-harness-followthrough.md` (commit `e5ccf89`). `scripts/install-git-hooks.sh:165-173` rejects a newly added `mode: full` + `judge: same-session` entry on **any** lane; `mode: gate` + same-session on `lane: normal` still passes. Four fixtures at `scripts/test-guards.sh:169-224`, including the first-line-only match so a quoted `mode: full` in a sub-bullet does not false-positive. Documented at `docs/playbooks/check.md:37`.
 
 **Why.** Article job 6: “The model can recommend an action. The harness must authorize it. … Do not ask the same probabilistic system to invent the plan, approve the risk, and execute the side effect.” Anthropic’s long-running-agent note in the same post: a separate evaluator, not self-approval.
 

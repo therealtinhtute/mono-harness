@@ -75,19 +75,26 @@ npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g
 
 ## Gate Commands
 
-`check` runs these before any commit; all three mirror `.github/workflows/cli-ci.yml`.
+`check` runs these before any commit. They sit at two different levels of the
+ladder in `docs/patterns/encoding-invariants.md` — declare the level, do not
+assert enforcement the repository does not have.
 
 ```bash
-# Go CLI: build, vet, test
+# [CI] Go CLI: build, vet, test — .github/workflows/cli-ci.yml, job `build-test`
 cd cli && CGO_ENABLED=0 go build ./... && go vet ./... && go test ./...
 
-# Guard fixture tests for the pre-commit hook's ZGUARD-CORE block
+# [CI] Guard fixture tests for the pre-commit hook's ZGUARD-CORE block
+# .github/workflows/cli-ci.yml, job `hook-guard`
 bash scripts/test-guards.sh
 
-# Doc link integrity — fails on broken repo-relative cross-references.
-# Exceptions live in .claimignore and each one requires a `# reason`.
+# [CI] Doc link integrity — fails on broken repo-relative cross-references.
+# .github/workflows/docs-ci.yml, job `doc-links`, on any tracked *.md change.
+# Exceptions live in .claimignore, each one requires a `# reason`.
 bash scripts/verify-doc-links.sh
 ```
+
+`scripts/validate-skill.sh` is `Optional hook`: it runs on changed skills from
+the pre-commit hook only, which requires `bash scripts/install-git-hooks.sh --force`.
 
 Run a single Go test: `cd cli && go test ./internal/installer/... -run TestName`.
 
