@@ -1,0 +1,32 @@
+name: docs-ci
+
+# Promotes scripts/verify-doc-links.sh from `Local validation` to `CI` on the
+# ladder in docs/patterns/encoding-invariants.md. Kept separate from cli-ci.yml
+# because that workflow's path filters are scoped to the Go build and the
+# lifecycle surfaces; doc links break from any tracked markdown (commit 39ddbba
+# restored the gate after master's docs/ deletion), so this needs its own
+# broader trigger. A green job here is not proof of merge blocking.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "**.md"
+      - ".claimignore"
+      - "scripts/verify-doc-links.sh"
+      - ".github/workflows/docs-ci.yml"
+  pull_request:
+    paths:
+      - "**.md"
+      - ".claimignore"
+      - "scripts/verify-doc-links.sh"
+      - ".github/workflows/docs-ci.yml"
+
+jobs:
+  doc-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Doc link integrity
+        run: bash scripts/verify-doc-links.sh
