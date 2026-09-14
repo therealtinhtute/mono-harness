@@ -7,11 +7,13 @@ Quality gate for a response-only review, a bounded diff, or a durable phase. Dur
 ## Preconditions and Modes
 
 1. Preserve invocation intent:
+   - `auto` (default) — resolve to `gate` when the request names or continues a durable initiative whose selected phase reads `in-progress`; otherwise to `bounded`. `auto` never resolves to `full` — request `full` by name; `handoff.md` step 6 requires it exactly once, on the initiative's final phase. The mere existence of an active plan never selects `gate`.
    - `gate` — durable automated phase gate for `docs/plans/active/{slug}.md`; it does not perform the complete manual review. `work` performs this itself, in-session, per phase.
    - `full` — durable gate plus the complete Security, Performance, Architecture, and Code Quality review. `work` never performs this; it belongs to the initiative's final phase via handoff closure. A `full` Validation entry must declare `judge: independent`.
    - `review` — response-only review, even when an active plan exists.
    - `bounded` (alias: `simple`) — response-only gate for a direct change with no durable initiative lifecycle.
 2. For durable gate/full, require exactly one non-empty active plan whose selected phase reads `in-progress`; a summary or compaction since the last read invalidates earlier-read anchors until the plan is re-read.
+3. Before reading any plan, print the resolved mode as your first output line (after any required prefix, on the same line): `mode: {resolved} ({one-line reason})`.
 
 **Zero-write rule:** review and bounded/simple modes create no plans, reports, or markdown artifacts. They do not append to Validation and do not edit an active plan. Invocation intent wins: discovering an active plan never upgrades `review` or bounded/simple work into a durable gate.
 

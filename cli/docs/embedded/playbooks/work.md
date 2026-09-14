@@ -11,7 +11,8 @@ Execute approved work: the next phase of a durable initiative from `docs/plans/a
    - `full [phase {stable-phase-slug}]` — durable initiative execution from an active plan.
    - `bounded` (alias: `simple`) — known subsystem, bounded files, direct success criterion.
 2. Full mode only: confirm exactly one non-empty plan exists under `docs/plans/active/`; with several, report every candidate and stop rather than guessing. Bounded/simple mode needs no plan.
-3. If this session's context was compacted or summarized since you last read the plan, re-read before trusting any earlier-read anchor.
+3. Before reading any plan, print the resolved mode as your first output line (after any required prefix, on the same line): `mode: {resolved} ({one-line reason})`.
+4. If this session's context was compacted or summarized since you last read the plan, re-read before trusting any earlier-read anchor.
 
 **Zero-write rule:** bounded/simple mode creates no lifecycle rows, plans, reports, changesets, or markdown artifacts. It does not edit an existing active plan. The Git diff plus captured executable/observable proof are its durable evidence.
 

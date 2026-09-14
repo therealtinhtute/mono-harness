@@ -122,6 +122,7 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"set that phase's plan status to `in-progress`",
 				"`task_status=in-progress`",
 				"flushes the whole pending list immediately",
+				"print the resolved mode as your first output line",
 				"bounded/simple mode creates no lifecycle rows, plans, reports, changesets, or markdown artifacts",
 				"Do not add or update task-definition `status` fields",
 				"Append-only `## Progress` is the sole task execution-status source",
@@ -133,6 +134,8 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 			required: []string{
 				"## Validation",
 				"Invocation intent wins",
+				"`auto` never resolves to `full`",
+				"print the resolved mode as your first output line",
 				"`review` is always response-only",
 				"never appends to Validation",
 				"set the phase status and Current State lifecycle status to `checked`",
