@@ -116,11 +116,11 @@ Character counts show where context grows, not an exact share of the token bill.
 
 Authority: [AGENTS.md](../../AGENTS.md) and [README.md](../../README.md) allow bounded changes without a plan.
 
-**Bug found and fixed alongside this audit.** `skills/workflow/work/SKILL.md` defaulted to `mode:auto` and advertised `phase`, but the work playbook defined only `full` and `bounded`, and its precondition required an active plan in every mode — contradicting the bounded zero-write rule. Fix: [work.md](../playbooks/work.md) lines 9-14 now define `auto` (resolve to `full` only when the request names or continues a durable initiative, otherwise `bounded` when the bounded criteria at line 18 pass, otherwise route to `brainstorm`/`to-plan`), scope the one-active-plan precondition to full mode, and the skill's argument hint lists `auto|full|bounded|simple`. The embedded playbook copy is byte-identical.
+**Bug found and fixed alongside this audit.** `skills/workflow/work/SKILL.md` defaulted to `mode:auto` and advertised `phase`, but the work playbook defined only `full` and `bounded`, and its precondition required an active plan in every mode — contradicting the bounded zero-write rule. Fix: [work.md](../playbooks/work.md) lines 9-15 now define `auto` (resolve to `full` only when the request names or continues a durable initiative, otherwise `bounded` when none of the bounded rejection conditions at line 19 apply, otherwise route to `brainstorm`/`to-plan`), scope the one-active-plan precondition to full mode, and the skill's argument hint lists `auto|full|bounded|simple`. `check` got the same fix: it defaulted to durable `full`, so a bare pre-commit `/check` after bounded work demanded an active plan; `auto` now resolves to `gate` only for an in-progress initiative phase, otherwise `bounded`, never `full`. Both stages print `mode: {resolved} ({reason})` before reading any plan. The embedded playbook copies are byte-identical.
 
 Still open for routing:
 
-- `check` already selects bounded for a direct diff and reserves `full` for initiative review ([check.md](../playbooks/check.md) line 5); `handoff` without a plan should return a recap only.
+- `check` `auto` selects bounded for a direct diff and reserves `full` for an explicit initiative review ([check.md](../playbooks/check.md) lines 5 and 10); `handoff` without a plan should return a recap only.
 - Put bounded guidance first with a clear stop-reading point; load the full section only when selected.
 - Subtasks of a durable initiative still update the plan through the orchestrator. Bounded fixes are not exempt from final review or requirement changes.
 
@@ -150,10 +150,10 @@ New lever (RC2 — tool results are the largest share):
 
 Already enforced by the playbooks — do not re-add:
 
-- One Progress flush per wave, immediate flush on a blocker: [work.md](../playbooks/work.md) lines 45-47.
-- Pass/fail output tails (3 lines on pass, 10 on fail) with the exit code preserved: [check.md](../playbooks/check.md) line 36.
+- One Progress flush per wave, immediate flush on a blocker: [work.md](../playbooks/work.md) lines 46-48.
+- Pass/fail output tails (3 lines on pass, 10 on fail) with the exit code preserved: [check.md](../playbooks/check.md) line 38.
 - Complete `full` review exactly once, on the final phase: [check.md](../playbooks/check.md) line 5.
-- Re-read the plan after compaction or summarization: [work.md](../playbooks/work.md) line 14, [check.md](../playbooks/check.md) line 14, [handoff.md](../playbooks/handoff.md) line 10.
+- Re-read the plan after compaction or summarization: [work.md](../playbooks/work.md) line 15, [check.md](../playbooks/check.md) line 15, [handoff.md](../playbooks/handoff.md) line 10.
 
 Still proposed:
 
