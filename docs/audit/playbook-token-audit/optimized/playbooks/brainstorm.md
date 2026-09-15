@@ -15,7 +15,7 @@ Choose from the request shape; ask only when mode or scope is genuinely ambiguou
 | `lock-from-files` | Authoritative source files | Create one active plan |
 | `refine` | Existing active plan needs scope changes | Update the same plan; preserve its IDs |
 
-**Zero-write rule:** explore creates no plans, reports, changesets, or markdown artifacts. IF exploration reaches lock intent → switch modes explicitly before writing.
+**Zero-write rule:** explore creates no lifecycle rows, plans, reports, changesets, or markdown artifacts. IF exploration reaches lock intent → switch modes explicitly before writing.
 
 ## Owned Plan Sections
 
@@ -34,7 +34,7 @@ Preserve all later-stage content. Once `to-plan` has defined phases and tasks, t
 5. **Choose the slug** — short and stable. The canonical active path is `docs/plans/active/{slug}.md`; never create a second durable initiative markdown for the same work.
 6. **Answer project identity (the stage's single forced write)** — IF `docs/PROJECT.md` is absent → copy `cli/docs/embedded/templates/project.identity.md`; IF that template is also absent (consumer repo) → run `zharness install`. Fill every identity question inline. The lock never completes while any `<...>` question remains: halt and name them. Only the owner-facing scope decision may justify pausing here.
 7. **Create a new lock**:
-   - Confirm no non-empty plan exists under `docs/plans/active/`; IF one exists → stop and name it; the owner must complete or move it aside first.
+   - Confirm at most one non-empty plan exists under `docs/plans/active/`; IF one exists → stop and name it; the owner must complete or move it aside first.
    - Mint two unique identifier tokens locally (timestamp-suffixed is fine): the plan `id` and `intake_id`.
    - Create `docs/plans/active/{slug}.md`; fill frontmatter (both IDs, `status: active`, lane, dates) and the three owned sections.
    - Replace every unowned placeholder with honest bootstrap state: `approach: not-planned`; `planning_status: not-planned`; phases, Progress, Decisions, and Validation as `none`; Current State IDs/blockers as `none`; `exact_next_action: to-plan`.
