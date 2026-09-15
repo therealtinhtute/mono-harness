@@ -2,15 +2,17 @@
 
 ## Purpose
 
-Execute the next approved work from `docs/plans/active/{slug}.md`. Full mode appends execution state to the same plan — append-only Progress and Decisions are the durable record. Bounded mode changes only the requested product files and produces no lifecycle bookkeeping.
+Execute approved work: the next phase of a durable initiative from `docs/plans/active/{slug}.md` in full mode, or a direct change in bounded mode. Full mode appends execution state to the same plan — append-only Progress and Decisions are the durable record. Bounded mode changes only the requested product files and produces no lifecycle bookkeeping.
 
 ## Preconditions and Modes
 
 1. Resolve mode:
+   - `auto` (default) — resolve to `full` when the request names or continues a durable initiative or one of its phases; otherwise to `bounded` when none of the bounded rejection conditions below apply; otherwise stop and route through `brainstorm` and `to-plan`. The mere existence of an active plan never selects `full`.
    - `full [phase {stable-phase-slug}]` — durable initiative execution from an active plan.
    - `bounded` (alias: `simple`) — known subsystem, bounded files, direct success criterion.
-2. Confirm exactly one non-empty plan exists under `docs/plans/active/`; with several, report every candidate and stop rather than guessing.
-3. If this session's context was compacted or summarized since you last read the plan, re-read before trusting any earlier-read anchor.
+2. Full mode only: confirm exactly one non-empty plan exists under `docs/plans/active/`; with several, report every candidate and stop rather than guessing. Bounded/simple mode needs no plan.
+3. Before reading any plan, print the resolved mode as your first output line (after any required prefix, on the same line): `mode: {resolved} ({one-line reason})`.
+4. If this session's context was compacted or summarized since you last read the plan, re-read before trusting any earlier-read anchor.
 
 **Zero-write rule:** bounded/simple mode creates no lifecycle rows, plans, reports, changesets, or markdown artifacts. It does not edit an existing active plan. The Git diff plus captured executable/observable proof are its durable evidence.
 
