@@ -21,7 +21,7 @@ update                           fresh-overwrites playbooks/WORKFLOW.md; three-w
 uninstall                        removes the managed set; consumer bytes are never destroyed
 ```
 
-`AllTargets` (`cli/internal/installer/installer.go:65`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the six playbooks. `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
+`AllTargets` (`cli/internal/installer/installer.go:65`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the eight playbooks (six stages plus the `work-full` and `check-validation` companions). `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
 
 State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries plus content-addressed upstream blobs. Update diffs local edits against that recorded base with a diff3 merge (`cli/internal/installer/threeway.go`); overlapping edits stop with in-file conflict markers, resolved by a human via `--continue` (records the conflict-time upstream as the new base; the resolution stays as local drift) or discarded via `--abort` (stash restore, byte-for-byte). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
 

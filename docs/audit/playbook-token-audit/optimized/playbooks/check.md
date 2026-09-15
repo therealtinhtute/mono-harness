@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Quality gate for a response-only review, a bounded diff, or a durable phase. Durable `gate` runs automated checks and records the verdict in the active plan's `## Validation`; `work` performs it in-session after every phase (`work-full.md` step 11). `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review, required exactly once, on the initiative's final phase, before `handoff` closes it (`handoff.md` step 6). `review` and bounded/simple return evidence in the response only.
+Quality gate for a response-only review, a bounded diff, or a durable phase. Durable `gate` runs automated checks and records the verdict in the active plan's `## Validation`; `work` performs it in-session after every phase (`work.md` step 11). `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review, required exactly once, on the initiative's final phase, before `handoff` closes it (`handoff.md` step 6). `review` and bounded/simple return evidence in the response only.
 
 ## Preconditions and Modes
 
@@ -21,6 +21,15 @@ Quality gate for a response-only review, a bounded diff, or a durable phase. Dur
 
 Only durable gate/full may: append to `## Validation`; update the selected phase's lifecycle `status` in `## Phases and Verification`; update lifecycle status, latest anchors, blockers/open items, and exact next action in `## Current State and Next Action`. Phase lifecycle status is the only mutable field in a planned phase. Append-only `## Progress` is the sole task execution-status source: read task state there; never add or update task-definition status fields.
 
+Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, verdict, judge declaration, reviewing model identifier, proof gaps, and a grep-able `receipt:` block (`context_sources`, `policy`, `judge`, `judge_model`, `retries`, `rollback_point`, `failure_ledger: absent|{path}`, `enforcement: hook | ci | local-only`, `not_independently_verified`). Two positions are load-bearing, so the commit-time guard can find them:
+
+- The verdict token sits on the entry's own first line. A verdict on a sub-bullet is skipped in silence: no rejection, no re-execution.
+- Each proof command is a nested sub-bullet, indented at least two spaces, whose text begins with the bare command in single backticks: no label before the opening backtick, no double backticks, no backtick inside the command (it truncates there and re-executes a broken fragment; use a character class or a shell-free equivalent). Trailing annotation after the closing backtick is safe.
+
+Validation is append-only from an entry's first commit; never replace committed failed evidence or verdicts. An uncommitted entry may still be reshaped into the guard-visible form (the guard hashes only committed entries).
+
+**Proof re-execution contract** — each proof re-runs from the repository root under `sh -c` with no prior `cd`, activated virtualenv, or session function/alias. Exported environment variables are inherited, so a proof must depend on neither their presence nor their absence. Bounded to 300 s IF `timeout` or `gtimeout` is on PATH, else unbounded. Carry any working directory or interpreter inline (`cd cli && go test ./...`). Never test for a binary's presence or an OS version: re-execution happens on a bare checkout.
+
 ## Review and Gate Steps
 
 1. **Load scope without changing intent** — read the diff and repository verification instructions. Gate/full: also read the phase's Phases entry and recent Progress/Validation tails. `review` may consult a plan for context but stays response-only.
@@ -30,7 +39,7 @@ Only durable gate/full may: append to `## Validation`; update the selected phase
 5. **Apply mode-specific manual review** — `full`: the complete Security, Performance, Architecture, and Code Quality review; for a class-of-bug fix, search sibling instances and state whether coverage is complete. `gate` does not perform that complete manual review. `review`: the requested review. Bounded/simple: scope-appropriate review only.
 6. **Evaluate required proof** — `tiny`: command output; `normal`: unit plus command output; `high-risk`: unit, integration, manual review, and command output. Name every missing class exactly. Never substitute automated checks for required manual-review evidence.
 7. **Choose the verdict** — any critical issue or material plan contradiction → `REQUEST_CHANGES`; major non-critical findings → at least `APPROVE_WITH_REQUESTS`; no blocking findings → `APPROVED`. Declare the judge (`same-session` IF the reviewer authored the diff, else `independent`) and the reviewing model identifier. A `same-session` `APPROVED`/`APPROVE_WITH_REQUESTS` must name at least one aspect not independently verified. A `full` entry must declare `judge: independent`.
-8. **Append durable evidence first (mandatory)** — read `docs/playbooks/check-validation.md`, then write the Validation entry into the plan by hand in that format. Never self-certify: cite only commands whose real output you captured, as nested sub-bullets exactly as run. REQUEST_CHANGES entries may cite deliberately failing commands.
+8. **Append durable evidence first (mandatory)** — write the Validation entry into the plan by hand in the format above. Never self-certify: cite only commands whose real output you captured, as nested sub-bullets exactly as run. REQUEST_CHANGES entries may cite deliberately failing commands.
 9. **Declare enforcement honestly** — no verifier runs here. The repository's pre-commit hook is the sole proof guarantee where installed (`bash scripts/install-git-hooks.sh --force`): it parses the staged Validation entry, re-executes every nested proof before an APPROVED/APPROVE_WITH_REQUESTS verdict can commit, and rejects a newly added `mode: full` entry declaring `same-session`; CI re-runs the same guard core where a checked-in workflow extracts it. Without the hook the level is `Optional hook` on the ladder in `docs/patterns/encoding-invariants.md`: honor these rules as authoring discipline and declare that level; never assert enforcement the repository does not have.
 10. **Synchronize durable plan state**:
     - `APPROVED` or `APPROVE_WITH_REQUESTS` → immediately set the phase status and Current State lifecycle status to `checked`, complete the entry's evidence and `receipt:` block, and route to closing `handoff` or `git`.

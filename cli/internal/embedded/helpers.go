@@ -2,7 +2,8 @@ package embedded
 
 import "io/fs"
 
-// PlaybookNames returns the six canonical playbook file names embedded under
+// PlaybookNames returns the canonical playbook file names (six stages plus the
+// work-full and check-validation companions) embedded under
 // playbooks/, sorted.
 func PlaybookNames() ([]string, error) {
 	entries, err := fs.ReadDir(FS, "playbooks")
