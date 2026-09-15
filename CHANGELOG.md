@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.21.0] — 2026-09-15
+
+### Changed
+
+- Playbooks: `zharness install`/`update` now write 8 playbooks. Full-mode `work`
+  execution moves to `playbooks/work-full.md`, and the Validation entry format
+  moves to `playbooks/check-validation.md`. Each is loaded only by the mode that
+  needs it, so bounded `work` reads 3142 bytes instead of 9813 and bounded or
+  review `check` reads 9718 instead of 15597. Run `zharness update` in consumer
+  repositories to pick up the split.
+- The 6 spine playbooks, `WORKFLOW.md`, and their `SKILL.md` triggers are
+  trimmed per `docs/audit/playbook-token-audit.md` with no change in behavior.
+
+### Fixed
+
+- `work`: the in-session gate sets a clean non-final phase `checked`. The final
+  phase stays `in-progress` for an independent `check full`, which rejects a
+  `checked` phase.
+- `watzup`: section reads fall back to `awk` when `scripts/plan-slice.sh` is absent.
+- `brainstorm`: step 7 checks for any non-empty active plan before locking.
+
 ## [v0.20.1] — 2026-09-15
 
 ### Fixed
