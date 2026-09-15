@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.20.1] — 2026-09-15
+
+### Fixed
+
+- `work`: auto mode selects durable execution only when the request names or
+  continues an initiative. Direct bounded work no longer requires an active plan.
+- `check`: default to auto mode. Direct changes select bounded; initiative checks
+  validate the total active-plan count, selected phase, and Current State before
+  selecting gate. Invalid initiative state stops instead of falling back to bounded.
+- `check`: announce the resolved mode after read-only preflight and before checks
+  or writes; re-read required state after compaction. Full review remains explicit.
+
+### Changed
+
+- Update the work skill to 1.4.1 and check skill to 1.7.0. Skills are installed
+  separately from the CLI; run `zharness update` in consumer repositories to refresh
+  their managed playbooks after upgrading the binary.
+- Record the context-cost audit and ten routing smoke scenarios, including the
+  corrected multiple-plan ambiguity. Runtime compaction and cost savings remain
+  unproven experiments.
+
 ## [v0.20.0] — 2026-09-08
 
 Remediates the 2026-09-07 third-party integrity review
@@ -249,4 +270,3 @@ ADR 0008 and ADR 0009.
   **consumer-owned bytes**: nothing in this or future releases deletes it.
 - New consumers need no initialization at all: markdown plus git is the whole
   system of record.
-
