@@ -30,8 +30,8 @@ func TestPlaybookCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PlaybookCount: %v", err)
 	}
-	if count != 6 {
-		t.Fatalf("playbook count = %d, want 6", count)
+	if count != 8 {
+		t.Fatalf("playbook count = %d, want 8", count)
 	}
 }
 
@@ -85,8 +85,8 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"## Non-goals",
 				"The canonical active path is `docs/plans/active/{slug}.md`",
 				"Mint two unique identifier tokens locally",
-				"Confirm at most one non-empty plan exists under `docs/plans/active/`",
-				"explore creates no lifecycle rows, plans, reports, changesets, or markdown artifacts",
+				"Confirm no non-empty plan exists under `docs/plans/active/`",
+				"explore creates no plans, reports, changesets, or markdown artifacts",
 				"approach: not-planned",
 				"planning_status: not-planned",
 				"exact_next_action: to-plan",
@@ -112,8 +112,17 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 			},
 		},
 		{
-			name: "work appends durable markdown progress",
+			name: "work routes full mode to its companion",
 			path: "playbooks/work.md",
+			required: []string{
+				"read `docs/playbooks/work-full.md` now",
+				"print the resolved mode as your first output line",
+				"bounded/simple mode creates no plans, reports, changesets, or markdown artifacts",
+			},
+		},
+		{
+			name: "work appends durable markdown progress",
+			path: "playbooks/work-full.md",
 			required: []string{
 				"## Progress",
 				"## Decisions",
@@ -122,8 +131,6 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"set that phase's plan status to `in-progress`",
 				"`task_status=in-progress`",
 				"flushes the whole pending list immediately",
-				"print the resolved mode as your first output line",
-				"bounded/simple mode creates no lifecycle rows, plans, reports, changesets, or markdown artifacts",
 				"Do not add or update task-definition `status` fields",
 				"Append-only `## Progress` is the sole task execution-status source",
 			},
@@ -155,8 +162,7 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"Durable `gate` runs automated checks",
 				"`full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review",
 				"`gate` does not perform that complete manual review",
-				"Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output",
-				"so the commit-time guard can find them",
+				"read `docs/playbooks/check-validation.md`",
 				"The repository's pre-commit hook is the sole proof guarantee",
 				"REQUEST_CHANGES entries may cite deliberately failing commands",
 				"Append-only `## Progress` is the sole task execution-status source",
@@ -166,6 +172,16 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				"whose selected phase reads `in-progress`; otherwise to `bounded`",
 				"Durable `gate`/`full` mode runs real checks and review",
 				"Gate/full: applicable commands have captured output, alignment and code review ran",
+			},
+		},
+		{
+			name: "check-validation defines guard-visible evidence",
+			path: "playbooks/check-validation.md",
+			required: []string{
+				"Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output",
+				"so the commit-time guard can find them",
+				"Validation is append-only from an entry's first commit",
+				"**Proof re-execution contract**",
 			},
 		},
 		{
@@ -254,6 +270,7 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 		"mirrored check row",
 		"check_id: ULID",
 		"latest_run_id",
+		"lifecycle rows",
 	}
 
 	for _, tt := range tests {
