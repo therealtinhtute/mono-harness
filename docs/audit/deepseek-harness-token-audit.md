@@ -132,10 +132,12 @@ The Go contract assertions protect these instructions and reject the former read
 | Named initiative, missing plan | Stopped before checks or writes |
 | Named initiative, `planned` phase | Stopped before checks or writes |
 | Named initiative, `done` phase | Stopped before checks or writes |
-| Two active plans, one matching initiative | Failed: agent filtered by initiative and proceeded. Corrected preflight to count every non-empty active plan before matching, explicitly stopping even when only one matches. Updated contract assertions pass; agent rerun remains unverified. |
-| Explicit review; `checked` phase; simulated stale summary after compaction | Runtime usage limit prevented completion; no passing behavior claim |
+| Two active plans, one matching initiative | Initial wording failed: agent filtered by initiative and proceeded. After explicitly requiring the total active-plan count before matching, a fresh run listed both plans and stopped without resolving a mode, running checks, or writing state. |
+| Named initiative, `checked` phase | Stopped before checks or writes; reported the required closing/reconciliation step |
+| Explicit review with an unstarted plan | Review passed; fixture diff unchanged |
+| Simulated stale summary after compaction | Re-read the on-disk phase/Current State, rejected the stale `in-progress` summary because both now read `checked`, and stopped before checks or writes |
 
-The stale-summary fixture says `in-progress` in the prompt while the on-disk phase is `checked`; an actual runtime compaction was not exercised. Six cases passed, one exposed the corrected ambiguity, and three were incomplete. Contract tests pass with the corrected playbook and reject the previous PR wording in an isolated negative control. Go build/vet/tests and doc links pass; guard fixtures report 40 passed, with the optional legacy Bash 3.x probe skipped because that interpreter is absent. No token-saving result follows from these routing checks.
+The stale-summary fixture says `in-progress` in the prompt while the on-disk phase is `checked`; an actual runtime compaction was not exercised. The initial run had six passes, one ambiguity, and three cases interrupted by the runtime usage limit. After the usage reset, fresh runs passed the corrected multiple-plan case and the three interrupted cases: all ten scenarios now have passing observations, with the original failure retained above. Contract tests pass with the corrected playbook and reject the previous PR wording in an isolated negative control. Go build/vet/tests and doc links pass; guard fixtures report 40 passed, with the optional legacy Bash 3.x probe skipped because that interpreter is absent. No token-saving result follows from these routing checks.
 
 Still open for routing:
 
