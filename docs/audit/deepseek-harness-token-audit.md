@@ -112,15 +112,34 @@ Character counts show where context grows, not an exact share of the token bill.
 | **Bounded tool output + phase context + selective delegation** | Hits context length and call count; keeps independent review | Needs accurate checkpoints and A/B measurement | **Preferred pilot** |
 | Put everything on one agent | Less delegation/reporting | Main keeps growing; loses division of work and independent review | Independent bounded tasks |
 
-### S1. Choose the execution path before loading documents
+### S1. Classify intent before loading initiative state
 
 Authority: [AGENTS.md](../../AGENTS.md) and [README.md](../../README.md) allow bounded changes without a plan.
 
-**Bug found and fixed alongside this audit.** `skills/workflow/work/SKILL.md` defaulted to `mode:auto` and advertised `phase`, but the work playbook defined only `full` and `bounded`, and its precondition required an active plan in every mode — contradicting the bounded zero-write rule. Fix: [work.md](../playbooks/work.md) lines 9-15 now define `auto` (resolve to `full` only when the request names or continues a durable initiative, otherwise `bounded` when none of the bounded rejection conditions at line 19 apply, otherwise route to `brainstorm`/`to-plan`), scope the one-active-plan precondition to full mode, and the skill's argument hint lists `auto|full|bounded|simple`. `check` got the same fix: it defaulted to durable `full`, so a bare pre-commit `/check` after bounded work demanded an active plan; `auto` now resolves to `gate` only for an in-progress initiative phase, otherwise `bounded`, never `full`. Both stages print `mode: {resolved} ({reason})` before reading any plan. The embedded playbook copies are byte-identical.
+**Bug found and fixed alongside this audit.** `skills/workflow/work/SKILL.md` defaulted to `mode:auto` and advertised `phase`, but the work playbook defined only `full` and `bounded`, and its precondition required an active plan in every mode — contradicting the bounded zero-write rule. [Work's Preconditions and Modes](../playbooks/work.md#preconditions-and-modes) now define `auto`, scope the one-active-plan precondition to full mode, and retain bounded rejection conditions. Work can announce its mode from initiative intent before reading a plan.
+
+`check` previously defaulted to durable `full`, so a bare pre-commit `/check` after bounded work demanded an active plan. [Check's Preconditions and Modes](../playbooks/check.md#preconditions-and-modes) now resolve direct changes outside an initiative to `bounded` without a plan read. Initiative-intent `auto` reads the selected phase and Current State first, validates a matching sole active plan and consistent `in-progress` state, then announces `gate` before checks or writes. Missing, ambiguous, mismatched, or invalid initiative state stops with an explanation instead of falling back to bounded. After compaction, those sections must be re-read. Explicit response-only modes retain their intent; `full` remains explicit. The embedded playbook copies are byte-identical.
+
+The Go contract assertions protect these instructions and reject the former read-order and fallback wording. They do not execute an agent or prove routing behavior. Behavioral verification must separately record the runtime/model, prompt, tool trace, resolved mode or blocker, and before/after fixture diff for direct requests with no plan or an unrelated plan, valid initiative continuation, missing or multiple plans, invalid phase status, explicit response-only modes, and resume after compaction.
+
+**Routing smoke observations (2026-09-15):** Codex CLI 0.154.0, configured model `gpt-6-astra`, fresh ephemeral sessions in disposable git repositories. Each fixture used this check playbook, a pending `message.txt` correction from `helo` to `hello`, a tiny-lane verification command, and the plan state listed below. Prompts requested `check auto for the greeting initiative, phase verify` except the direct-change and explicit-review cases. Tool traces and fixture diffs were inspected; these are local observations, not CI behavior tests or a cross-runtime benchmark.
+
+| Fixture / request | Observation |
+|---|---|
+| Direct change, no plan | Bounded; no plan reads or durable writes |
+| Direct change, unrelated active plan | Bounded; no plan reads or durable writes |
+| Named initiative, `in-progress` phase | Read phase/Current State before mode announcement; gate passed; Validation appended and both statuses became `checked` |
+| Named initiative, missing plan | Stopped before checks or writes |
+| Named initiative, `planned` phase | Stopped before checks or writes |
+| Named initiative, `done` phase | Stopped before checks or writes |
+| Two active plans, one matching initiative | Failed: agent filtered by initiative and proceeded. Corrected preflight to count every non-empty active plan before matching, explicitly stopping even when only one matches. Updated contract assertions pass; agent rerun remains unverified. |
+| Explicit review; `checked` phase; simulated stale summary after compaction | Runtime usage limit prevented completion; no passing behavior claim |
+
+The stale-summary fixture says `in-progress` in the prompt while the on-disk phase is `checked`; an actual runtime compaction was not exercised. Six cases passed, one exposed the corrected ambiguity, and three were incomplete. Contract tests pass with the corrected playbook and reject the previous PR wording in an isolated negative control. Go build/vet/tests and doc links pass; guard fixtures report 40 passed, with the optional legacy Bash 3.x probe skipped because that interpreter is absent. No token-saving result follows from these routing checks.
 
 Still open for routing:
 
-- `check` `auto` selects bounded for a direct diff and reserves `full` for an explicit initiative review ([check.md](../playbooks/check.md) lines 5 and 10); `handoff` without a plan should return a recap only.
+- `handoff` without a plan should return a recap only.
 - Put bounded guidance first with a clear stop-reading point; load the full section only when selected.
 - Subtasks of a durable initiative still update the plan through the orchestrator. Bounded fixes are not exempt from final review or requirement changes.
 
@@ -153,7 +172,7 @@ Already enforced by the playbooks — do not re-add:
 - One Progress flush per wave, immediate flush on a blocker: [work.md](../playbooks/work.md) lines 46-48.
 - Pass/fail output tails (3 lines on pass, 10 on fail) with the exit code preserved: [check.md](../playbooks/check.md) line 38.
 - Complete `full` review exactly once, on the final phase: [check.md](../playbooks/check.md) line 5.
-- Re-read the plan after compaction or summarization: [work.md](../playbooks/work.md) line 15, [check.md](../playbooks/check.md) line 15, [handoff.md](../playbooks/handoff.md) line 10.
+- Re-read required plan state after compaction or summarization: [work preconditions](../playbooks/work.md#preconditions-and-modes), [check preconditions](../playbooks/check.md#preconditions-and-modes), [handoff preconditions](../playbooks/handoff.md#preconditions).
 
 Still proposed:
 
