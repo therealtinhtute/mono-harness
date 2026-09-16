@@ -3,7 +3,7 @@
 ## Status
 
 Accepted. 2026-09-08. Authority for the externally observable behavior changes
-in `docs/plans/active/audit-integrity-remediation.md` (F01, F04, F05, F06, F07).
+in `docs/plans/completed/audit-integrity-remediation.md` (F01, F04, F05, F06, F07).
 Narrows the "consumer bytes are never destroyed" claim in
 `cli/internal/installer/uninstall.go` from an assertion into an enforced rule.
 
