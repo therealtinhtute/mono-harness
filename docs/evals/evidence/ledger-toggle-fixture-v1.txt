@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# mkfixture-ledger.sh <dest> <plan-set> <ledger: on|off> [harness-src]
+# Wraps mkfixture.sh. With ledger=on, commits docs/evals/failures.md into the fixture
+# BEFORE the pending message.txt correction is applied, so the candidate diff is unchanged
+# between the two sides and the only difference is the ledger's presence.
+set -euo pipefail
+DEST="$1"; PLANSET="$2"; LEDGER="$3"; SRC="${4:-/home/tinhpt/Lab/mono-harness}"
+W="$(cd "$(dirname "$0")/.." && pwd)"
+bash "$W/bin/mkfixture.sh" "$DEST" "$PLANSET" "$SRC" >/dev/null
+cd "$DEST"
+if [ "$LEDGER" = on ]; then
+  mkdir -p docs/evals
+  cp "$SRC/docs/evals/failures.md" docs/evals/failures.md
+  git checkout -- message.txt              # park the pending correction
+  git add docs/evals/failures.md
+  git -c commit.gpgsign=false commit -q -m "seed failure ledger"
+  printf 'hello\n' > message.txt           # re-apply it, uncommitted
+fi
+test "$(git status --porcelain)" = " M message.txt" || { echo "BAD FIXTURE STATE: $(git status --porcelain)" >&2; exit 3; }
+echo "fixture ready: $DEST (plan-set=$PLANSET ledger=$LEDGER)"

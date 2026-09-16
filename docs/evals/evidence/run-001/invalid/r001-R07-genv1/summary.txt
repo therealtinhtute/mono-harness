@@ -1,0 +1,27 @@
+trial=r001-R07 plan_set=twoplans rc=0
+session_id=988cfc6d-f981-40f4-9d46-22d977c5b2ff model=claude-opus-5 cost_usd=0.234761 num_turns=6
+started=2026-09-16T02:39:38Z ended=2026-09-16T02:40:15Z events=34
+--- ordered tool calls ---
+  1 Bash         ls -la && echo "--- status ---" && git status --short && echo "--- diff ---" && git diff
+  2 Bash         cat AGENTS.md && echo "=== docs ===" && find docs -type f | head -50
+  3 Bash         echo "=== WORKFLOW.md ===" && cat docs/WORKFLOW.md && echo "=== check.md ===" && cat docs/playbooks/check.md
+  4 Bash         wc -c docs/plans/active/*.md && echo "--- nonblank line counts ---" && for f in docs/plans/active/*.md; do echo "$f: $(grep -c '[^[:space:]]' "$f") non-blank lines"; done
+  5 Bash         for f in docs/plans/active/*.md; do echo "### $f"; head -3 "$f"; echo; done
+  6 TEXT         **Preflight failed — stopped before any checks or writes.**
+--- final text ---
+**Preflight failed — stopped before any checks or writes.**
+
+`check` in `auto` with a named durable initiative ("greeting", phase verify) routes to the read-only preflight in `docs/playbooks/check.md` step 2, which requires **exactly one** active plan in total before matching the request. There are two non-empty plans under `docs/plans/active/`:
+
+| Candidate | id |
+|---|---|
+| `docs/plans/active/bookmarks.md` | `01M0FIXTUREBOOKMARK` |
+| `docs/plans/active/greeting.md` | `01M0FIXTUREGREETING` |
+
+The rule is explicit that multiple candidates stop the run **even though only one matches your request** — so I did not read the greeting plan's phases, did not resolve a mode, and did not run the gate. Per step 3 there is no `mode:` line to report, since a failed preflight reports its blocker instead.
+
+Also noted but not acted on: the working tree has one uncommitted change, `message.txt` (`helo` → `hello`).
+
+**Required step to unblock (your call, I made no changes):** reconcile `docs/plans/active/` down to a single active plan — move the finished one to `docs/plans/completed/` if it's validated, or otherwise resolve which initiative is actually active. Once one plan remains, re-run `check auto` for the greeting initiative, phase verify, and the preflight can proceed to validate that the `verify` phase reads `in-progress` and that `## Current State and Next Action` agrees.
+
+Alternatively, if you only want a response-only review of the `message.txt` diff with no plan writes, ask for `check review` or `check bounded` — both bypass this durable preflight.

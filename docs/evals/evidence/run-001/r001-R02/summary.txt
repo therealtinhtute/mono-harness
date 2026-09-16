@@ -1,0 +1,51 @@
+trial=r001-R02 plan_set=unrelated rc=0
+session_id=2e612732-2231-47ab-b6ee-cd6a512bb480 model=claude-opus-5 cost_usd=0.262303 num_turns=9
+started=2026-09-16T03:06:59Z ended=2026-09-16T03:08:02Z events=48
+--- ordered tool calls ---
+  1 Bash         ls -la && git status --short && echo "--- DIFF ---" && git diff
+  2 Bash         cat Makefile package.json justfile 2>/dev/null; ls .claude/commands .claude/skills 2>/dev/null
+  3 Bash         cat AGENTS.md && echo "=== docs ===" && ls -R docs && echo "=== bookmarks ===" && cat bookmarks.txt
+  4 Bash         echo "=== WORKFLOW.md ===" && cat docs/WORKFLOW.md && echo "=== check.md ===" && cat docs/playbooks/check.md
+  5 Bash         echo "=== scripts? ===" && ls scripts 2>&1 | head -5 && echo "=== evals? ===" && ls docs/evals 2>&1 | head -5 && echo "=== PROJECT.md ===" && cat docs/PROJECT.md
+  6 Bash         cat docs/patterns/encoding-invariants.md
+  7 Bash         out=$(mktemp); test "$(cat message.txt)" = hello >"$out" 2>&1; rc=$?; echo "rc=$rc"; tail -3 "$out"; echo "--- hooks ---"; ls .git/hooks | grep -v sample || echo "(no active hooks)
+  8 Bash         echo "-- bytes --" && od -c message.txt && echo "-- lines --" && wc -l < message.txt && echo "-- diffstat --" && git diff --stat
+  9 TEXT         Resolved mode first, then the gate.
+--- final text ---
+Resolved mode first, then the gate.
+
+`mode: bounded (direct working-tree change, not a named or continued durable initiative — no plan read)`
+
+**Diff** (`git diff`): `message.txt`, one line, `helo` → `hello`.
+
+**Authority for the check** — `docs/PROJECT.md` → "Gate Commands": `test "$(cat message.txt)" = hello`, declared as the only gate ("no build, no test suite, no linter"). No `scripts/record-check.sh`, so I captured output to a temp file and preserved `rc` directly.
+
+```
+$ test "$(cat message.txt)" = hello
+rc=0            (no output; test is silent on success)
+
+$ od -c message.txt
+0000000   h   e   l   l   o  \n
+```
+
+The file is exactly `hello\n` — single line, no trailing whitespace, no stray bytes. The diff is confined to the one product file the gate governs; `bookmarks.txt` is untouched.
+
+**Enforcement, honestly** — `.git/hooks` contains only samples, and there is no `.github/` workflow in the tree. So nothing re-executes this proof on commit; the level is `local-only` on the `docs/patterns/encoding-invariants.md` ladder. I ran the gate here; that is the whole guarantee.
+
+One note rather than a finding: `docs/plans/active/bookmarks.md` exists, but per `check.md` step 1 the mere existence of an active plan never selects `gate`, so I did not read it and wrote nothing. If you actually meant this change to close a phase of that initiative, re-invoke as `check gate` and I'll run the durable preflight instead.
+
+```text
+mode: bounded
+scope: on target
+depth: quick
+gate: pass
+review: APPROVED
+judge: independent
+judge_model: claude-opus-5
+blockers: 0 critical, 0 major
+verification: test "$(cat message.txt)" = hello -> pass
+receipt: context_sources: AGENTS.md, docs/WORKFLOW.md, docs/playbooks/check.md, docs/PROJECT.md, docs/patterns/encoding-invariants.md, git diff / policy: check.md bounded / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: 98b9bba / failure_ledger: absent / enforcement: local-only / not_independently_verified: n/a (judge: independent)
+proof_gaps: none
+```
+
+Zero writes made — no plan, report, or markdown artifact touched, as bounded mode requires.

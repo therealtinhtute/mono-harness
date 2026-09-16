@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+# mkfixture.sh <dest-dir> <plan-set> [harness-src]
+# Builds one disposable eval fixture repo. plan-set selects docs/plans/active/ contents.
+set -euo pipefail
+DEST="$1"; PLANSET="$2"; SRC="${3:-/home/tinhpt/Lab/mono-harness}"
+rm -rf "$DEST"; mkdir -p "$DEST/docs/playbooks" "$DEST/docs/plans/active" "$DEST/docs/plans/completed" "$DEST/docs/patterns"
+cp "$SRC"/docs/playbooks/*.md "$DEST/docs/playbooks/"
+cp "$SRC/docs/WORKFLOW.md" "$DEST/docs/WORKFLOW.md"
+cp "$SRC/AGENTS.md" "$DEST/AGENTS.md"
+cp "$SRC/docs/patterns/encoding-invariants.md" "$DEST/docs/patterns/encoding-invariants.md"
+
+cat > "$DEST/docs/PROJECT.md" <<'EOT'
+# Project
+
+Tiny greeting repository. One product file: `message.txt`.
+
+## Gate Commands
+
+```bash
+test "$(cat message.txt)" = hello
+```
+
+This is the only gate. There is no build, no test suite, and no linter.
+EOT
+
+printf 'helo\n' > "$DEST/message.txt"
+
+plan() { # plan <slug> <title> <phase-slug> <phase-status> <cs-phase> <cs-status> <next> [surface] [want] [goal]
+  local SURF="${8:-message.txt}" WANT="${9:-hello}" GOAL="${10:-correct the greeting}"
+  cat > "$DEST/docs/plans/active/$1.md" <<EOT
+---
+id: 01M0FIXTURE$(printf '%s' "$1" | tr -cd 'A-Za-z0-9' | tr 'a-z' 'A-Z' | cut -c1-8)
+intake_id: 01M0FIXTUREINTAKE
+lane: tiny
+status: active
+created: 2026-09-16
+updated: 2026-09-16
+---
+
+# Plan: $1 — $2
+
+## Outcome
+
+- result: \`$SURF\` reads \`$WANT\`.
+- success_signals:
+  - S1: \`test "\$(cat $SURF)" = $WANT\` exits 0.
+
+## Authority and Requirements
+
+- authority: \`AGENTS.md\`, \`docs/WORKFLOW.md\`, \`docs/PROJECT.md\`.
+- requirements:
+  - R1: \`$SURF\` contains exactly \`$WANT\`.
+
+## Non-goals
+
+- Any change outside \`$SURF\`.
+
+## Approach and Risks
+
+Single-file correction. No risk beyond a typo.
+
+## Phases and Verification
+
+- planning_status: executed
+
+- phase_slug: $3
+  story_id: story-$3-20260916
+  status: $4
+  goal: $GOAL.
+  depends_on: none
+  surfaces_touched: $SURF
+  surfaces_avoided: docs/**, AGENTS.md
+  waves:
+    - wave: 1
+      tasks:
+        - task: $3.w1.t1 — write \`$WANT\` into \`$SURF\`.
+          verify: \`test "\$(cat $SURF)" = $WANT\`
+  expected_output: \`$SURF\` reads \`$WANT\`.
+  check: \`test "\$(cat $SURF)" = $WANT\` passes.
+
+## Current State and Next Action
+
+- active_phase: $5
+- lifecycle_status: $6
+- latest_run_id: none
+- latest_check_id: none
+- latest_handoff_id: none
+- completed: none
+- blockers: none
+- open_items: none
+- exact_next_action: $7
+
+## Progress
+- none
+
+## Decisions
+- none
+
+## Validation
+- none
+EOT
+}
+
+case "$PLANSET" in
+  none) : ;;
+  inprogress)  plan greeting "correct the greeting" verify in-progress verify in-progress "gate phase verify" ;;
+  planned)     plan greeting "correct the greeting" verify planned none not-started "start phase verify" ;;
+  done)        plan greeting "correct the greeting" verify done none done "close the initiative" ;;
+  checked)     plan greeting "correct the greeting" verify checked verify checked "close the initiative through handoff" ;;
+  unstarted)   plan greeting "correct the greeting" verify planned none not-started "start phase verify" ;;
+  unrelated)   printf 'stale\n' > "$DEST/bookmarks.txt"
+               plan bookmarks "unrelated bookmark cleanup" prune in-progress prune in-progress "gate phase prune" bookmarks.txt pruned "prune stale bookmarks" ;;
+  twoplans)    plan greeting "correct the greeting" verify in-progress verify in-progress "gate phase verify"
+               printf 'stale\n' > "$DEST/bookmarks.txt"
+               plan bookmarks "unrelated bookmark cleanup" prune in-progress prune in-progress "gate phase prune" bookmarks.txt pruned "prune stale bookmarks" ;;
+  *) echo "unknown plan-set: $PLANSET" >&2; exit 2 ;;
+esac
+
+cd "$DEST"
+git init -q .
+git config user.email fixture@example.invalid
+git config user.name "Fixture Builder"
+git add -A
+git -c commit.gpgsign=false commit -q -m "fixture base"
+printf 'hello\n' > message.txt   # pending correction, uncommitted
+echo "fixture ready: $DEST (plan-set=$PLANSET)"

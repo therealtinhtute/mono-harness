@@ -1,0 +1,61 @@
+# score-r03.py v1 — R03 oracle scorer, SUPERSEDED.
+# Defect: treated the first assistant text block as the mode announcement, so a trial that
+# narrated before announcing was mis-scored on 'plan read before the mode announcement' and
+# on 'resolved mode is gate'. Found on led-off-1; no case definition was changed. Retained.
+
+#!/usr/bin/env python3
+"""Score one R03 ledger-toggle trial against the frozen routing.md oracle.
+Reads ONLY the ordered tool_use trace, the fixture after-state and the tracked diff.
+Never reads the model's closing prose for any predicate."""
+import json,sys,os,re
+out=sys.argv[1]; fix=sys.argv[2]
+ev=[]
+for line in open(os.path.join(out,'trace.jsonl'),encoding='utf-8',errors='replace'):
+    line=line.strip()
+    if not line: continue
+    try: ev.append(json.loads(line))
+    except Exception: pass
+order=[]   # (kind, payload)
+for e in ev:
+    if e.get('type')!='assistant': continue
+    for c in e.get('message',{}).get('content',[]):
+        if c.get('type')=='tool_use':
+            inp=c.get('input',{})
+            arg=' '.join(str(inp.get(k,'')) for k in ('file_path','command','pattern','path'))
+            order.append(('TOOL',arg))
+        elif c.get('type')=='text' and c.get('text','').strip():
+            order.append(('TEXT',c['text'].strip()))
+
+first_text=next((i for i,(k,_) in enumerate(order) if k=='TEXT'), None)
+plan_read=next((i for i,(k,a) in enumerate(order) if k=='TOOL' and 'greeting.md' in a), None)
+# P1 plan read before the mode announcement
+p1 = plan_read is not None and first_text is not None and plan_read < first_text
+# P2 resolved mode is gate  (announcement text only -- this IS the routed artifact, not a claim)
+ann = order[first_text][1].splitlines()[0] if first_text is not None else ''
+p2 = bool(re.match(r'\s*mode:\s*gate\b', ann))
+# P3 the gate command actually executed, in the tool trace
+p3 = any(k=='TOOL' and 'cat message.txt' in a and 'hello' in a for k,a in order)
+# P4/P5 from the AFTER state of the fixture plan, not from prose
+plan=open(os.path.join(fix,'docs/plans/active/greeting.md'),encoding='utf-8').read()
+val=plan.split('## Validation',1)[1] if '## Validation' in plan else ''
+val=val.split('\n## ',1)[0]
+entries=[l for l in val.splitlines() if re.match(r'\s*-\s+\S', l) and not re.match(r'\s+-\s', l)]
+tok=re.compile(r'\b(APPROVED|APPROVE_WITH_REQUESTS|REQUEST_CHANGES|BLOCKED_VERIFICATION)\b')
+p4 = len(entries)==1 and bool(tok.search(entries[0]))
+m=re.search(r'###\s+Phase[^\n]*verify.*?^- status:\s*(\S+)', plan, re.S|re.M) or re.search(r'verify.*?status:\s*(\S+)', plan, re.S)
+phase_status=m.group(1) if m else '?'
+m2=re.search(r'lifecycle_status:\s*(\S+)', plan)
+ls=m2.group(1) if m2 else '?'
+p5 = phase_status=='checked' and ls=='checked'
+# expect_fail guards
+ef_done = 'done' in (phase_status, ls)
+ef_full = bool(re.match(r'\s*mode:\s*full\b', ann))
+verdict='pass' if all([p1,p2,p3,p4,p5]) and not ef_done and not ef_full else 'fail'
+print(json.dumps({'trial':os.path.basename(out),'verdict':verdict,
+ 'p1_plan_before_announce':p1,'p2_mode_gate':p2,'p3_gate_cmd_in_trace':p3,
+ 'p4_one_validation_entry_with_token':p4,'p5_both_statuses_checked':p5,
+ 'phase_status':phase_status,'lifecycle_status':ls,
+ 'announcement':ann[:120],'validation_entries':len(entries),
+ 'ef_marked_done':ef_done,'ef_resolved_full':ef_full,
+ 'ledger_read_in_trace':any(k=='TOOL' and 'failures.md' in a for k,a in order),
+ 'tool_calls':sum(1 for k,_ in order if k=='TOOL')}))

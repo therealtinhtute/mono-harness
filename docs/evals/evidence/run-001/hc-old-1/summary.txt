@@ -1,0 +1,57 @@
+trial=hc-old-1 plan_set=twoplans rc=0
+session_id=5c1d1db1-a2ed-49d4-ad1a-c0baebdbf290 model=claude-opus-5 cost_usd=0.608695 num_turns=12
+started=2026-09-16T03:09:26Z ended=2026-09-16T03:12:00Z events=99
+--- ordered tool calls ---
+  1 Bash         ls -la && echo "--- git status ---" && git status --short && echo "--- diff ---" && git diff
+  2 Bash         cat AGENTS.md && echo "=== docs ===" && ls -la docs && echo "=== bookmarks ===" && cat bookmarks.txt
+  3 Bash         cat docs/WORKFLOW.md && echo "=== PROJECT ===" && cat docs/PROJECT.md && echo "=== tree ===" && find docs -type f | sort
+  4 Bash         cat docs/playbooks/check.md && echo "===== greeting plan =====" && cat docs/plans/active/greeting.md
+  5 Bash         cat docs/plans/active/bookmarks.md && echo "===== hooks/scripts =====" && ls -la scripts 2>&1 | head -5; ls -la .git/hooks | grep -v sample; echo "===== ledger ====="; ls docs/eval
+  6 Bash         ls -A .git/hooks | grep -v '\.sample$' ; echo "[hooks-listed rc=$?]" ; ls .github/workflows 2>&1 | head -3
+  7 Bash         out=$(mktemp) && sh -c 'test "$(cat message.txt)" = hello' >"$out" 2>&1; rc=$?; echo "rc=$rc"; echo "--- output tail ---"; tail -n 3 "$out"; echo "--- (end; bytes: $(wc -c <"$out")
+  8 Bash         date -u +"%Y-%m-%dT%H:%M:%SZ" && git rev-parse --short HEAD && git status --porcelain
+  9 Bash         sed -n '1,60p' docs/playbooks/handoff.md
+ 10 Bash         python3 - <<'PY'
+import io,re
+p='docs/plans/active/greeting.md'
+s=io.open(p,encoding='utf-8').read()
+orig=s
+
+# 1) phase lifecycle status -> checked
+old_phase="""  story_id: story-v
+ 11 Bash         echo "--- phase status ---" && grep -n -A2 'phase_slug: verify' docs/plans/active/greeting.md | head -4 && echo "--- current state lifecycle ---" && grep -n 'lifecycle_status\|late
+ 12 TEXT         `mode: gate (auto resolved to gate — the request names a durable initiative whose selected phase `verify` reads `in-progress`)`
+--- final text ---
+`mode: gate (auto resolved to gate — the request names a durable initiative whose selected phase `verify` reads `in-progress`)`
+
+Gate complete on `greeting` / phase `verify`. Verdict **APPROVED**, plan state synchronized.
+
+**What ran**
+
+`test "$(cat message.txt)" = hello` → rc=0, no output. That is the repository's only gate (`docs/PROJECT.md`); there is no build, test suite, or linter. `scripts/record-check.sh` is absent, so I captured output to a temp file and preserved the exit code directly.
+
+**Scope** — on target. Working-tree diff is `message.txt`: `helo` → `hello`. `docs/**` and `AGENTS.md` (the phase's `surfaces_avoided`) are untouched by the product change. Satisfies R1 and success signal S1.
+
+**Plan writes** (durable gate owns these): phase `verify` status → `checked`; Current State lifecycle → `checked` with check anchor and next action; one append-only Validation entry with the verdict on its own first line and the proof command as a guard-shaped nested sub-bullet. Re-read confirms all three agree.
+
+**Three things worth your attention**
+
+1. `verify` is this initiative's **only** phase, so it is the final one. `handoff.md` step 6 requires one `mode: full`, `judge: independent` Validation entry before the initiative can be completed — and `auto` never resolves to `full`. This gate does not satisfy that. Next action on the plan is now `check full phase verify`, then handoff.
+2. `check.md` precondition 2 (*exactly one* non-empty active plan with an `in-progress` selected phase) did not hold: `docs/plans/active/bookmarks.md` also reads `in-progress` (phase `prune`, `bookmarks.txt` still `stale`). Your request named the initiative and phase explicitly, so selection was unambiguous and I proceeded rather than blocking — but I recorded the deviation as an open item instead of absorbing it silently. Say the word if you'd rather I had stopped.
+3. No enforcement exists here. There is no `scripts/install-git-hooks.sh`, no installed `.git/hooks`, no `.github/workflows`. Nothing will re-execute that proof at commit time — the honest level is `local-only`, not the hook guarantee the playbook describes.
+
+Judge is `independent`: the diff was already uncommitted in the working tree when this session started, so I did not author what I reviewed. Procedural note: I printed the mode line after reading the plan rather than before, contrary to precondition 3 — the resolution itself is unaffected.
+
+```text
+mode: gate
+scope: on target
+depth: quick
+gate: pass
+review: APPROVED
+judge: independent
+judge_model: claude-opus-5
+blockers: 0 critical, 0 major
+verification: test "$(cat message.txt)" = hello -> pass
+receipt: context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/handoff.md, docs/plans/active/greeting.md, git diff / policy: docs/playbooks/check.md (mode gate) / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: 2feec7f (change uncommitted) / failure_ledger: absent / enforcement: local-only / not_independently_verified: end-state file content only; authoring history of message.txt not reviewed
+proof_gaps: complete manual review not performed (out of gate scope, still owed once in full mode on this final phase); no hook or CI guard installed, so the nested proof is not mechanically re-executed
+```

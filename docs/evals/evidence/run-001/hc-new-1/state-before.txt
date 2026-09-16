@@ -1,0 +1,16 @@
+ M message.txt
+--- sha256 ---
+903516b7e4db5b99e5d526629a2e4ff60ef773124aeb5ce5cd8c4f30a11e4886  ./AGENTS.md
+44ea8ede9025c26663124ceeefca2a35e40e5021cd116e436d368e2deae3355e  ./bookmarks.txt
+6899142835a2e92fdc6b20a0f1961629ed80a6b6a0ff4e81155546f465aa4153  ./docs/patterns/encoding-invariants.md
+2797d3cc6ad785451c2d5b3c2a916c5353a1994d140aee3bead91c33980b42b7  ./docs/plans/active/bookmarks.md
+a976ad65b63fda140443a05accc20c6eff8d0121cb3302d8d63179fa1cf453c1  ./docs/plans/active/greeting.md
+4a2976cd7f2c1ae3ab759239811620631e2d40f9f6864731b2ca9d13785e4cee  ./docs/playbooks/brainstorm.md
+ba5f3281c382cf2cf3a07810995e4e836eca10a75562624655d97e12cff16c4d  ./docs/playbooks/check.md
+b33fac4c326c77dede4648b1725b610f17f724280dc7bad909ce8757a1aa2c3d  ./docs/playbooks/handoff.md
+ed13fb08869c1d620227326ff78060afde69e206e224065efb76ee32e3be391b  ./docs/playbooks/to-plan.md
+57669e6768c9b45976b3085052c9f5f16eff5e1b63bac60f1e2e4db40220e2d2  ./docs/playbooks/watzup.md
+00ad32e4114ab31f661815500628c265241dd77dcde5a4acc9322c950df28e82  ./docs/playbooks/work.md
+181aff29274acae7457f4917ebf43e375bfda328c248927e778d5a9c373c2a3e  ./docs/PROJECT.md
+6370169f37298b9fc18739da33eb3f16d8fe5871051ec1f8b4003dd54db1b9d9  ./docs/WORKFLOW.md
+5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03  ./message.txt

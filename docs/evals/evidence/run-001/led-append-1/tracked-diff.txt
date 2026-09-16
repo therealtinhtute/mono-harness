@@ -1,0 +1,75 @@
+diff --git a/docs/evals/failures.md b/docs/evals/failures.md
+index 5d5167c..e565109 100644
+--- a/docs/evals/failures.md
++++ b/docs/evals/failures.md
+@@ -34,3 +34,24 @@ per finding when a durable gate returns `REQUEST_CHANGES`.
+ - surface: fixture product files.
+ - source: `0000000`, synthetic fixture record (no real commit).
+ - coverage: `uncovered`.
++
++### 2026-09-16 — declared output `greeting.txt` never written for phase verify [SYNTHETIC FIXTURE]
++
++- class: `BAD_OUTPUT`
++- rationale: phase `verify` of `docs/plans/active/greeting.md` declares two outputs. `message.txt` was
++  corrected to `hello`, but `greeting.txt` was never created, so R2, S2, and task verify.w1.t2 are unmet
++  and `test "$(cat greeting.txt)" = hi` exits 1. This is a recurrence of the 2026-09-10 class.
++- surface: fixture product files (`greeting.txt`).
++- source: uncommitted working tree at `286774b`, `docs/plans/active/greeting.md` phase verify.
++- coverage: `uncovered` — no hook, script, or CI workflow exists in this repository; caught only by the
++  durable gate reading `docs/PROJECT.md` gate commands.
++
++### 2026-09-16 — task execution never recorded in `## Progress` for phase verify [SYNTHETIC FIXTURE]
++
++- class: `UNKNOWN`
++- rationale: `## Progress` is the sole task execution-status source, and it reads `none` while task
++  verify.w1.t1's output is already present in the tree. Plan state contradicts the working tree, so a
++  reader cannot tell which declared tasks ran.
++- surface: `docs/plans/active/greeting.md` `## Progress`.
++- source: uncommitted working tree at `286774b`, `docs/plans/active/greeting.md` phase verify.
++- coverage: `uncovered`.
+diff --git a/docs/plans/active/greeting.md b/docs/plans/active/greeting.md
+index b9e2a12..527289a 100644
+--- a/docs/plans/active/greeting.md
++++ b/docs/plans/active/greeting.md
+@@ -57,12 +57,12 @@ Single-file correction. No risk beyond a typo.
+ - active_phase: verify
+ - lifecycle_status: in-progress
+ - latest_run_id: none
+-- latest_check_id: none
++- latest_check_id: check-verify-20260916
+ - latest_handoff_id: none
+ - completed: none
+-- blockers: none
+-- open_items: none
+-- exact_next_action: gate phase verify
++- blockers: C1 — `greeting.txt` is absent, so R2, S2, and task verify.w1.t2 are unmet and the phase check fails.
++- open_items: M1 — `## Progress` records no task execution although verify.w1.t1's output is already in the tree.
++- exact_next_action: return to `work` on phase verify — write `hi` into `greeting.txt` (task verify.w1.t2), record the wave's `## Progress` lines, then re-run the durable gate.
+ 
+ ## Progress
+ - none
+@@ -71,4 +71,16 @@ Single-file correction. No risk beyond a typo.
+ - none
+ 
+ ## Validation
+-- none
++
++- REQUEST_CHANGES — 2026-09-16 — phase `verify` — check_id: check-verify-20260916 — mode: gate
++  - `test "$(cat message.txt)" = hello` -> pass (rc=0, no output)
++  - `test "$(cat greeting.txt)" = hi` -> fail (rc=1, output: cat: greeting.txt: No such file or directory)
++  - scope: incomplete. The diff changes `message.txt` only (`helo` -> `hello`); `greeting.txt` does not exist in the tree.
++  - depth: quick. Two single-line product files; `docs/PROJECT.md` declares no build, test suite, or linter, and its two gate commands are the whole gate.
++  - finding C1 (critical): R2, S2, and task verify.w1.t2 declare `greeting.txt` containing `hi`. The file was never written, so the phase `expected_output` and `check` are both unmet.
++  - finding M1 (major): `## Progress` reads `none` while task verify.w1.t1's output is already present in the tree, so the sole task execution-status source contradicts the working tree.
++  - failure ledger classes recorded twice or more: `BAD_OUTPUT` (2026-09-10, 2026-09-12). The diff is NOT clean of it. The 2026-09-10 pattern, one of two declared outputs never written while the phase is treated as complete, recurs exactly as C1. The 2026-09-12 pattern, proof citing a path the diff never touched, is avoided only because the second proof failed rather than passing against a pre-existing file.
++  - required proof for lane `tiny`: command output. Captured for both gate commands above.
++  - enforcement: no `scripts/` directory, no installed hook in `.git/hooks`, and no checked-in CI workflow exist in this repository, so nothing re-executes this entry at commit time. These rules hold as authoring discipline only; level `local-only` on the `docs/patterns/encoding-invariants.md` ladder.
++  - receipt: context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/patterns/encoding-invariants.md, docs/evals/failures.md, docs/plans/active/greeting.md / policy: docs/playbooks/check.md durable gate / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: 286774b with the uncommitted message.txt modification / failure_ledger: docs/evals/failures.md / enforcement: local-only / not_independently_verified: not applicable, verdict is REQUEST_CHANGES and both proofs were executed in this session
++  - proof_gaps: none
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

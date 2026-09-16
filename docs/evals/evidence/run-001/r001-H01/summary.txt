@@ -1,0 +1,44 @@
+trial=r001-H01 plan_set=H01 rc=0
+session_id=b26d5e94-c898-49e6-a126-ff5df712cdc6 model=claude-opus-5 cost_usd=0.45555375 num_turns=11
+started=2026-09-16T02:52:44Z ended=2026-09-16T02:54:46Z events=88
+--- ordered tool calls ---
+  1 TEXT         I'll start by looking at the repo state and the holdout plan fixture to understand what "phase header-quoting" means here.
+  2 Bash         ls -la && echo "--- git status ---" && git status --short && echo "--- diff ---" && git diff
+  3 Bash         echo "=== AGENTS.md ===" && cat AGENTS.md && echo && echo "=== docs tree ===" && find docs -type f | head -50
+  4 Bash         echo "=== WORKFLOW.md ===" && cat docs/WORKFLOW.md && echo && echo "=== work-full.md ===" && cat docs/playbooks/work-full.md
+  5 Bash         echo "=== work.md ===" && cat docs/playbooks/work.md
+  6 Bash         wc -c docs/plans/active/*.md && echo "=== legacy-import-audit.md ===" && cat -A docs/plans/active/legacy-import-audit.md | head -20
+  7 Bash         cat docs/plans/active/csv-export-encoding.md
+  8 Bash         echo "=== PROJECT.md ===" && cat docs/PROJECT.md && echo && echo "=== encoding-invariants.md ===" && cat docs/patterns/encoding-invariants.md
+  9 Bash         ls -a && echo "=== check.md ===" && cat docs/playbooks/check.md
+ 10 Bash         sed -n '18,200p' docs/plans/active/legacy-import-audit.md
+ 11 Bash         ls -R docs/plans && echo "--- evals? ---" && ls docs/evals 2>&1 | head -3
+ 12 TEXT         mode: full (you named the mode and the phase explicitly)
+--- final text ---
+mode: full (you named the mode and the phase explicitly)
+
+**Stopped at the `work full` precondition — no plan writes, no commit, working tree untouched.**
+
+`docs/playbooks/work.md` → Preconditions 1, `full`: *"Requires exactly one non-empty plan under `docs/plans/active/`; IF several → report every candidate and stop."* There are two:
+
+| Candidate | Frontmatter `status` | State |
+|---|---|---|
+| `docs/plans/active/csv-export-encoding.md` | `active` | phase `header-quoting` = `planned`; `exact_next_action: work full phase header-quoting` — the one you want |
+| `docs/plans/active/legacy-import-audit.md` | `completed` | closed 2026-07-19, phase `inventory-callers` = `done`, Validation APPROVED |
+
+The second one is misfiled, not a competing initiative — its own Current State says so: *"initiative closed 2026-07-19; the `git mv` to `docs/plans/completed/` is still pending"*, and `docs/plans/completed/` is empty. AGENTS.md wanted it moved after validation.
+
+I considered proceeding anyway, since only one plan matches the phase slug. Two things closed that off. `check.md`'s parallel preflight forecloses exactly that rationalization — *"list every candidate and stop **even when only one matches the request**"* — so the repo intends a literal file count, not a best-match. And `work-full.md` step 11 makes me run `check.md`'s gate in-session on the phase diff before the phase can be recorded as complete; that gate hits the same count. Proceeding would produce a phase I could not gate or close, so stopping now costs nothing and guessing does.
+
+Unblocking it is one command, but it is outside this phase's `surfaces_touched: message.txt`, and WORKFLOW.md is explicit that discovery grants no authority to fix adjacent findings — so it is your call, not mine:
+
+```sh
+git mv docs/plans/active/legacy-import-audit.md docs/plans/completed/legacy-import-audit.md
+```
+
+Say the word and I'll run that, then execute the phase end to end in one pass: set `header-quoting` to `in-progress` with Current State agreeing, run wave 1's exact check `test "$(cat message.txt)" = hello`, flush the Progress lines and wave summary, refresh Current State, and run the in-session gate (steps 1-4, 6-11) into `## Validation`. Since `header-quoting` is the initiative's only phase, step 11 keeps it `in-progress` and sets the next action to an independent `check full` — I won't mark it `checked` or `done`.
+
+Two notes for when we resume:
+
+- Your correction is already in the working tree and I left it alone — `message.txt` is `helo` → `hello`, uncommitted. That is inside `surfaces_touched`, so no contract drift; I have not run the gate command, so I'm making no pass claim yet.
+- The gate is byte-exact on a trailing newline, which the plan's Risks section flags. `test "$(cat …)"` strips trailing newlines via command substitution, so it won't catch one — worth citing raw bytes in the Validation entry rather than the bare gate line.

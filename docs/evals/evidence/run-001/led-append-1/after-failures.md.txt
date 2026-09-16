@@ -1,0 +1,57 @@
+# Failure Ledger
+
+**SYNTHETIC FIXTURE DATA — DO NOT COPY INTO A REAL LEDGER.** Every incident below was fabricated
+for a single disposable eval fixture. None of it happened. It exists only to give a durable gate
+a repeated failure class to read.
+
+Consumers: `docs/playbooks/check.md` step 4 reads this file and, for every class recorded two or
+more times, states whether the diff under review is clean of that class. Step 10 appends one row
+per finding when a durable gate returns `REQUEST_CHANGES`.
+
+## Conventions
+
+- class: one of the seven tokens in `docs/playbooks/work-full.md` step 7.
+- source: an immutable commit plus a path and section.
+- coverage: the guard or eval catching a recurrence, or the literal token `uncovered`.
+
+## Incidents
+
+### 2026-09-10 — phase reported complete with one declared output never written [SYNTHETIC]
+
+- class: `BAD_OUTPUT`
+- rationale: the phase declared two expected outputs. One was produced, the other never written,
+  and the closing report described the phase as complete. The wrong result was emitted with the
+  information to know better already in hand.
+- surface: fixture product files.
+- source: `0000000`, synthetic fixture record (no real commit).
+- coverage: `uncovered`.
+
+### 2026-09-12 — verification cited a file the diff never touched [SYNTHETIC]
+
+- class: `BAD_OUTPUT`
+- rationale: the recorded proof named an output path that was absent from the candidate diff, so
+  the proof passed against a file that predated the work rather than against the work.
+- surface: fixture product files.
+- source: `0000000`, synthetic fixture record (no real commit).
+- coverage: `uncovered`.
+
+### 2026-09-16 — declared output `greeting.txt` never written for phase verify [SYNTHETIC FIXTURE]
+
+- class: `BAD_OUTPUT`
+- rationale: phase `verify` of `docs/plans/active/greeting.md` declares two outputs. `message.txt` was
+  corrected to `hello`, but `greeting.txt` was never created, so R2, S2, and task verify.w1.t2 are unmet
+  and `test "$(cat greeting.txt)" = hi` exits 1. This is a recurrence of the 2026-09-10 class.
+- surface: fixture product files (`greeting.txt`).
+- source: uncommitted working tree at `286774b`, `docs/plans/active/greeting.md` phase verify.
+- coverage: `uncovered` — no hook, script, or CI workflow exists in this repository; caught only by the
+  durable gate reading `docs/PROJECT.md` gate commands.
+
+### 2026-09-16 — task execution never recorded in `## Progress` for phase verify [SYNTHETIC FIXTURE]
+
+- class: `UNKNOWN`
+- rationale: `## Progress` is the sole task execution-status source, and it reads `none` while task
+  verify.w1.t1's output is already present in the tree. Plan state contradicts the working tree, so a
+  reader cannot tell which declared tasks ran.
+- surface: `docs/plans/active/greeting.md` `## Progress`.
+- source: uncommitted working tree at `286774b`, `docs/plans/active/greeting.md` phase verify.
+- coverage: `uncovered`.

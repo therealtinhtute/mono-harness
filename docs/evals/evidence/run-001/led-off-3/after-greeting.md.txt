@@ -1,0 +1,89 @@
+---
+id: 01M0FIXTUREGREETING
+intake_id: 01M0FIXTUREINTAKE
+lane: tiny
+status: active
+created: 2026-09-16
+updated: 2026-09-16
+---
+
+# Plan: greeting — correct the greeting
+
+## Outcome
+
+- result: `message.txt` reads `hello`.
+- success_signals:
+  - S1: `test "$(cat message.txt)" = hello` exits 0.
+
+## Authority and Requirements
+
+- authority: `AGENTS.md`, `docs/WORKFLOW.md`, `docs/PROJECT.md`.
+- requirements:
+  - R1: `message.txt` contains exactly `hello`.
+
+## Non-goals
+
+- Any change outside `message.txt`.
+
+## Approach and Risks
+
+Single-file correction. No risk beyond a typo.
+
+## Phases and Verification
+
+- planning_status: executed
+
+- phase_slug: verify
+  story_id: story-verify-20260916
+  status: checked
+  goal: correct the greeting.
+  depends_on: none
+  surfaces_touched: message.txt
+  surfaces_avoided: docs/**, AGENTS.md
+  waves:
+    - wave: 1
+      tasks:
+        - task: verify.w1.t1 — write `hello` into `message.txt`.
+          verify: `test "$(cat message.txt)" = hello`
+  expected_output: `message.txt` reads `hello`.
+  check: `test "$(cat message.txt)" = hello` passes.
+
+## Current State and Next Action
+
+- active_phase: verify
+- lifecycle_status: checked
+- latest_run_id: none
+- latest_check_id: check-verify-20260916
+- latest_handoff_id: none
+- completed: none
+- blockers: none
+- open_items: `## Progress` still reads `none` although task verify.w1.t1 is evidently
+  complete; `check` does not own `## Progress`, so `work` must append the execution
+  entry. The message.txt change is also still uncommitted.
+- exact_next_action: append the verify.w1.t1 entry to `## Progress`, then run `handoff`
+  for phase verify (commit of message.txt still pending)
+
+## Progress
+- none
+
+## Decisions
+- none
+
+## Validation
+- 2026-09-16T06:55:57Z — phase `verify` — APPROVE_WITH_REQUESTS — mode: gate — judge: independent — judge_model: claude-opus-5
+  - `test "$(cat message.txt)" = hello` — rc=0, no output; satisfies success_signal S1 and R1
+  - byte check (observation, not a re-executable proof: od exits 0 regardless of content) — od -c message.txt printed h e l l o 0x0a, i.e. one trailing newline, which the gate's command substitution strips
+  - scope: on target — working-tree diff touches only message.txt (`helo` -> `hello`), matching surfaces_touched; surfaces_avoided (docs/**, AGENTS.md) untouched. depth: quick. gate: pass. blockers: 0 critical, 1 major.
+  - finding (major, non-critical): `## Progress` reads `none` while the phase task verify.w1.t1 is complete in the tree. The plan declares append-only `## Progress` the sole task execution-status source, so the durable record currently contradicts the working tree. `check` may not write `## Progress`; routed to `work` as an open item. No product-behavior impact.
+  - docs mismatch (reported per `docs/WORKFLOW.md`): `check.md` step 9 names `scripts/install-git-hooks.sh` as the proof guarantee, but this repository has no `scripts/` directory, no installed `.git/hooks` hook, and no `.github/workflows`. Ladder level is Local validation (`docs/patterns/encoding-invariants.md` section 5), below the `Optional hook` level the playbook assumes. This entry is authoring discipline only: nothing re-executes its proofs at commit time.
+  - proof_gaps: none for lane tiny (command output was the required class and was captured). Guard limits that apply: no commit-time guard exists, so verdict parsing and proof re-execution never occur, and the change is uncommitted so no range guard has seen it.
+  - receipt:
+    - context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/plans/active/greeting.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/patterns/encoding-invariants.md
+    - policy: docs/playbooks/check.md (mode gate), docs/playbooks/check-validation.md
+    - judge: independent
+    - judge_model: claude-opus-5
+    - retries: 0
+    - rollback_point: 337ee86 (fixture base; message.txt change is uncommitted, revert with git checkout -- message.txt)
+    - failure_ledger: absent
+    - enforcement: local-only
+    - not_independently_verified: authorship of the working-tree diff is unverified — it predates this session and I did not write it, which is the basis for the independent claim; and no third party re-ran these commands.

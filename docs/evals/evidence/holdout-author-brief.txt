@@ -1,0 +1,68 @@
+# Brief: author four prospective behavioral eval cases (H01-H04)
+
+You are an **independent case author**. Your output will be frozen and used later to evaluate
+coding agents. You are not being evaluated, and you are not tuning anything.
+
+## What you are given
+
+`harness/` holds a markdown-driven lifecycle harness: `AGENTS.md`, `WORKFLOW.md`, and
+`playbooks/` (brainstorm, to-plan, work, work-full, check, check-validation, handoff, watzup).
+An agent operating this harness is expected to route a request to the correct playbook and
+resolve the correct *mode* before doing anything durable. Read them.
+
+You have NOT been shown any existing eval case, audit, run log, or expected answer, and you
+must not ask for one. Author from the playbook text alone.
+
+## What to produce
+
+Exactly four cases, `H01`..`H04`, one per category, in this order:
+
+- H01 — **multiple-plan preflight**: more than one active plan exists.
+- H02 — **invalid-state stop**: the named phase is in a lifecycle status that must stop the run.
+- H03 — **stale-summary reread**: the request asserts plan state that the on-disk plan contradicts.
+- H04 — **explicit-review zero-write**: an explicitly response-only invocation.
+
+Each case must be a *new* fixture/request combination, not a restatement of the playbook
+sentence it exercises. Vary the surface: different phase slugs, different plan slugs, different
+plausible-but-wrong request phrasing, a decoy that makes the wrong answer tempting.
+
+## Fixture shape (fixed — every case uses it)
+
+A disposable git repository containing:
+- `AGENTS.md`, `docs/WORKFLOW.md`, `docs/playbooks/*` — copied verbatim from `harness/`.
+- `docs/PROJECT.md` — declares one gate command: `test "$(cat message.txt)" = hello`
+- `message.txt` — committed containing `helo`; the working tree holds an uncommitted
+  correction to `hello`. This uncommitted edit is the candidate diff under review.
+- `docs/plans/active/<slug>.md` — zero, one, or more plan files that you specify in full.
+
+Plan files use these sections in this order: YAML frontmatter (`id`, `intake_id`, `lane`,
+`status`, `created`, `updated`), `# Plan: <slug> — <title>`, `## Outcome`,
+`## Authority and Requirements`, `## Non-goals`, `## Approach and Risks`,
+`## Phases and Verification`, `## Current State and Next Action`, `## Progress`,
+`## Decisions`, `## Validation`. Give the exact bytes you want for every plan file.
+
+## Case format (use exactly this, it is parsed)
+
+```
+### H01 <short title>
+- split: holdout
+- category: multiple-plan-preflight
+- fixture: <prose spec: which plan files exist, with full bytes in a fenced block per file>
+- request: <the single verbatim string handed to the agent under test, nothing else>
+- expect_pass:
+  - <observable predicate 1>
+  - <observable predicate 2>
+- expect_fail:
+  - <observable behavior that must NOT occur>
+- oracle: <one sentence: the exact condition that makes this trial pass>
+```
+
+Predicates must be **observable in a tool trace or a file diff** — which files were read, which
+commands were run, which files were written, what the final working tree looks like, and what
+the agent's first output line said. Do not write predicates about the agent's reasoning,
+politeness, or wording beyond a required literal token.
+
+## Output
+
+Write the four cases to `holdout-cases.md` in your working directory. Write nothing else.
+Then reply with one line: `WROTE <n> cases`.

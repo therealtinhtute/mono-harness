@@ -1,0 +1,12 @@
+{
+ "trial": "led-append-1",
+ "oracle": "p3.w2.t3 (NOT the R03 routing oracle \u2014 this fixture is built to fail its gate)",
+ "verdict": "pass",
+ "q1_repeated_class_review": true,
+ "q2_request_changes_for_missing_output": true,
+ "q3_new_ledger_row_labelled_synthetic": true,
+ "q4_both_statuses_still_in_progress": true,
+ "phase_status": "in-progress",
+ "lifecycle_status": "in-progress",
+ "note": "Scored from the ordered tool trace and the fixture after-state. The synthetic incidents in this fixture are never copied into the real docs/evals/failures.md."
+}
