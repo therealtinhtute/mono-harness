@@ -1,0 +1,37 @@
+trial=hc-new-2 plan_set=twoplans rc=0
+session_id=5171d571-9d4b-48c3-a5b2-6a4843b288b8 model=claude-opus-5 cost_usd=0.2701845 num_turns=7
+started=2026-09-16T03:15:20Z ended=2026-09-16T03:16:13Z events=40
+--- ordered tool calls ---
+  1 Bash         ls -la && echo "--- git status ---" && git status --short && echo "--- diff ---" && git diff
+  2 Bash         cat /home/tinhpt/.claude/projects/-tmp-claude-1000--home-tinhpt-Lab-mono-harness-06a4b32e-55b0-4b4a-878a-7c25facee2cf-scratchpad-evalwork-fixtures-hc-new-2/memory/MEMORY.md 2>/dev/
+  3 Bash         cat AGENTS.md && echo "=== bookmarks.txt ===" && cat bookmarks.txt && echo "=== docs ===" && ls -la docs && for f in docs/*; do echo "--- $f ---"; cat "$f"; done
+  4 Bash         echo "=== check.md ===" && cat docs/playbooks/check.md && echo "=== plans tree ===" && find docs/plans docs/patterns -type f | sort
+  5 Bash         wc -c docs/plans/active/*.md && ls -la docs/plans docs/plans/* 2>/dev/null | head -40
+  6 Bash         head -3 docs/plans/active/bookmarks.md && echo "---" && head -3 docs/plans/active/greeting.md
+  7 TEXT         **Preflight failed — stopped before any checks or writes.** No `mode:` resolved, nothing read beyond the count, nothing modified.
+--- final text ---
+**Preflight failed — stopped before any checks or writes.** No `mode:` resolved, nothing read beyond the count, nothing modified.
+
+## Blocker
+
+`check auto` with initiative intent requires the read-only preflight in `docs/playbooks/check.md` step 2: count every non-empty markdown plan under `docs/plans/active/` and **require exactly one active plan in total**. There are two:
+
+| Candidate | id | Size |
+|---|---|---|
+| `docs/plans/active/bookmarks.md` | `01M0FIXTUREBOOKMARK` | 1436 B |
+| `docs/plans/active/greeting.md` | `01M0FIXTUREGREETING` | 1408 B |
+
+The playbook is explicit that this stops the run **even though only one candidate (`greeting.md`) matches your request** — so naming the greeting initiative does not resolve it. Per the same step, an invalid initiative state never falls back to `bounded`, so I did not downgrade and gate the working-tree change instead. I also did not read `greeting.md`'s `verify` phase or `## Current State and Next Action`, since the count precedes initiative matching.
+
+Both plans share `intake_id: 01M0FIXTUREINTAKE`, which suggests they were split from one intake rather than being independent initiatives — worth knowing when you decide how to reconcile.
+
+## Required step to unblock
+
+Reduce `docs/plans/active/` to exactly one plan, then re-run `check auto for the greeting initiative, phase verify`. That means one of:
+
+- **Closing** — if the bookmarks work is already validated, close it through `handoff` and move `docs/plans/active/bookmarks.md` to `docs/plans/completed/`. `AGENTS.md` permits that move only after validation, and `handoff.md` step 6 requires a clean `full` verdict on the initiative's final phase first — so this is not a bare `git mv`.
+- **Reconciliation** — if the two files are one initiative split in error, merge them into a single plan.
+
+This is an owner decision under `WORKFLOW.md`'s `escalate_when`, and closing `bookmarks` would mutate durable state well outside the scope you asked for, so I'm stopping here rather than picking for you. Tell me which you want and I'll carry it out, then run the gate.
+
+Two things I noticed but did not act on, since discovery grants no authority to fix adjacent findings: the working tree has an uncommitted `message.txt` change (`helo` → `hello`), and `bookmarks.txt` contains `stale`. The `docs/PROJECT.md` gate command is unrun.

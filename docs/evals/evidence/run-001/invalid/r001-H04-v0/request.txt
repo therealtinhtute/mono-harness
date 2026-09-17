@@ -1,0 +1,1 @@
+check review the uncommitted message.txt fix against phase trim-trailing's check — Current State says the gate is next, so give me the verdict.

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# mkholdout.sh <dest-dir> <case-id H01..H04> <cases-file> [harness-src]
+set -euo pipefail
+DEST="$1"; CASE="$2"; CASES="$3"; SRC="${4:-/home/tinhpt/Lab/mono-harness}"
+bash "$(dirname "$0")/mkfixture.sh" "$DEST" none "$SRC" >/dev/null
+python3 - "$DEST" "$CASE" "$CASES" <<'PY'
+import sys,os,re
+dest,case,cases=sys.argv[1:4]
+txt=open(cases,encoding='utf-8').read()
+secs=re.split(r'(?m)^### (H\d\d)[^\n]*\n', txt)
+blocks={secs[i]:secs[i+1] for i in range(1,len(secs),2)}
+body=blocks[case]
+# stop at the next case is already handled by split
+files=re.findall(r'(?m)^File: `([^`]+)`\s*\n+```\n(.*?)\n```', body, re.S)
+assert files, f"no files found for {case}"
+for path,content in files:
+    p=os.path.join(dest,path); os.makedirs(os.path.dirname(p),exist_ok=True)
+    open(p,'w',encoding='utf-8').write(content+"\n")
+    print("wrote",path,len(content))
+req=re.search(r'(?m)^- request: `(.+)`\s*$', body)
+assert req, f"no request for {case}"
+open(os.path.join(dest,'..',f'{case}.request.txt'),'w').write(req.group(1))
+PY
+cd "$DEST"
+# the base fixture already left message.txt modified to 'hello' in the working tree;
+# commit ONLY the plan files so that pending correction survives as the candidate diff.
+git add docs/plans
+git -c commit.gpgsign=false commit -q -m "holdout plan fixture $CASE"
+test "$(git status --porcelain)" = " M message.txt" || { echo "BAD FIXTURE STATE: $(git status --porcelain)" >&2; exit 3; }
+echo "holdout fixture ready: $DEST ($CASE)"

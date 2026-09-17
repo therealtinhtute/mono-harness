@@ -1,0 +1,87 @@
+---
+id: 01M0FIXTUREGREETING
+intake_id: 01M0FIXTUREINTAKE
+lane: tiny
+status: active
+created: 2026-09-16
+updated: 2026-09-16
+---
+
+# Plan: greeting — correct the greeting
+
+## Outcome
+
+- result: `message.txt` reads `hello`.
+- success_signals:
+  - S1: `test "$(cat message.txt)" = hello` exits 0.
+
+## Authority and Requirements
+
+- authority: `AGENTS.md`, `docs/WORKFLOW.md`, `docs/PROJECT.md`.
+- requirements:
+  - R1: `message.txt` contains exactly `hello`.
+
+## Non-goals
+
+- Any change outside `message.txt`.
+
+## Approach and Risks
+
+Single-file correction. No risk beyond a typo.
+
+## Phases and Verification
+
+- planning_status: executed
+
+- phase_slug: verify
+  story_id: story-verify-20260916
+  status: checked
+  goal: correct the greeting.
+  depends_on: none
+  surfaces_touched: message.txt
+  surfaces_avoided: docs/**, AGENTS.md
+  waves:
+    - wave: 1
+      tasks:
+        - task: verify.w1.t1 — write `hello` into `message.txt`.
+          verify: `test "$(cat message.txt)" = hello`
+  expected_output: `message.txt` reads `hello`.
+  check: `test "$(cat message.txt)" = hello` passes.
+
+## Current State and Next Action
+
+- active_phase: verify
+- lifecycle_status: checked
+- latest_run_id: none
+- latest_check_id: check-verify-20260916
+- latest_handoff_id: none
+- completed: none
+- blockers: none
+- open_items: none
+- exact_next_action: handoff to close phase verify (see `docs/playbooks/handoff.md`)
+
+## Progress
+- none
+
+## Decisions
+- none
+
+## Validation
+
+- [2026-09-16] phase `verify` — APPROVED — mode: gate — judge: independent — judge_model: claude-opus-5
+  - `test "$(cat message.txt)" = hello` — rc=0, no output (S1, and the phase `check`)
+  - scope: on target — the diff is `message.txt` only (`helo` to `hello`); `surfaces_avoided` (`docs/**`, `AGENTS.md`) untouched and Non-goals respected.
+  - depth: quick — one-line single-file correction; blast radius is the sole product file.
+  - plan alignment: satisfies R1 and the phase `expected_output`; no drift, no unplanned surface.
+  - failure ledger: read `docs/evals/failures.md`; no class is recorded two or more times (MISSING_CONTEXT, LOST_DECISION, BAD_OUTPUT, UNKNOWN each appear once), so no per-class clean-of statement is owed.
+  - proof_gaps: `## Progress` is empty, so task `verify.w1.t1` has no recorded execution entry for the diff to be cross-checked against; the outcome rests on the command above alone. No hook and no CI is installed here (no `scripts/`, no non-sample `.git/hooks/`), so this entry's proof will never be re-executed at commit time. Per this playbook, `judge: independent` is testimony: the diff was already in the working tree at session start and was not authored in this session, but nothing in the repository establishes that.
+  - receipt:
+    - context_sources: `AGENTS.md`, `docs/WORKFLOW.md`, `docs/PROJECT.md`, `docs/playbooks/check.md`, `docs/playbooks/check-validation.md`, `docs/patterns/encoding-invariants.md`, `docs/evals/failures.md`, `docs/plans/active/greeting.md`
+    - policy: `docs/playbooks/check.md` — `auto` resolved to `gate`
+    - judge: independent
+    - judge_model: claude-opus-5
+    - retries: 0
+    - rollback_point: 331a7d0
+    - failure_ledger: docs/evals/failures.md
+    - enforcement: local-only
+    - not_independently_verified: the provenance of the diff's authorship, and task execution for `verify.w1.t1` (absent `## Progress` record)

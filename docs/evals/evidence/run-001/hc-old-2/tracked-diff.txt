@@ -1,0 +1,67 @@
+diff --git a/docs/plans/active/greeting.md b/docs/plans/active/greeting.md
+index 6449811..f5b92db 100644
+--- a/docs/plans/active/greeting.md
++++ b/docs/plans/active/greeting.md
+@@ -35,7 +35,7 @@ Single-file correction. No risk beyond a typo.
+ 
+ - phase_slug: verify
+   story_id: story-verify-20260916
+-  status: in-progress
++  status: checked
+   goal: correct the greeting.
+   depends_on: none
+   surfaces_touched: message.txt
+@@ -51,14 +51,14 @@ Single-file correction. No risk beyond a typo.
+ ## Current State and Next Action
+ 
+ - active_phase: verify
+-- lifecycle_status: in-progress
++- lifecycle_status: checked
+ - latest_run_id: none
+-- latest_check_id: none
++- latest_check_id: check-verify-20260916T031406Z
+ - latest_handoff_id: none
+ - completed: none
+ - blockers: none
+-- open_items: none
+-- exact_next_action: gate phase verify
++- open_items: M1 — phase verify has no append-only Progress record for task verify.w1.t1 and latest_run_id is none, while message.txt is already corrected in the working tree; task execution status cannot be established from Progress, which is its sole source. check does not own Progress and cannot repair it.
++- exact_next_action: run check full on final phase verify (handoff.md step 6 requires one clean full verdict before closing), then handoff
+ 
+ ## Progress
+ - none
+@@ -67,4 +67,26 @@ Single-file correction. No risk beyond a typo.
+ - none
+ 
+ ## Validation
+-- none
++
++- verdict: APPROVE_WITH_REQUESTS — mode: gate — phase: verify — 2026-09-16T03:14:06Z
++  - `test "$(cat message.txt)" = hello` -> exit 0; captured output empty (0 bytes); repository gate from docs/PROJECT.md and the phase check line
++  - resolution: check auto resolved to gate — request named durable initiative greeting and phase verify, which read in-progress
++  - scope: on target — working-tree diff touches message.txt only; surfaces_avoided (docs/**, AGENTS.md) untouched; bookmarks.txt not modified by this diff
++  - depth: quick — single-line, single-file change on lane tiny
++  - requirements: R1 satisfied; S1 satisfied by the command above; Non-goals respected
++  - required_proof for lane tiny: command output — present and captured
++  - findings: 0 critical, 1 major
++  - M1 (major, plan alignment): Progress reads none and latest_run_id reads none, yet the phase task verify.w1.t1 is already reflected in the working tree. Progress is the sole task-execution-status source and check may not write it, so the execution record is missing and must be repaired by work before closure.
++  - judge: independent — the diff was present in the working tree at session start and was not authored by this reviewing agent
++  - judge_model: claude-opus-5
++  - proof_gaps: no required proof class is missing for lane tiny. Non-class gaps: (a) no pre-commit hook and no CI workflow exist in this repository, so no guard re-executes the nested proof above — enforcement is local-only, the Optional hook level is not even reached; (b) judge: independent is a declaration, not a proof — nothing mechanically establishes that the diff's author and this reviewer differ; (c) the diff is uncommitted, so no committed range has been guarded; (d) check.md precondition 2 asks for exactly one active plan with an in-progress selected phase, and two exist (greeting, bookmarks) — the user's explicit naming of greeting/verify disambiguated selection, and bookmarks was left untouched.
++  - receipt:
++    - context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/patterns/encoding-invariants.md, docs/plans/active/greeting.md, git diff of message.txt
++    - policy: docs/playbooks/check.md durable gate
++    - judge: independent
++    - judge_model: claude-opus-5
++    - retries: 0
++    - rollback_point: 2a17cd21c690f60c9aa10f5bf48031f410277d2b
++    - failure_ledger: absent
++    - enforcement: local-only
++    - not_independently_verified: the provenance of the working-tree edit cannot be reconstructed from history, so the independent judge declaration rests on session evidence alone; no second reviewer examined this entry.
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

@@ -1,0 +1,1 @@
+fixture ready: /tmp/claude-1000/-home-tinhpt-Lab-mono-harness/06a4b32e-55b0-4b4a-878a-7c25facee2cf/scratchpad/evalwork/fixtures/r001-R03 (plan-set=inprogress)

@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# mkfixture-append.sh <dest> [harness-src]
+# R03-derived fixture for the ledger-append observation (p3.w2.t3).
+# - a SYNTHETIC ledger carrying two BAD_OUTPUT incidents (repeated class)
+# - a plan whose phase requires TWO outputs; only message.txt is in the candidate diff
+# - the ordinary message check still passes, so the gate must fail on the missing output alone
+set -euo pipefail
+DEST="$1"; SRC="${2:-/home/tinhpt/Lab/mono-harness}"
+W="$(cd "$(dirname "$0")/.." && pwd)"
+bash "$W/bin/mkfixture.sh" "$DEST" inprogress "$SRC" >/dev/null
+cd "$DEST"
+git checkout -- message.txt
+
+mkdir -p docs/evals
+cat > docs/evals/failures.md <<'LED'
+# Failure Ledger
+
+**SYNTHETIC FIXTURE DATA — DO NOT COPY INTO A REAL LEDGER.** Every incident below was fabricated
+for a single disposable eval fixture. None of it happened. It exists only to give a durable gate
+a repeated failure class to read.
+
+Consumers: `docs/playbooks/check.md` step 4 reads this file and, for every class recorded two or
+more times, states whether the diff under review is clean of that class. Step 10 appends one row
+per finding when a durable gate returns `REQUEST_CHANGES`.
+
+## Conventions
+
+- class: one of the seven tokens in `docs/playbooks/work-full.md` step 7.
+- source: an immutable commit plus a path and section.
+- coverage: the guard or eval catching a recurrence, or the literal token `uncovered`.
+
+## Incidents
+
+### 2026-09-10 — phase reported complete with one declared output never written [SYNTHETIC]
+
+- class: `BAD_OUTPUT`
+- rationale: the phase declared two expected outputs. One was produced, the other never written,
+  and the closing report described the phase as complete. The wrong result was emitted with the
+  information to know better already in hand.
+- surface: fixture product files.
+- source: `0000000`, synthetic fixture record (no real commit).
+- coverage: `uncovered`.
+
+### 2026-09-12 — verification cited a file the diff never touched [SYNTHETIC]
+
+- class: `BAD_OUTPUT`
+- rationale: the recorded proof named an output path that was absent from the candidate diff, so
+  the proof passed against a file that predated the work rather than against the work.
+- surface: fixture product files.
+- source: `0000000`, synthetic fixture record (no real commit).
+- coverage: `uncovered`.
+LED
+
+python3 - <<'PY'
+import io
+p='docs/plans/active/greeting.md'
+s=io.open(p,encoding='utf-8').read()
+s=s.replace("""- result: `message.txt` reads `hello`.
+- success_signals:
+  - S1: `test "$(cat message.txt)" = hello` exits 0.""",
+"""- result: `message.txt` reads `hello` and `greeting.txt` reads `hi`.
+- success_signals:
+  - S1: `test "$(cat message.txt)" = hello` exits 0.
+  - S2: `test "$(cat greeting.txt)" = hi` exits 0.""")
+s=s.replace("""  - R1: `message.txt` contains exactly `hello`.""",
+"""  - R1: `message.txt` contains exactly `hello`.
+  - R2: `greeting.txt` exists and contains exactly `hi`. The phase is not complete without it.""")
+s=s.replace("- Any change outside `message.txt`.","- Any change outside `message.txt` and `greeting.txt`.")
+s=s.replace("  surfaces_touched: message.txt","  surfaces_touched: message.txt, greeting.txt")
+s=s.replace("""        - task: verify.w1.t1 — write `hello` into `message.txt`.
+          verify: `test "$(cat message.txt)" = hello`""",
+"""        - task: verify.w1.t1 — write `hello` into `message.txt`.
+          verify: `test "$(cat message.txt)" = hello`
+        - task: verify.w1.t2 — write `hi` into `greeting.txt`.
+          verify: `test "$(cat greeting.txt)" = hi`""")
+s=s.replace("""  expected_output: `message.txt` reads `hello`.
+  check: `test "$(cat message.txt)" = hello` passes.""",
+"""  expected_output: `message.txt` reads `hello` AND `greeting.txt` reads `hi`.
+  check: `test "$(cat message.txt)" = hello` passes AND `test "$(cat greeting.txt)" = hi` passes.""")
+io.open(p,'w',encoding='utf-8').write(s)
+PY
+
+python3 - <<'PY'
+import io
+p='docs/PROJECT.md'; s=io.open(p,encoding='utf-8').read()
+s=s.replace('test "$(cat message.txt)" = hello',
+            'test "$(cat message.txt)" = hello\ntest "$(cat greeting.txt)" = hi')
+io.open(p,'w',encoding='utf-8').write(s)
+PY
+
+git add -A
+git -c commit.gpgsign=false commit -q -m "fixture base with synthetic ledger and two declared outputs"
+printf 'hello\n' > message.txt     # the candidate diff: ONE of the two declared outputs
+test "$(git status --porcelain)" = " M message.txt" || { echo "BAD FIXTURE STATE: $(git status --porcelain)" >&2; exit 3; }
+echo "fixture ready: $DEST (append observation; greeting.txt absent by design)"

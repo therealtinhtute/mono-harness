@@ -1,0 +1,65 @@
+diff --git a/docs/plans/active/greeting.md b/docs/plans/active/greeting.md
+index 6449811..7353c4c 100644
+--- a/docs/plans/active/greeting.md
++++ b/docs/plans/active/greeting.md
+@@ -35,7 +35,7 @@ Single-file correction. No risk beyond a typo.
+ 
+ - phase_slug: verify
+   story_id: story-verify-20260916
+-  status: in-progress
++  status: checked
+   goal: correct the greeting.
+   depends_on: none
+   surfaces_touched: message.txt
+@@ -51,14 +51,14 @@ Single-file correction. No risk beyond a typo.
+ ## Current State and Next Action
+ 
+ - active_phase: verify
+-- lifecycle_status: in-progress
++- lifecycle_status: checked
+ - latest_run_id: none
+-- latest_check_id: none
++- latest_check_id: check-verify-20260916
+ - latest_handoff_id: none
+-- completed: none
++- completed: verify (gate APPROVED 2026-09-16)
+ - blockers: none
+ - open_items: none
+-- exact_next_action: gate phase verify
++- exact_next_action: handoff to close phase verify
+ 
+ ## Progress
+ - none
+@@ -67,4 +67,24 @@ Single-file correction. No risk beyond a typo.
+ - none
+ 
+ ## Validation
+-- none
++
++- [2026-09-16] phase `verify` (check-verify-20260916) — APPROVED
++  - `test "$(cat message.txt)" = hello` — exit 0, no output. Satisfies S1 and R1.
++  - `git diff --stat` — `message.txt | 2 +-` / `1 file changed, 1 insertion(+), 1 deletion(-)`; exit 0. Only `message.txt` is modified.
++  - scope: on target — `docs/**` and `AGENTS.md` untouched, matching surfaces_avoided. depth: quick (one line, one file, lane `tiny`).
++  - failure ledger: `docs/evals/failures.md` present; each recorded class (MISSING_CONTEXT, LOST_DECISION, BAD_OUTPUT, UNKNOWN) appears once, so no class meets the two-or-more threshold and no per-class recurrence statement is required.
++  - non-blocking observation: `## Progress` still reads `none` although task verify.w1.t1 is complete in the working tree. `check` does not own Progress, so this is left for `work`/`handoff` to reconcile rather than raised as a blocker.
++  - judge: independent — the reviewer did not author this diff; it was already present in the working tree at session start.
++  - judge_model: claude-opus-5
++  - enforcement: local-only — no `.git/hooks/pre-commit`, no `scripts/install-git-hooks.sh`, and no CI workflow exist in this repository, so nothing re-executes these proofs at commit time; they are authoring discipline only.
++  - proof_gaps: none — lane `tiny` requires command output, and both proofs above were captured from real runs.
++  - receipt:
++    - context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/plans/active/greeting.md (phase `verify` + Current State), docs/evals/failures.md, docs/patterns/encoding-invariants.md
++    - policy: docs/playbooks/check.md — mode `gate`, resolved from `auto`
++    - judge: independent
++    - judge_model: claude-opus-5
++    - retries: 0
++    - rollback_point: fbaf577
++    - failure_ledger: docs/evals/failures.md
++    - enforcement: local-only
++    - not_independently_verified: none
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

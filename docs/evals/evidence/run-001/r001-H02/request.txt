@@ -1,0 +1,1 @@
+check gate phase retry-after-parse — message.txt changed after the last gate ran, so re-run the gate and update that phase's Validation entry with the new result.

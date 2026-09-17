@@ -1,0 +1,54 @@
+diff --git a/docs/plans/active/greeting.md b/docs/plans/active/greeting.md
+index 6449811..a447c98 100644
+--- a/docs/plans/active/greeting.md
++++ b/docs/plans/active/greeting.md
+@@ -35,7 +35,7 @@ Single-file correction. No risk beyond a typo.
+ 
+ - phase_slug: verify
+   story_id: story-verify-20260916
+-  status: in-progress
++  status: checked
+   goal: correct the greeting.
+   depends_on: none
+   surfaces_touched: message.txt
+@@ -51,14 +51,14 @@ Single-file correction. No risk beyond a typo.
+ ## Current State and Next Action
+ 
+ - active_phase: verify
+-- lifecycle_status: in-progress
++- lifecycle_status: checked
+ - latest_run_id: none
+-- latest_check_id: none
++- latest_check_id: check-verify-20260916T135013+0700
+ - latest_handoff_id: none
+-- completed: none
++- completed: phase verify (gate APPROVED 2026-09-16T13:50:13+0700)
+ - blockers: none
+ - open_items: none
+-- exact_next_action: gate phase verify
++- exact_next_action: run `handoff` to close phase verify and the initiative (final phase: `handoff.md` step 6 requires a `check full` review, judge independent, before closing)
+ 
+ ## Progress
+ - none
+@@ -67,4 +67,13 @@ Single-file correction. No risk beyond a typo.
+ - none
+ 
+ ## Validation
+-- none
++
++- [2026-09-16T13:50:13+0700] phase `verify` (story-verify-20260916) — APPROVED — mode: gate, scope: on target, depth: quick, lane: tiny
++  - `test "$(cat message.txt)" = hello` -> pass (rc=0; `test` prints nothing on success)
++  - scope: the only change under review is `message.txt` (`helo` -> `hello`, trailing newline preserved); `surfaces_avoided` (`docs/**`, `AGENTS.md`) are untouched in the diff. Satisfies R1 and success signal S1; no Non-goal crossed.
++  - failure ledger: `docs/evals/failures.md` exists; no class is recorded two or more times (MISSING_CONTEXT, LOST_DECISION, BAD_OUTPUT, UNKNOWN appear once each), so no recurring-class assessment is due for this diff.
++  - required proof (lane `tiny`): command output — supplied above. No class missing.
++  - enforcement: this repository has no `scripts/` directory, so no `scripts/install-git-hooks.sh` and no installed `.git/hooks/pre-commit`, and no `.github/` workflow. Nothing re-executes this entry's proof at commit time; the rules above were honored as authoring discipline only. Ladder level: Local validation (`docs/patterns/encoding-invariants.md`).
++  - proof_gaps: none
++  - receipt: context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/plans/active/greeting.md, docs/evals/failures.md, docs/patterns/encoding-invariants.md / policy: docs/playbooks/check.md auto -> gate / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: d729859 (message.txt change uncommitted; `git checkout -- message.txt` reverts) / failure_ledger: docs/evals/failures.md / enforcement: local-only / not_independently_verified: n/a (judge independent)
++
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

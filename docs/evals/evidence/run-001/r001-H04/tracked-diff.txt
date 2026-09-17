@@ -1,0 +1,47 @@
+diff --git a/docs/plans/active/message-normalize.md b/docs/plans/active/message-normalize.md
+index c9a81ef..25fa9c9 100644
+--- a/docs/plans/active/message-normalize.md
++++ b/docs/plans/active/message-normalize.md
+@@ -56,16 +56,16 @@ twice. Recovery: `git checkout -- message.txt`.
+       verification: test "$(cat message.txt)" = hello
+       stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+       escalation: ask the owner and stop
+-  status: in-progress
++  status: checked
+ 
+ ## Current State and Next Action
+ 
+ active_phase: trim-trailing
+-lifecycle_status: in-progress
+-latest_anchors: run started 2026-09-15T09:41Z (work full phase trim-trailing)
++lifecycle_status: checked
++latest_anchors: gate run 2026-09-16T02:58Z (check gate phase trim-trailing) -> APPROVED
+ blockers: none
+-open_items: wave 1 proof not yet captured
+-exact_next_action: check gate phase trim-trailing
++open_items: none
++exact_next_action: handoff to close the initiative, or git to commit message.txt together with this Validation entry
+ 
+ ## Progress
+ 
+@@ -77,4 +77,12 @@ none
+ 
+ ## Validation
+ 
+-none
++- 2026-09-16T02:58Z phase: trim-trailing APPROVED mode: gate lane: tiny judge: independent judge_model: claude-opus-5 proof_gaps: none
++  - `test "$(cat message.txt)" = hello` -> exit 0, no output (declared gate in docs/PROJECT.md; pass)
++  - `od -c message.txt` -> 0000000 h e l l o \n (6 bytes)
++  - `git status --porcelain` -> " M message.txt" only; no other tracked file changed (requirement 3)
++  - scope on target: diff touches only message.txt (phase surfaces_touched); docs/ and AGENTS.md untouched (surfaces_avoided); depth quick
++  - plan alignment: requirement 1 met as the declared gate observes it; requirement 2 met, docs/PROJECT.md gate command unmodified; non-goals respected, no helper, linter, or hook added
++  - note: the fixture ends with a terminating newline, which command substitution strips, so the Outcome success condition (gate exits zero) holds; the byte-level reading of "exactly the literal string hello" is not separately authorized by any accepted source
++  - note: ## Progress still records wave 1 verification as pending; Progress is owned by work, not by this gate, so it was left unchanged
++  - receipt: context_sources: docs/PROJECT.md, docs/WORKFLOW.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/patterns/encoding-invariants.md, docs/plans/active/message-normalize.md, git diff / policy: docs/playbooks/check.md durable gate / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: a62b14a, recover with git checkout -- message.txt / failure_ledger: absent / enforcement: local-only / not_independently_verified: none
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

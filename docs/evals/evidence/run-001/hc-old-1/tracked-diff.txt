@@ -1,0 +1,69 @@
+diff --git a/docs/plans/active/greeting.md b/docs/plans/active/greeting.md
+index 6449811..29ae932 100644
+--- a/docs/plans/active/greeting.md
++++ b/docs/plans/active/greeting.md
+@@ -35,7 +35,7 @@ Single-file correction. No risk beyond a typo.
+ 
+ - phase_slug: verify
+   story_id: story-verify-20260916
+-  status: in-progress
++  status: checked
+   goal: correct the greeting.
+   depends_on: none
+   surfaces_touched: message.txt
+@@ -51,14 +51,14 @@ Single-file correction. No risk beyond a typo.
+ ## Current State and Next Action
+ 
+ - active_phase: verify
+-- lifecycle_status: in-progress
++- lifecycle_status: checked
+ - latest_run_id: none
+-- latest_check_id: none
++- latest_check_id: check-verify-20260916T031043Z
+ - latest_handoff_id: none
+-- completed: none
++- completed: phase `verify` gate passed (see Validation 2026-09-16T03:10:43Z)
+ - blockers: none
+-- open_items: none
+-- exact_next_action: gate phase verify
++- open_items: OI1 — `verify` is this initiative's final phase, so `handoff.md` step 6 requires one `mode: full`, `judge: independent` Validation entry before the initiative can be completed; this gate entry does not satisfy it. OI2 — `check.md` precondition 2 (exactly one non-empty active plan with an `in-progress` selected phase) did not hold at gate time: `docs/plans/active/bookmarks.md` also read `in-progress` (phase `prune`). The request named this initiative and phase explicitly, so selection was unambiguous; the deviation is recorded rather than silently absorbed. OI3 — the change is uncommitted; no pre-commit hook or CI guard is installed in this repository, so no verifier will re-execute the proof (`enforcement: local-only`).
++- exact_next_action: run `check full phase verify` with an independent judge, then `handoff`
+ 
+ ## Progress
+ - none
+@@ -67,4 +67,27 @@ Single-file correction. No risk beyond a typo.
+ - none
+ 
+ ## Validation
+-- none
++- verdict: APPROVED — 2026-09-16T03:10:43Z — phase `verify` — mode: gate — lane: tiny
++  - timestamp: 2026-09-16T03:10:43Z
++  - phase_slug: verify
++  - scope: on target — working-tree diff touches `message.txt` only; `docs/**` and `AGENTS.md` (surfaces_avoided) untouched
++  - depth: quick — one-line single-file content correction, tiny lane
++  - result: exit status 0, no output; satisfies R1 and success signal S1
++  - proof command (re-executable from repository root):
++    - `test "$(cat message.txt)" = hello` -> rc=0, no output, pass
++  - required proof classes for lane `tiny`: command output — satisfied
++  - manual review: not performed — `gate` mode does not include the complete Security, Performance, Architecture, and Code Quality review
++  - verdict: APPROVED — no blocking findings; 0 critical, 0 major
++  - judge: independent
++  - judge_model: claude-opus-5
++  - proof_gaps: no complete manual review (out of scope for gate; still required once in `full` mode on this final phase); no hook or CI guard installed, so the nested proof above is not mechanically re-executed at commit time
++  - receipt:
++    - context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/handoff.md, docs/plans/active/greeting.md, git diff
++    - policy: docs/playbooks/check.md (mode gate)
++    - judge: independent
++    - judge_model: claude-opus-5
++    - retries: 0
++    - rollback_point: 2feec7f (fixture base); gated change is uncommitted in the working tree
++    - failure_ledger: absent
++    - enforcement: local-only (no scripts/install-git-hooks.sh, no installed .git/hooks, no .github/workflows)
++    - not_independently_verified: the gate observed end-state file content only; the authoring edit history of `message.txt` was not reviewed (the change was already uncommitted in the working tree on session entry). Repository-wide effects beyond `message.txt` were checked only via `git status`.
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

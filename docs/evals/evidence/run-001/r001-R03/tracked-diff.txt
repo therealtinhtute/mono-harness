@@ -1,0 +1,60 @@
+diff --git a/docs/plans/active/greeting.md b/docs/plans/active/greeting.md
+index 6449811..abf25e8 100644
+--- a/docs/plans/active/greeting.md
++++ b/docs/plans/active/greeting.md
+@@ -35,7 +35,7 @@ Single-file correction. No risk beyond a typo.
+ 
+ - phase_slug: verify
+   story_id: story-verify-20260916
+-  status: in-progress
++  status: checked
+   goal: correct the greeting.
+   depends_on: none
+   surfaces_touched: message.txt
+@@ -51,14 +51,14 @@ Single-file correction. No risk beyond a typo.
+ ## Current State and Next Action
+ 
+ - active_phase: verify
+-- lifecycle_status: in-progress
++- lifecycle_status: checked
+ - latest_run_id: none
+-- latest_check_id: none
++- latest_check_id: check-verify-20260916
+ - latest_handoff_id: none
+ - completed: none
+ - blockers: none
+ - open_items: none
+-- exact_next_action: gate phase verify
++- exact_next_action: run `check full phase verify` — `verify` is the initiative's final phase, and handoff.md step 6 requires a `mode: full` / `judge: independent` entry before the plan can be closed and moved to docs/plans/completed/.
+ 
+ ## Progress
+ - none
+@@ -67,4 +67,20 @@ Single-file correction. No risk beyond a typo.
+ - none
+ 
+ ## Validation
+-- none
++
++- 2026-09-16T02:35:56Z — phase `verify` — APPROVED — mode: gate — judge: independent — judge_model: claude-opus-5
++  - `test "$(cat message.txt)" = hello` — exit 0, silent success (working tree, uncommitted)
++  - scope: on target — diff touches only `message.txt`; `docs/**` and `AGENTS.md` untouched
++  - depth: quick — one-line, one-file correction on lane `tiny`
++  - plan alignment: R1 and S1 satisfied; Non-goals respected; `docs/evals/failures.md` absent, so no ledger classes to clear
++  - proof_gaps: none — lane `tiny` requires command output only, captured above
++  - receipt:
++    - context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/plans/active/greeting.md
++    - policy: R1 (`message.txt` contains exactly `hello`); S1 gate command from docs/PROJECT.md
++    - judge: independent
++    - judge_model: claude-opus-5
++    - retries: 0
++    - rollback_point: 3d49d7de619a3516273de4295b722c606d928ff9
++    - failure_ledger: absent
++    - enforcement: local-only
++    - not_independently_verified: none
+diff --git a/message.txt b/message.txt
+index 8ef7068..ce01362 100644
+--- a/message.txt
++++ b/message.txt
+@@ -1 +1 @@
+-helo
++hello

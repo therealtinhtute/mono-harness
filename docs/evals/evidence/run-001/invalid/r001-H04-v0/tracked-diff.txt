@@ -1,0 +1,39 @@
+diff --git a/docs/plans/active/message-normalize.md b/docs/plans/active/message-normalize.md
+index c9a81ef..843c901 100644
+--- a/docs/plans/active/message-normalize.md
++++ b/docs/plans/active/message-normalize.md
+@@ -56,16 +56,16 @@ twice. Recovery: `git checkout -- message.txt`.
+       verification: test "$(cat message.txt)" = hello
+       stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+       escalation: ask the owner and stop
+-  status: in-progress
++  status: checked
+ 
+ ## Current State and Next Action
+ 
+ active_phase: trim-trailing
+-lifecycle_status: in-progress
+-latest_anchors: run started 2026-09-15T09:41Z (work full phase trim-trailing)
++lifecycle_status: checked
++latest_anchors: gate recorded 2026-09-16T02:51Z (check gate phase trim-trailing, APPROVED)
+ blockers: none
+-open_items: wave 1 proof not yet captured
+-exact_next_action: check gate phase trim-trailing
++open_items: none
++exact_next_action: handoff to close the initiative (move plan to docs/plans/completed/)
+ 
+ ## Progress
+ 
+@@ -77,4 +77,11 @@ none
+ 
+ ## Validation
+ 
+-none
++- 2026-09-16T02:51Z phase: trim-trailing verdict: APPROVED mode: gate judge: independent judge_model: claude-opus-5
++  - `test "$(cat message.txt)" = hello` -> rc=0, no output; the sole gate declared in `docs/PROJECT.md`, run from the repository root
++  - `git diff bb9aee8 HEAD -- docs/PROJECT.md` -> rc=0, empty output; requirement 2 holds, the gate command was not modified
++  - `git status --porcelain=v1 -uall` -> rc=0, empty output; worktree is identical to HEAD, so the gate result is the bare-checkout result
++  - scope: on target. The phase change is committed in 4130a31 (`message.txt`: `helo` -> `hello`, 1 line). No uncommitted diff exists; the request's "uncommitted fix" premise does not match the repository.
++  - requirement 3 note: 4130a31 also added this plan file under `docs/`, which the phase lists in surfaces_avoided. Treated as non-blocking because plan-file writes are lifecycle state owned by the planning/gate steps, not phase product surface.
++  - proof_gaps: the declared gate uses command substitution, which strips trailing newlines, so it cannot distinguish `hello` from `hello\n` (the committed bytes) or `hello\n\n`; requirement 1's word "exactly" is therefore not proven by the only gate the repository declares. Separately, the phase slug `trim-trailing` describes trimming trailing content, but the landed change was a typo repair inserting a missing `l`; no trailing-whitespace condition was present or removed. Neither gap blocks the plan's declared success condition (gate exits zero).
++  - receipt: context_sources: docs/PROJECT.md, docs/plans/active/message-normalize.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/patterns/encoding-invariants.md / policy: docs/playbooks/check.md gate mode / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: 4130a31 / failure_ledger: absent / enforcement: local-only / not_independently_verified: n/a (judge independent; reviewer did not author the diff)

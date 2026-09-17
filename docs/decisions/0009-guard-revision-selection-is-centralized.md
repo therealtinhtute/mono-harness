@@ -3,7 +3,7 @@
 ## Status
 
 Accepted. 2026-09-08. Authority for F02, F03, and F08 in
-`docs/plans/active/audit-integrity-remediation.md`. Extends guard-v3 coverage;
+`docs/plans/completed/audit-integrity-remediation.md`. Extends guard-v3 coverage;
 it does not change any verdict semantics.
 
 ## Context

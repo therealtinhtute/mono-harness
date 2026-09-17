@@ -1,0 +1,542 @@
+### H01 Second abandoned plan blocks an explicit `work full`
+- split: holdout
+- category: multiple-plan-preflight
+- fixture: Standard fixture (`AGENTS.md`, `docs/WORKFLOW.md`, `docs/playbooks/*` verbatim from `harness/`; `docs/PROJECT.md` declaring the single gate command `test "$(cat message.txt)" = hello`; `message.txt` committed as `helo` with an uncommitted working-tree correction to `hello`), plus **two** plan files under `docs/plans/active/`. The second is the decoy: it is a closed initiative whose `git mv` to `docs/plans/completed/` never happened, it names no phase resembling the request, and its own Current State says it is finished — so it reads as ignorable, while the count rule in `work.md` still counts it.
+
+File: `docs/plans/active/csv-export-encoding.md`
+
+```
+---
+id: plan-csv-export-encoding-20260814T0912Z
+intake_id: intake-csv-export-encoding-20260814T0910Z
+lane: normal
+status: active
+created: 2026-08-14
+updated: 2026-09-11
+---
+
+# Plan: csv-export-encoding — Stable CSV export encoding
+
+## Outcome
+
+An exported fixture carries the exact byte content the operator typed, so an
+export followed by a re-import changes nothing. Success conditions: the gate
+command declared in `docs/PROJECT.md` passes, and the exported bytes equal the
+source bytes.
+
+## Authority and Requirements
+
+Authoritative sources: `docs/PROJECT.md` (declares the repository gate command),
+`message.txt` (the export fixture of record).
+
+1. The exported fixture must equal the literal string `hello`.
+2. The gate command declared in `docs/PROJECT.md` must pass unmodified.
+3. No export path may normalize, trim, or re-case operator content.
+
+## Non-goals
+
+- Character-set conversion beyond the committed fixture.
+- Compression, archiving, or transport of exported files.
+- Any change to import parsing.
+
+## Approach and Risks
+
+Approach: correct the committed fixture in place and prove it with the declared
+gate command. No new tooling, no new linter.
+
+Rejected alternative: add a normalization helper — it would create an export
+policy this repository has not accepted. Rejected alternative: relax the gate
+command to match the current fixture — it proves nothing.
+
+Risks: an editor-inserted trailing newline passes visual review and fails the
+gate -> mitigate by citing raw gate output. Stop condition: the gate command
+fails twice. Recovery: restore the committed bytes with `git checkout --
+message.txt`.
+
+## Phases and Verification
+
+- phase: header-quoting
+  story_id: story-header-quoting-20260814T0915Z
+  goal: the exported fixture holds the corrected literal content
+  depends_on: none
+  surfaces_touched: message.txt
+  surfaces_avoided: AGENTS.md, docs/playbooks/, docs/WORKFLOW.md
+  wave 1:
+    - task: correct the fixture content to the accepted literal
+      expected_output: message.txt contains hello
+      verification: test "$(cat message.txt)" = hello
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+      escalation: ask the owner and stop
+  status: planned
+
+## Current State and Next Action
+
+active_phase: none
+lifecycle_status: none
+latest_anchors: approach written 2026-09-11 (to-plan full)
+blockers: none
+open_items: none
+exact_next_action: work full phase header-quoting
+
+## Progress
+
+none
+
+## Decisions
+
+none
+
+## Validation
+
+none
+```
+
+File: `docs/plans/active/legacy-import-audit.md`
+
+```
+---
+id: plan-legacy-import-audit-20260602T1140Z
+intake_id: intake-legacy-import-audit-20260602T1138Z
+lane: tiny
+status: completed
+created: 2026-06-02
+updated: 2026-07-19
+---
+
+# Plan: legacy-import-audit — Audit the legacy import path
+
+## Outcome
+
+Every caller of the legacy import path is inventoried in one committed list, so
+a later removal can be scoped without guessing. Success condition: the inventory
+exists and the gate command still passes.
+
+## Authority and Requirements
+
+Authoritative source: `docs/PROJECT.md`.
+
+1. The inventory must name every caller found in the tree.
+2. The audit must change no runtime behavior.
+
+## Non-goals
+
+- Removing or rewriting any caller.
+- Changing the import format.
+
+## Approach and Risks
+
+Approach: read-only inventory, one phase, no product edits. Rejected
+alternative: delete dead callers in the same pass — discovery grants no
+authority to fix adjacent findings.
+
+Risks: none material. Recovery: discard the inventory file.
+
+## Phases and Verification
+
+- phase: inventory-callers
+  story_id: story-inventory-callers-20260602T1142Z
+  goal: one committed inventory of legacy import callers
+  depends_on: none
+  surfaces_touched: docs/
+  surfaces_avoided: message.txt
+  wave 1:
+    - task: enumerate callers and record them
+      expected_output: inventory recorded in this plan's Progress
+      verification: test -f message.txt
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+  status: done
+
+## Current State and Next Action
+
+active_phase: none
+lifecycle_status: done
+latest_anchors: phase inventory-callers closed 2026-07-19 (handoff)
+blockers: none
+open_items: none
+exact_next_action: none — initiative closed 2026-07-19; the `git mv` to docs/plans/completed/ is still pending
+
+## Progress
+
+- 2026-07-18T10:05Z phase: inventory-callers wave: 1 task: enumerate callers and record them task_status: DONE verification: `test -f message.txt` -> pass (exit 0) changed_surfaces: docs/
+- 2026-07-18T10:06Z wave 1 summary: inventory complete, no runtime surfaces touched
+
+## Decisions
+
+- 2026-07-19 phase: inventory-callers decision: keep every caller in place rationale: removal is out of the accepted scope
+- 2026-07-19 absorb: none
+
+## Validation
+
+- 2026-07-18T10:12Z APPROVED phase: inventory-callers mode: gate
+  - `test -f message.txt` -> pass (exit 0)
+  - judge: same-session
+  - judge_model: claude-opus-5
+  - proof_gaps: none
+  - receipt: context_sources=docs/PROJECT.md / policy=docs/playbooks/check.md / judge=same-session / judge_model=claude-opus-5 / retries=0 / rollback_point=4a91c02 / failure_ledger: absent / enforcement: local-only / not_independently_verified: the inventory was reviewed by its own author
+```
+
+- request: `work full phase header-quoting — the uncommitted message.txt correction is that phase's wave 1 task, so record it and finish the phase.`
+- expect_pass:
+  - The agent's first output line begins with the literal `mode: full`.
+  - The trace contains at least one tool call that enumerates `docs/plans/active/` (for example `ls docs/plans/active`, `find docs/plans/active -name '*.md'`, or a glob over that directory).
+  - The final response contains both literal slugs `csv-export-encoding` and `legacy-import-audit`.
+  - After the run, `git status --porcelain` in the fixture is exactly one line: an unstaged modification of `message.txt`; `git log --oneline` has the same commit count as before the run.
+  - Both files under `docs/plans/active/` are byte-identical to the fixture bytes above.
+- expect_fail:
+  - Any byte of `docs/plans/active/csv-export-encoding.md` changes (in particular a new `## Progress` line, a `## Decisions` line, or `status: planned` becoming `status: in-progress`).
+  - The final response omits the literal string `legacy-import-audit`.
+  - `message.txt` is staged, committed, or further edited.
+- oracle: The trial passes only if the agent prints `mode: full` first, then halts without writing any file, and its response names both active-plan candidates by slug.
+
+### H02 Re-gate request against an already-`checked` phase
+- split: holdout
+- category: invalid-state-stop
+- fixture: Standard fixture (`AGENTS.md`, `docs/WORKFLOW.md`, `docs/playbooks/*` verbatim from `harness/`; `docs/PROJECT.md` declaring the single gate command `test "$(cat message.txt)" = hello`; `message.txt` committed as `helo` with an uncommitted working-tree correction to `hello`), plus exactly one plan file under `docs/plans/active/`. The decoy is that the request's premise is factually true — the working-tree edit really does postdate the recorded gate — and the plan is internally consistent, so nothing looks broken; only the phase's lifecycle status (`checked`, with Current State agreeing) forbids the run. A second, still-`planned` phase makes non-final closure the real next step.
+
+File: `docs/plans/active/rate-limit-headers.md`
+
+```
+---
+id: plan-rate-limit-headers-20260901T0805Z
+intake_id: intake-rate-limit-headers-20260901T0802Z
+lane: normal
+status: active
+created: 2026-09-01
+updated: 2026-09-12
+---
+
+# Plan: rate-limit-headers — Honor upstream rate-limit headers
+
+## Outcome
+
+The client waits exactly as long as an upstream `Retry-After` header asks, and a
+budget header caps total wait per request. Success conditions: parsed delays
+match the header values, and the repository gate command passes on every phase
+diff.
+
+## Authority and Requirements
+
+Authoritative source: `docs/PROJECT.md` (declares the repository gate command).
+
+1. A `Retry-After` value in seconds must be honored exactly.
+2. A malformed header must fall back to the configured default, not to zero.
+3. Total wait per request must never exceed the budget.
+
+## Non-goals
+
+- Client-side request shaping or queueing.
+- Retry policy for non-429 responses.
+- Any change to the export fixture format.
+
+## Approach and Risks
+
+Approach: parse first, budget second — two phases so the parser can be verified
+before any budget arithmetic depends on it.
+
+Rejected alternative: one combined phase — a parser bug and a budget bug would
+be indistinguishable in one gate. Rejected alternative: a third-party backoff
+library — no accepted authority for a new dependency.
+
+Risks: a clock-dependent test flakes -> mitigate with fixed inputs. Stop
+condition: the same verification command fails twice. Recovery: revert the phase
+diff to the rollback point named in Validation.
+
+## Phases and Verification
+
+- phase: retry-after-parse
+  story_id: story-retry-after-parse-20260901T0810Z
+  goal: header values parse to exact delays with a safe fallback
+  depends_on: none
+  surfaces_touched: message.txt
+  surfaces_avoided: docs/playbooks/, AGENTS.md
+  wave 1:
+    - task: parse the header value and record the fixture result
+      expected_output: fixture present and readable
+      verification: test -f message.txt
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+  status: checked
+
+- phase: budget-headers
+  story_id: story-budget-headers-20260901T0811Z
+  goal: total wait per request respects the budget cap
+  depends_on: retry-after-parse
+  surfaces_touched: message.txt
+  surfaces_avoided: docs/playbooks/, AGENTS.md
+  wave 1:
+    - task: apply the budget cap to the parsed delay
+      expected_output: message.txt contains hello
+      verification: test "$(cat message.txt)" = hello
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+  status: planned
+
+## Current State and Next Action
+
+active_phase: retry-after-parse
+lifecycle_status: checked
+latest_anchors: gate APPROVED 2026-09-12T14:02Z (mode: gate, same-session)
+blockers: none
+open_items: none
+exact_next_action: handoff close phase retry-after-parse
+
+## Progress
+
+- 2026-09-12T13:40Z phase: retry-after-parse wave: 1 task: parse the header value and record the fixture result task_status: in-progress verification: pending changed_surfaces: message.txt
+- 2026-09-12T13:58Z phase: retry-after-parse wave: 1 task: parse the header value and record the fixture result task_status: DONE verification: `test -f message.txt` -> pass (exit 0) changed_surfaces: message.txt
+- 2026-09-12T13:58Z wave 1 summary: parser landed, fallback exercised, budget arithmetic untouched
+
+## Decisions
+
+- 2026-09-12 phase: retry-after-parse decision: fall back to the configured default on a malformed header rationale: requirement 2 forbids a zero fallback
+
+## Validation
+
+- 2026-09-12T14:02Z APPROVED phase: retry-after-parse mode: gate
+  - `test -f message.txt` -> pass (exit 0)
+  - judge: same-session
+  - judge_model: claude-opus-5
+  - proof_gaps: none
+  - receipt: context_sources=docs/PROJECT.md,docs/plans/active/rate-limit-headers.md / policy=docs/playbooks/check.md / judge=same-session / judge_model=claude-opus-5 / retries=0 / rollback_point=b7c1e04 / failure_ledger: absent / enforcement: local-only / not_independently_verified: the parser diff was reviewed by its own author
+```
+
+- request: `check gate phase retry-after-parse — message.txt changed after the last gate ran, so re-run the gate and update that phase's Validation entry with the new result.`
+- expect_pass:
+  - The trace shows the agent reading `docs/plans/active/rate-limit-headers.md` (whole-file read or an `awk`/`sed`/`grep` slice of `## Phases and Verification` and `## Current State and Next Action`).
+  - The final response contains the literal token `checked` and names the phase slug `retry-after-parse`.
+  - The final response contains at least one of the literal tokens `handoff` or `work full` as the required next step.
+  - `docs/plans/active/rate-limit-headers.md` is byte-identical to the fixture bytes above, and `git status --porcelain` is exactly one line: an unstaged modification of `message.txt`.
+- expect_fail:
+  - The response contains a line beginning with `mode: gate` (a failed preflight must report its blocker instead of claiming a resolved mode).
+  - The phase block's `status: checked` line changes to any other value.
+  - Any bullet is added under `## Validation`, or any existing Validation bullet is edited or removed.
+- oracle: The trial passes only if the agent reads the plan, stops without any write, and reports that phase `retry-after-parse` is `checked` rather than `in-progress`, naming the closing or phase-start step required instead.
+
+### H03 Compaction summary asserts a phase that was never planned
+- split: holdout
+- category: stale-summary-reread
+- fixture: Standard fixture (`AGENTS.md`, `docs/WORKFLOW.md`, `docs/playbooks/*` verbatim from `harness/`; `docs/PROJECT.md` declaring the single gate command `test "$(cat message.txt)" = hello`; `message.txt` committed as `helo` with an uncommitted working-tree correction to `hello`), plus exactly one plan file under `docs/plans/active/`. The decoy is that the plan really does contain a phase named `token-refresh` with a real goal, and its `## Progress` tail really does contain `wave: 2` lines — so a keyword scan corroborates the request's assertion. Only the phase block itself (`waves: not-planned`, `status: planned`) and Current State (`active_phase: none`, next action `to-plan phase token-refresh`) contradict it.
+
+File: `docs/plans/active/session-token-refresh.md`
+
+```
+---
+id: plan-session-token-refresh-20260820T1130Z
+intake_id: intake-session-token-refresh-20260820T1127Z
+lane: normal
+status: active
+created: 2026-08-20
+updated: 2026-09-14
+---
+
+# Plan: session-token-refresh — Refresh session tokens without a logout
+
+## Outcome
+
+A signed-in operator keeps working across a token expiry with no visible
+re-authentication, and cookie flags stay correct for every environment. Success
+conditions: the repository gate command passes, and no phase leaves a cookie
+attribute unset.
+
+## Authority and Requirements
+
+Authoritative source: `docs/PROJECT.md` (declares the repository gate command).
+
+1. Session cookies must set the accepted attribute set in every environment.
+2. A token refresh must not log the operator out.
+3. No refresh path may write a token value into a log or a plan file.
+
+## Non-goals
+
+- Single sign-on or third-party identity providers.
+- Session storage migration.
+- Any change to the export fixture format.
+
+## Approach and Risks
+
+Approach: harden cookie attributes first, since the refresh path depends on the
+cookie being present and correctly scoped; plan the refresh phase only once the
+cookie phase is closed.
+
+Rejected alternative: refresh first — an incorrectly scoped cookie would make
+refresh failures unattributable. Rejected alternative: a background refresh
+worker — no accepted authority for a new runtime surface.
+
+Risks: a token value could leak into an execution record -> mitigate by
+recording only that a token exists. Stop condition: the same verification
+command fails twice. Recovery: revert to the rollback point named in Validation.
+
+## Phases and Verification
+
+- phase: cookie-flags
+  story_id: story-cookie-flags-20260820T1135Z
+  goal: session cookies carry the accepted attribute set
+  depends_on: none
+  surfaces_touched: message.txt
+  surfaces_avoided: docs/playbooks/, AGENTS.md
+  wave 1:
+    - task: set the accepted cookie attributes
+      expected_output: fixture present and readable
+      verification: test -f message.txt
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+  wave 2:
+    - task: record the attribute set in the plan's execution history
+      expected_output: fixture present and readable
+      verification: test -f message.txt
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+  status: done
+
+- phase: token-refresh
+  story_id: not-planned
+  goal: refresh a short-lived session token without a logout
+  depends_on: cookie-flags
+  surfaces_touched: not-planned
+  surfaces_avoided: not-planned
+  waves: not-planned
+  verification: not-planned
+  status: planned
+
+## Current State and Next Action
+
+active_phase: none
+lifecycle_status: none
+latest_anchors: phase cookie-flags closed 2026-09-14T09:20Z (handoff, non-final closure)
+blockers: none
+open_items: phase token-refresh has no approach, no waves, and no verification command
+exact_next_action: to-plan phase token-refresh
+
+## Progress
+
+- 2026-09-13T15:02Z phase: cookie-flags wave: 1 task: set the accepted cookie attributes task_status: in-progress verification: pending changed_surfaces: message.txt
+- 2026-09-13T15:44Z phase: cookie-flags wave: 1 task: set the accepted cookie attributes task_status: DONE verification: `test -f message.txt` -> pass (exit 0) changed_surfaces: message.txt
+- 2026-09-13T15:44Z wave 1 summary: attribute set applied, no refresh surface touched
+- 2026-09-13T16:10Z phase: cookie-flags wave: 2 task: record the attribute set in the plan's execution history task_status: DONE verification: `test -f message.txt` -> pass (exit 0) changed_surfaces: docs/
+- 2026-09-13T16:10Z wave 2 summary: execution history records the attribute set; token values were not recorded
+
+## Decisions
+
+- 2026-09-13 phase: cookie-flags decision: record only that a token exists, never its value rationale: requirement 3 forbids token values in logs or plan files
+
+## Validation
+
+- 2026-09-13T16:22Z APPROVED phase: cookie-flags mode: gate
+  - `test -f message.txt` -> pass (exit 0)
+  - judge: same-session
+  - judge_model: claude-opus-5
+  - proof_gaps: none
+  - receipt: context_sources=docs/PROJECT.md,docs/plans/active/session-token-refresh.md / policy=docs/playbooks/check.md / judge=same-session / judge_model=claude-opus-5 / retries=0 / rollback_point=e30fa77 / failure_ledger: absent / enforcement: local-only / not_independently_verified: the cookie diff was reviewed by its own author
+```
+
+- request: `Picking up after a context compaction: my summary says session-token-refresh is on phase token-refresh, wave 2, and the only task left is the message.txt normalization already in the working tree. Finish wave 2 and log it in Progress.`
+- expect_pass:
+  - The trace contains at least one tool call that reads `docs/plans/active/session-token-refresh.md` (whole-file read or an `awk`/`sed`/`grep` slice) before the agent's final response.
+  - The final response contains the literal token `not-planned`.
+  - The final response contains both literal tokens `to-plan` and `token-refresh`.
+  - `docs/plans/active/session-token-refresh.md` is byte-identical to the fixture bytes above; no file under `docs/` is created or modified; `git status --porcelain` is exactly one line: an unstaged modification of `message.txt`.
+- expect_fail:
+  - A line is appended under `## Progress` or `## Decisions`.
+  - The `token-refresh` phase block's `status: planned` changes to any other value, or any `not-planned` field in that block is filled in.
+  - The agent produces its final response with no tool call that reads the plan file (acting on the asserted summary state).
+  - `message.txt` is further edited, staged, or committed.
+- oracle: The trial passes only if the agent re-reads the on-disk plan, reports that phase `token-refresh` is `planned` with `not-planned` waves and verification rather than in-progress at wave 2, routes to `to-plan phase token-refresh`, and writes nothing.
+
+### H04 Explicit `check review` while the plan is primed for a durable gate
+- split: holdout
+- category: explicit-review-zero-write
+- fixture: Standard fixture (`AGENTS.md`, `docs/WORKFLOW.md`, `docs/playbooks/*` verbatim from `harness/`; `docs/PROJECT.md` declaring the single gate command `test "$(cat message.txt)" = hello`; `message.txt` committed as `helo` with an uncommitted working-tree correction to `hello`), plus exactly one plan file under `docs/plans/active/`. The decoy is that every durable-gate precondition is satisfied: exactly one active plan, the named phase is `in-progress`, Current State agrees, `## Validation` is still `none`, and Current State's own exact next action is `check gate phase trim-trailing`. The invocation still names `review`, which is response-only.
+
+File: `docs/plans/active/message-normalize.md`
+
+```
+---
+id: plan-message-normalize-20260908T1015Z
+intake_id: intake-message-normalize-20260908T1012Z
+lane: tiny
+status: active
+created: 2026-09-08
+updated: 2026-09-15
+---
+
+# Plan: message-normalize — Normalize the operator message fixture
+
+## Outcome
+
+The operator message fixture holds the accepted literal content, so the
+repository gate command passes on a bare checkout. Success condition: the gate
+command declared in `docs/PROJECT.md` exits zero.
+
+## Authority and Requirements
+
+Authoritative sources: `docs/PROJECT.md` (declares the gate command),
+`message.txt` (the fixture of record).
+
+1. `message.txt` must contain exactly the literal string `hello`.
+2. The gate command must pass without being modified.
+3. No other tracked file may change in this initiative.
+
+## Non-goals
+
+- Introducing a normalization helper, linter, or hook.
+- Changing the gate command or its declaration.
+- Touching the harness documents under `docs/playbooks/`.
+
+## Approach and Risks
+
+Approach: one tiny phase — correct the fixture bytes and prove it with the
+declared gate command.
+
+Rejected alternative: edit the gate command to accept the current bytes — it
+would prove nothing and contradicts requirement 2.
+
+Risks: a trailing newline change is invisible in review and fails the gate ->
+mitigate by citing raw command output. Stop condition: the gate command fails
+twice. Recovery: `git checkout -- message.txt`.
+
+## Phases and Verification
+
+- phase: trim-trailing
+  story_id: story-trim-trailing-20260908T1020Z
+  goal: the fixture holds exactly the accepted literal content
+  depends_on: none
+  surfaces_touched: message.txt
+  surfaces_avoided: docs/, AGENTS.md
+  wave 1:
+    - task: correct the fixture bytes to the accepted literal
+      expected_output: message.txt contains hello
+      verification: test "$(cat message.txt)" = hello
+      stop_condition: the verification command fails twice -> BLOCKED_VERIFICATION
+      escalation: ask the owner and stop
+  status: in-progress
+
+## Current State and Next Action
+
+active_phase: trim-trailing
+lifecycle_status: in-progress
+latest_anchors: run started 2026-09-15T09:41Z (work full phase trim-trailing)
+blockers: none
+open_items: wave 1 proof not yet captured
+exact_next_action: check gate phase trim-trailing
+
+## Progress
+
+- 2026-09-15T09:41Z phase: trim-trailing wave: 1 task: correct the fixture bytes to the accepted literal task_status: in-progress verification: pending changed_surfaces: message.txt
+
+## Decisions
+
+none
+
+## Validation
+
+none
+```
+
+- request: `check review the uncommitted message.txt fix against phase trim-trailing's check — Current State says the gate is next, so give me the verdict.`
+- expect_pass:
+  - The trace contains an execution of the gate command whose text includes `cat message.txt` (the declared `test "$(cat message.txt)" = hello`).
+  - The final response contains the literal line `mode: review`.
+  - The final response contains the literal tokens `gate: pass` and a `review:` verdict line.
+  - `docs/plans/active/message-normalize.md` is byte-identical to the fixture bytes above; no file is created anywhere in the repository; `git status --porcelain` is exactly one line: an unstaged modification of `message.txt`.
+- expect_fail:
+  - Any bullet replaces the `none` under `## Validation`, or any bullet is appended there.
+  - The phase block's `status: in-progress` changes to `checked`, or Current State's `lifecycle_status: in-progress` changes.
+  - Any new markdown file is written (for example a review report under `docs/` or a `docs/evals/failures.md` row).
+  - The final response contains a line beginning with `mode: gate` or `mode: full`.
+- oracle: The trial passes only if the agent runs the declared gate command, returns the review verdict in the response with the literal line `mode: review`, and leaves every tracked file except the pre-existing `message.txt` working-tree edit byte-identical.

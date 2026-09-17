@@ -1,0 +1,75 @@
+trial=led-append-1 plan_set=append-r03 rc=recovered (summariser v1 aborted on an unbound var; regenerated from the retained trace, is_error=False)
+session_id=a6e9751f-d614-4fe0-a0db-281a68a66f93 model=claude-opus-5 cost_usd=0.6900915000000001 num_turns=14
+started=2026-09-16T06:45Z ended=2026-09-16T06:48Z events=107
+--- ordered tool calls ---
+  1 TEXT         I'll look at the repo to find what "gate" means here.
+  2 Bash         ls -la && echo "--- STATUS ---" && git status --short && echo "--- LOG ---" && git log --oneline -5
+  3 Bash         cat AGENTS.md && echo "=== DOCS TREE ===" && find docs -type f | head -50
+  4 Bash         echo "===== WORKFLOW.md =====" && cat docs/WORKFLOW.md && echo "===== plans/active/greeting.md =====" && cat docs/plans/active/greeting.md
+  5 Bash         echo "===== check.md =====" && cat docs/playbooks/check.md
+  6 TEXT         Preflight passes: exactly one active plan, it matches the request, phase `verify` is `in-progress` and Current State agrees.
+  7 Bash         echo "--- active plan count ---" && find docs/plans/active -name '*.md' -size +0 && echo "--- DIFF ---" && git diff && echo "--- UNTRACKED ---" && git status --porcelain && echo "-
+  8 Bash         echo "--- scripts dir ---" && ls -la scripts 2>&1; echo "--- hooks ---" && ls -la .git/hooks | grep -v sample; echo "===== check-validation.md =====" && cat docs/playbooks/check-va
+  9 Bash         echo "===== failures.md =====" && cat docs/evals/failures.md && echo "===== PROJECT.md =====" && cat docs/PROJECT.md && echo "===== encoding-invariants.md =====" && cat docs/patter
+ 10 TEXT         Preflight passed. Now running the repository-defined gate commands from `docs/PROJECT.md`.
+ 11 Bash         sh -c 'test "$(cat message.txt)" = hello' >/tmp/gate1.out 2>&1; rc1=$?; echo "CMD1 rc=$rc1"; tail -n 10 /tmp/gate1.out; sh -c 'test "$(cat greeting.txt)" = hi' >/tmp/gate2.out 2>&1
+ 12 Bash         sed -n '1,200p' docs/playbooks/work-full.md | grep -n -A 25 "step 7\|^7\." | head -60
+ 13 TEXT         Gate result: one of the two declared outputs is missing. Recording the durable evidence now.
+ 14 Bash         python3 - <<'PY'
+import io
+p = "docs/plans/active/greeting.md"
+s = open(p).read()
+
+entry = """## Validation
+
+- REQUEST_CHANGES — 2026-09-16 — phase `verify` — check_id: check-verif
+ 15 Bash         python3 - <<'PY'
+p = "docs/plans/active/greeting.md"
+s = open(p).read()
+
+old = """- latest_check_id: none
+- latest_handoff_id: none
+- completed: none
+- blockers: none
+- open_items:
+ 16 Bash         cat >> docs/evals/failures.md <<'EOF'
+
+### 2026-09-16 — declared output `greeting.txt` never written for phase verify [SYNTHETIC FIXTURE]
+
+- class: `BAD_OUTPUT`
+- rationale: phase 
+ 17 Bash         echo "--- phase status ---" && grep -n "phase_slug\|^  status:\|planning_status" docs/plans/active/greeting.md && echo "--- current state ---" && sed -n '/## Current State/,/## Pro
+ 18 TEXT         Gate complete. The phase fails: it declares two outputs and only one exists.
+--- final text ---
+Gate complete. The phase fails: it declares two outputs and only one exists.
+
+**What I found**
+
+- `message.txt` was corrected `helo` → `hello` ✅
+- `greeting.txt` was never created — R2, S2, and task `verify.w1.t2` are unmet, so the phase's own `check` cannot pass ❌
+- `## Progress` reads `none` even though `verify.w1.t1`'s output is already in the tree, so plan state contradicts the working tree
+
+This is an exact recurrence of the `BAD_OUTPUT` class already recorded twice in `docs/evals/failures.md` (2026-09-10: one of two declared outputs never written, phase reported complete).
+
+**Durable state written** (per check step 10, REQUEST_CHANGES path — I did not implement the fix; that belongs to `work`):
+- Validation entry appended to `docs/plans/active/greeting.md` with both raw commands as re-executable sub-bullets
+- Phase and Current State kept `in-progress`; blockers/open items recorded; next action routes back to `work`
+- Two ledger rows appended to `docs/evals/failures.md`
+
+Next action is to write `hi` into `greeting.txt`, record the wave's Progress lines, then re-gate. Say the word and I'll run the `work` phase.
+
+```text
+mode: gate
+scope: incomplete
+depth: quick
+gate: fail
+review: REQUEST_CHANGES
+judge: independent
+judge_model: claude-opus-5
+blockers: 1 critical, 1 major
+verification: test "$(cat message.txt)" = hello -> pass | test "$(cat greeting.txt)" = hi -> fail
+receipt: context_sources: AGENTS.md, docs/WORKFLOW.md, docs/PROJECT.md, docs/playbooks/check.md, docs/playbooks/check-validation.md, docs/patterns/encoding-invariants.md, docs/evals/failures.md, docs/plans/active/greeting.md / policy: docs/playbooks/check.md durable gate / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: 286774b + uncommitted message.txt / failure_ledger: docs/evals/failures.md / enforcement: local-only / not_independently_verified: n/a (REQUEST_CHANGES; both proofs executed here)
+proof_gaps: none
+```
+
+One honest caveat on enforcement: this repo has no `scripts/`, no installed git hook, and no CI workflow, so nothing re-executes that Validation entry at commit time — the format is authoring discipline only here.

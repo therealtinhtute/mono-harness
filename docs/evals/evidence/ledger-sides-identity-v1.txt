@@ -1,0 +1,20 @@
+# Ledger-toggle side-identity proof (p3.w2.t2)
+# Regenerated 2026-09-16T06:52:37Z from bin/mkfixture-ledger.sh, the same builder the six trials used.
+# Question: do the ledger-on and ledger-off fixtures differ anywhere OTHER than docs/evals/?
+
+$ bash bin/mkfixture-ledger.sh $T/on inprogress on
+rc=0
+$ bash bin/mkfixture-ledger.sh $T/off inprogress off
+rc=0
+
+$ diff -rq --exclude=.git --exclude=evals $T/on $T/off
+rc=0
+RESULT: SIDES IDENTICAL except docs/evals/ (the ledger).
+
+$ diff -rq $T/on/docs/evals $T/off/docs/evals   # the intended difference
+diff: /tmp/claude-1000/-home-tinhpt-Lab-mono-harness/06a4b32e-55b0-4b4a-878a-7c25facee2cf/scratchpad/evalwork/sidecheck/off/docs/evals: No such file or directory
+
+$ (cd $T/on && git status --porcelain -uall)
+ M message.txt
+$ (cd $T/off && git status --porcelain -uall)
+ M message.txt

@@ -1,0 +1,61 @@
+# runtrial-a.sh v1 — SUPERSEDED summariser.
+# Line 21 expanded $PLANSET, which this runner never sets; under 'set -u' the shell exited before
+# writing summary.txt and exit-code.txt. The trial itself had already completed, so trace.jsonl,
+# state-before/after.txt and tracked-diff.txt were intact and the summary was regenerated from them.
+# No model call was repeated. Retained.
+
+#!/usr/bin/env bash
+# runtrial.sh <trial-id> <plan-set> <request> [harness-src]
+# Runs one fresh-session trial in a disposable fixture and retains ordered evidence.
+set -uo pipefail
+TRIAL="$1"; REQ="$2"; SRC="${3:-/home/tinhpt/Lab/mono-harness}"
+W="$(cd "$(dirname "$0")/.." && pwd)"
+FIX="$W/fixtures/$TRIAL"; OUT="$W/artifacts/$TRIAL"
+rm -rf "$OUT"; mkdir -p "$OUT"
+bash "$W/bin/mkfixture-append.sh" "$FIX" "$SRC" > "$OUT/fixture-build.txt" 2>&1 || { echo "FIXTURE_BUILD_FAILED"; exit 2; }
+printf '%s\n' "$REQ" > "$OUT/request.txt"
+( cd "$FIX" && git status --porcelain -uall && echo "--- sha256 ---" && find . -path ./.git -prune -o -type f -print0 | sort -z | xargs -0 sha256sum ) > "$OUT/state-before.txt" 2>&1
+START=$(date -u +%FT%TZ)
+( cd "$FIX" && timeout 900 claude -p "$REQ" \
+    --setting-sources project,local --strict-mcp-config \
+    --model claude-opus-5 --permission-mode bypassPermissions \
+    --output-format stream-json --verbose ) > "$OUT/trace.jsonl" 2> "$OUT/stderr.txt"
+RC=$?
+END=$(date -u +%FT%TZ)
+( cd "$FIX" && git status --porcelain -uall && echo "--- sha256 ---" && find . -path ./.git -prune -o -type f -print0 | sort -z | xargs -0 sha256sum ) > "$OUT/state-after.txt" 2>&1
+( cd "$FIX" && git diff ) > "$OUT/tracked-diff.txt" 2>&1
+python3 - "$OUT" "$TRIAL" "$PLANSET" "$START" "$END" "$RC" <<'PY' > "$OUT/summary.txt" 2>&1
+import json,sys,os
+out,trial,planset,start,end,rc=sys.argv[1:7]
+ev=[]
+for line in open(os.path.join(out,'trace.jsonl'),encoding='utf-8',errors='replace'):
+    line=line.strip()
+    if not line: continue
+    try: ev.append(json.loads(line))
+    except Exception: pass
+sid=cost=model=None; final=None; nturns=0
+order=[]
+for e in ev:
+    if e.get('type')=='system' and e.get('subtype')=='init':
+        sid=e.get('session_id'); model=e.get('model')
+    if e.get('type')=='result':
+        cost=e.get('total_cost_usd'); final=e.get('result'); nturns=e.get('num_turns')
+        sid=sid or e.get('session_id')
+    if e.get('type')=='assistant':
+        for c in e.get('message',{}).get('content',[]):
+            if c.get('type')=='tool_use':
+                inp=c.get('input',{})
+                arg=inp.get('file_path') or inp.get('command') or inp.get('pattern') or inp.get('path') or ''
+                order.append((c.get('name'), str(arg)[:180]))
+            elif c.get('type')=='text' and c.get('text','').strip():
+                order.append(('TEXT', c['text'].strip().splitlines()[0][:180]))
+print(f"trial={trial} plan_set={planset} rc={rc}")
+print(f"session_id={sid} model={model} cost_usd={cost} num_turns={nturns}")
+print(f"started={start} ended={end} events={len(ev)}")
+print("--- ordered tool calls ---")
+for i,(n,a) in enumerate(order,1): print(f"{i:3d} {n:12s} {a}")
+print("--- final text ---")
+print(final)
+PY
+echo "$RC" > "$OUT/exit-code.txt"
+cat "$OUT/summary.txt"

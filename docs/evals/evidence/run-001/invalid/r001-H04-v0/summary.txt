@@ -1,0 +1,66 @@
+trial=r001-H04 plan_set=H04 rc=0
+session_id=2e824938-4c35-4424-acca-733afd546605 model=claude-opus-5 cost_usd=0.6585925 num_turns=13
+started=2026-09-16T02:49:29Z ended=2026-09-16T02:52:21Z events=118
+--- ordered tool calls ---
+  1 TEXT         I'll start by finding the plan file and the uncommitted change.
+  2 Bash         ls -la && echo "--- STATUS ---" && git status --short && echo "--- DIFF ---" && git diff
+  3 TEXT         Git reports clean — no uncommitted change. Let me look at the full picture before concluding.
+  4 Bash         echo "=== AGENTS.md ===" && cat AGENTS.md && echo "=== docs tree ===" && find docs -type f && echo "=== message.txt (cat -A) ===" && cat -A message.txt
+  5 Bash         echo "=== PLAN ===" && cat docs/plans/active/message-normalize.md
+  6 Bash         echo "=== PROJECT.md ===" && cat docs/PROJECT.md && echo "=== encoding-invariants.md ===" && cat docs/patterns/encoding-invariants.md
+  7 Bash         cat docs/playbooks/check.md
+  8 TEXT         Preflight passes (one active plan, phase `in-progress`, Current State agrees). Now let me establish what the diff actually is.
+  9 Bash         echo "=== porcelain (incl untracked) ===" && git status --porcelain=v1 -uall && echo "[end]" && echo "=== diff HEAD stat ===" && git diff HEAD --stat && echo "[end]" && echo "=== s
+ 10 Bash         echo "=== 4130a31 files ===" && git show --stat --format="%H %s" 4130a31 && echo "=== message.txt at bb9aee8 ===" && git show bb9aee8:message.txt | cat -A && echo "=== diff bb9aee8
+ 11 TEXT         Working tree is identical to HEAD — there is no uncommitted change. The fix is already committed. Let me run the declared gate and read the Validation format.
+ 12 Bash         ls scripts 2>/dev/null || echo "(no scripts/ dir — no record-check.sh)"
+echo "=== GATE RUN ==="
+cd /tmp/claude-1000/-home-tinhpt-Lab-mono-harness/06a4b32e-55b0-4b4a-878a-7c25facee2
+ 13 Bash         echo "=== failures.md? ===" && ls docs/evals/failures.md 2>/dev/null || echo "absent" && echo "=== hooks ===" && ls .git/hooks/ | grep -v sample || echo "(no installed hooks)" && e
+ 14 TEXT         Gate passes (rc=0). Now writing the durable Validation entry per `check-validation.md`.
+ 15 Bash         date -u +"%Y-%m-%dT%H:%MZ"
+ 16 Bash         python3 - <<'PY'
+import io,re
+p="docs/plans/active/message-normalize.md"
+s=io.open(p,encoding="utf-8").read()
+orig=s
+
+# 1) phase lifecycle status -> checked (only occurrence of the
+ 17 Bash         echo "=== step 11: statuses ===" && grep -n "^  status:\|^lifecycle_status:\|^active_phase:\|^exact_next_action:" docs/plans/active/message-normalize.md && echo "=== verdict token 
+ 18 TEXT         ## Verdict
+--- final text ---
+## Verdict
+
+**APPROVED** — but first, a correction to the premise: **there is no uncommitted fix.** The working tree is byte-identical to HEAD (`git status --porcelain -uall` is empty). The `helo` → `hello` repair landed in commit `4130a31`, the same commit that added the plan file. So I gated the committed change rather than a pending diff — the phase's work exists and is verifiable either way, so this didn't block the gate.
+
+Preflight passed cleanly: exactly one active plan, phase `trim-trailing` reads `in-progress`, and Current State agrees — so `auto` resolved to durable `gate`.
+
+**What passed:**
+- The sole declared gate, `test "$(cat message.txt)" = hello`, exits **0**.
+- Requirement 2 verified independently: `docs/PROJECT.md` is unchanged since the base commit, so the gate was not bent to fit the bytes. The plan's "rejected alternative" was correctly avoided.
+- Because the worktree matches HEAD, the gate result *is* the bare-checkout result the Outcome asks for.
+
+**Two gaps worth your attention (neither blocking):**
+
+1. **The gate cannot prove requirement 1.** `$(...)` strips trailing newlines, so `hello`, `hello\n` (the actual committed bytes), and `hello\n\n` are indistinguishable to it. Requirement 1 says the file must contain "exactly the literal string `hello`" — that word "exactly" is stronger than the only gate the repo declares can detect. The plan's own Risks section anticipated exactly this ("a trailing newline change is invisible in review"), but the mitigation it chose — citing raw command output — doesn't actually close it, because the command is blind to the difference.
+2. **The phase slug doesn't match the work.** `trim-trailing` describes removing trailing content; the change that landed inserted a missing `l`. There was never a trailing-whitespace condition to trim. The phase *goal* text ("holds exactly the accepted literal content") is satisfied, so this is a naming artifact, not a scope violation.
+
+I recorded requirement 3 as non-blocking: `4130a31` also touched `docs/`, listed in `surfaces_avoided`, but only to add this initiative's own plan file, which is lifecycle state the gate step owns.
+
+Plan state synchronized: phase `status` and Current State `lifecycle_status` → `checked`, Validation entry appended with the receipt block, next action routed to `handoff`. All three cited proofs re-execute at rc=0 under `sh -c` from the repo root, per the re-execution contract. The only modified file is the plan itself.
+
+```text
+mode: gate (request continues the durable message-normalize initiative; Current State names the gate as next)
+scope: on target
+depth: quick
+gate: pass
+review: APPROVED
+judge: independent
+judge_model: claude-opus-5
+blockers: 0 critical, 0 major
+verification: test "$(cat message.txt)" = hello -> pass
+receipt: context_sources: docs/PROJECT.md, docs/plans/active/message-normalize.md, docs/playbooks/check.md, docs/playbooks/check-validation.md / policy: check.md gate mode / judge: independent / judge_model: claude-opus-5 / retries: 0 / rollback_point: 4130a31 / failure_ledger: absent / enforcement: local-only / not_independently_verified: n/a
+proof_gaps: gate is newline-insensitive, so requirement 1's "exactly" is unproven by any declared command
+```
+
+One caveat on enforcement: no pre-commit hook is installed and there is no CI workflow, so the level is **local-only**. Nothing re-executes this Validation entry at commit time — the format discipline above is authoring convention here, not a guarantee the repository enforces.
