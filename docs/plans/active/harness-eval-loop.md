@@ -327,8 +327,9 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
     - F1/F2 shared cause: line-number anchors into live playbooks rot like the active-plan paths
       repaired in ADRs 0008/0009, and two of five were already wrong when written. A bounded
       follow-up should drop the `:NN` form in favor of the narrative "(step N)".
-    - F3 (minor): ADR 0010 cites `docs/plans/active/harness-eval-loop.md` twice (Status,
-      Authority) and will need the ADR 0008/0009 repair when this plan moves to completed.
+    - F3 (minor) — **repaired 2026-09-17, after that review entry.** ADR 0010's Status and
+      Authority lines now name `harness-eval-loop.md` (then under `docs/plans/active/`), the
+      form `docs/evals/failures.md` already uses; no follow-up edit is owed at closure.
     - F4 (minor): retained evidence embeds operator absolute paths — 81 occurrences of
       `/home/tinhpt/.claude/projects/...` in `trace.jsonl` files and 10 of
       `/home/tinhpt/Lab/mono-harness` in the retained generator scripts. No credential material
@@ -337,8 +338,8 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
 - exact_next_action: **owner decision on 2026-09-16: do not close this initiative in that
   session.** The plan stays `active` and was never `git mv`'d. To resume, pick one of the two
   paths below, then run `handoff` again; nothing is owed to `work` or `check`.
-  (a) Close cheaply: accept that the unverified-line-anchor class stays unguarded, clear the F3
-  and F4 open items by decision rather than by fix, write `absorb: none` in `## Decisions`, and
+  (a) Close cheaply: accept that the unverified-line-anchor class stays unguarded, clear the F4
+  open item (F4) by decision rather than by fix, write `absorb: none` in `## Decisions`, and
   run `handoff` steps 5-7. This is blocked today only by `handoff.md` step 6's requirement that
   `open_items` read `none` and that a class-of-failure have an ADR or guard.
   (b) Close properly: first encode the invariant behind F1/F2 — `scripts/verify-doc-links.sh`
@@ -486,6 +487,15 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
   rc=0; `bash scripts/verify-doc-links.sh` clean. Only the numeric values changed; the narrative
   "(step N)" text was already correct everywhere and was left alone. F3 and F4 were deliberately
   not touched, and the underlying class stays unguarded — see open_items.
+- [2026-09-17] p3-failure-ledger / post-review citation repair (F3) — DONE, also recorded **after**
+  the independent `check full` entry of 2026-09-16T08:20Z, which is left unedited. ADR 0010 lines 6
+  and 125 cited `docs/plans/active/harness-eval-loop.md`; both now read `harness-eval-loop.md`
+  (then under `docs/plans/active/`). Verification ran:
+  `test "$(grep -c 'docs/plans/active/harness-eval-loop.md' docs/decisions/0010-local-failure-ledger.md)" -eq 0`
+  rc=0; `bash scripts/verify-doc-links.sh` clean. The reviewer's F3 proof
+  (`grep -c 'docs/plans/active/'` = 2) still returns 2, because the historical note keeps the
+  directory name, so it no longer evidences the defect. F4 (would change hashed evidence) and the
+  unguarded `:NN` class (touches `scripts/`, in surfaces_avoided) remain open and untouched.
 
 ## Decisions
 

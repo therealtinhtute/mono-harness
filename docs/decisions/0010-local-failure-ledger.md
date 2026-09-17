@@ -3,7 +3,7 @@
 ## Status
 
 Accepted. 2026-09-16. Authority for creating `docs/evals/failures.md`, executed in phase
-`p3-failure-ledger` of `docs/plans/active/harness-eval-loop.md` (R8).
+`p3-failure-ledger` of `harness-eval-loop.md` (then under `docs/plans/active/`) (R8).
 
 ## Context
 
@@ -122,6 +122,6 @@ clause to a surface that decision deliberately left unwired.
 - `.claimignore:22` — the obsolete exception removed alongside this decision.
 - `docs/evals/runs.md` — run 001, the measured baseline whose two failures are recurrences of
   uncovered classes.
-- `docs/plans/active/harness-eval-loop.md` — R7, R8, R9, and R10; the owner's 2026-09-16 approval
+- `harness-eval-loop.md` (then under `docs/plans/active/`) — R7, R8, R9, and R10; the owner's 2026-09-16 approval
   of the corrected draft is the authority for the phase, and this ADR is the authority for the
   file.
