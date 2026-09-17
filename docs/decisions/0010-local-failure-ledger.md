@@ -9,11 +9,11 @@ Accepted. 2026-09-16. Authority for creating `docs/evals/failures.md`, executed 
 
 Two of the six spine playbooks already read a ledger that has never existed.
 
-`docs/playbooks/check.md:29` (step 4) says: *"IF `docs/evals/failures.md` exists → for every
+`docs/playbooks/check.md` (Review and Gate Steps, step 4) says: *"IF `docs/evals/failures.md` exists → for every
 failure class recorded two or more times, state whether the diff is clean of it; an absent file
-is not an error."* `docs/playbooks/check.md:37` (step 10) says a `REQUEST_CHANGES` verdict
+is not an error."* `docs/playbooks/check.md` (Review and Gate Steps, step 10) says a `REQUEST_CHANGES` verdict
 appends one row per finding *"IF `docs/evals/failures.md` exists"*. Both clauses have been
-dormant since they were written. `docs/playbooks/work-full.md:28` supplies the vocabulary they
+dormant since they were written. `docs/playbooks/work-full.md` (Full-Mode Execution, step 7) supplies the vocabulary they
 would use — `MISSING_CONTEXT|WRONG_TOOL|BAD_OUTPUT|REPEATED_LOOP|UNSAFE_ACTION|LOST_DECISION|UNKNOWN`
 — and that taxonomy has no store either, so a class is named once in a `BLOCKED_*` Progress line
 and never counted again.
@@ -37,7 +37,7 @@ The measurement that makes it worth revisiting is in `docs/evals/runs.md` run 00
 frozen routing cases produced two failures, and both are recurrences of classes already named
 elsewhere in the repository rather than novel one-offs: H04 upgraded an explicit response-only
 `check review` into a durable gate and wrote plan state, and H01 announced its resolved mode
-after reading plans, against `docs/playbooks/work.md:13`. Neither has any guard. A class that
+after reading plans, against `docs/playbooks/work.md` (Preconditions and Modes, step 2). Neither has any guard. A class that
 recurs and that no guard covers is precisely what `check.md` step 4's "two or more times" clause
 was written to surface, and it cannot surface without somewhere to count.
 
@@ -55,7 +55,7 @@ repository, and change no playbook to require it.
   the file sees behavior identical to today's. This is the narrow difference from ADR 0003: that
   decision declined to *add* mandatory playbook steps for a store with no consumers, while this
   one creates the store for optional steps that already exist and are dormant.
-- **Classes come from the existing taxonomy only.** `docs/playbooks/work-full.md:28`'s seven
+- **Classes come from the existing taxonomy only.** `docs/playbooks/work-full.md` (Full-Mode Execution, step 7)'s seven
   tokens are the complete vocabulary (R7). A row that fits none of them is `UNKNOWN` with a
   rationale, never a new token — a private vocabulary would make the "recorded two or more times"
   count meaningless across rows.
@@ -109,9 +109,9 @@ clause to a surface that decision deliberately left unwired.
 
 ## Authority
 
-- `docs/playbooks/check.md:29` and `docs/playbooks/check.md:37` — the two conditional consumers
+- `docs/playbooks/check.md` (Review and Gate Steps, steps 4 and 10) — the two conditional consumers
   that already name `docs/evals/failures.md`.
-- `docs/playbooks/work-full.md:28` — the seven-token failure taxonomy this ledger stores.
+- `docs/playbooks/work-full.md` (Full-Mode Execution, step 7) — the seven-token failure taxonomy this ledger stores.
 - `docs/decisions/0003-durable-memory-not-wired-into-playbooks.md` — the recurring-cost argument
   against mandatory playbook wiring, which this decision honors rather than overturns.
 - `docs/decisions/0004-docs-directory-deletion-655c6ac.md` — the "restore only what is required"

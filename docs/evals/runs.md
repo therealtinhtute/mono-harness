@@ -104,9 +104,9 @@ Totals: 12 pass, 2 fail, 0 interrupted, 0 not-run among the 14 frozen cases. Reg
    only; changing `docs/playbooks/check.md` is outside the scope of `p1-routing-eval-set` and of
    `p3-failure-ledger`.
 2. **The two playbooks' mode-declaration rules differ, and the stricter one is the one that was
-   missed.** `docs/playbooks/check.md:3` allows the announcement after a successful preflight
+   missed.** `docs/playbooks/check.md` (Preconditions and Modes, step 3) allows the announcement after a successful preflight
    ("Direct bounded requests need no plan read before this announcement"), so R01 announcing at
-   tool call 6 and gating at call 7 is compliant. `docs/playbooks/work.md:13` is stricter —
+   tool call 6 and gating at call 7 is compliant. `docs/playbooks/work.md` (Preconditions and Modes, step 2) is stricter —
    "Before reading any plan, print the resolved mode as your first output line" — and H01, the
    only `work` invocation in the case set, violated it. One observation on one case is not
    evidence of a pattern; it is recorded as a single incident and seeded into the ledger in

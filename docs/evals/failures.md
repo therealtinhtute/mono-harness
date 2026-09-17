@@ -4,15 +4,15 @@ Observed harness failures in this repository, one row per incident, append-only.
 
 Authority: `docs/decisions/0010-local-failure-ledger.md`. This file is maintainer-owned and local.
 It is not synced, not scaffolded by `zharness install` or `update`, and not required by any
-playbook. Its two consumers are conditional on its existence: `docs/playbooks/check.md:29`
-(step 4) reads it and, for every class recorded two or more times, states whether the diff under
-review is clean of that class; `docs/playbooks/check.md:37` (step 10) appends one row per finding
+playbook. Its two consumers are conditional on its existence: `docs/playbooks/check.md`
+(Review and Gate Steps, step 4) reads it and, for every class recorded two or more times, states whether the diff under
+review is clean of that class; `docs/playbooks/check.md` (Review and Gate Steps, step 10) appends one row per finding
 when a durable `gate` or `full` returns `REQUEST_CHANGES`. Deleting this file returns the
 repository to the behavior it had before the file existed.
 
 ## Conventions
 
-- **class** — one of the seven tokens in `docs/playbooks/work-full.md:28`:
+- **class** — one of the seven tokens in `docs/playbooks/work-full.md` (Full-Mode Execution, step 7):
   `MISSING_CONTEXT`, `WRONG_TOOL`, `BAD_OUTPUT`, `REPEATED_LOOP`, `UNSAFE_ACTION`,
   `LOST_DECISION`, `UNKNOWN`. No other token is admissible. A row that fits none of them is
   `UNKNOWN` with a stated rationale, never a new token — a private vocabulary would make the
@@ -41,7 +41,7 @@ repository to the behavior it had before the file existed.
 - source: `90f5b84`, `docs/audit/deepseek-harness-token-audit.md` §4 S1, routing smoke
   observations table, row "Two active plans, one matching initiative" — *"Initial wording failed:
   agent filtered by initiative and proceeded."*
-- coverage: covered. `docs/playbooks/check.md:15` (step 2) now requires exactly one active plan in
+- coverage: covered. `docs/playbooks/check.md` (Preconditions and Modes, step 2) now requires exactly one active plan in
   total and to *"list every candidate and stop even when only one matches the request"*; case R07
   in `docs/evals/routing.md` is the standing regression, and the six-trial historical control in
   `docs/evals/runs.md` run 001 measures the fix directly — old side `0dfb5b2^` 0/3, new side
@@ -116,8 +116,8 @@ the omission is deliberate and visible rather than silent.
   root on `zharness update --abort`. Carried in this initiative's own Current State; out of scope under R10.
 - Run 001's two baseline failures — H04 upgrading an explicit `check review` into a durable gate
   and writing plan state, and H01 announcing its resolved mode after reading plans against
-  `docs/playbooks/work.md:13`. Both are recorded with full evidence in `docs/evals/runs.md` and
+  `docs/playbooks/work.md` (Preconditions and Modes, step 2). Both are recorded with full evidence in `docs/evals/runs.md` and
   under `docs/evals/evidence/run-001/`. They are not appended here because the gate that found
-  them returned `APPROVE_WITH_REQUESTS`, and `docs/playbooks/check.md:37` conditions the append
+  them returned `APPROVE_WITH_REQUESTS`, and `docs/playbooks/check.md` (Review and Gate Steps, step 10) conditions the append
   on `REQUEST_CHANGES`; seeding them by hand would make this file's provenance ambiguous between
   the playbook's rule and the author's judgment.

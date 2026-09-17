@@ -25,6 +25,6 @@ The lifecycle needs no binary: route through the table and read only the named p
 
 ## Execution boundary
 
-Reduced mode mutates nothing durable. Durable stages write the active plan's sections exactly as each playbook directs; nothing else writes them. Every proof claim names actual command output or observable evidence. IF repository tooling and a playbook disagree → trust the repository and report the docs mismatch.
+Reduced mode mutates nothing durable. Durable stages write the active plan's sections exactly as each playbook directs; nothing else writes them. Every proof claim names actual command output or observable evidence. Cite `docs/WORKFLOW.md` and `docs/playbooks/*.md` by section and step number, never by line number: `zharness update` overwrites them, so line numbers drift. IF repository tooling and a playbook disagree → trust the repository and report the docs mismatch.
 
 escalate_when: ask the owner and stop — locked schema or requirements would change; the same verification command failed twice; a product rule conflicts.
