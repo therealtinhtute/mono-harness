@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.22.0] — 2026-09-17
+
+### Changed
+
+- `WORKFLOW.md`: cite `docs/playbooks/*.md` and `docs/WORKFLOW.md` by section
+  and step number, never by line (`:NN`) — `zharness update` fresh-overwrites
+  these files, so line anchors drift silently and the doc-link guard never
+  validates the `:NN` suffix. Run `zharness update` in consumer repositories
+  to pick up the convention.
+
 ## [v0.21.0] — 2026-09-15
 
 ### Changed
