@@ -19,7 +19,9 @@
   backfill of consumer history.
 - No application runtime, credentials, schema validation, or product policy.
 - No scanning or merging of `~/.claude`, `~/.codex`, `~/.agents`,
-  `~/.config/opencode` (except the single codex config line in R7).
+  `~/.config/opencode` (except the single codex config line in R7); the only
+  other home-directory file zharness writes is its repo registry
+  `~/.config/zharness/repos`.
 
 ## What are the gate commands?
 - run from: the repository root
@@ -37,12 +39,14 @@
   update / uninstall; everything else is git-committed markdown under `docs/`
   plus fail-closed pre-commit guards (proof re-execution, high-risk and full
   independent-judge, at most one active plan).
-- where state lives: `docs/plans/active/*.md` (append-only Progress /
-  Decisions / Validation) and `.zharness/base/` (manifest + content-addressed
-  upstream blobs) — no SQLite anywhere.
+- where state lives: `docs/plans/active/*.md` (append-only Log /
+  Validation) and `.zharness/base/` (sha256 manifest + ownership
+  ledger), plus the repo registry `~/.config/zharness/repos` — no SQLite anywhere.
 - entrypoints: `cli/internal/interfaces/root.go`; embedded doc set under
   `cli/docs/embedded/` projected to `docs/`; hooks via
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- plan: docs/plans/active/multi-stack-harness-readiness.md (active, in-progress)
+- plan: none active; last completed docs/plans/completed/zharness-slim.md
+- follow-up: `site/docs/architecture.html` and `site/docs/cli.html` still describe
+  three-way merge and `update --continue`/`--abort`, removed by ADR 0011.

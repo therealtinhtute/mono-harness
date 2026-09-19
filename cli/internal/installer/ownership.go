@@ -155,18 +155,18 @@ func captureIfPreexisting(root string, o *ownership, dst string) error {
 // so a legacy consumer's uninstall behaves as it does today wherever that
 // evidence survives, and degrades to keep-and-warn only where it does not.
 //
-// base carries the recorded upstream bytes per managed path: an .orig whose
-// content is exactly those bytes is the F06 artifact — a generated file
+// base carries the recorded upstream sha256 per managed path: an .orig whose
+// content hashes to it is the F06 artifact — a generated file
 // recorded as its own predecessor — not a real pre-install original.
-func (o *ownership) seedLegacy(root string, targets []Target, base map[string][]byte) {
+func (o *ownership) seedLegacy(root string, targets []Target, base map[string]string) {
 	for _, t := range targets {
 		o.seedPath(root, t.Dst, base[t.Dst])
 	}
-	o.seedPath(root, agentsTarget, nil)
+	o.seedPath(root, agentsTarget, "")
 	o.seedGitignore(root)
 }
 
-func (o *ownership) seedPath(root, dst string, upstream []byte) {
+func (o *ownership) seedPath(root, dst, upstream string) {
 	if o.has(kindFile, dst) {
 		return
 	}
@@ -177,7 +177,7 @@ func (o *ownership) seedPath(root, dst string, upstream []byte) {
 	switch {
 	case !hasOrig:
 		o.set(kindFile, dst, originCreated)
-	case upstream != nil && bytesEqual(orig, upstream):
+	case upstream != "" && sha(orig) == upstream:
 		o.set(kindFile, dst, originCreated)
 	default:
 		o.set(kindFile, dst, originPreexisting)
@@ -206,7 +206,7 @@ func (o *ownership) seedGitignore(root string) {
 // is proven by a non-empty base manifest and no ledger exists yet. A
 // first-ever install into a brownfield repository has no manifest, so it
 // decides live and records `preexisting` correctly.
-func loadOwnershipFor(root string, targets []Target, base map[string][]byte) *ownership {
+func loadOwnershipFor(root string, targets []Target, base map[string]string) *ownership {
 	o := loadOwnership(root)
 	if len(o.origin) == 0 && len(base) > 0 {
 		o.seedLegacy(root, targets, base)

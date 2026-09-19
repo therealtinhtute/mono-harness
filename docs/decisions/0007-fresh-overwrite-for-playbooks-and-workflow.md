@@ -3,6 +3,7 @@
 ## Status
 
 Accepted. 2026-09-03. Narrows R9 of `docs/plans/completed/zharness-v015-slim.md` for two of the four managed-file classes; R9 stays accurate for `docs/PROJECT.md` and the `AGENTS.md` marked block.
+The three-way-merge half is superseded by [ADR 0011](0011-update-without-three-way-merge.md).
 
 ## Context
 

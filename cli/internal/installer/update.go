@@ -1,9 +1,6 @@
 package installer
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -36,220 +33,6 @@ func jsonMarshal(v any) ([]byte, error) {
 
 func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
 
-// ---------------------------------------------------------------- stash ---
-
-// stash.tsv v2 is `path<TAB>blob<TAB>existed`. v1 omitted the third column,
-// which collided "absent" with "present but empty" — both became a zero-byte
-// blob, and restore read zero bytes as a deletion request (F04, ADR 0008).
-type stashEntry struct {
-	rel     string
-	name    string
-	existed bool
-	legacy  bool // v1 row: existence unknown, never inferred from length
-	data    []byte
-}
-
-func stashCapture(root string, paths []string) error {
-	sp := filepath.Join(root, stashDir)
-	if err := os.MkdirAll(sp, 0o755); err != nil {
-		return err
-	}
-	var meta strings.Builder
-	for _, rel := range paths {
-		p := filepath.Join(root, rel)
-		data, err := os.ReadFile(p)
-		existed := err == nil
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-		if !existed {
-			data = nil
-		}
-		key := sha256.Sum256([]byte(rel))
-		name := hex.EncodeToString(key[:12]) + ".bin"
-		if err := os.WriteFile(filepath.Join(sp, name), data, 0o644); err != nil {
-			return err
-		}
-		fmt.Fprintf(&meta, "%s\t%s\t%s\n", rel, name, boolBit(existed))
-	}
-	return os.WriteFile(filepath.Join(sp, "stash.tsv"), []byte(meta.String()), 0o644)
-}
-
-func boolBit(b bool) string {
-	if b {
-		return "1"
-	}
-	return "0"
-}
-
-// stashLoad parses the inventory and reads every payload up front. Nothing is
-// written to the working tree until the whole inventory is known-good, so an
-// incomplete stash cannot be half-applied (F05).
-func stashLoad(root string) ([]stashEntry, []string, error) {
-	sp := filepath.Join(root, stashDir)
-	meta, err := os.ReadFile(filepath.Join(sp, "stash.tsv"))
-	if err != nil {
-		return nil, nil, err
-	}
-	var entries []stashEntry
-	var problems []string
-	for _, line := range strings.Split(strings.TrimRight(string(meta), "\n"), "\n") {
-		if line == "" {
-			continue
-		}
-		parts := strings.Split(line, "\t")
-		if len(parts) < 2 {
-			problems = append(problems, fmt.Sprintf("malformed stash record: %q", line))
-			continue
-		}
-		e := stashEntry{rel: parts[0], name: parts[1]}
-		switch {
-		case len(parts) == 2:
-			e.legacy = true
-		case parts[2] == "1":
-			e.existed = true
-		case parts[2] == "0":
-			e.existed = false
-		default:
-			problems = append(problems, fmt.Sprintf("%s: unreadable existence flag %q", e.rel, parts[2]))
-			continue
-		}
-		raw, rerr := os.ReadFile(filepath.Join(sp, e.name))
-		if rerr != nil {
-			problems = append(problems, fmt.Sprintf("%s: stash payload missing or unreadable (%s)", e.rel, e.name))
-			continue
-		}
-		e.data = raw
-		entries = append(entries, e)
-	}
-	return entries, problems, nil
-}
-
-// stashRestore returns the pre-update bytes for every captured path, or an
-// error naming exactly what could not be restored. On failure the stash
-// directory is left in place: the recovery data is the last copy of the
-// consumer's bytes and is never destroyed to make a failure look tidy.
-func stashRestore(root string) error {
-	sp := filepath.Join(root, stashDir)
-	entries, problems, err := stashLoad(root)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if len(problems) > 0 {
-		return fmt.Errorf("stash is incomplete; nothing was restored and %s was kept for recovery:\n  %s",
-			stashDir, strings.Join(problems, "\n  "))
-	}
-
-	var failed []string
-	var ambiguous []string
-	for _, e := range entries {
-		dst := filepath.Join(root, e.rel)
-		if e.legacy && len(e.data) == 0 {
-			// v1 cannot distinguish absent from empty. Deleting on a guess is
-			// the F04 defect; leave the path alone and say so.
-			ambiguous = append(ambiguous, e.rel)
-			continue
-		}
-		if !e.legacy && !e.existed {
-			if rerr := os.Remove(dst); rerr != nil && !os.IsNotExist(rerr) {
-				failed = append(failed, fmt.Sprintf("%s: %v", e.rel, rerr))
-			}
-			continue
-		}
-		if werr := writeFileAtomic(dst, e.data); werr != nil {
-			failed = append(failed, fmt.Sprintf("%s: %v", e.rel, werr))
-		}
-	}
-	if len(failed) > 0 {
-		return fmt.Errorf("restore failed for %d path(s); %s was kept for recovery:\n  %s",
-			len(failed), stashDir, strings.Join(failed, "\n  "))
-	}
-	if len(ambiguous) > 0 {
-		return fmt.Errorf("stash predates existence tracking; %d path(s) could not be restored unambiguously and were left as-is: %s\n  %s was kept — restore these from git if they are wrong",
-			len(ambiguous), strings.Join(ambiguous, ", "), stashDir)
-	}
-	return os.RemoveAll(sp)
-}
-
-// ------------------------------------------------------------ conflicts ---
-
-func loadConflicts(root string) []string {
-	b, err := os.ReadFile(filepath.Join(root, conflictsFile))
-	if err != nil {
-		return nil
-	}
-	return strings.Split(strings.TrimSpace(string(b)), "\n")
-}
-
-func saveConflicts(root string, list []string) error {
-	if len(list) == 0 {
-		err := os.Remove(filepath.Join(root, conflictsFile))
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	sort.Strings(list)
-	return writeFileAtomic(filepath.Join(root, conflictsFile), []byte(strings.Join(list, "\n")+"\n"))
-}
-
-// The update draft records what this update run did while conflicts are
-// pending: Base carries the files already refreshed (installed /
-// fast-forwarded / auto-merged), Upstream carries the exact upstream bytes
-// each CONFLICTED file was being reconciled onto. --continue commits Base
-// plus the conflicted upstreams as the new base (the resolution itself
-// stays in the working tree as local drift, so the next unchanged-upstream
-// update can never fast-forward it away); --abort discards the draft with
-// the stash.
-type updateDraft struct {
-	Base     map[string][]byte
-	Upstream map[string][]byte
-}
-
-func saveBaseDraft(root string, d updateDraft) error {
-	b, err := jsonMarshal(d)
-	if err != nil {
-		return err
-	}
-	sp := filepath.Join(root, stashDir)
-	if err := os.MkdirAll(sp, 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(filepath.Join(sp, "basedraft.json"), b, 0o644)
-}
-
-func loadBaseDraft(root string) (updateDraft, bool) {
-	b, err := os.ReadFile(filepath.Join(root, stashDir, "basedraft.json"))
-	if err != nil {
-		return updateDraft{}, false
-	}
-	var d updateDraft
-	if jsonUnmarshal(b, &d) != nil {
-		return updateDraft{}, false
-	}
-	// a valid-JSON but truncated draft must not surface as a nil map
-	if d.Base == nil {
-		d.Base = map[string][]byte{}
-	}
-	if d.Upstream == nil {
-		d.Upstream = map[string][]byte{}
-	}
-	return d, true
-}
-
-// draftUpstream returns the conflict-time upstream bytes recorded for rel.
-func draftUpstream(root, rel string) ([]byte, bool) {
-	d, ok := loadBaseDraft(root)
-	if !ok {
-		return nil, false
-	}
-	up, ok := d.Upstream[rel]
-	return up, ok
-}
-
 func agentsBlockOf(content string) (string, bool) {
 	si, ej, ok := agentsSpan(content)
 	if !ok {
@@ -258,180 +41,105 @@ func agentsBlockOf(content string) (string, bool) {
 	return content[si:ej], true
 }
 
-func hasConflictMarkers(p string) bool {
-	b, err := os.ReadFile(p)
-	if err != nil {
-		return false
-	}
-	s := string(b)
-	return strings.Contains(s, conflictOpenTag) || strings.Contains(s, conflictCloseTag)
-}
-
 // ------------------------------------------------------------- options ---
 
 // UpdateOptions carries update invocation flags (exported for interfaces).
 type UpdateOptions = updateOptions
 
 type updateOptions struct {
-	Root     string
-	Version  string
-	Continue bool
-	Abort    bool
+	Root    string
+	Version string
+	Force   bool // replace a hand-edited AGENTS block instead of refusing
 }
 
-// RunUpdate executes zharness update (R9).
+// RunUpdate refreshes the managed set (ADR 0011). Playbooks and WORKFLOW.md
+// are overwritten, docs/PROJECT.md is written only when absent, and the
+// AGENTS block is replaced between its markers unless it was edited by hand
+// since the last write. A single active plan in the older 9-section format
+// is migrated (MigratePlan). Every refusal is decided before the first write,
+// so a refused update leaves every file as it was.
 func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 	root := o.Root
-
-	switch {
-	case o.Abort:
-		if err := stashRestore(root); err != nil {
-			return err
-		}
-		_ = saveConflicts(root, nil)
-		fmt.Fprintln(stdout, "abort: pre-update state restored byte-for-byte.")
-		return nil
-	}
-
 	targets, err := AllTargets()
 	if err != nil {
 		return err
 	}
-	_, baseFiles, err := loadBase(root)
+	baseFiles, err := loadBase(root)
 	if err != nil {
 		return err
 	}
-
-	if o.Continue {
-		return finalizeConflicts(o, baseFiles, stdout)
+	if _, serr := os.Stat(filepath.Join(root, legacyConflictsFile)); serr == nil {
+		fmt.Fprintf(stdout, "refused    a pre-0011 update stopped with unresolved conflicts (%s)\n\n", legacyConflictsFile)
+		fmt.Fprintf(stdout, "Resolve the conflict markers in the files it lists, delete %s and %s/, then rerun. Nothing was written.\n", legacyConflictsFile, legacyStashDir)
+		return fmt.Errorf("unresolved pre-0011 update conflicts in %s", legacyConflictsFile)
 	}
 
-	if pending := loadConflicts(root); len(pending) > 0 {
-		return fmt.Errorf("%d unresolved conflicted file(s): %s — use --continue after resolving markers, or --abort", len(pending), strings.Join(pending, ", "))
+	blockB, err := agentBlockBytes()
+	if err != nil {
+		return err
 	}
-
-	touchables := make([]string, 0, len(targets)+3)
-	for _, t := range targets {
-		touchables = append(touchables, t.Dst)
+	want := canonicalAgentsBlock(string(blockB))
+	ap := filepath.Join(root, agentsTarget)
+	agents, aerr := os.ReadFile(ap)
+	if aerr != nil && !os.IsNotExist(aerr) {
+		return aerr
 	}
-	touchables = append(touchables, agentsTarget, gitignoreTarget)
-	if err := stashCapture(root, dedupe(touchables)); err != nil {
+	cur, hasBlock := agentsBlockOf(string(agents))
+	cur = strings.ReplaceAll(cur, "\r\n", "\n") // a checkout with autocrlf is not a hand edit
+	if rec, tracked := baseFiles[agentsTarget]; hasBlock && tracked && !o.Force && cur != want && sha([]byte(cur)) != rec {
+		fmt.Fprintf(stdout, "refused    %s: the marked block was edited since zharness last wrote it\n\n", agentsTarget)
+		stdout.WriteString(unifiedDiff(agentsTarget+" (on disk)", agentsTarget+" (this zharness)", cur, want))
+		fmt.Fprintln(stdout, "\nMove local text outside the markers, or rerun with --force to replace the block. Nothing was written.")
+		return fmt.Errorf("%s block edited by hand; rerun with --force to replace it", agentsTarget)
+	}
+	mig, err := preparePlanMigration(root)
+	if err != nil {
+		fmt.Fprintf(stdout, "refused    plan migration: %v. Nothing was written.\n", err)
 		return err
 	}
 
 	planned := map[string]string{}
-	conflicts := []string{}
-	upstreams := map[string][]byte{} // conflict-time upstream per conflicted file
 	for _, t := range targets {
-		newUp, uerr := srcBytes(t)
+		up, uerr := srcBytes(t)
 		if uerr != nil {
 			return fmt.Errorf("embed read %s: %w", t.Src, uerr)
 		}
 		dstP := filepath.Join(root, t.Dst)
-
-		if !t.Merge {
-			// Pure upstream mirror (playbooks, WORKFLOW.md): always overwrite,
-			// no diff, no merge, no conflict possible.
-			if werr := writeFileAtomic(dstP, newUp); werr != nil {
-				return werr
+		note := "refreshed"
+		if t.Once {
+			if _, serr := os.Stat(dstP); !os.IsNotExist(serr) {
+				continue // project-owned once written (ADR 0011)
 			}
-			baseFiles[t.Dst] = newUp
-			planned[t.Dst] = "refreshed"
-			continue
+			note = "installed"
 		}
-
-		oldBase, tracked := baseFiles[t.Dst]
-		local, lerr := os.ReadFile(dstP)
-
-		switch {
-		case os.IsNotExist(lerr):
-			if bytes.Equal(oldBase, newUp) && tracked {
-				continue // deleted locally by consumer: respect it
-			}
-			if werr := os.MkdirAll(filepath.Dir(dstP), 0o755); werr != nil {
-				return werr
-			}
-			if werr := os.WriteFile(dstP, newUp, 0o644); werr != nil {
-				return werr
-			}
-			baseFiles[t.Dst] = newUp
-			planned[t.Dst] = "installed"
-		case bytes.Equal(local, oldBase):
-			if !bytes.Equal(newUp, oldBase) {
-				if werr := writeFileAtomic(dstP, newUp); werr != nil {
-					return werr
-				}
-				baseFiles[t.Dst] = newUp
-				planned[t.Dst] = "fast-forwarded"
-			} else if !bytes.Equal(local, newUp) {
-				planned[t.Dst] = "kept as-is"
-			}
-		case bytes.Equal(local, newUp):
-			// already current
-		case tracked:
-			merged, cflag := threeWay(string(oldBase), string(local), string(newUp))
-			if werr := writeFileAtomic(dstP, []byte(merged)); werr != nil {
-				return werr
-			}
-			if cflag {
-				conflicts = append(conflicts, t.Dst)
-				upstreams[t.Dst] = newUp
-				planned[t.Dst] = "CONFLICT"
-			} else {
-				baseFiles[t.Dst] = newUp
-				planned[t.Dst] = "auto-merged"
-			}
-		default:
-			// consumer drift with no recorded ancestor: never invent one (R18)
-			planned[t.Dst] = "kept (local edits beyond recorded history)"
+		if werr := writeFileAtomic(dstP, up); werr != nil {
+			return werr
 		}
+		baseFiles[t.Dst] = sha(up)
+		planned[t.Dst] = note
 	}
 
-	// AGENTS marked block (surgical, never a whole-file replace over prose).
-	// All merge inputs use the canonical marker-inclusive block form so the
-	// comparison, the diff3 ancestor, and the on-disk span stay consistent.
-	blockB, _ := agentBlockBytes()
-	upBody := string(blockB)
-	wantFull := normalizeBlockTail(canonicalAgentsBlock(upBody))
-	ap := filepath.Join(root, agentsTarget)
-	if localRaw, lerr := os.ReadFile(ap); lerr == nil {
-		content := string(localRaw)
-		curBlock, hasBlock := agentsBlockOf(content)
-		curN := normalizeBlockTail(curBlock)
-		if curN != wantFull {
-			switch {
-			case !hasBlock:
-				repl, changed := applyAgentsBlock(content, upBody)
-				if changed {
-					_ = writeFileAtomic(ap, []byte(repl))
-					baseFiles[agentsTarget] = []byte(canonicalAgentsBlock(upBody))
-					planned[agentsTarget] = "block appended"
-				}
-			case strings.Contains(curBlock, conflictOpenTag):
-				// already mid-resolution from an earlier pass
-			default:
-				var baseBlock string
-				if bb, tracked := baseFiles[agentsTarget]; tracked {
-					baseBlock = normalizeBlockTail(string(bb))
-				}
-				merged, cflag := threeWayBlocks(content, baseBlock, curN, wantFull)
-				if werr := writeFileAtomic(ap, []byte(merged)); werr != nil {
-					return werr
-				}
-				if cflag {
-					conflicts = append(conflicts, agentsTarget)
-					upstreams[agentsTarget] = []byte(canonicalAgentsBlock(upBody))
-					planned[agentsTarget] = "CONFLICT inside block"
-				} else {
-					// base = the upstream block the consumer just reconciled
-					// onto, never the merged output (merged output contains
-					// local drift; recording it would let a later upstream
-					// touch silently win those lines)
-					baseFiles[agentsTarget] = []byte(canonicalAgentsBlock(upBody))
-					planned[agentsTarget] = "block refreshed"
-				}
+	if aerr == nil {
+		if next, changed := applyAgentsBlock(string(agents), string(blockB)); changed {
+			if werr := writeFileAtomic(ap, []byte(next)); werr != nil {
+				return werr
+			}
+			planned[agentsTarget] = "block refreshed"
+			if !hasBlock {
+				planned[agentsTarget] = "block appended"
 			}
 		}
+		baseFiles[agentsTarget] = sha([]byte(want))
+	}
+
+	if mig.path != "" {
+		if werr := writeFileAtomic(filepath.Join(root, mig.path), mig.data); werr != nil {
+			return werr
+		}
+		planned[mig.path] = "migrated"
+	}
+	if mig.notice != "" {
+		fmt.Fprintf(stdout, "notice     %s\n", mig.notice)
 	}
 
 	giNote, gerr := reconcileGitignore(root, gitignoreWants)
@@ -439,32 +147,16 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 		planned[gitignoreTarget] = giNote
 	}
 
+	if err := saveBase(root, o.Version, baseFiles); err != nil {
+		return err
+	}
+	register(root, stdout)
+
 	names := make([]string, 0, len(planned))
 	for k := range planned {
 		names = append(names, k)
 	}
 	sort.Strings(names)
-
-	if len(conflicts) > 0 {
-		// stash, old base, and the in-run draft stay untouched so --abort
-		// restores exactly (R9); --continue finalizes from the draft
-		_ = saveConflicts(root, conflicts)
-		if derr := saveBaseDraft(root, updateDraft{Base: baseFiles, Upstream: upstreams}); derr != nil {
-			return derr
-		}
-		fmt.Fprintln(stdout, "update stopped — human resolution required:")
-		for _, n := range names {
-			fmt.Fprintf(stdout, "%-14s %s\n", classify(planned[n]), n)
-		}
-		fmt.Fprintf(stdout, "\nAfter clearing the markers run: zharness update --continue\nDiscard everything instead:   zharness update --abort\n")
-		return fmt.Errorf("%d file(s) need manual resolution", len(conflicts))
-	}
-
-	if err := saveBase(root, o.Version, baseFiles); err != nil {
-		return err
-	}
-	_ = os.RemoveAll(filepath.Join(root, stashDir))
-
 	for _, n := range names {
 		fmt.Fprintf(stdout, "%-14s %s\n", planned[n], n)
 	}
@@ -472,84 +164,41 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 	return nil
 }
 
-func finalizeConflicts(o updateOptions, baseFiles map[string][]byte, stdout *strings.Builder) error {
-	root := o.Root
-	pending := loadConflicts(root)
-	if len(pending) == 0 {
-		fmt.Fprintln(stdout, "continue: nothing pending.")
-		return nil
-	}
-	if draft, ok := loadBaseDraft(root); ok {
-		// same-run installed/fast-forwarded/auto-merged refreshes live in
-		// the draft; the on-disk base predates this update run
-		baseFiles = draft.Base
-	}
-	var still []string
-	for _, rel := range pending {
-		if hasConflictMarkers(filepath.Join(root, rel)) {
-			still = append(still, rel)
-			continue
-		}
-		local, lerr := os.ReadFile(filepath.Join(root, rel))
-		if lerr != nil {
-			return fmt.Errorf("resolved file vanished: %s", rel)
-		}
-		if up, ok := draftUpstream(root, rel); ok {
-			// base = the upstream version the consumer just reconciled onto
-			// (decision: never the merged output — recording the resolution
-			// would let the next unchanged-upstream update fast-forward it
-			// away). The resolution itself stays as working-tree drift.
-			baseFiles[rel] = up
-		} else if rel == agentsTarget {
-			// legacy fallback: canonical marked block, never whole-file prose
-			if inner, ok := agentsBlockOf(string(local)); ok {
-				baseFiles[rel] = []byte(strings.TrimRight(inner, "\n"))
-			} else {
-				delete(baseFiles, rel) // resolution removed the block
-			}
-		} else {
-			baseFiles[rel] = local
-		}
-		fmt.Fprintf(stdout, "finalized  %s (resolution kept; upstream recorded as new base)\n", rel)
-	}
-	if len(still) > 0 {
-		return fmt.Errorf("markers still present in: %s", strings.Join(still, ", "))
-	}
-	if err := saveBase(root, o.Version, baseFiles); err != nil {
-		return err
-	}
-	if err := saveConflicts(root, nil); err != nil {
-		return err
-	}
-	_ = os.RemoveAll(filepath.Join(root, stashDir))
-	return nil
-}
 func normalizeBlockTail(b string) string { return strings.TrimRight(b, "\n") + "\n" }
 
-// threeWayBlocks keeps everything outside the marked block intact and merges
-// only the block itself; baseBlock, localBlock, and wantBlock are all in the
-// canonical marker-inclusive form (baseBlock empty when unrecorded —
-// divergence then conflicts, since R18 never invents an ancestor). On
-// conflict the whole file carries markers scoped to that region so
-// --continue can detect resolution precisely.
-func threeWayBlocks(fileContent, baseBlock, localBlock, wantBlock string) (string, bool) {
-	i, jEnd, ok := agentsSpan(fileContent)
-	if !ok {
-		repl, _ := applyAgentsBlock(fileContent, localBlock)
-		return repl, false
+// unifiedDiff renders a against b as a single hunk around their differing
+// middle with up to three lines of context. The AGENTS block is short, so one
+// hunk stays readable and needs no line-matching algorithm.
+func unifiedDiff(from, to, a, b string) string {
+	al, bl := strings.Split(a, "\n"), strings.Split(b, "\n")
+	p := 0
+	for p < len(al) && p < len(bl) && al[p] == bl[p] {
+		p++
 	}
-	merged, cflag := threeWay(normalizeBlockTail(baseBlock), normalizeBlockTail(localBlock), normalizeBlockTail(wantBlock))
-	if cflag {
-		var b strings.Builder
-		b.WriteString(conflictOpenTag + " inside marked block\n")
-		b.WriteString(strings.TrimRight(wantBlock, "\n") + "\n")
-		b.WriteString(conflictSepTag + "\n")
-		b.WriteString(strings.TrimRight(localBlock, "\n") + "\n")
-		b.WriteString(conflictCloseTag + "\n")
-		return fileContent[:i] + b.String() + fileContent[jEnd:], true
+	s := 0
+	for s < len(al)-p && s < len(bl)-p && al[len(al)-1-s] == bl[len(bl)-1-s] {
+		s++
 	}
-	return fileContent[:i] + strings.TrimRight(merged, "\n") + fileContent[jEnd:], false
+	lo := max(p-3, 0)
+	tail := min(s, 3)
+	var w strings.Builder
+	fmt.Fprintf(&w, "--- %s\n+++ %s\n@@ -%d,%d +%d,%d @@\n", from, to,
+		lo+1, len(al)-s+tail-lo, lo+1, len(bl)-s+tail-lo)
+	for _, l := range al[lo:p] {
+		w.WriteString(" " + l + "\n")
+	}
+	for _, l := range al[p : len(al)-s] {
+		w.WriteString("-" + l + "\n")
+	}
+	for _, l := range bl[p : len(bl)-s] {
+		w.WriteString("+" + l + "\n")
+	}
+	for _, l := range al[len(al)-s : len(al)-s+tail] {
+		w.WriteString(" " + l + "\n")
+	}
+	return w.String()
 }
+
 func reconcileGitignore(root string, wants []string) (string, error) {
 	gp := filepath.Join(root, gitignoreTarget)
 	now, err := os.ReadFile(gp)
@@ -587,17 +236,4 @@ func ensureLines(blob string, wants []string) string {
 		body += w + "\n"
 	}
 	return body
-}
-
-func classify(note string) string {
-	switch {
-	case strings.HasPrefix(note, "CONFLICT"):
-		return "conflict:"
-	case note == "installed":
-		return "installed:"
-	case note == "fast-forwarded", note == "refreshed":
-		return "updated:"
-	default:
-		return "left:"
-	}
 }

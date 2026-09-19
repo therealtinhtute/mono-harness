@@ -68,6 +68,12 @@ jobs:
         run: |
           source /tmp/guard.sh
           zharness_guard_at_most_one_active_plan "$GITHUB_WORKSPACE"
+      # A pull_request checkout has only origin/<default>; proofs may name the
+      # default branch bare (`git show master:…`), so provide the local ref.
+      - name: Provide the default branch ref for proofs
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: git rev-parse -q --verify "refs/heads/$DEFAULT_BRANCH" >/dev/null || git branch "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
       - name: Run guards against the pushed range's plan changes
         env:
           ZHARNESS_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

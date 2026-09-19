@@ -8,11 +8,10 @@ import "embed"
 //go:embed AGENTS.md WORKFLOW.md playbooks
 var FS embed.FS
 
-// Templates holds the artifact-skeleton set (run/check/handoff/spec/plan)
-// emitted on demand by `zharness scaffold`. It is a separate embed.FS from
-// FS on purpose: FS is walked by BuildManifest and scaffolded into
-// .kit/docs at init, whereas templates are never projected — they are
-// written only when the scaffold command asks for one.
+// Templates holds project.identity.md, which install and update copy to
+// docs/PROJECT.md only when that file is absent. It is a separate embed.FS
+// from FS on purpose: FS is walked by BuildManifest and fresh-overwritten
+// on update, whereas the identity template is written once.
 //
 //go:embed templates
 var Templates embed.FS

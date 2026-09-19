@@ -2,41 +2,53 @@
 
 ## Purpose
 
-Turn the locked initiative in `docs/plans/active/{slug}.md` into an executable approach in that same file. Never executes work or creates another markdown artifact.
+Turn the locked `## Goal` of `docs/plans/active/{slug}.md` into an executable `## Phases and Verification` in that same file. Never executes work or creates another markdown artifact.
 
 ## Preconditions
 
-Require the active plan with `status: active`, stable `id`/`intake_id`, and complete Outcome, Authority and Requirements, and Non-goals sections. Exactly one non-empty plan may exist under `docs/plans/active/`. IF the initiative is ambiguous → route to `brainstorm refine`; never guess.
+Require the active plan with `status: active` and a complete `## Goal`. Exactly one non-empty plan may exist under `docs/plans/active/`. IF the initiative is ambiguous → route to `brainstorm refine`; never guess.
 
 ## Arguments
 
-- `full` — plan the complete approach, phases, waves, tasks, and checks still `not-planned`.
-- `phase {stable-phase-slug}` — plan one not-yet-planned phase without replacing existing phase content.
+- `full` — plan the complete approach, phases, tasks, and checks.
+- `phase {stable-phase-slug}` — plan one more phase without replacing existing phase content.
 
-## Owned Plan Sections
+## Owned Plan Section
 
-- `## Approach and Risks` — approach, constraints, dependencies, rejected alternatives, risks, mitigations, recovery.
-- `## Phases and Verification` — stable phase slugs and story IDs, dependency order, waves, tasks, expected outputs, checks, lifecycle status.
+`## Phases and Verification`: the approach and its risks first, then the phases. A `normal` plan has one phase and a flat task list; a `high-risk` plan adds `constraints:` and `recovery:`, and each phase carries its goal, dependencies, surfaces, waves, and a phase check:
+
+```markdown
+## Phases and Verification
+- approach: <chosen path and why; the rejected alternative>
+- risks: <risk → mitigation; stop and recovery condition>
+- phase_slug: `<slug>`
+  status: planned
+  - goal: R1, R2 | depends_on: none
+  - surfaces: <touched> | avoided: <untouched>
+  - wave 1:
+    - T1 <task> — check: `<command>`
+  - phase check: `<command>`
+```
+
+Write `status:` on its own line directly under `phase_slug:`, indented two spaces with no bullet: the guard's completed-plan check reads only that form. Status values: `planned|in-progress|checked|done`.
 
 Invariants:
 
-- Preserve every other section, the plan identity, and all append-only history. Keep frontmatter `status: active`; refresh only `updated`.
-- Scope comes from the plan; planning never adds product behavior. Every task traces to an accepted requirement.
-- After a phase/task definition is written, it is immutable, slugs and story IDs included; work/check/handoff may change only that phase's lifecycle status in this file.
-- Append-only `## Progress` is the sole task execution-status source. Do not add task status fields.
-- Lifecycle lives in the plan file; never write parallel task/phase state anywhere else.
+- Preserve every other section and all append-only history. Keep frontmatter `status: active`.
+- Scope comes from the plan; planning never adds product behavior. Every task traces to a requirement.
+- After a phase/task definition is written, it is immutable, slugs included; work/check/handoff may change only that phase's lifecycle status in this file. Do not add task status fields.
+- `## Log` is the sole task execution-status source; never write parallel task/phase state anywhere else.
 
 ## Steps
 
-1. **Read the plan** — extract outcome, authority, requirements, non-goals, lane, constraints, and validation expectations.
-2. **Choose the smallest viable approach** — write the path, why it is preferred, rejected alternatives, risks, mitigations, and stop/recovery conditions into Approach and Risks.
-3. **Define phases** — split only where dependency, risk, or independent verification warrants; order by real dependency and risk reduction, not size. Each phase: stable slug, goal, dependencies, allowed/avoided surfaces, lifecycle status from `planned|in-progress|checked|done`.
-4. **Assign identities** — for each new phase mint a stable `story_id` (unique token; a timestamp-suffixed slug is fine) beside the phase, status `planned`. On repeat invocation preserve existing IDs, statuses, definitions, and progress.
-5. **Build waves** — per new phase: waves, tasks, dependencies, touched/avoided surfaces, expected outputs, verification commands, stop conditions, escalation route. Same wave only for tasks that can proceed independently.
-6. **Write checks before execution** — every meaningful task gets an observable command or inspection. Missing verification is a planning blocker; `work` may not invent it later.
-7. **Update the file** — replace only the two owned sections, removing their `not-planned` bootstrap values.
-8. **Verify coherence** — one `story_id` per listed phase, acyclic dependencies, statuses coherent with append-only history, no second initiative markdown anywhere in the tree.
+1. **Read the plan** — extract outcome, authority, requirements, non-goals, lane, and constraints.
+2. **Choose the smallest viable approach** — write the path, why it is preferred, the rejected alternative, risks, mitigations, and stop/recovery conditions at the head of the section.
+3. **Define phases** — `normal`: one phase. `high-risk`: split only where dependency, risk, or independent verification warrants; order by real dependency and risk reduction, not size; each phase leaves the system usable if the next never lands.
+4. **Build tasks** — per phase: tasks (waves only in `high-risk`; same wave only for tasks that can proceed independently), touched and avoided surfaces, expected outputs, stop conditions.
+5. **Write checks before execution** — every meaningful task gets an observable command or inspection. Missing verification is a planning blocker; `work` may not invent it later.
+6. **Update the file** — replace `approach: not-planned` with the section; set Current State `exact_next_action: work full phase {first-phase-slug}`.
+7. **Verify coherence** — unique phase slugs, acyclic dependencies, statuses coherent with `## Log`, no second initiative markdown anywhere in the tree.
 
 ## Exit Conditions
 
-Complete only when the plan holds a decision-complete approach, explicit risks/recovery, stable phases with story IDs and coherent statuses, executable waves/tasks, and exact verification commands, and the next action names the first executable phase for `work full`.
+Complete only when the plan holds a decision-complete approach, explicit risks and recovery, stable phases with coherent statuses, executable tasks, and exact verification commands, and the next action names the first executable phase for `work full`.

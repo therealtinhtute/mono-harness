@@ -627,6 +627,32 @@ rc=$?
 	bad "record-check isolated PATH expected warning+0, got $rc (out: $rc_out)"
 rm -rf "$rc_bin"
 
+# R16: install-git-hooks.sh replaces a stale hook of its own, refuses a
+# foreign one, and never swallows that refusal.
+hk=$(mktemp -d)
+gfix "$hk"
+hk_install() { ( cd "$hk" && bash "$OLDPWD/scripts/install-git-hooks.sh" "$@" ) >/dev/null 2>&1; }
+hk_install && [ -x "$hk/.git/hooks/pre-commit" ] &&
+	ok "R16 fresh install creates the pre-commit hook" ||
+	bad "R16 fresh install did not create the hook"
+hk_want=$(shasum "$hk/.git/hooks/pre-commit" | cut -d' ' -f1)
+hk_install && [ "$(shasum "$hk/.git/hooks/pre-commit" | cut -d' ' -f1)" = "$hk_want" ] &&
+	ok "R16 re-install over a current hook exits 0 and keeps it" ||
+	bad "R16 re-install over a current hook failed"
+sed -i.bak 's/zhuards_guard_plans "$plans" "$gbase" "$ghead" "$tmpdir"/zhuards_guard_plans "$plans" staged "$tmpdir"/' "$hk/.git/hooks/pre-commit"
+hk_install && [ "$(shasum "$hk/.git/hooks/pre-commit" | cut -d' ' -f1)" = "$hk_want" ] &&
+	ok "R16 stale zharness hook is replaced without --force" ||
+	bad "R16 stale zharness hook was kept"
+printf '#!/bin/sh\necho foreign\n' > "$hk/.git/hooks/pre-commit"
+if hk_install; then
+	bad "R16 foreign hook must make the installer exit non-zero"
+else
+	grep -q '^echo foreign$' "$hk/.git/hooks/pre-commit" &&
+		ok "R16 foreign hook is refused and left in place" ||
+		bad "R16 foreign hook was modified"
+fi
+rm -rf "$hk"
+
 rm -rf "$tmp" "$GUARD"
 echo
 echo "guards: $pass passed, $fail failed"

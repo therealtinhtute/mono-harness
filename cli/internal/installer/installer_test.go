@@ -1,16 +1,11 @@
 package installer
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/therealtinhtute/skills/cli/internal/embedded"
 )
@@ -91,8 +86,11 @@ func TestInstall_Greenfield_ManagedSetAndBase(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, legacyDBName)); !os.IsNotExist(err) {
 		t.Error("installer created a database; it must not")
 	}
-	if ent, _ := os.ReadDir(filepath.Join(root, upstreamDir)); len(ent) == 0 {
-		t.Error("upstream blob store is empty; base tracking broken")
+	if _, err := os.Stat(filepath.Join(root, legacyUpstreamDir)); !os.IsNotExist(err) {
+		t.Error("install created the pre-ADR 0011 blob store")
+	}
+	if base, _ := loadBase(root); base[agentsTarget] == "" || base[projectTarget] == "" {
+		t.Errorf("manifest lacks recorded hashes: %v", base)
 	}
 	gi := rf(t, root, gitignoreTarget)
 	if !strings.Contains(gi, "/"+zharnessDir+"/") {
@@ -156,10 +154,8 @@ func TestInstall_Brownfield_ReportOnlyPreservesBytes(t *testing.T) {
 
 // Install() on a repo where a fresh-overwrite target (playbook or
 // WORKFLOW.md) already exists with drifted content — e.g. hand-edited before
-// zharness ever ran — must overwrite it with upstream bytes unconditionally,
-// not report "drifted ... left untouched" the way the old whole-file
-// drift branch did. That message is only reachable for Merge: true targets
-// (docs/PROJECT.md) now.
+// zharness ever ran — must overwrite it with upstream bytes unconditionally.
+// Only the write-once docs/PROJECT.md is left as found.
 func TestInstall_FreshOverwriteTargets_DriftedLocalFileOverwritten(t *testing.T) {
 	root := tempRepo(t, true)
 	pf(t, root, workflowTarget, "pre-existing hand-edited WORKFLOW.md\n")
@@ -181,67 +177,31 @@ func TestInstall_FreshOverwriteTargets_DriftedLocalFileOverwritten(t *testing.T)
 	}
 }
 
-// docs/PROJECT.md is the only remaining Target.Merge == true whole-file
-// target (playbooks and WORKFLOW.md fresh-overwrite unconditionally, see
-// TestUpdate_FreshOverwrite_PlaybooksAndWorkflow_IgnoreLocalEdits), so it is
-// the fixture for the three-way-merge state machine below.
-func TestUpdate_FastForward_Kept_AutoMerge_ConflictAbort(t *testing.T) {
+// docs/PROJECT.md is write-once (ADR 0011): update scaffolds it when absent
+// and never touches an existing one, whatever the template does.
+func TestUpdate_Project_WriteOnce(t *testing.T) {
 	root := tempRepo(t, true)
 	withSource(t, map[string]string{projectTemplate: wfUp1})
 	mustInstall(t, root)
 
-	up2 := wfUp1 + "\nappended-by-upstream\n"
+	custom := strings.Replace(wfUp1, "keepme", "project-owned answer", 1)
+	pf(t, root, projectTarget, custom)
+	up2 := wfUp1 + "\n## New question?\n"
 	withSource(t, map[string]string{projectTemplate: up2})
 	runUpdateOK(t, root)
+	if got := rf(t, root, projectTarget); got != custom {
+		t.Fatalf("update changed an existing PROJECT.md:\n%q", got)
+	}
+
+	if err := os.Remove(filepath.Join(root, projectTarget)); err != nil {
+		t.Fatal(err)
+	}
+	out := runUpdateOK(t, root)
 	if got := rf(t, root, projectTarget); got != up2 {
-		t.Fatalf("fast-forward mismatch:\n%q", got)
+		t.Errorf("absent PROJECT.md not scaffolded from the template:\n%q", got)
 	}
-
-	localOnly := strings.Replace(up2, "keepme", "kept-local-edit", 1)
-	pf(t, root, projectTarget, localOnly)
-	withSource(t, map[string]string{projectTemplate: up2}) // unchanged vs stored
-	runUpdateOK(t, root)
-	if got := rf(t, root, projectTarget); got != localOnly {
-		t.Error("local-only edit clobbered although upstream was unchanged")
-	}
-
-	autoUp := wfUp1 + "\nMERGE-INSERT-BY-UPSTREAM\n"
-	withSource(t, map[string]string{projectTemplate: autoUp})
-	beforeLocal := localOnly
-	var sb strings.Builder
-	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &sb); err != nil {
-		t.Fatalf("auto-merge update failed: %v\n%s", err, sb.String())
-	}
-	merged := rf(t, root, projectTarget)
-	if merged == beforeLocal || strings.Contains(merged, conflictOpenTag) {
-		t.Errorf("expected clean auto-merge:\n%s", merged)
-	}
-	if !strings.Contains(merged, "kept-local-edit") || !strings.Contains(merged, "MERGE-INSERT-BY-UPSTREAM") {
-		t.Errorf("auto-merge lost one side:\n%s", merged)
-	}
-
-	snapProject := merged
-	snapAgents := rf(t, root, agentsTarget)
-	conflictUp := strings.Replace(wfUp1, "keepme", "CONFLICT-A", 1) + "\nappended-by-upstream\n"
-	conflictLocal := strings.Replace(snapProject, "keepme", "CONFLICT-B", 1)
-	pf(t, root, projectTarget, conflictLocal)
-	withSource(t, map[string]string{projectTemplate: conflictUp})
-	if o := (&updateOptions{Root: root, Version: "t"}); RunUpdate(*o, &strings.Builder{}) == nil {
-		t.Fatal("expected conflict rejection")
-	}
-	if got := rf(t, root, projectTarget); !strings.Contains(got, conflictOpenTag) {
-		t.Fatalf("conflict markers missing after rejected update:\n%s", got)
-	}
-
-	var ab strings.Builder
-	if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
-		t.Fatalf("abort failed: %v", err)
-	}
-	if got := rf(t, root, projectTarget); got != conflictLocal {
-		t.Errorf("--abort did not restore project bytes exactly")
-	}
-	if got := rf(t, root, agentsTarget); got != snapAgents {
-		t.Errorf("--abort perturbed unrelated file AGENTS.md")
+	if !strings.Contains(out, "installed") {
+		t.Errorf("expected an installed line:\n%s", out)
 	}
 }
 
@@ -273,46 +233,6 @@ func TestUpdate_FreshOverwrite_PlaybooksAndWorkflow_IgnoreLocalEdits(t *testing.
 	}
 	if got := rf(t, root, playbookDirTgt+"/work.md"); got != playUp {
 		t.Errorf("playbook local edit should be silently discarded, got:\n%q", got)
-	}
-}
-
-func TestUpdate_Continue_FinalizesResolvedFile(t *testing.T) {
-	root := tempRepo(t, true)
-	withSource(t, map[string]string{"WORKFLOW.md": wfUp1})
-	mustInstall(t, root)
-
-	newUp := wfUp1 + "\nupstream-tail-v2\n"
-	local := strings.Replace(wfUp1, "keepme", "local-tweaked", 1)
-	pf(t, root, workflowTarget, local)
-	withSource(t, map[string]string{"WORKFLOW.md": newUp})
-	if RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}) == nil {
-		// identical-content overlap may auto-resolve; force conflict differently:
-		newUp2 := strings.Replace(newUp, "keepme", "upstream-touched-same-line", 1)
-		withSource(t, map[string]string{"WORKFLOW.md": newUp2})
-		if RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}) == nil {
-			t.Skip("merge engine resolved overlapping edit cleanly; continue-path not exercised")
-		}
-	}
-	resolved := strings.Split(rf(t, root, workflowTarget), conflictOpenTag)[0] +
-		strings.Join([]string{"resolved-manually"}, "\n") + "\n" +
-		strings.Split(rf(t, root, workflowTarget), conflictCloseTag)[1]
-	pf(t, root, workflowTarget, resolved)
-
-	runUpdateOKContinue(t, root)
-	if hasConflictMarkers(filepath.Join(root, workflowTarget)) {
-		t.Error("markers persisted past --continue")
-	}
-	final := rf(t, root, workflowTarget)
-	if !strings.Contains(final, "resolved-manually") || !strings.Contains(final, "upstream-tail-v2") {
-		t.Errorf("resolution lost content from either side:\n%s", final)
-	}
-}
-
-func runUpdateOKContinue(t *testing.T, root string) {
-	t.Helper()
-	var sb strings.Builder
-	if err := RunUpdate(updateOptions{Root: root, Version: "t", Continue: true}, &sb); err != nil {
-		t.Fatalf("continue failed: %v\n%s", err, sb.String())
 	}
 }
 
@@ -365,146 +285,98 @@ func runUpdateOK(t *testing.T, root string) string {
 	return sb.String()
 }
 
-// Regression: a later hunk straddling the cursor after an overlap event must
-// be absorbed into the cluster, not strand the walker (judge finding F1).
-func TestThreeWay_StraddlingClusterTerminates(t *testing.T) {
-	base := make([]string, 15)
-	for i := range base {
-		base[i] = fmt.Sprintf("b%02d", i)
-	}
-	local := append([]string{}, base...)
-	copy(local[2:5], []string{"L2", "L3", "L4"})
-	copy(local[10:13], []string{"L10", "L11", "L12"})
-	up := append([]string{}, base...)
-	copy(up[4:11], []string{"U4", "U5", "U6", "U7", "U8", "U9", "U10"})
-
-	done := make(chan string, 1)
-	go func() {
-		merged, _ := threeWay(strings.Join(base, "\n")+"\n",
-			strings.Join(local, "\n")+"\n",
-			strings.Join(up, "\n")+"\n")
-		done <- merged
-	}()
-	select {
-	case merged := <-done:
-		if !strings.Contains(merged, conflictOpenTag) {
-			t.Errorf("overlapping disjoint-hunk edits must conflict:\n%s", merged)
-		}
-		for _, want := range []string{"L2", "L10", "U4"} {
-			if !strings.Contains(merged, want) {
-				t.Errorf("conflict dropped side content %q:\n%s", want, merged)
-			}
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("threeWay did not terminate — merge-walker hang (F1)")
-	}
-
-	// clean trace: base A/B/C, local edits B, upstream edits C — both kept
-	merged2, conflict2 := threeWay("A\nB\nC\n", "A\nB-local\nC\n", "A\nB\nC-up\n")
-	if conflict2 || !strings.Contains(merged2, "B-local") || !strings.Contains(merged2, "C-up") {
-		t.Errorf("disjoint edits must merge cleanly keeping both sides:\n%s (conflict=%v)", merged2, conflict2)
-	}
-
-	// zero-width insertion at the cursor must survive the skip loops
-	merged3, conflict3 := threeWay("l1\nl2\nl3\nl4\n", "# predating zharness\n", "l1\nl2\nl3\nl4\n\ntail\n")
-	if conflict3 || !strings.Contains(merged3, "predating zharness") || !strings.Contains(merged3, "tail") {
-		t.Errorf("whole-file local change plus zero-width upstream insertion lost a side:\n%s (conflict=%v)", merged3, conflict3)
-	}
-}
-
-// Regression: the AGENTS block merge must use the recorded base block as
-// ancestor; passing (local, want, want) made the conflict branch dead and
-// silently overwrote consumer edits inside the block (judge finding F2).
-func TestUpdate_AgentsBlock_UsesRecordedBase(t *testing.T) {
+// The AGENTS block is replaced between its markers unless it was edited since
+// zharness last wrote it; then update refuses before any write and prints the
+// diff, and --force replaces it (ADR 0011).
+func TestUpdate_AgentsBlock_HashGuard(t *testing.T) {
 	rawUp, err := embedded.FS.ReadFile("AGENTS.md")
 	if err != nil {
 		t.Fatalf("embedded AGENTS.md: %v", err)
 	}
-	consumerRewrite := "consumer rewrote this line"
-	upstreamRewrite := "upstream rewrote the same line"
-	if !strings.Contains(string(rawUp), "no parallel control-plane state") {
+	const anchor = "no parallel control-plane state"
+	const edit = "consumer rewrote this line"
+	if !strings.Contains(string(rawUp), anchor) {
 		t.Fatal("fixture: anchor sentence not found in embedded AGENTS block")
 	}
+	upV2 := string(rawUp) + "\nupstream-block-addition\n"
 
-	t.Run("overlap stops with in-block markers", func(t *testing.T) {
+	t.Run("untouched block is replaced and prose kept", func(t *testing.T) {
 		root := tempRepo(t, true)
 		mustInstall(t, root)
-		// consumer and upstream rewrite the SAME ancestor line, before any
-		// reconcile: diff3 must stop instead of silently picking a side (F2)
-		consumerTweak := strings.Replace(rf(t, root, agentsTarget), "no parallel control-plane state", consumerRewrite, 1)
-		pf(t, root, agentsTarget, consumerTweak)
-		upV3 := strings.Replace(string(rawUp), "no parallel control-plane state", upstreamRewrite, 1)
-		withSource(t, map[string]string{"AGENTS.md": upV3})
-		if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
-			t.Fatal("expected in-block conflict rejection")
-		}
-		got := rf(t, root, agentsTarget)
-		if !strings.Contains(got, conflictOpenTag) || !strings.Contains(got, upstreamRewrite) || !strings.Contains(got, consumerRewrite) {
-			t.Errorf("in-block conflict lost a side (F2):\n%s", got)
-		}
-		// both conflict sides are canonical marker-inclusive blocks, so the
-		// marked block must stay recognizable for --continue (agentsSpan)
-		if !strings.Contains(got, blockBegin) || !strings.Contains(got, blockEnd) {
-			t.Errorf("conflict region dropped the block markers:\n%s", got)
-		}
-		if _, ok := agentsBlockOf(got); !ok {
-			t.Error("agentsSpan cannot find the block inside the conflict region")
-		}
-		var ab strings.Builder
-		if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
-			t.Fatalf("abort failed: %v", err)
-		}
-		if got := rf(t, root, agentsTarget); got != consumerTweak {
-			t.Errorf("--abort did not restore AGENTS.md bytes exactly")
-		}
-	})
-
-	t.Run("conflict resolution continues and next update is inert", func(t *testing.T) {
-		root := tempRepo(t, true)
-		mustInstall(t, root)
-		consumerTweak := strings.Replace(rf(t, root, agentsTarget), "no parallel control-plane state", consumerRewrite, 1)
-		pf(t, root, agentsTarget, consumerTweak)
-		upV3 := strings.Replace(string(rawUp), "no parallel control-plane state", upstreamRewrite, 1)
-		withSource(t, map[string]string{"AGENTS.md": upV3})
-		if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
-			t.Fatal("expected in-block conflict rejection")
-		}
-		// resolve by keeping the consumer side, then --continue must record
-		// the canonical block as new base and the next update must be inert
-		pf(t, root, agentsTarget, consumerTweak)
-		runUpdateOKContinue(t, root)
-		if got := rf(t, root, agentsTarget); got != consumerTweak {
-			t.Errorf("--continue perturbed the resolved AGENTS block:\n%s", got)
-		}
-		if hasConflictMarkers(filepath.Join(root, agentsTarget)) {
-			t.Error("markers persisted past --continue on AGENTS.md")
-		}
-		withSource(t, map[string]string{"AGENTS.md": upV3})
-		runUpdateOK(t, root)
-		if got := rf(t, root, agentsTarget); got != consumerTweak {
-			t.Errorf("post-resolution update clobbered the resolved block:\n%s", got)
-		}
-	})
-
-	t.Run("disjoint edits merge and stay idempotent", func(t *testing.T) {
-		root := tempRepo(t, true)
-		mustInstall(t, root)
-		consumerTweak := strings.Replace(rf(t, root, agentsTarget), "no parallel control-plane state", consumerRewrite, 1)
-		pf(t, root, agentsTarget, consumerTweak)
-		upV2 := string(rawUp) + "\nupstream-block-addition\n"
+		pf(t, root, agentsTarget, "consumer prose above\n\n"+rf(t, root, agentsTarget)+"\nconsumer prose below\n")
 		withSource(t, map[string]string{"AGENTS.md": upV2})
-		out := runUpdateOK(t, root)
+		runUpdateOK(t, root)
 		got := rf(t, root, agentsTarget)
-		if !strings.Contains(got, consumerRewrite) || !strings.Contains(got, "upstream-block-addition") {
-			t.Errorf("block merge lost one side (F2):\n%s\nout:\n%s", got, out)
+		if !strings.Contains(got, "upstream-block-addition") {
+			t.Errorf("block not refreshed:\n%s", got)
 		}
-		if !strings.Contains(got, blockBegin) || !strings.Contains(got, blockEnd) {
-			t.Errorf("block merge destroyed the markers:\n%s", got)
+		if !strings.HasPrefix(got, "consumer prose above\n") || !strings.HasSuffix(got, "consumer prose below\n") {
+			t.Errorf("prose outside the markers changed:\n%s", got)
 		}
-		before := got
-		runUpdateOK(t, root) // second run with the same upstream: no churn
-		if got := rf(t, root, agentsTarget); got != before {
-			t.Errorf("update is not idempotent for the AGENTS block:\n%s", got)
+		runUpdateOK(t, root)
+		if again := rf(t, root, agentsTarget); again != got {
+			t.Errorf("update is not idempotent for the AGENTS block:\n%s", again)
+		}
+	})
+
+	t.Run("hand-edited block refuses, writes nothing, force replaces", func(t *testing.T) {
+		root := tempRepo(t, true)
+		mustInstall(t, root)
+		pf(t, root, agentsTarget, strings.Replace(rf(t, root, agentsTarget), anchor, edit, 1))
+		pf(t, root, workflowTarget, "stale workflow\n")
+		withSource(t, map[string]string{"AGENTS.md": upV2})
+		before := treeSnapshot(t, root)
+		var sb strings.Builder
+		if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &sb); err == nil {
+			t.Fatal("expected refusal for a hand-edited block")
+		}
+		if treeSnapshot(t, root) != before {
+			t.Fatal("refused update wrote files")
+		}
+		out := sb.String()
+		if !strings.Contains(out, "+upstream-block-addition") || !strings.Contains(out, "--force") ||
+			!strings.Contains(out, "\n-") || !strings.Contains(out, edit) {
+			t.Errorf("refusal must print the diff and the --force hint:\n%s", out)
+		}
+
+		var fb strings.Builder
+		if err := RunUpdate(updateOptions{Root: root, Version: "t", Force: true}, &fb); err != nil {
+			t.Fatalf("--force: %v\n%s", err, fb.String())
+		}
+		if got := rf(t, root, agentsTarget); strings.Contains(got, edit) || !strings.Contains(got, "upstream-block-addition") {
+			t.Errorf("--force did not replace the block:\n%s", got)
+		}
+		runUpdateOK(t, root)
+	})
+
+	t.Run("no recorded hash is accepted and recorded", func(t *testing.T) {
+		root := tempRepo(t, true)
+		mustInstall(t, root)
+		pf(t, root, agentsTarget, strings.Replace(rf(t, root, agentsTarget), anchor, edit, 1))
+		base, err := loadBase(root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		delete(base, agentsTarget)
+		if err := saveBase(root, "legacy", base); err != nil {
+			t.Fatal(err)
+		}
+		withSource(t, map[string]string{"AGENTS.md": upV2})
+		runUpdateOK(t, root)
+		base, _ = loadBase(root)
+		if base[agentsTarget] != sha([]byte(canonicalAgentsBlock(upV2))) {
+			t.Errorf("block hash not recorded: %q", base[agentsTarget])
+		}
+	})
+
+	t.Run("CRLF checkout of an untouched block is not a hand edit", func(t *testing.T) {
+		root := tempRepo(t, true)
+		mustInstall(t, root)
+		pf(t, root, agentsTarget, strings.ReplaceAll(rf(t, root, agentsTarget), "\n", "\r\n"))
+		withSource(t, map[string]string{"AGENTS.md": upV2})
+		runUpdateOK(t, root)
+		if got := rf(t, root, agentsTarget); !strings.Contains(got, "upstream-block-addition") {
+			t.Errorf("block not refreshed:\n%s", got)
 		}
 	})
 }
@@ -534,40 +406,59 @@ func TestUninstall_RestoresPreInstallOriginal_AfterFastForward(t *testing.T) {
 	}
 }
 
-// Regression: --continue must commit the same-run refreshed base (draft)
-// and drop the stash; otherwise fast-forwarded files lose their ancestor
-// and the stash dir leaks (judge finding F4).
-func TestUpdate_Continue_KeepsSameRunRefreshes_DropsStash(t *testing.T) {
+// A pre-ADR 0011 installation carries content-addressed blobs under
+// .zharness/base/upstream/ and may carry an update stash. Its manifest already
+// holds the hashes update needs, so update deletes the blobs, keeps the
+// ledger, and leaves the stash for uninstall.
+func TestUpdate_LegacyConflicts_RefusesAndCheckReports(t *testing.T) {
 	root := tempRepo(t, true)
-	withSource(t, map[string]string{projectTemplate: wfUp1})
 	mustInstall(t, root)
+	pf(t, root, legacyConflictsFile, `["docs/PROJECT.md"]`+"\n")
+	pf(t, root, workflowTarget, "stale workflow\n")
+	before := treeSnapshot(t, root)
+	var sb strings.Builder
+	if err := RunUpdate(updateOptions{Root: root, Version: "t", Force: true}, &sb); err == nil {
+		t.Fatal("expected refusal while a pre-0011 conflict is unresolved")
+	}
+	if treeSnapshot(t, root) != before {
+		t.Fatal("refused update wrote files")
+	}
+	if !strings.Contains(sb.String(), legacyConflictsFile) {
+		t.Errorf("refusal must name the conflict list:\n%s", sb.String())
+	}
+	got, err := Check(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.Join(got, "\n"), "conflict "+legacyConflictsFile) {
+		t.Errorf("check must report the unresolved conflict: %v", got)
+	}
+}
 
-	playUp := "# play: work (refreshed by upstream v2)\n"
-	conflictUp := strings.Replace(wfUp1, "keepme", "CONFLICT-A", 1) + "\nupstream-tail\n"
-	withSource(t, map[string]string{
-		projectTemplate:     conflictUp,
-		"playbooks/work.md": playUp,
-	})
-	pf(t, root, projectTarget, strings.Replace(wfUp1, "keepme", "CONFLICT-B", 1))
-	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
-		t.Fatal("expected conflict rejection")
+func TestUpdate_LegacyArtifacts_BlobsDroppedLedgerKept(t *testing.T) {
+	root := tempRepo(t, true)
+	mustInstall(t, root)
+	pf(t, root, legacyUpstreamDir+"/deadbeef.bin", "old blob\n")
+	pf(t, root, legacyStashDir+"/stash.tsv", "docs/PROJECT.md\tx.bin\t1\n")
+	ledger := rf(t, root, ownershipFile)
+
+	runUpdateOK(t, root)
+	if _, err := os.Stat(filepath.Join(root, legacyUpstreamDir)); !os.IsNotExist(err) {
+		t.Error("update kept the legacy blob store")
+	}
+	if got := rf(t, root, ownershipFile); got != ledger {
+		t.Errorf("update changed the ownership ledger:\n%s", got)
+	}
+	if _, err := os.Stat(filepath.Join(root, legacyStashDir)); err != nil {
+		t.Error("update deleted a legacy stash; only uninstall may")
 	}
 
-	resolved := strings.Replace(wfUp1, "keepme", "resolved-both", 1) + "\nupstream-tail\n"
-	pf(t, root, projectTarget, resolved)
-	runUpdateOKContinue(t, root)
-
-	if _, err := os.Stat(filepath.Join(root, stashDir)); !os.IsNotExist(err) {
-		t.Error("stash dir survived --continue (F4)")
+	var sb strings.Builder
+	if err := Uninstall(root, &sb); err != nil {
+		t.Fatalf("uninstall: %v\n%s", err, sb.String())
 	}
-	man := rf(t, root, filepath.Join(baseDir, "manifest.json"))
-	sum := sha256.Sum256([]byte(playUp))
-	if !strings.Contains(man, hex.EncodeToString(sum[:])) {
-		t.Error("--continue dropped the same-run fast-forwarded base entry (F4)")
-	}
-	var manMap map[string]any
-	if err := json.Unmarshal([]byte(man), &manMap); err != nil {
-		t.Fatalf("manifest not valid JSON after --continue: %v", err)
+	if _, err := os.Stat(filepath.Join(root, zharnessDir)); !os.IsNotExist(err) {
+		t.Error("uninstall left .zharness behind")
 	}
 }
 
@@ -625,38 +516,6 @@ func TestSafePath_Injective_AndLegacyFallback(t *testing.T) {
 	}
 }
 
-// R4 (guard-v3): above the LCS cell cap, diffHunks falls back to a single
-// whole-side hunk — bounded memory, conservative semantics.
-func TestDiffHunks_CapFallsBackToWholeSide(t *testing.T) {
-	big := make([]string, 3000) // (3001)^2 cells > lcsCellCap
-	for i := range big {
-		big[i] = fmt.Sprintf("line-%04d", i)
-	}
-	other := make([]string, len(big))
-	copy(other, big)
-	other[0] = "changed-top"
-	other[len(other)-1] = "changed-bottom"
-
-	hs := diffHunks(big, other)
-	if len(hs) != 1 {
-		t.Fatalf("cap fallback must yield exactly one whole-side hunk, got %d", len(hs))
-	}
-	h := hs[0]
-	if h.start != 0 || h.end != len(big) {
-		t.Errorf("fallback hunk must cover the whole base, got [%d,%d)", h.start, h.end)
-	}
-	if !equalLines(h.lines, other) {
-		t.Error("fallback hunk lines must equal the other side verbatim")
-	}
-
-	// below the cap the normal path still merges adjacent spans
-	small := []string{"a", "b", "c"}
-	hs = diffHunks(small, []string{"a", "B", "c"})
-	if len(hs) != 1 || hs[0].start != 1 || hs[0].end != 2 || hs[0].lines[0] != "B" {
-		t.Errorf("small-diff path changed: %+v", hs)
-	}
-}
-
 // identityPreEdit is the shipped templates/project.identity.md exactly as it
 // stood before the gate-slot rewrite (commit aba7057). It is the base a
 // consumer installed against, so the update under test replays the real
@@ -685,11 +544,10 @@ const identityPreEdit = `# PROJECT — identity (answer inline; this is the sing
 - plan: docs/plans/active/<slug>.md (<status>)
 `
 
-// TestUpdate_IdentityTemplateGateSlots_ConflictsAndAborts proves the claim
-// behind replacing (not appending) the tests question: a consumer who filled
-// the old template in gets a real conflict on update — the notification an
-// append would never produce — and --abort restores their file byte for byte.
-func TestUpdate_IdentityTemplateGateSlots_ConflictsAndAborts(t *testing.T) {
+// A consumer who answered the pre-gate-slot identity template keeps the file
+// byte for byte on update; the new question surfaces through `update --check`
+// as a missing heading instead of a merge conflict (ADR 0011).
+func TestUpdate_IdentityTemplateChange_KeepsProject_CheckNamesHeading(t *testing.T) {
 	// Capture the real shipped template before any withSource call: two
 	// withSource calls layer, and the first override would become prev.
 	postEdit, err := srcBytesImpl(Target{Src: projectTemplate})
@@ -703,9 +561,6 @@ func TestUpdate_IdentityTemplateGateSlots_ConflictsAndAborts(t *testing.T) {
 	root := tempRepo(t, true)
 	withSource(t, map[string]string{projectTemplate: identityPreEdit})
 	mustInstall(t, root)
-
-	// A consumer answers the old question in place — the case an appended
-	// section would auto-merge straight past.
 	filled := strings.Replace(
 		identityPreEdit,
 		"- `<exact verification command(s)>`",
@@ -718,23 +573,15 @@ func TestUpdate_IdentityTemplateGateSlots_ConflictsAndAborts(t *testing.T) {
 	pf(t, root, projectTarget, filled)
 
 	withSource(t, map[string]string{projectTemplate: string(postEdit)})
-	if err := RunUpdate(updateOptions{Root: root, Version: "t"}, &strings.Builder{}); err == nil {
-		t.Fatal("expected the gate-slot rewrite to conflict with a filled answer")
-	}
-
-	got := rf(t, root, projectTarget)
-	if !strings.Contains(got, conflictOpenTag) {
-		t.Fatalf("conflict markers missing after rejected update:\n%s", got)
-	}
-	if conflicts := rf(t, root, conflictsFile); !strings.Contains(conflicts, projectTarget) {
-		t.Errorf("%s does not name %s:\n%s", conflictsFile, projectTarget, conflicts)
-	}
-
-	var ab strings.Builder
-	if err := RunUpdate(updateOptions{Root: root, Version: "t", Abort: true}, &ab); err != nil {
-		t.Fatalf("abort failed: %v\n%s", err, ab.String())
-	}
+	runUpdateOK(t, root)
 	if got := rf(t, root, projectTarget); got != filled {
-		t.Errorf("--abort did not restore the consumer's filled identity file byte for byte:\n%q", got)
+		t.Errorf("update changed the filled identity file:\n%q", got)
+	}
+	drift, err := Check(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.Join(drift, "\n"), `lacks "## What are the gate commands?"`) {
+		t.Errorf("check does not name the new heading:\n%s", strings.Join(drift, "\n"))
 	}
 }

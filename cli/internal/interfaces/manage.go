@@ -55,26 +55,35 @@ func newInstallCmd(version string) *cobra.Command {
 
 func newUpdateCmd(version string) *cobra.Command {
 	var root string
-	var cont, abort bool
+	var force, check, all bool
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Refresh playbooks/WORKFLOW.md from upstream; three-way merge PROJECT.md and the AGENTS.md block (conflicts stop for human resolution)",
+		Short: "Refresh playbooks, WORKFLOW.md and the AGENTS.md block; write docs/PROJECT.md only when absent",
 		RunE: func(c *cobra.Command, args []string) error {
-			if cont && abort {
-				return fmt.Errorf("--continue and --abort are mutually exclusive")
+			if all && !check {
+				return fmt.Errorf("--all requires --check")
+			}
+			if check && force {
+				return fmt.Errorf("--check is read-only and takes no --force")
 			}
 			rootDir := resolveRoot(c, "root")
 			out := &strings.Builder{}
+			if check {
+				err := installer.RunCheck(rootDir, all, out)
+				fmt.Print(out.String())
+				return err
+			}
 			err := installer.RunUpdate(installer.UpdateOptions{
-				Root: rootDir, Version: version, Continue: cont, Abort: abort,
+				Root: rootDir, Version: version, Force: force,
 			}, out)
 			fmt.Print(out.String())
 			return err
 		},
 	}
 	cmd.Flags().StringVar(&root, "root", "", "target repository root (default: git toplevel of cwd)")
-	cmd.Flags().BoolVar(&cont, "continue", false, "finalize after resolving conflict markers")
-	cmd.Flags().BoolVar(&abort, "abort", false, "restore the pre-update state exactly")
+	cmd.Flags().BoolVar(&force, "force", false, "replace an AGENTS.md block edited since the last write (default: refuse and print the diff)")
+	cmd.Flags().BoolVar(&check, "check", false, "report drift from this binary without writing; exit 1 on drift")
+	cmd.Flags().BoolVar(&all, "all", false, "with --check: every repository in ~/.config/zharness/repos")
 	return cmd
 }
 

@@ -50,7 +50,7 @@
 
       <div class="routing reveal">
         <div class="route-line"><span class="r-when">1. Explore trade-offs &amp; lock requirements</span><span class="r-arrow">→</span><span class="r-to">/brainstorm</span></div>
-        <div class="route-line"><span class="r-when">2. Structure phases, story IDs &amp; waves</span><span class="r-arrow">→</span><span class="r-to">/to-plan</span></div>
+        <div class="route-line"><span class="r-when">2. Structure phases, tasks &amp; checks</span><span class="r-arrow">→</span><span class="r-to">/to-plan</span></div>
         <div class="route-line"><span class="r-when">3. Execute wave-by-wave with verified proof</span><span class="r-arrow">→</span><span class="r-to">/work</span></div>
         <div class="route-line"><span class="r-when">4. Fail-closed review &amp; proof re-execution</span><span class="r-arrow">→</span><span class="r-to">/check</span></div>
         <div class="route-line"><span class="r-when">5. Conventional commit, push &amp; PR</span><span class="r-arrow">→</span><span class="r-to">/git</span></div>
@@ -77,7 +77,7 @@
             <h3 style="margin: 0;">2. to-plan</h3>
             <span class="badge">playbook</span>
           </div>
-          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Transforms locked specifications into executable implementation blueprints: defines technical approach, decomposition into phases, story IDs, dependency waves, and concrete verification checks.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Transforms locked specifications into executable implementation blueprints: defines technical approach, decomposition into phases (waves only on the high-risk lane), and concrete verification checks.</p>
           <div style="font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);"><code>docs/playbooks/to-plan.md</code></div>
         </div>
 
@@ -157,8 +157,7 @@
         <h2>Execution Boundary &amp; State Model<i>.</i></h2>
         <p>The execution boundary in mono-harness is strictly append-only and file-driven:</p>
         <ul>
-          <li><strong>Progress:</strong> Execution notes, subagent dispatches, and verification evidence append directly to <code>## Progress</code> in <code>docs/plans/active/{slug}.md</code>.</li>
-          <li><strong>Decisions:</strong> Architectural choices and deviations append to <code>## Decisions</code>.</li>
+          <li><strong>Log:</strong> Task results, blockers, and decisions with their rationale append directly to <code>## Log</code> in <code>docs/plans/active/{slug}.md</code>.</li>
           <li><strong>Validation:</strong> Quality gates, proof command outputs, and approval verdicts append to <code>## Validation</code>.</li>
         </ul>
         <p>Every proof claim must cite concrete command outputs or observable runtime evidence. Pre-commit hooks re-execute validation proofs fail-closed, ensuring that committed plans reflect reality.</p>
@@ -174,20 +173,19 @@
         </div>
         <pre><code><span class="tok-cmd"># Plan:</span> <span class="tok-str">auth-token-refresh — Sliding Expiration Window</span>
 
-<span class="tok-kw">## Approach and Risks</span>
-<span class="tok-punct">-</span> Lane: <span class="tok-str">normal</span>
-<span class="tok-punct">-</span> Story: Refactor refresh token rotation with sliding expiration window.
+<span class="tok-kw">## Goal</span>
+<span class="tok-punct">-</span> outcome: <span class="tok-str">refresh tokens rotate on a sliding expiration window</span>
 
 <span class="tok-kw">## Phases and Verification</span>
-<span class="tok-punct">-</span> Wave 1: Core token generator and crypto unit tests.
-<span class="tok-punct">-</span> Wave 2: HTTP middleware and integration tests.
+<span class="tok-punct">-</span> approach: <span class="tok-str">rotate in the token service; middleware only reads</span>
+<span class="tok-punct">-</span> phase_slug: `token-refresh`
+  status: <span class="tok-str">checked</span>
+  <span class="tok-punct">-</span> T1 token generator — check: `go test ./pkg/auth/...`
+  <span class="tok-punct">-</span> T2 HTTP middleware — check: `go test ./pkg/http/...`
 
-<span class="tok-kw">## Progress</span>
-<span class="tok-punct">-</span> <span class="tok-str">[2026-08-28 04:00 UTC] (p1-crypto):</span> `go test ./pkg/auth/...` passed (<span class="tok-num">14</span> tests, <span class="tok-num">0</span> failures).
-<span class="tok-punct">-</span> <span class="tok-str">[2026-08-28 04:30 UTC] (p2-middleware):</span> Middleware handles expired tokens with HTTP <span class="tok-num">401</span>.
-
-<span class="tok-kw">## Decisions</span>
-<span class="tok-punct">-</span> Chose 15-minute sliding window with 7-day absolute max expiration.
+<span class="tok-kw">## Log</span>
+<span class="tok-punct">-</span> <span class="tok-str">2026-08-28T04:00Z — token-refresh/T1 — done —</span> `go test ./pkg/auth/...` passed (<span class="tok-num">14</span> tests).
+<span class="tok-punct">-</span> <span class="tok-str">2026-08-28T04:30Z — token-refresh — decision —</span> 15-minute sliding window, 7-day absolute max.
 
 <span class="tok-kw">## Validation</span>
 <span class="tok-punct">-</span> <span class="tok-cmd">verdict:</span> <span class="tok-str">APPROVED</span>

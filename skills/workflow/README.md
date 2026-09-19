@@ -12,13 +12,13 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, chec
 ## Lifecycle
 
 ### Intent → Intake — `brainstorm`
-A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Outcome, Authority and Requirements, and Non-goals sections. The lane lives nowhere else — no separate store exists.
+A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Goal section. A tiny request creates no plan and goes straight to `work bounded`. The lane lives nowhere else — no separate store exists.
 
 ### Story/Plan — `to-plan`
-Once the plan is locked, `to-plan` writes its Approach and Risks plus Phases and Verification (waves, tasks, checks) into that same file — no separate roadmap or per-phase context/plan files — assigning one stable story identity per stable phase (a plain unique token written beside the phase).
+Once the plan is locked, `to-plan` writes its Phases and Verification (approach and risks, then phases, tasks, checks; waves only on the high-risk lane) into that same file — no separate roadmap or per-phase context/plan files.
 
 ### Trace — `work`
-`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Progress/Decisions sections in one editing pass per wave.
+`work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Log section.
 
 ### Proof — `check`
 `check` runs the automated gate, evaluates the required-proof matrix for the plan's lane (tiny/normal/high-risk), and appends a deterministic verdict with nested proof-command sub-bullets to the plan's Validation section; the pre-commit hook re-executes every cited proof itself at commit time and rejects false claims. Missing required proof always fails, naming the missing evidence.
@@ -36,7 +36,7 @@ The workflow chain covers plan → code → verify → commit/PR. Deployment, re
 
 There is no binary in the execution path, so there is nothing to version-gate. Every spine skill reads `docs/playbooks/{stage}.md` from the repository it is running in, and that playbook is committed — a fresh clone with no `zharness` installed executes the same lifecycle as a fully provisioned machine.
 
-The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold the managed docs, fresh-overwriting playbooks/WORKFLOW.md and three-way-merging PROJECT.md and the AGENTS.md block, which is a setup concern, not a per-stage one.
+The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold the managed docs, fresh-overwriting playbooks/WORKFLOW.md, replacing the hash-guarded AGENTS.md block, and writing PROJECT.md only when absent, which is a setup concern, not a per-stage one.
 
 ### Non-spine skills do not stop on a missing binary
 
@@ -61,9 +61,9 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 
 | Skill | Owns | Mechanism |
 | :--- | :--- | :--- |
-| `brainstorm` | Outcome, Authority and Requirements, Non-goals (lane in frontmatter) | playbook + hand-edited markdown |
-| `to-plan` | Approach and Risks, Phases and Verification (story tokens) | playbook + hand-edited markdown |
-| `work` | Progress, Decisions (append-only) | playbook + hand-edited markdown |
+| `brainstorm` | Goal (lane in frontmatter) | playbook + hand-edited markdown |
+| `to-plan` | Phases and Verification | playbook + hand-edited markdown |
+| `work` | Log (append-only) | playbook + hand-edited markdown |
 | `check` | Validation (append-only) | playbook + nested proof sub-bullets |
 | `handoff` | Current State and Next Action, phase closure | playbook + absorb line + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |

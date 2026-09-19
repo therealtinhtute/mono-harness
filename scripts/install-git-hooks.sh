@@ -368,14 +368,9 @@ USAGE
 function create_pre_commit_hook() {
   local hook_file="$HOOKS_DIR/pre-commit"
   local force="$1"
+  local new="$hook_file.tmp-zharness"
 
-  if [ -f "$hook_file" ] && [ "$force" != "true" ]; then
-    echo "⚠️  pre-commit hook already exists"
-    echo "Use --force to overwrite"
-    return 1
-  fi
-
-  cat > "$hook_file" << 'HOOK_EOF'
+  cat > "$new" << 'HOOK_EOF'
 #!/bin/bash
 # Pre-commit hook: validate changed skills + v0.15 fail-closed guards (R2/R3)
 
@@ -482,6 +477,25 @@ echo "✅ All skills validated"
 exit 0
 HOOK_EOF
 
+  # A kept stale hook calls the guard core with an outdated signature and
+  # fails open, so an older hook of ours is always replaced. A hook that is
+  # not ours is never overwritten without --force.
+  if [ -f "$hook_file" ] && [ "$force" != "true" ]; then
+    if cmp -s "$new" "$hook_file"; then
+      rm -f "$new"
+      echo "✅ pre-commit hook up to date"
+      return 0
+    fi
+    if ! grep -q '^ZHARNESS_HOOK_SOURCE=' "$hook_file"; then
+      rm -f "$new"
+      echo "❌ a foreign pre-commit hook exists at $hook_file"
+      echo "Use --force to overwrite"
+      return 1
+    fi
+    echo "🔄 replacing stale zharness pre-commit hook"
+  fi
+
+  mv "$new" "$hook_file" || return 1
   chmod +x "$hook_file"
   echo "✅ Created: $hook_file"
 }
@@ -551,7 +565,7 @@ function main() {
   echo "🔧 Installing git hooks..."
   echo ""
 
-  create_pre_commit_hook "$force" || true
+  create_pre_commit_hook "$force" || exit 1
   create_commit_msg_hook "$force"
 
   echo ""
