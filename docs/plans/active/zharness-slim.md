@@ -122,7 +122,7 @@ updated: 2026-09-19
 - phases:
   - phase_slug: `p1-drift-check`
     - story_id: `p1-drift-check-20260919T1300Z`
-    - status: planned
+    - status: in-progress
     - goal: R1, R2, R3, R16.
     - depends_on: none
     - surfaces: `cli/internal/installer/{registry,check}.go` (+ tests), `installer.go`, `update.go`,
@@ -244,17 +244,35 @@ updated: 2026-09-19
     - phase check: gate commands; `bash scripts/verify-doc-links.sh`.
 
 ## Progress
-- none
+- 2026-09-19T13:10Z — p1-drift-check — wave 1 — T1 — task_status=in-progress — phase start (run anchor 2026-09-19T13:10Z)
+- 2026-09-19T13:40Z — p1-drift-check — wave 1 — T1 — task_status=DONE — `go test ./internal/installer/ -run Registry` pass (3 tests; TestMain isolates XDG_CONFIG_HOME) — cli/internal/installer/registry.go, registry_test.go, installer.go, update.go, uninstall.go
+- 2026-09-19T13:40Z — p1-drift-check — wave 1 — T2 — task_status=DONE — `go test ./internal/installer/ ./internal/interfaces/ -run Check` pass (6 tests) — cli/internal/installer/check.go, check_test.go, cli/internal/interfaces/manage.go, manage_test.go
+- 2026-09-19T13:40Z — p1-drift-check — wave 1 — summary — T1, T2 DONE
+- 2026-09-19T13:55Z — p1-drift-check — wave 2 — T3 — task_status=DONE — `bash -n scripts/install-zharness.sh` ok; `bash scripts/test-install-zharness.sh` 4 passed — scripts/install-zharness.sh
+- 2026-09-19T13:55Z — p1-drift-check — wave 2 — T4 — task_status=DONE — `bash scripts/test-guards.sh` 46 passed, 0 failed (4 new R16 cases); guard core diff vs HEAD empty — scripts/install-git-hooks.sh, scripts/test-guards.sh
+- 2026-09-19T13:55Z — p1-drift-check — wave 2 — summary — T3, T4 DONE; phase checks: go test/vet/build/gofmt clean, doc links OK, `zh update --check --root ~/Lab/Ligaturizer` exit 1 with 11 drift lines and its `git status` unchanged
 
 ## Decisions
-- none
+- 2026-09-19 — lock — the installed `.git/hooks/pre-commit` was stale (3-argument call into the
+  4-argument core since b90f354), so R2 compared against `/old.md` and failed open; reinstalled with
+  `--force`, range re-check `master..HEAD` passed (R2 rc=0, PHASE-DONE rc=0) and an anchored negative
+  probe was rejected (rc=1). Owner added R16.
+- 2026-09-19 — lock — R2 skips entries whose first line has no anchored `verdict:`; the closed
+  harness-eval-loop entries use that unanchored form. Not a guard change (NG3); R10 now requires the
+  anchored form for new entries.
+- 2026-09-19 — p1-drift-check/T4 — ownership of an existing hook is detected by the
+  `ZHARNESS_HOOK_SOURCE=` line, not by matching the first two lines as planned: a future header edit
+  would otherwise make every older hook of ours look foreign.
+- 2026-09-19 — p1-drift-check — every phase gate runs as an independent subagent judge instead of
+  in-session (`work-full.md` step 11), because guard R3 rejects `judge: same-session` on this
+  high-risk plan.
 
 ## Validation
 - none
 
 ## Current State and Next Action
-- active_phase: none
-- lifecycle_status: planned
+- active_phase: p1-drift-check
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: none
-- exact_next_action: work full p1-drift-check
+- exact_next_action: independent gate check of p1-drift-check
