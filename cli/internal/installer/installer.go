@@ -409,7 +409,11 @@ func Install(root, version string, stdout *strings.Builder) error {
 	if err := saveBase(root, version, files); err != nil {
 		return err
 	}
-	return own.save(root)
+	if err := own.save(root); err != nil {
+		return err
+	}
+	register(root, stdout)
+	return nil
 }
 
 // AgentsSpan locates the marked zharness block inclusive of both marker

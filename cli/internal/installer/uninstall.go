@@ -53,6 +53,7 @@ func Uninstall(root string, stdout *strings.Builder) error {
 	_ = os.RemoveAll(filepath.Join(root, originalDir))
 	_ = os.RemoveAll(filepath.Join(root, baseDir))
 	_ = removeDirIfEmpty(filepath.Join(root, zharnessDir))
+	unregister(root, stdout)
 
 	// Report what happened, never a blanket guarantee the run did not
 	// enforce: a gate that overstates its own coverage is worse than one

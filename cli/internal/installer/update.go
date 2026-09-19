@@ -464,6 +464,7 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 		return err
 	}
 	_ = os.RemoveAll(filepath.Join(root, stashDir))
+	register(root, stdout)
 
 	for _, n := range names {
 		fmt.Fprintf(stdout, "%-14s %s\n", planned[n], n)

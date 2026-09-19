@@ -55,7 +55,7 @@ func newInstallCmd(version string) *cobra.Command {
 
 func newUpdateCmd(version string) *cobra.Command {
 	var root string
-	var cont, abort bool
+	var cont, abort, check, all bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Refresh playbooks/WORKFLOW.md from upstream; three-way merge PROJECT.md and the AGENTS.md block (conflicts stop for human resolution)",
@@ -63,8 +63,16 @@ func newUpdateCmd(version string) *cobra.Command {
 			if cont && abort {
 				return fmt.Errorf("--continue and --abort are mutually exclusive")
 			}
+			if all && !check {
+				return fmt.Errorf("--all requires --check")
+			}
 			rootDir := resolveRoot(c, "root")
 			out := &strings.Builder{}
+			if check {
+				err := installer.RunCheck(rootDir, all, out)
+				fmt.Print(out.String())
+				return err
+			}
 			err := installer.RunUpdate(installer.UpdateOptions{
 				Root: rootDir, Version: version, Continue: cont, Abort: abort,
 			}, out)
@@ -75,6 +83,8 @@ func newUpdateCmd(version string) *cobra.Command {
 	cmd.Flags().StringVar(&root, "root", "", "target repository root (default: git toplevel of cwd)")
 	cmd.Flags().BoolVar(&cont, "continue", false, "finalize after resolving conflict markers")
 	cmd.Flags().BoolVar(&abort, "abort", false, "restore the pre-update state exactly")
+	cmd.Flags().BoolVar(&check, "check", false, "report drift from this binary without writing; exit 1 on drift")
+	cmd.Flags().BoolVar(&all, "all", false, "with --check: every repository in ~/.config/zharness/repos")
 	return cmd
 }
 
