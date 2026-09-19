@@ -15,6 +15,7 @@ An ADR here is a record, not a proposal. It is written after the decision has la
 | [0005](0005-authored-documentation-boundary.md) | Audit guards authored-document presence, not authored-document truth | Accepted |
 | [0006](0006-v015-authority.md) | v0.15 deleted the derived index; live authority is ARCHITECTURE + CONTRACT | Accepted |
 | [0010](0010-local-failure-ledger.md) | A local failure ledger is maintainer-owned and optional for consumers | Accepted |
+| [0011](0011-update-without-three-way-merge.md) | `update` drops three-way merge: hash-guarded AGENTS block, write-once PROJECT.md | Accepted |
 
 ## Writing a new one
 

@@ -17,13 +17,13 @@ cli/cmd/zharness                 one Go binary (cobra), three verbs
         |
         v
 install                          scaffolds the managed set, records a base, reports brownfield read-only
-update                           fresh-overwrites playbooks/WORKFLOW.md; three-way merges PROJECT.md and the AGENTS.md block onto the recorded base
+update                           fresh-overwrites playbooks/WORKFLOW.md and the AGENTS.md block (hash-guarded); writes PROJECT.md only when absent; --check reports drift read-only
 uninstall                        removes the managed set; consumer bytes are never destroyed
 ```
 
-`AllTargets` (`cli/internal/installer/installer.go:65`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the eight playbooks (six stages plus the `work-full` and `check-validation` companions). `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
+`AllTargets` (`cli/internal/installer/installer.go:70`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the eight playbooks (six stages plus the `work-full` and `check-validation` companions). `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
 
-State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries plus content-addressed upstream blobs. Update diffs local edits against that recorded base with a diff3 merge (`cli/internal/installer/threeway.go`); overlapping edits stop with in-file conflict markers, resolved by a human via `--continue` (records the conflict-time upstream as the new base; the resolution stays as local drift) or discarded via `--abort` (stash restore, byte-for-byte). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
+State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries (the bytes zharness last wrote) and the ownership ledger `ownership.tsv`. Update refuses before any write when the on-disk AGENTS block no longer matches its recorded hash, printing the diff; `--force` replaces it (`cli/internal/installer/update.go:88`, ADR 0011). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
 
 The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`docs/playbooks/brainstorm.md` step 6).
 

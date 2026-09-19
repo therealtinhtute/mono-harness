@@ -154,7 +154,7 @@ updated: 2026-09-19
       test $? -eq 1 && git -C ~/Lab/Ligaturizer status --short` (exit 1, no new changes there).
   - phase_slug: `p2-drop-threeway`
     - story_id: `p2-drop-threeway-20260919T1300Z`
-    - status: planned
+    - status: checked
     - goal: R4, R5, R6, R7.
     - depends_on: `p1-drift-check`
     - surfaces: `cli/internal/installer/*.go` (+ tests), `cli/internal/interfaces/manage.go`,
@@ -253,6 +253,13 @@ updated: 2026-09-19
 - 2026-09-19T13:55Z — p1-drift-check — wave 2 — summary — T3, T4 DONE; phase checks: go test/vet/build/gofmt clean, doc links OK, `zh update --check --root ~/Lab/Ligaturizer` exit 1 with 11 drift lines and its `git status` unchanged
 - 2026-09-19T08:31Z — p1-drift-check — gate — requests — task_status=DONE — (1) `canonicalRoot` (EvalSymlinks, raw-path fallback) in register/unregister + `TestRegistry_SymlinkedPathIsOneEntry`; (2) `--all` prints `error    <root>: <err>`, continues, exits non-zero + `TestRunCheck_AllContinuesPastUnreadableRoot`; (4) `mv … || return 1`; `go test ./...`, `go vet`, gofmt clean, test-guards 46 passed — cli/internal/installer/registry.go, registry_test.go, check.go, check_test.go, scripts/install-git-hooks.sh
 
+- 2026-09-19T08:41Z — p2-drop-threeway — wave 1 — T1 — task_status=DONE — ADR 0011 with path:line citations, index row; ADR 0007/0008 status lines point to it; `bash scripts/verify-doc-links.sh` OK — docs/decisions/0011-update-without-three-way-merge.md, README.md, 0007, 0008
+- 2026-09-19T08:41Z — p2-drop-threeway — wave 1 — T2 — task_status=DONE — `go test ./internal/installer/ -run Agents` pass (untouched → replaced; hand-edited → error, tree unchanged, diff + --force hint; --force → replaced; no recorded hash → accepted) — cli/internal/installer/update.go, installer.go, installer_test.go, cli/internal/interfaces/manage.go
+- 2026-09-19T08:41Z — p2-drop-threeway — wave 1 — T3 — task_status=DONE — `go test ./internal/installer/ -run Project` pass (custom PROJECT.md byte-identical after update; check still names a missing heading) — cli/internal/installer/installer.go, update.go, check.go
+- 2026-09-19T08:41Z — p2-drop-threeway — wave 2 — T4 — task_status=DONE — threeway.go and stash_test.go trashed; `--continue`/`--abort` gone; `git diff master -- ownership_test.go` empty; installer non-test LOC 1,381 (master 1,794); `go test ./...`, `go vet`, gofmt clean — cli/internal/installer/*.go, manage.go, manage_test.go
+- 2026-09-19T08:41Z — p2-drop-threeway — phase check — task_status=DONE — test-guards 46 passed; test-install-zharness 4 passed; guard core cmp identical; temp-repo install → edit block → update exit 1 with tree byte-identical → --force exit 0 → uninstall leaves only user files; upgrade from a master-built install keeps edited PROJECT.md and ledger, drops blobs; README, ARCHITECTURE, CONTRACT, PROJECT.md updated
+- 2026-09-19T08:49Z — p2-drop-threeway — gate — requests — task_status=DONE — (1) `update` refuses and `update --check` reports `conflict` while a pre-0011 `.zharness/conflicts.json` exists + `TestUpdate_LegacyConflicts_RefusesAndCheckReports`; (2) AGENTS.md, docs/README.md, skills/workflow/README.md no longer describe three-way merge; (3) documented in ADR 0011 and README; (4) CRLF block compared as LF + CRLF subtest; `go test ./...`, `go vet`, gofmt clean, doc links OK — cli/internal/installer/update.go, check.go, installer.go, installer_test.go, AGENTS.md, docs/README.md, skills/workflow/README.md, README.md, docs/decisions/0011-*.md, docs/ARCHITECTURE.md
+
 ## Decisions
 - 2026-09-19 — lock — the installed `.git/hooks/pre-commit` was stale (3-argument call into the
   4-argument core since b90f354), so R2 compared against `/old.md` and failed open; reinstalled with
@@ -277,6 +284,23 @@ updated: 2026-09-19
   the AGENTS hash guard reuses the manifest's existing `AGENTS.md` entry (already the canonical block
   sha) instead of a new `agents_block_sha256` field.
 
+- 2026-09-19 — p2-drop-threeway/T4 — the planned `rg … returns 0 lines` check is narrowed to non-test
+  code naming only the legacy paths `update` and `uninstall` delete (`installer.go:41,46`), since R6
+  requires removing a leftover stash and upstream dir; test hits assert that removal.
+- 2026-09-19 — p2-drop-threeway — `update --check --force` is rejected ("--check is read-only and takes
+  no --force"), like `--all` without `--check`.
+- 2026-09-19 — p2-drop-threeway — the planned manifest field in `cli/internal/embedded/embedded.go` and
+  the `scripts/test-install-zharness.sh` change were not needed (existing manifest entry reused; the
+  script never calls `--continue`/`--abort`).
+- 2026-09-19 — p2-drop-threeway — open item: the hand-maintained `site/docs/*.html` pages still describe
+  three-way merge and `--continue`/`--abort`; not edited in this phase.
+- 2026-09-19 — p2-drop-threeway/gate — request (3), `install` rewriting a hand-edited block, is
+  documented rather than guarded: rerunning `install` is the explicit reset, and R4 scopes the guard
+  to `update`. A `--force`d write into a CRLF file leaves an LF block (git normalizes on commit).
+- 2026-09-19 — p2-drop-threeway/gate — the judge's guard-core `cmp <(…)` proof is wrapped in
+  `bash -c '…'` (the p1 form): the hook runs proofs with `sh -c`, which rejects process substitution.
+  No other byte of the judge's entry changed.
+
 ## Validation
 - 2026-09-19T08:29Z — phase `p1-drift-check` — verdict: APPROVE_WITH_REQUESTS — mode: gate
   - `cd cli && go test ./... -count=1` — ok docs/embedded, internal/embedded, internal/installer, internal/interfaces
@@ -291,10 +315,25 @@ updated: 2026-09-19
   - requests: (1) major — registry.go:65,81 / manage.go:17-26 unresolved symlink paths → duplicate registry entry, stale after uninstall; (2) minor — check.go:117 one unreadable root aborts --all; (3) minor — manage.go:71 --check ignores --continue/--abort; (4) nit — install-git-hooks.sh:498 mv failure not propagated
   - judge: independent
   - judge_model: claude-opus-5
+- 2026-09-19T08:47Z — phase `p2-drop-threeway` — verdict: APPROVE_WITH_REQUESTS — mode: gate
+  - `cd cli && go test ./... -count=1` — ok docs/embedded, internal/embedded, internal/installer, internal/interfaces
+  - `cd cli && go vet ./... && test -z "$(gofmt -l .)"` — vet clean, gofmt clean
+  - `cd cli && go test ./internal/installer/ -run 'AgentsBlock_HashGuard|Project_WriteOnce|LegacyArtifacts|IdentityTemplateChange' -count=1` — ok (R4 refuse/tree-unchanged/--force/no-hash, R5 write-once, legacy blobs dropped + ledger kept)
+  - `bash -c 'd=$(mktemp -d) && export XDG_CONFIG_HOME=$d/x && (cd cli && go build -o $d/zh ./cmd/zharness) && git init -q $d/r && $d/zh install --root $d/r >/dev/null && perl -0pi -e "s/(<!-- ZHARNESS:BEGIN -->\n)/\$1HANDEDIT\n/" $d/r/AGENTS.md && s(){ find $d/r -path "*/.git" -prune -o -type f -print | sort | xargs shasum; } && b=$(s) && ! $d/zh update --root $d/r >$d/o 2>&1 && grep -q "^-HANDEDIT" $d/o && test "$b" = "$(s)" && $d/zh update --force --root $d/r >/dev/null && ! grep -q HANDEDIT $d/r/AGENTS.md && $d/zh uninstall --root $d/r >/dev/null && test -z "$(find $d/r -path "*/.git" -prune -o -type f -print)"'` — refused update exit 1 with diff and byte-identical tree; --force replaces the block; uninstall leaves no files
+  - `bash -c 'd=$(mktemp -d) && export XDG_CONFIG_HOME=$d/x && mkdir $d/m && git archive master cli | tar -x -C $d/m && (cd $d/m/cli && go build -o $d/old ./cmd/zharness) && (cd cli && go build -o $d/zh ./cmd/zharness) && git init -q $d/r && $d/old install --root $d/r >/dev/null && test -d $d/r/.zharness/base/upstream && echo mine > $d/r/docs/PROJECT.md && l=$(shasum < $d/r/.zharness/base/ownership.tsv) && $d/zh update --root $d/r >/dev/null && test ! -e $d/r/.zharness/base/upstream && test "$(cat $d/r/docs/PROJECT.md)" = mine && test "$l" = "$(shasum < $d/r/.zharness/base/ownership.tsv)"'` — master-built install upgrades: blobs dropped, edited PROJECT.md and ledger unchanged
+  - `test -z "$(git diff master -- cli/internal/installer/ownership_test.go)" && test ! -e cli/internal/installer/threeway.go && test ! -e cli/internal/installer/stash_test.go` — ownership tests unchanged; three-way merge and stash code removed
+  - `bash -c 'cmp <(git show master:scripts/install-git-hooks.sh | sed -n "11,347p") <(sed -n "11,347p" scripts/install-git-hooks.sh)'` — guard core byte-identical
+  - `bash scripts/test-guards.sh` — guards: 46 passed, 0 failed
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - `XDG_CONFIG_HOME=$(mktemp -d) bash scripts/test-install-zharness.sh` — summary: 4 passed, 0 failed
+  - scope: on target. R4–R7 are met. Non-test installer code is 1,381 lines (limit 1,394). The planned `embedded.go` manifest field and the `test-install-zharness.sh` change were skipped, and both skips are recorded in Decisions. Drift: three stale docs outside the acknowledged `site/docs` open item still describe three-way merge (request 2).
+  - requests: (1) medium — cli/internal/installer/update.go:60-87: a repo left mid-conflict by the master binary (`.zharness/conflicts.json` plus `update-stash/`) now updates with exit 0 and no warning. Conflict markers stay in `docs/PROJECT.md`, `update --check` reports `current`, and uninstall silently deletes the pre-update stash. Master refused `update` in this state. Warn, or refuse, when those legacy files exist. (2) medium — AGENTS.md:117, docs/README.md:23, skills/workflow/README.md:39: these still say update three-way merges PROJECT.md and the AGENTS block. docs/README.md:23 also says a local edit "is staged as an update conflict", which is now false. (3) low — cli/internal/installer/installer.go:352-388: rerunning `zharness install` replaces a hand-edited AGENTS block with no hash check, which gets around the R4 guard. Master behaved the same way, but R4 now promises the block is protected; add the guard to install or document the exception. (4) low — cli/internal/installer/update.go:82: an untouched block with CRLF line endings (from autocrlf) fails the hash check and is refused every time. `--force` then leaves the file with mixed line endings.
+  - judge: independent
+  - judge_model: claude-opus-5
 
 ## Current State and Next Action
-- active_phase: p1-drift-check
+- active_phase: p2-drop-threeway
 - lifecycle_status: checked
 - blockers: none
-- open_items: none
-- exact_next_action: work full p2-drop-threeway
+- open_items: site/docs/*.html still describe three-way merge (see Decisions)
+- exact_next_action: work full p3-slim-plan
