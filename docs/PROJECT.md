@@ -47,4 +47,4 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- plan: docs/plans/active/zharness-slim.md (active, not-planned)
+- plan: docs/plans/active/zharness-slim.md (active, p1-drift-check checked)

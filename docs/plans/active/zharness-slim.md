@@ -122,7 +122,7 @@ updated: 2026-09-19
 - phases:
   - phase_slug: `p1-drift-check`
     - story_id: `p1-drift-check-20260919T1300Z`
-    - status: in-progress
+    - status: checked
     - goal: R1, R2, R3, R16.
     - depends_on: none
     - surfaces: `cli/internal/installer/{registry,check}.go` (+ tests), `installer.go`, `update.go`,
@@ -251,6 +251,7 @@ updated: 2026-09-19
 - 2026-09-19T13:55Z — p1-drift-check — wave 2 — T3 — task_status=DONE — `bash -n scripts/install-zharness.sh` ok; `bash scripts/test-install-zharness.sh` 4 passed — scripts/install-zharness.sh
 - 2026-09-19T13:55Z — p1-drift-check — wave 2 — T4 — task_status=DONE — `bash scripts/test-guards.sh` 46 passed, 0 failed (4 new R16 cases); guard core diff vs HEAD empty — scripts/install-git-hooks.sh, scripts/test-guards.sh
 - 2026-09-19T13:55Z — p1-drift-check — wave 2 — summary — T3, T4 DONE; phase checks: go test/vet/build/gofmt clean, doc links OK, `zh update --check --root ~/Lab/Ligaturizer` exit 1 with 11 drift lines and its `git status` unchanged
+- 2026-09-19T08:31Z — p1-drift-check — gate — requests — task_status=DONE — (1) `canonicalRoot` (EvalSymlinks, raw-path fallback) in register/unregister + `TestRegistry_SymlinkedPathIsOneEntry`; (2) `--all` prints `error    <root>: <err>`, continues, exits non-zero + `TestRunCheck_AllContinuesPastUnreadableRoot`; (4) `mv … || return 1`; `go test ./...`, `go vet`, gofmt clean, test-guards 46 passed — cli/internal/installer/registry.go, registry_test.go, check.go, check_test.go, scripts/install-git-hooks.sh
 
 ## Decisions
 - 2026-09-19 — lock — the installed `.git/hooks/pre-commit` was stale (3-argument call into the
@@ -266,13 +267,34 @@ updated: 2026-09-19
 - 2026-09-19 — p1-drift-check — every phase gate runs as an independent subagent judge instead of
   in-session (`work-full.md` step 11), because guard R3 rejects `judge: same-session` on this
   high-risk plan.
+- 2026-09-19 — p1-drift-check — Progress timestamps 13:10Z–13:55Z were estimated, not read from the
+  clock; the real UTC time at the gate was ~08:29Z. Entries are left as written; from 08:31Z on,
+  times come from `date -u`.
+- 2026-09-19 — p1-drift-check/gate — request (3), `--check` combined with `--continue`/`--abort`, is not
+  fixed here: P2 removes both flags (R6), which removes the combination.
+- 2026-09-19 — p2-drop-threeway — planned deviations: the recorded base becomes the manifest's
+  per-file sha256 (`loadBase` → path→sha; `seedPath` and `removeManagedFile` compare hashes), and
+  the AGENTS hash guard reuses the manifest's existing `AGENTS.md` entry (already the canonical block
+  sha) instead of a new `agents_block_sha256` field.
 
 ## Validation
-- none
+- 2026-09-19T08:29Z — phase `p1-drift-check` — verdict: APPROVE_WITH_REQUESTS — mode: gate
+  - `cd cli && go test ./... -count=1` — ok docs/embedded, internal/embedded, internal/installer, internal/interfaces
+  - `cd cli && go vet ./...` — no findings
+  - `test -z "$(gofmt -l cli)"` — exit 0, no unformatted files
+  - `bash scripts/test-guards.sh` — guards: 46 passed, 0 failed (R16 fresh/current/stale-ours/foreign cases ok)
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - `bash scripts/test-install-zharness.sh` — summary: 4 passed, 0 failed
+  - `bash -c 'cmp <(git show master:scripts/install-git-hooks.sh | sed -n "11,347p") <(sed -n "11,347p" scripts/install-git-hooks.sh)'` — guard core (lines 11–347) byte-identical to master
+  - `sh -c 'cd cli && go run ./cmd/zharness update --check --root "$HOME/Lab/Ligaturizer" >/dev/null 2>&1; test $? -eq 1'` — drift reported (11 lines), exit 1; Ligaturizer git status and managed-file hashes unchanged
+  - scope: on target — R1, R2, R3 and R16 are implemented within the planned surfaces; guard core, playbooks, templates and consumer repos untouched
+  - requests: (1) major — registry.go:65,81 / manage.go:17-26 unresolved symlink paths → duplicate registry entry, stale after uninstall; (2) minor — check.go:117 one unreadable root aborts --all; (3) minor — manage.go:71 --check ignores --continue/--abort; (4) nit — install-git-hooks.sh:498 mv failure not propagated
+  - judge: independent
+  - judge_model: claude-opus-5
 
 ## Current State and Next Action
 - active_phase: p1-drift-check
-- lifecycle_status: in-progress
+- lifecycle_status: checked
 - blockers: none
 - open_items: none
-- exact_next_action: independent gate check of p1-drift-check
+- exact_next_action: work full p2-drop-threeway
