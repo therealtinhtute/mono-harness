@@ -1,6 +1,5 @@
 ---
 id: zharness-slim-20260919T1200Z
-intake_id: zharness-slim-intake-20260919T1200Z
 lane: high-risk
 status: active
 created: 2026-09-19
@@ -9,7 +8,7 @@ updated: 2026-09-19
 
 # Plan: zharness-slim — consistent playbooks across repos, a smaller installer, a lighter plan
 
-## Outcome
+## Goal
 - result: after a `zharness` upgrade the owner can list every installed repository whose managed
   docs lag the binary, `update` no longer carries a three-way merge, a new plan is a 5-section file
   that scales with its lane, and the playbooks name stages instead of Claude slash commands.
@@ -23,7 +22,7 @@ updated: 2026-09-19
   - `rg -n '`/(check|work|to-plan|brainstorm|handoff|watzup)\b' cli/docs/embedded` returns 0 lines
     (pattern: a backtick followed by a slash command name).
 
-## Authority and Requirements
+### Authority and Requirements
 - authority:
   - Owner approval in the 2026-09-19 `/think` session (design, P1–P4 order, registry variant of P1,
     auto-migration of the active plan).
@@ -74,7 +73,7 @@ updated: 2026-09-19
     that hook's bytes differ from the current template, and exits non-zero (no silent `|| true`) when the
     existing hook is foreign; the guard core is untouched. | source: owner, 2026-09-19 stale-hook finding
 
-## Non-goals
+### Non-goals
 - NG1: serving playbooks from the binary or a global directory (rejected: breaks fresh clones without
   the binary and couples repo plan format to a machine-wide version).
 - NG2: shipping the ZGUARD hook or CI guard to consumer repositories.
@@ -82,7 +81,7 @@ updated: 2026-09-19
 - NG4: guarding `:NN` line anchors (accepted debt from harness-eval-loop).
 - NG5: fixing OpenCode's duplicate skill listing.
 
-## Approach and Risks
+## Phases and Verification
 - approach: four sequential, independently mergeable phases on branch `feat/zharness-slim`, one
   commit group per phase, each closed by `check full` with an independent (subagent) judge because
   the lane is high-risk. P1 adds the read-only drift check first so P2–P4 changes are observable on
@@ -117,12 +116,10 @@ updated: 2026-09-19
   previous release binary plus `uninstall`/`install`. Stop and ask the owner if a gate returns
   `REQUEST_CHANGES` twice on one phase, or if any change would touch the guard core.
 
-## Phases and Verification
 - planning_status: planned
 - phases:
   - phase_slug: `p1-drift-check`
-    - story_id: `p1-drift-check-20260919T1300Z`
-    - status: checked
+    status: checked
     - goal: R1, R2, R3, R16.
     - depends_on: none
     - surfaces: `cli/internal/installer/{registry,check}.go` (+ tests), `installer.go`, `update.go`,
@@ -153,8 +150,7 @@ updated: 2026-09-19
       `go build -o "$TMPDIR/zh" ./cmd/zharness && "$TMPDIR/zh" update --check --root ~/Lab/Ligaturizer;
       test $? -eq 1 && git -C ~/Lab/Ligaturizer status --short` (exit 1, no new changes there).
   - phase_slug: `p2-drop-threeway`
-    - story_id: `p2-drop-threeway-20260919T1300Z`
-    - status: checked
+    status: checked
     - goal: R4, R5, R6, R7.
     - depends_on: `p1-drift-check`
     - surfaces: `cli/internal/installer/*.go` (+ tests), `cli/internal/interfaces/manage.go`,
@@ -184,8 +180,7 @@ updated: 2026-09-19
       install → edit AGENTS block → `update` (non-zero, `find . -type f | sort | xargs shasum` identical)
       → `update --force` (block restored) → `uninstall` (managed set gone, user files kept).
   - phase_slug: `p3-slim-plan`
-    - story_id: `p3-slim-plan-20260919T1300Z`
-    - status: planned
+    status: checked
     - goal: R8, R9, R10, R11, R12, R13.
     - depends_on: `p2-drop-threeway`
     - surfaces: `docs/playbooks/*.md` and embedded copies, `docs/WORKFLOW.md` and embedded copy,
@@ -223,8 +218,7 @@ updated: 2026-09-19
         not modified. check: `git diff --quiet master -- docs/plans/completed/`.
     - phase check: gate commands; `bash scripts/test-guards.sh`; `diff <(git show master:scripts/install-git-hooks.sh | awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on') <(awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh)` empty.
   - phase_slug: `p4-portability`
-    - story_id: `p4-portability-20260919T1300Z`
-    - status: planned
+    status: planned
     - goal: R14, R15.
     - depends_on: `p3-slim-plan`
     - surfaces: playbooks + embedded copies, WORKFLOW.md + embedded copy, `rules/workflow-core.md`,
@@ -243,7 +237,7 @@ updated: 2026-09-19
         prints the `~/.agents/skills` path; `ls ~/.claude/skills | wc -l` equals the source count.
     - phase check: gate commands; `bash scripts/verify-doc-links.sh`.
 
-## Progress
+## Log
 - 2026-09-19T13:10Z — p1-drift-check — wave 1 — T1 — task_status=in-progress — phase start (run anchor 2026-09-19T13:10Z)
 - 2026-09-19T13:40Z — p1-drift-check — wave 1 — T1 — task_status=DONE — `go test ./internal/installer/ -run Registry` pass (3 tests; TestMain isolates XDG_CONFIG_HOME) — cli/internal/installer/registry.go, registry_test.go, installer.go, update.go, uninstall.go
 - 2026-09-19T13:40Z — p1-drift-check — wave 1 — T2 — task_status=DONE — `go test ./internal/installer/ ./internal/interfaces/ -run Check` pass (6 tests) — cli/internal/installer/check.go, check_test.go, cli/internal/interfaces/manage.go, manage_test.go
@@ -259,8 +253,17 @@ updated: 2026-09-19
 - 2026-09-19T08:41Z — p2-drop-threeway — wave 2 — T4 — task_status=DONE — threeway.go and stash_test.go trashed; `--continue`/`--abort` gone; `git diff master -- ownership_test.go` empty; installer non-test LOC 1,381 (master 1,794); `go test ./...`, `go vet`, gofmt clean — cli/internal/installer/*.go, manage.go, manage_test.go
 - 2026-09-19T08:41Z — p2-drop-threeway — phase check — task_status=DONE — test-guards 46 passed; test-install-zharness 4 passed; guard core cmp identical; temp-repo install → edit block → update exit 1 with tree byte-identical → --force exit 0 → uninstall leaves only user files; upgrade from a master-built install keeps edited PROJECT.md and ledger, drops blobs; README, ARCHITECTURE, CONTRACT, PROJECT.md updated
 - 2026-09-19T08:49Z — p2-drop-threeway — gate — requests — task_status=DONE — (1) `update` refuses and `update --check` reports `conflict` while a pre-0011 `.zharness/conflicts.json` exists + `TestUpdate_LegacyConflicts_RefusesAndCheckReports`; (2) AGENTS.md, docs/README.md, skills/workflow/README.md no longer describe three-way merge; (3) documented in ADR 0011 and README; (4) CRLF block compared as LF + CRLF subtest; `go test ./...`, `go vet`, gofmt clean, doc links OK — cli/internal/installer/update.go, check.go, installer.go, installer_test.go, AGENTS.md, docs/README.md, skills/workflow/README.md, README.md, docs/decisions/0011-*.md, docs/ARCHITECTURE.md
+- 2026-09-19T08:54Z — p3-slim-plan — wave 1 — T1 — task_status=in-progress — phase start (run anchor 2026-09-19T08:54Z)
+- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — T1 — task_status=DONE — playbooks rewritten to the 5-section format, lanes, `bounded|gate|full`, R10 entry shape, R11 compaction; `diff -r docs/playbooks cli/docs/embedded/playbooks` and WORKFLOW diff empty; forbidden-term rg 0 lines; 5,321 words (was 5,427); `go test ./internal/embedded/` pass with updated contract phrases — docs/playbooks/*.md, cli/docs/embedded/playbooks/*.md, cli/internal/embedded/embedded_test.go, skills/workflow/README.md, skills/workflow/check/SKILL.md, docs/ARCHITECTURE.md
+- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — T2 — task_status=DONE — 4 templates trashed, `ls cli/docs/embedded/templates` = project.identity.md; embed.go/embedded.go/manifest_disk_test.go comments fixed; site workflow page updated; `bash scripts/verify-doc-links.sh` OK; `cd cli && go test ./...` pass — cli/docs/embedded/templates/, cli/docs/embedded/embed.go, cli/internal/embedded/*.go, site/docs/workflow.html, docs/audit/multi-stack-harness-audit.md
+- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — summary — T1, T2 DONE
+- 2026-09-19T09:03Z — p3-slim-plan — wave 2 — T3 — task_status=DONE — `go test ./internal/installer/ -run Migrate` pass (9 sections in any order → 5, Validation sha equal, second run no-op; missing/extra/duplicate/renamed/no headings untouched; update migrates once, unknown set → notice, file unchanged); handoff sets `lifecycle_status: completed`; `go test ./...`, `go vet`, gofmt clean; migrate.go 179 LOC — cli/internal/installer/migrate.go, migrate_test.go, update.go, docs/playbooks/handoff.md, cli/docs/embedded/playbooks/handoff.md, cli/internal/embedded/embedded_test.go
+- 2026-09-19T09:04Z — p3-slim-plan/T4 — done — built binary (isolated XDG_CONFIG_HOME) migrated this plan: `migrated docs/plans/active/zharness-slim.md`, rerun prints no migrated/notice line; Validation sha256 5299741334218835656d53ef27347e72caba5b7635e605c7bc2449d4cf23e580 before = after; diff limited to headings, frontmatter `intake_id`, `story_id` and status bullets; git status otherwise unchanged; `bash .git/hooks/pre-commit` on the staged index rc=0; negative R2 probe (anchored `verdict: APPROVED` + `` `false` `` staged) rc=1, plan restored and hook rc=0 — docs/plans/active/zharness-slim.md
+- 2026-09-19T09:05Z — p3-slim-plan/T5 — done — R11 compaction on a scratch copy of `docs/plans/completed/harness-eval-loop.md`: 6 `task_status=` Log entries and 1 superseded p3-failure-ledger Validation entry dropped; `wc -w` 7,237 → 5,909 (−18%); `git diff --quiet HEAD -- docs/plans/completed/` rc=0 — no repository file
+- 2026-09-19T09:05Z — p3-slim-plan — done — phase check: `cd cli && go test ./...`, `go vet ./...`, gofmt clean; `bash scripts/test-guards.sh` 46 passed, 0 failed; `bash scripts/test-install-zharness.sh` 4 passed; `bash scripts/verify-doc-links.sh` OK; guard-core diff vs master empty; forbidden-term rg 0 lines
+- 2026-09-19T09:12Z — p3-slim-plan — done — gate requests 1–3 fixed (README.md, docs/decisions/0011-update-without-three-way-merge.md, site/docs/architecture.html, T4 Log entry); request 4 left as is (theoretical, fails closed); `bash scripts/verify-doc-links.sh` OK
 
-## Decisions
+### Decisions
 - 2026-09-19 — lock — the installed `.git/hooks/pre-commit` was stale (3-argument call into the
   4-argument core since b90f354), so R2 compared against `/old.md` and failed open; reinstalled with
   `--force`, range re-check `master..HEAD` passed (R2 rc=0, PHASE-DONE rc=0) and an anchored negative
@@ -300,6 +303,21 @@ updated: 2026-09-19
 - 2026-09-19 — p2-drop-threeway/gate — the judge's guard-core `cmp <(…)` proof is wrapped in
   `bash -c '…'` (the p1 form): the hook runs proofs with `sh -c`, which rejects process substitution.
   No other byte of the judge's entry changed.
+- 2026-09-19 — p3-slim-plan/T1 — the guard's completed-plan PHASE-DONE check matches `status:` only with no
+  bullet (`/^[[:space:]]*status:/`), so every earlier plan's `    - status: X` was invisible to it. The new
+  skeleton writes `  status:` directly under `phase_slug:`; migration converts the old form.
+- 2026-09-19 — p3-slim-plan/T1 — Log kinds are `start|done|blocked|decision`; closing compaction drops
+  `start` and `done` and keeps `blocked` too (failure history), a superset of R11's keep set. The
+  `receipt:` block is dropped from the Validation entry and check output: no guard reads it and no
+  entry in this repository carries one.
+- 2026-09-19 — p3-slim-plan/T2 — `skills/craft/create-skill/references/skill-anatomy-and-requirements.md`
+  needs no change (no plan-format text). `docs/audit/multi-stack-harness-audit.md` linked a removed
+  template; the link became a code span so doc-link verification passes.
+- 2026-09-19 — p3-slim-plan/T3 — handoff step 6 now sets `lifecycle_status: completed` in Current State:
+  the PHASE-DONE guard fires only on that value, so without it the bare `status:` lines were still unchecked.
+- 2026-09-19 — p3-slim-plan/T5 — the T5 check compares against `master`, but `harness-eval-loop.md` was added on
+  this branch (d5c48f7), so `git diff master` is non-empty by construction. The check that states the intent
+  (the completed file is not modified) is `git diff --quiet HEAD -- docs/plans/completed/`.
 
 ## Validation
 - 2026-09-19T08:29Z — phase `p1-drift-check` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -330,10 +348,25 @@ updated: 2026-09-19
   - requests: (1) medium — cli/internal/installer/update.go:60-87: a repo left mid-conflict by the master binary (`.zharness/conflicts.json` plus `update-stash/`) now updates with exit 0 and no warning. Conflict markers stay in `docs/PROJECT.md`, `update --check` reports `current`, and uninstall silently deletes the pre-update stash. Master refused `update` in this state. Warn, or refuse, when those legacy files exist. (2) medium — AGENTS.md:117, docs/README.md:23, skills/workflow/README.md:39: these still say update three-way merges PROJECT.md and the AGENTS block. docs/README.md:23 also says a local edit "is staged as an update conflict", which is now false. (3) low — cli/internal/installer/installer.go:352-388: rerunning `zharness install` replaces a hand-edited AGENTS block with no hash check, which gets around the R4 guard. Master behaved the same way, but R4 now promises the block is protected; add the guard to install or document the exception. (4) low — cli/internal/installer/update.go:82: an untouched block with CRLF line endings (from autocrlf) fails the hash check and is refused every time. `--force` then leaves the file with mixed line endings.
   - judge: independent
   - judge_model: claude-opus-5
+- 2026-09-19T09:12Z — phase `p3-slim-plan` — verdict: APPROVE_WITH_REQUESTS — mode: gate
+  - `cd cli && go test ./... -count=1` — ok docs/embedded, internal/embedded, internal/installer, internal/interfaces
+  - `cd cli && go vet ./... && test -z "$(gofmt -l .)"` — vet clean, gofmt clean
+  - `cd cli && go test ./internal/installer/ -run Migrate -count=1` — PASS LegacyToFiveSections, UnknownSetsUntouched, Update_MigratesActivePlan
+  - `bash scripts/test-guards.sh` — guards: 46 passed, 0 failed
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - `bash -c 'diff <(git show master:scripts/install-git-hooks.sh | awk '"'"'$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on'"'"') <(awk '"'"'$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on'"'"' scripts/install-git-hooks.sh)'` — empty: guard core identical to master
+  - `test "$(ls cli/docs/embedded/templates)" = project.identity.md && diff -r docs/playbooks cli/docs/embedded/playbooks && diff docs/WORKFLOW.md cli/docs/embedded/WORKFLOW.md` — one template left; mirrors identical
+  - `bash -c 'd=$(mktemp -d) && sed -n "/^# ZGUARD-CORE-BEGIN/,/^# ZGUARD-CORE-END/p" scripts/install-git-hooks.sh > $d/g.sh && . $d/g.sh && printf "## Phases and Verification\n- phase_slug: p1\n  status: checked\n\n## Current State and Next Action\n- lifecycle_status: completed\n" > $d/p.md && ! zharness_guard_completed_plan_phases_done p $d/p.md 2>/dev/null && sed "s/status: checked/status: done/" $d/p.md > $d/q.md && zharness_guard_completed_plan_phases_done q $d/q.md'` — bare `status: checked` under `lifecycle_status: completed` rejected; `done` passes
+  - `git diff --quiet HEAD -- docs/plans/completed/` — completed plans unmodified
+  - scope: on target. R8–R13 met. Migrating HEAD's plan in a temp repo reproduces the staged plan apart from P3 work-state edits; Validation sha256 is equal in HEAD and the index; a second run prints nothing. CRLF input, a `## ` line inside a fence, and multiple active plans all fail safe (notice, file unchanged).
+  - requests: (1) major — README.md and ADR 0011 did not say that `update` migrates the active plan — fixed. (2) minor — the T4 Log entry did not record the hook rc=0 or the negative probe rc=1 — fixed. (3) minor — site/docs/architecture.html:164 still said "Progress, Decisions" — fixed. (4) minor, theoretical, fails closed — migrate.go:25 also strips the bullet from task-level `- status:` lines, so PHASE-DONE would count them as phases; playbooks forbid task status fields — left as is.
+  - not verified: T5 word counts (the scratch copy was not kept); the hook on the final compaction commit (reasoned, not run).
+  - judge: independent
+  - judge_model: claude-opus-5
 
 ## Current State and Next Action
-- active_phase: p2-drop-threeway
+- active_phase: p3-slim-plan
 - lifecycle_status: checked
 - blockers: none
 - open_items: site/docs/*.html still describe three-way merge (see Decisions)
-- exact_next_action: work full p3-slim-plan
+- exact_next_action: commit p3-slim-plan, then `work full phase p4-portability`
