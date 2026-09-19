@@ -83,3 +83,6 @@ case ":${PATH}:" in
 esac
 
 "${INSTALL_DIR}/zharness" --version
+
+# A new binary may ship newer playbooks than the repositories it manages.
+"${INSTALL_DIR}/zharness" update --check --all || true
