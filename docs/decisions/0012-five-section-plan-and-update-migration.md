@@ -15,7 +15,8 @@ of size, and a closed plan kept every start/done line forever.
 The pre-commit guard parses three headings verbatim (`## Validation`,
 `## Phases and Verification`, `## Current State and Next Action`) and the
 fields `lane:`, `phase_slug:`, `status:` and `lifecycle_status:`
-(`scripts/install-git-hooks.sh:244`, `scripts/install-git-hooks.sh:251`). The guard core is frozen: it must
+(`scripts/install-git-hooks.sh:45`, `scripts/install-git-hooks.sh:51`,
+`scripts/install-git-hooks.sh:244`, `scripts/install-git-hooks.sh:251`). The guard core is frozen: it must
 stay byte-identical so CI and installed hooks agree.
 
 ## Decision
@@ -41,9 +42,20 @@ stay byte-identical so CI and installed hooks agree.
    (`cli/internal/installer/migrate.go:35`): sections merge, `intake_id`/`story_id`
    lines drop, phase `- status:` bullets become bare. The Validation body is
    copied byte for byte and re-checked before writing
-   (`cli/internal/installer/migrate.go:73`). Any other heading set, or
-   more than one active plan, is left untouched with a `notice`. The decision is
+   (`cli/internal/installer/migrate.go:73`). A plan already in the five-section
+   shape is left alone silently; any other heading set, or more than one active
+   plan, is left untouched with a `notice`; an unreadable plan or a migration
+   that would change Validation makes `update` refuse before any write. The decision is
    made before the first write (`cli/internal/installer/update.go:95`).
+
+Rejected:
+
+- Keeping nine sections: every plan, however small, paid for four sections the
+  guard never reads, and closed plans grew without bound.
+- Teaching the guard the bulleted `- status:` form: that edits the frozen guard
+  core, so CI and installed hooks would disagree until every hook is reinstalled.
+- A separate `migrate` command: the owner chose migration inside `update`, so an
+  upgraded repository needs no extra step.
 
 ## Consequences
 

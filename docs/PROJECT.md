@@ -48,3 +48,5 @@
 
 ## What are we working on right now?
 - plan: none active; last completed docs/plans/completed/zharness-slim.md
+- follow-up: `site/docs/architecture.html` and `site/docs/cli.html` still describe
+  three-way merge and `update --continue`/`--abort`, removed by ADR 0011.

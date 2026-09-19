@@ -238,6 +238,9 @@ updated: 2026-09-19
     - phase check: gate commands; `bash scripts/verify-doc-links.sh`.
 
 ## Log
+- 2026-09-19T13:40Z — p1-drift-check — wave 1 — summary — T1, T2 DONE
+- 2026-09-19T13:55Z — p1-drift-check — wave 2 — summary — T3, T4 DONE; phase checks: go test/vet/build/gofmt clean, doc links OK, `zh update --check --root ~/Lab/Ligaturizer` exit 1 with 11 drift lines and its `git status` unchanged
+- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — summary — T1, T2 DONE
 - 2026-09-19T11:11Z — p4-portability — decision — independent `check full` APPROVE_WITH_REQUESTS; the owner waived the LOC request; the site/docs request stays an open item
 - 2026-09-19T11:17Z — p4-portability — decision — absorb: adr docs/decisions/0011-update-without-three-way-merge.md (P2 update without three-way merge), docs/decisions/0012-five-section-plan-and-update-migration.md (P3 plan format and migration); follow-up outside this plan: site/docs/architecture.html and site/docs/cli.html still describe three-way merge and `--continue`/`--abort`
 
