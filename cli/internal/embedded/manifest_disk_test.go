@@ -12,7 +12,7 @@ import (
 // cli/docs/embedded on disk but not to a //go:embed directive in
 // cli/docs/embedded/embed.go (or vice versa): every file on disk must be
 // embedded via either FS (docs walked into the manifest) or Templates (the
-// scaffold skeletons, embedded separately and never projected). The union
+// write-once identity template, embedded separately). The union
 // of both embeds must equal the disk tree exactly.
 func TestBuildManifest_MatchesDiskTree(t *testing.T) {
 	m, err := BuildManifest("test")

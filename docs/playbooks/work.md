@@ -31,7 +31,7 @@ NEVER store credentials, secrets, API keys, or token values in a body; record on
 
 ## Exit Conditions
 
-- Full: the phase is `checked` in both the status field and Current State after a clean non-final gate, else `in-progress`; every attempted task has a `## Progress` entry; material decisions are recorded with rationale; each completed wave has a summary line; Current State is resumable; completed work is gated in-session per `work-full.md` step 11.
+- Full: the phase is `checked` in both the status line and Current State after a clean non-final gate, else `in-progress`; every attempted task has a `## Log` entry; material decisions are logged with rationale; Current State is resumable; completed work is gated per `work-full.md` step 8.
 - Bounded/simple: code and proof shown in the response; zero lifecycle or markdown writes.
 
 escalate_when: ask the owner and stop; never invent — locked schema or requirements would change; the same verification command failed twice; a product rule conflicts.

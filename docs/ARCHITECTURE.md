@@ -50,14 +50,14 @@ The binary carries two embedded filesystems (`cli/docs/embedded/`): the managed 
 
 | Path | Nature |
 |---|---|
-| `docs/plans/active/*.md` | authoritative — the one active initiative; append-only `## Progress` / `## Decisions` / `## Validation` |
+| `docs/plans/active/*.md` | authoritative — the one active initiative; append-only `## Log` / `## Validation` |
 | `docs/PROJECT.md` | authoritative — identity, answered at the brainstorm lock |
 | `docs/memory/*.md` | memory as files; agents grep directly (`docs/memory/{id}.md`) |
 | `docs/decisions/`, `docs/research/`, `docs/audit/` | authoritative records |
 | `docs/playbooks/`, `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/` instead |
 | `.zharness/` | installer bookkeeping (base manifest + blobs); gitignored |
 
-Task execution status lives only in append-only `## Progress`; task definitions carry no status fields. Bookkeeping is hand-appended — the binary writes no plan rows.
+Task execution status lives only in append-only `## Log`; task definitions carry no status fields. Bookkeeping is hand-appended — the binary writes no plan rows.
 
 ## Historical note (pre-v0.15, explicitly historical)
 
