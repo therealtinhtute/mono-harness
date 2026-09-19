@@ -2,9 +2,9 @@
 id: 01M0HARNESSEVALLOOP9K4
 intake_id: 01M0HARNESSEVALINTK9K4
 lane: normal
-status: active
+status: completed
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-19
 ---
 
 # Plan: harness-eval-loop — reproducible observations and an optional ledger
@@ -181,7 +181,7 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
 
 - phase_slug: p1-routing-eval-set
   story_id: story-routing-eval-set-20260916
-  status: checked
+  status: done
   goal: a reproducible manual suite and measured baseline usable without a ledger.
   depends_on: none
   surfaces_touched: docs/evals/routing.md, docs/evals/runs.md, docs/evals/evidence/**,
@@ -214,7 +214,7 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
 
 - phase_slug: p3-failure-ledger
   story_id: story-failure-ledger-20260916
-  status: checked
+  status: done
   goal: an authorized optional ledger with demonstrated read and append behavior.
   depends_on: p1-routing-eval-set
   surfaces_touched: docs/decisions/0010-local-failure-ledger.md, docs/decisions/README.md,
@@ -262,93 +262,16 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
 
 ## Current State and Next Action
 
-- active_phase: p3-failure-ledger
-- lifecycle_status: checked
-- latest_run_id: run-p3-20260916T0700Z (p1 anchor: `run-p1-20260916T0220Z`; eval run
-  `run-001-20260916`, extended with the p3 wave-2 ledger observations)
-- latest_check_id: check-p3-20260916T0820Z (full, APPROVE_WITH_REQUESTS, judge independent —
-  the initiative's one required independent review; prior anchors: `check-p3-20260916T0705Z`,
-  gate, APPROVED, judge same-session, and `check-p1-20260916T0335Z`, gate,
-  APPROVE_WITH_REQUESTS, judge same-session)
-- latest_handoff_id: none
-- completed: audit and draft corrected after review; draft promoted to active on 2026-09-16 at
-  repo SHA `2013158` with identity preserved. `p1-routing-eval-set` waves 1 and 2 executed: the
-  14-case suite is frozen in `docs/evals/routing.md` (v1, hash `270af72f…`), run 001 is a
-  completed baseline in `docs/evals/runs.md` with all 14 observations plus six historical-control
-  trials, and evidence is retained under `docs/evals/evidence/run-001/`. `p3-failure-ledger`
-  waves 1 and 2 executed: ADR 0010 is written, accepted and indexed; `docs/evals/failures.md`
-  exists with its four seeded incidents and the obsolete `.claimignore` exception is gone; and
-  both of the ADR's claims have observed evidence in `docs/evals/runs.md` — six alternating R03
-  trials (ledger present vs. absent, all six routing predicates passing on both sides) and one
-  append trial in which a durable gate reviewed a repeated class, returned `REQUEST_CHANGES`, and
-  appended a row. The phase gate has not run yet.
-- blockers: none.
-- open_items:
-  - Promotion preconditions rechecked 2026-09-16: ADR slot `0010` is free (`docs/decisions/`
-    holds 0001-0009); authenticated agent host available (`claude` 2.1.273, model
-    `claude-opus-5`); repo SHA `2013158`.
-  - Eval-host isolation is `--setting-sources project,local --strict-mcp-config`, which excludes
-    the operator's personal `~/.claude` instructions, rules, memory, and MCP servers.
-    `CLAUDE_CONFIG_DIR` isolation was tried first and is unusable: it produces an unauthenticated
-    zero-token run. Record the effective settings per run under R6.
-  - Two baseline failures are findings to carry, not defects to fix here: H04 rationalized an
-    explicit `check review` into a durable gate and wrote plan state, and H01 announced its mode
-    after reading plans, against `docs/playbooks/work.md:13`. `docs/playbooks/**` is in this
-    phase's `surfaces_avoided`, so neither is repaired by this initiative; both are candidate
-    ledger rows.
-  - `docs/decisions/README.md`'s index is missing rows for ADRs 0007, 0008 and 0009 (the table
-    jumps 0006 → 0010 after this phase's insert). Pre-existing, found while indexing 0010, and
-    outside `p3.w1.t1`'s output; a backfill is a separate bounded change.
-  - Carried forward from audit-integrity-remediation closure (both out of scope under R10,
-    neither is a blocker here): the installed `.git/hooks/pre-commit` wrapper's call sequence can
-    go stale relative to `scripts/install-git-hooks.sh` (the ZGUARD-CORE half is re-extracted per
-    run and cannot); and `stashRestore` writes to `filepath.Join(root, e.rel)` with `e.rel` read
-    back from `.zharness/update-stash/stash.tsv`, so a `../` component there escapes the repo root
-    on `zharness update --abort`. Both are candidate ledger rows in p3.w2.t1, not fixes.
-  - Requests from the independent `check full` of 2026-09-16T08:20Z, all non-blocking and none
-    repaired by this initiative (each would edit an artifact this phase already closed, and F1/F2
-    also name files under `surfaces_avoided` only as citation targets, not as edits):
-    - F1 (major) — **repaired 2026-09-16T08:35Z, after that review entry.**
-      `docs/playbooks/work-full.md:7` was a wrong line anchor for the seven-token taxonomy, which
-      sits at line 28; corrected in all four places (`docs/evals/failures.md` Conventions and ADR
-      0010's Context, Decision and Authority). The prose "(step 7)" was already correct. Proven by
-      `test "$(sed -n 28p docs/playbooks/work-full.md | grep -c 'MISSING_CONTEXT|WRONG_TOOL')" -eq 1`.
-    - F2 (major) — **repaired 2026-09-16T08:35Z, after that review entry.**
-      `docs/evals/failures.md` row 1 cited `docs/playbooks/check.md:31` (step 2); step 2 and the
-      sentence it quotes are at line 15, and line 31 is step 6. Corrected to `:15` and proven by
-      `test "$(sed -n 15p docs/playbooks/check.md | grep -c 'list every candidate')" -eq 1`.
-    - F1/F2 residual, and the reason this initiative is not closed: the class behind both is that
-      `scripts/verify-doc-links.sh` checks only that a cited path exists and never validates the
-      `:NN` suffix, so every line anchor in this repository is unverified — two of five were wrong
-      at authoring time. The class predates this initiative (`docs/audit/` carries roughly twenty
-      such anchors and `docs/plans/completed/` five more) and guarding it would touch `scripts/`
-      and `docs/patterns/`, both in this phase's `surfaces_avoided`. It has no ADR and no guard,
-      which is exactly what `handoff.md` step 6 refuses to leave behind.
-    - F1/F2 shared cause: line-number anchors into live playbooks rot like the active-plan paths
-      repaired in ADRs 0008/0009, and two of five were already wrong when written. A bounded
-      follow-up should drop the `:NN` form in favor of the narrative "(step N)".
-    - F3 (minor) — **repaired 2026-09-17, after that review entry.** ADR 0010's Status and
-      Authority lines now name `harness-eval-loop.md` (then under `docs/plans/active/`), the
-      form `docs/evals/failures.md` already uses; no follow-up edit is owed at closure.
-    - F4 (minor): retained evidence embeds operator absolute paths — 81 occurrences of
-      `/home/tinhpt/.claude/projects/...` in `trace.jsonl` files and 10 of
-      `/home/tinhpt/Lab/mono-harness` in the retained generator scripts. No credential material
-      accompanies them and the artifact paths `runs.md` references are all repo-relative, so S3
-      holds; the raw traces are the residue.
-- exact_next_action: **owner decision on 2026-09-16: do not close this initiative in that
-  session.** The plan stays `active` and was never `git mv`'d. To resume, pick one of the two
-  paths below, then run `handoff` again; nothing is owed to `work` or `check`.
-  (a) Close cheaply: accept that the unverified-line-anchor class stays unguarded, clear the F4
-  open item (F4) by decision rather than by fix, write `absorb: none` in `## Decisions`, and
-  run `handoff` steps 5-7. This is blocked today only by `handoff.md` step 6's requirement that
-  `open_items` read `none` and that a class-of-failure have an ADR or guard.
-  (b) Close properly: first encode the invariant behind F1/F2 — `scripts/verify-doc-links.sh`
-  validates only that a cited path exists and never checks the `:NN` suffix, so every line anchor
-  in this repository is unverified. That is a bounded change under `scripts/` and
-  `docs/patterns/encoding-invariants.md`, both of which are in this phase's `surfaces_avoided`, so
-  it belongs to a separate initiative and not to a late edit here. Then close via (a).
-  Either way, the independent `check full` of 2026-09-16T08:20Z already satisfies the final
-  phase's one required complete review, so re-reviewing is not a precondition for closure.
+- active_phase: none
+- lifecycle_status: completed
+- latest_run_id: run-p3-20260916T0700Z (p1 anchor: `run-p1-20260916T0220Z`)
+- latest_check_id: check-p3-20260916T0820Z (full, APPROVE_WITH_REQUESTS, judge independent)
+- latest_handoff_id: handoff-20260919-close
+- completed: `p1-routing-eval-set` and `p3-failure-ledger` are done. The suite, baseline run 001,
+  ADR 0010 and `docs/evals/failures.md` stand; closed 2026-09-19 via owner-approved path (a).
+- blockers: none
+- open_items: none
+- exact_next_action: none — initiative closed and moved to `docs/plans/completed/`.
 
 ## Progress
 <!-- Execution evidence. -->
@@ -541,6 +464,13 @@ reviewer, exposure status, enforcement evidence, artifact paths/hashes, and deci
   without a store. Rollback is a single `git rm`, both consumers being conditional on existence.
   R9's presence/absence comparison in wave 2 is what would falsify the value claim; the ADR is
   accepted before the file is created, per R8, not after the measurement.
+- 2026-09-19 — closure — owner chose path (a) from the 2026-09-16 next action. The unverified
+  `:NN` line-anchor class behind F1/F2 stays unguarded as accepted known debt (`scripts/verify-doc-links.sh`
+  still checks only path existence). F4 is closed by decision: no credential material, and every artifact
+  path `runs.md` cites is repo-relative, so S3 holds. The ADR-index backfill (0007-0009) and the hook-wrapper
+  staleness note leave this initiative as out-of-scope follow-ups; the `stashRestore` `../` escape is
+  removed with the stash machinery by the next zharness initiative.
+- absorb: none
 
 ## Validation
 
