@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.22.1] — 2026-09-19
+
+### Changed
+
+- Repository guidance is consolidated into a single `AGENTS.md`; the root
+  `CLAUDE.md` is deleted. `scripts/verify-doc-links.sh` now scans `AGENTS.md`
+  instead of `CLAUDE.md`. No `zharness` behavior change. Consumers that want
+  Claude Code to load `AGENTS.md` keep a thin `CLAUDE.md` containing `@AGENTS.md`.
+
 ## [v0.22.0] — 2026-09-17
 
 ### Changed

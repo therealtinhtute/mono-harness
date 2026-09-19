@@ -28,7 +28,7 @@ claude-code add-dir /path/to/your/local/skill
 - `docs/` — repo-wide reference docs, including
   `docs/prompt-engineering-principles.md`.
 
-See `CLAUDE.md` for the full structure and architecture notes.
+See `AGENTS.md` for the full structure and architecture notes.
 
 ## Before you commit
 
