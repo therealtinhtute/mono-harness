@@ -301,6 +301,7 @@ updated: 2026-09-19
   (the completed file is not modified) is `git diff --quiet HEAD -- docs/plans/completed/`.
 - 2026-09-19 — p4-portability/T3 — ~/.claude/skills was the live copy (sync-skills installs there; 9 skills newer than ~/.agents/skills), so the newer copies were moved into ~/.agents/skills before the swap rather than trashed. `sync.sh` trashes per skill, so it keeps working through the directory symlink. `~/.claude/rules/workflow-core.md` is a separate copy of `rules/workflow-core.md` and still has the old line; it is outside this repo and was left unchanged.
 - 2026-09-19 — p4-portability — owner waived the Goal success_signal "non-test Go lines in `cli/internal/installer/` drop by at least 400 from 1,794": the final count is 1,585 (−209). P2 alone reached 1,381 (−413); P3's `migrate.go` (179 lines, R12) and the P2 gate fix (+25) came after the target was set. `migrate.go` is transitional: delete it once no consumer repository holds a 9-section active plan.
+- 2026-09-19 — pr — owner-approved exception to append-only Validation: the p1-drift-check proof ran against `$HOME/Lab/Ligaturizer`, which exists only on the owner's machine, so CI's R2 re-run failed. It now builds a temp repo with an isolated `XDG_CONFIG_HOME`, expects a clean check first and exit 1 after a playbook edit. The Ligaturizer run it replaced is still recorded in the Log (wave 2 summary) and in git history.
 
 ## Validation
 - 2026-09-19T08:29Z — phase `p1-drift-check` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -311,7 +312,7 @@ updated: 2026-09-19
   - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
   - `bash scripts/test-install-zharness.sh` — summary: 4 passed, 0 failed
   - `bash -c 'cmp <(git show master:scripts/install-git-hooks.sh | sed -n "11,347p") <(sed -n "11,347p" scripts/install-git-hooks.sh)'` — guard core (lines 11–347) byte-identical to master
-  - `sh -c 'cd cli && go run ./cmd/zharness update --check --root "$HOME/Lab/Ligaturizer" >/dev/null 2>&1; test $? -eq 1'` — drift reported (11 lines), exit 1; Ligaturizer git status and managed-file hashes unchanged
+  - `sh -c 'd=$(mktemp -d); export XDG_CONFIG_HOME="$d/cfg"; (cd cli && go build -o "$d/zh" ./cmd/zharness) && git init -q "$d/r" && "$d/zh" install --root "$d/r" >/dev/null && "$d/zh" update --check --root "$d/r" >/dev/null && echo drift >> "$d/r/docs/playbooks/check.md" || exit 2; "$d/zh" update --check --root "$d/r" >/dev/null 2>&1; test $? -eq 1'` — fresh install checks clean (exit 0); after a playbook edit, drift reported, exit 1
   - scope: on target — R1, R2, R3 and R16 are implemented within the planned surfaces; guard core, playbooks, templates and consumer repos untouched
   - requests: (1) major — registry.go:65,81 / manage.go:17-26 unresolved symlink paths → duplicate registry entry, stale after uninstall; (2) minor — check.go:117 one unreadable root aborts --all; (3) minor — manage.go:71 --check ignores --continue/--abort; (4) nit — install-git-hooks.sh:498 mv failure not propagated
   - judge: independent
