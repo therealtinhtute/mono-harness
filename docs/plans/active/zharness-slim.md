@@ -14,7 +14,8 @@ updated: 2026-09-19
   docs lag the binary, `update` no longer carries a three-way merge, a new plan is a 5-section file
   that scales with its lane, and the playbooks name stages instead of Claude slash commands.
 - success_signals:
-  - `zharness update --check --all` exits 1 and names Ligaturizer (known stale set) on this machine.
+  - `zharness update --check --root ~/Lab/Ligaturizer` exits 1 and names its stale playbooks, writing
+    nothing there; `--check --all` over a fixture registry exits 1 and names the drifted fixture.
   - `cli/internal/installer/threeway.go` is gone and non-test Go lines in `cli/internal/installer/` drop by at least 400
     from 1,794 (`wc -l` excluding `*_test.go`).
   - `scripts/test-guards.sh` passes with zero edits between `# ZGUARD-CORE-BEGIN` and `# ZGUARD-CORE-END`.
@@ -52,7 +53,9 @@ updated: 2026-09-19
   - R9 [accepted]: lane scaling — `tiny` creates no plan (bounded path); `normal` has one phase with
     `phase_slug:` and `status:` and a flat task list; `high-risk` keeps phases, waves and tasks. Plan
     frontmatter drops `intake_id` and `story_id` (no guard or CLI reads them). | source: owner, P3
-  - R10 [accepted]: a `## Validation` entry cites commands with exit code and at most 3 output lines. | source: owner, P3
+  - R10 [accepted]: a `## Validation` entry's first line carries `verdict: <VERDICT>` (the only form the
+    guard's R2 re-executes; an unanchored verdict skips R2) and cites each command with its result in at
+    most 3 output lines. | source: owner, P3; guard audit 2026-09-19
   - R11 [accepted]: at final close `handoff` drops `done` entries from `## Log`, keeps `decision`
     entries and the last Validation entry per phase byte-identical, and the hook passes on that commit. | source: owner, P3
   - R12 [accepted]: `update` migrates the active plan from the 9-section format: section merges only,
@@ -67,6 +70,9 @@ updated: 2026-09-19
     become tiers in WORKFLOW.md; `rules/workflow-core.md` no longer routes every commit through `check`. | source: owner, P4
   - R15 [accepted]: the owner's machine keeps one skill source; the symlink between `~/.agents/skills`
     and `~/.claude/skills` is created only after explicit owner confirmation at that step. | source: owner, P4
+  - R16 [accepted]: `scripts/install-git-hooks.sh` replaces an existing pre-commit hook it installed when
+    that hook's bytes differ from the current template, and exits non-zero (no silent `|| true`) when the
+    existing hook is foreign; the guard core is untouched. | source: owner, 2026-09-19 stale-hook finding
 
 ## Non-goals
 - NG1: serving playbooks from the binary or a global directory (rejected: breaks fresh clones without
@@ -77,15 +83,165 @@ updated: 2026-09-19
 - NG5: fixing OpenCode's duplicate skill listing.
 
 ## Approach and Risks
-- approach: not-planned
+- approach: four sequential, independently mergeable phases on branch `feat/zharness-slim`, one
+  commit group per phase, each closed by `check full` with an independent (subagent) judge because
+  the lane is high-risk. P1 adds the read-only drift check first so P2–P4 changes are observable on
+  real repositories. P2 removes the merge machinery before P3 so plan migration lands in the smaller
+  `update.go`. P3 changes the plan format and migrates this plan itself as its live proof. P4 is
+  prose-only plus one owner-confirmed home-directory step.
 - constraints:
-  - none
+  - Guard core (between `# ZGUARD-CORE-BEGIN` / `# ZGUARD-CORE-END`) byte-identical to `master`.
+  - `docs/playbooks/**` and `cli/docs/embedded/playbooks/**` stay byte-identical copies; same for
+    `docs/WORKFLOW.md` and `cli/docs/embedded/WORKFLOW.md`.
+  - No write into any consumer repository; real-repo checks use `--check` only.
+  - Home-directory writes limited to `~/.config/zharness/repos` (R1) and the R15 symlink after confirmation.
+  - Deletions use `trash`.
+- dependencies: Go toolchain for `cli/`; `gh` only for the existing release script; no new modules.
+- rejected:
+  - Global playbook serving (NG1).
+  - Registry via `os.UserConfigDir()` — resolves to `~/Library/Application Support` on macOS,
+    against R1; use `$XDG_CONFIG_HOME` else `$HOME/.config`.
+  - Keeping `.zharness/base/upstream/` for a lighter AGENTS diff — one sha256 in the manifest is enough
+    to detect a hand edit (R4).
+  - A separate migration command — owner chose automatic migration inside `update` (R12).
 - risks:
-  - none
+  - P2 downgrade: an older binary expects `upstream/` blobs. Mitigation: ADR 0011 states that downgrade
+    needs `zharness uninstall` then `install`; ownership ledger keeps uninstall safe.
+  - P3 migration corrupts a user plan. Mitigation: migrate only a plan whose `## ` headings exactly match
+    the known 9-section set; any other heading set leaves the file untouched with a notice; assert
+    Validation sha256 equality before writing; write via temp file plus rename.
+  - P3 hides guard coverage: hook-parsed headings or fields renamed. Mitigation: R8; `test-guards.sh`
+    and the negative R2 probe run in the P3 gate.
+  - P1 registry write failure (read-only HOME) blocks install. Mitigation: registry errors warn only.
+- recovery: each phase reverts with `git revert` of its commits; P2 consumer state recovers with the
+  previous release binary plus `uninstall`/`install`. Stop and ask the owner if a gate returns
+  `REQUEST_CHANGES` twice on one phase, or if any change would touch the guard core.
 
 ## Phases and Verification
-- planning_status: not-planned
-- phases: none
+- planning_status: planned
+- phases:
+  - phase_slug: `p1-drift-check`
+    - story_id: `p1-drift-check-20260919T1300Z`
+    - status: planned
+    - goal: R1, R2, R3, R16.
+    - depends_on: none
+    - surfaces: `cli/internal/installer/{registry,check}.go` (+ tests), `installer.go`, `update.go`,
+      `uninstall.go`, `cli/internal/interfaces/manage.go`, `scripts/install-zharness.sh`,
+      `scripts/install-git-hooks.sh` (outside core), `scripts/test-guards.sh`
+    - avoided: guard core, playbooks, templates, consumer repos
+    - wave 1:
+      - T1 registry: `Register(root)`, `Unregister(root)`, `Registered()` over `$XDG_CONFIG_HOME` or
+        `$HOME/.config` + `/zharness/repos`, one absolute path per line, deduplicated; `Install` and
+        `RunUpdate` register, `Uninstall` unregisters; errors print a warning and never fail the verb.
+        check: `cd cli && go test ./internal/installer/ -run Registry` (temp HOME: add twice → 1 line;
+        uninstall → 0 lines; read-only dir → verb still exits 0).
+      - T2 drift check: `Check(root) ([]string, error)` compares each fresh-overwrite target and the
+        rendered AGENTS block with the on-disk bytes, and PROJECT.md `## ` headings with the embedded
+        identity template; `update --check [--all]` in `manage.go`, exit 1 on drift, missing registered
+        roots reported as `missing:` without failing. check: `cd cli && go test ./internal/installer/
+        ./internal/interfaces/ -run 'Check'` (fixture clean → 0; edited playbook → 1 naming it;
+        dropped PROJECT heading → 1; `--all` with one clean + one drifted + one missing root → 1).
+    - wave 2:
+      - T3 upgrade hook: `scripts/install-zharness.sh` runs `zharness update --check --all` after
+        `--version`, printing the result and never failing the install. check: `bash -n
+        scripts/install-zharness.sh && bash scripts/test-install-zharness.sh`.
+      - T4 R16: `create_pre_commit_hook` compares the existing hook with the template; identical →
+        "up to date"; ours (first two lines match) but different → overwrite; foreign → error exit;
+        the `|| true` in `main` is removed. check: `bash scripts/test-guards.sh` with a new case for
+        stale-ours → replaced and foreign → non-zero.
+    - phase check: gate commands from `docs/PROJECT.md`; `bash scripts/test-guards.sh`;
+      `go build -o "$TMPDIR/zh" ./cmd/zharness && "$TMPDIR/zh" update --check --root ~/Lab/Ligaturizer;
+      test $? -eq 1 && git -C ~/Lab/Ligaturizer status --short` (exit 1, no new changes there).
+  - phase_slug: `p2-drop-threeway`
+    - story_id: `p2-drop-threeway-20260919T1300Z`
+    - status: planned
+    - goal: R4, R5, R6, R7.
+    - depends_on: `p1-drift-check`
+    - surfaces: `cli/internal/installer/*.go` (+ tests), `cli/internal/interfaces/manage.go`,
+      `cli/internal/embedded/embedded.go` (manifest field), `docs/decisions/0011-*.md`,
+      `docs/PROJECT.md` ("where state lives"), `scripts/test-install-zharness.sh`
+    - avoided: `ownership.go` behavior, `ownership_test.go`, guard core, playbooks
+    - wave 1:
+      - T1 ADR 0011: supersedes ADR 0007 `Merge: true` and ADR 0008 decision 5; states hash guard,
+        write-once PROJECT.md, downgrade path. check: `bash scripts/verify-doc-links.sh`.
+      - T2 AGENTS hash guard: manifest gains `agents_block_sha256` written on every block write;
+        `update` compares the on-disk block with it before any write, and on mismatch prints a unified
+        diff and returns an error unless `--force`; a manifest without the field records the current
+        block hash (first run after upgrade, no refusal). check: `go test ./internal/installer/ -run
+        Agents` (untouched → replaced; hand-edited → error and tree sha unchanged; `--force` →
+        replaced; legacy manifest → accepted).
+      - T3 PROJECT.md write-once: target loses `Merge`; `Install`/`update` write it only when absent.
+        check: `go test ./internal/installer/ -run Project` (existing file with custom text byte-identical
+        after update).
+    - wave 2:
+      - T4 removal: `trash` `threeway.go`, `stash_test.go`; delete stash, conflict, base-draft and
+        upstream code from `update.go`; drop `--continue`/`--abort`; `update` removes a leftover
+        `.zharness/base/upstream/` and keeps `ownership.tsv` and `manifest.json`. check: `test ! -e
+        cli/internal/installer/threeway.go`; `rg -n 'stash|threeWay|conflictOpenTag|upstream/'
+        cli/internal` returns 0 lines; `git diff master -- cli/internal/installer/ownership_test.go`
+        empty; non-test LOC ≤ 1,394.
+    - phase check: gate commands; `bash scripts/test-install-zharness.sh`; temp-repo run of
+      install → edit AGENTS block → `update` (non-zero, `find . -type f | sort | xargs shasum` identical)
+      → `update --force` (block restored) → `uninstall` (managed set gone, user files kept).
+  - phase_slug: `p3-slim-plan`
+    - story_id: `p3-slim-plan-20260919T1300Z`
+    - status: planned
+    - goal: R8, R9, R10, R11, R12, R13.
+    - depends_on: `p2-drop-threeway`
+    - surfaces: `docs/playbooks/*.md` and embedded copies, `docs/WORKFLOW.md` and embedded copy,
+      `cli/docs/embedded/templates/`, `cli/docs/embedded/embed.go`, `cli/internal/installer/migrate.go`
+      (+ test), `update.go`, `skills/workflow/README.md`, `site/docs/workflow.html`,
+      `skills/craft/create-skill/references/skill-anatomy-and-requirements.md`, this plan
+    - avoided: guard core, `docs/plans/completed/**`
+    - wave 1:
+      - T1 format: `brainstorm.md` holds the 5-section skeleton (`## Goal` = outcome, requirements,
+        non-goals; `## Phases and Verification` opens with `approach:`/`risks:`), lane scaling, no
+        input-type taxonomy, frontmatter `lane`, `status` only; `to-plan.md` owns `## Phases and
+        Verification` and stops minting `story_id`; `work.md`/`work-full.md` append to `## Log`;
+        `check.md`/`check-validation.md` expose `bounded|gate|full` and the R10 entry shape;
+        `handoff.md` adds close-time compaction (R11); `WORKFLOW.md` matches. check: `diff -r
+        docs/playbooks cli/docs/embedded/playbooks && diff docs/WORKFLOW.md cli/docs/embedded/WORKFLOW.md`;
+        `rg -n 'story_id|intake_id|## Progress|## Decisions|mode: review' docs/playbooks docs/WORKFLOW.md`
+        returns 0 lines; `wc -w` of playbooks + WORKFLOW below 5,427.
+      - T2 dead templates: `trash` `check.md handoff.md spec.md plan.md` under
+        `cli/docs/embedded/templates/`; fix the `embed.go` comment; update README, site page, and the
+        skill-anatomy reference. check: `ls cli/docs/embedded/templates` shows only
+        `project.identity.md`; `bash scripts/verify-doc-links.sh`.
+    - wave 2:
+      - T3 migration: `MigratePlan([]byte) ([]byte, bool, error)` maps Outcome + Authority and
+        Requirements + Non-goals → Goal, Approach and Risks → head of Phases and Verification, Progress +
+        Decisions → Log, drops `intake_id`/`story_id` lines; any other heading set → unchanged; refuses
+        when Validation sha256 would differ; `RunUpdate` applies it to the single active plan.
+        check: `go test ./internal/installer/ -run Migrate` (9-section fixture → 5 sections, Validation
+        sha equal; second run no-op; unknown heading → untouched).
+    - wave 3:
+      - T4 live migration: built binary migrates this plan; commit through the hook. check: Validation
+        sha256 before = after; `bash .git/hooks/pre-commit` exit 0; negative R2 probe (anchored
+        `verdict: APPROVED` + `false`) exit 1, then restored.
+      - T5 compaction measure: apply R11 to a scratch copy of
+        `docs/plans/completed/harness-eval-loop.md`; report `wc -w` before/after; the completed file is
+        not modified. check: `git diff --quiet master -- docs/plans/completed/`.
+    - phase check: gate commands; `bash scripts/test-guards.sh`; `diff <(git show master:scripts/install-git-hooks.sh | awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on') <(awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh)` empty.
+  - phase_slug: `p4-portability`
+    - story_id: `p4-portability-20260919T1300Z`
+    - status: planned
+    - goal: R14, R15.
+    - depends_on: `p3-slim-plan`
+    - surfaces: playbooks + embedded copies, WORKFLOW.md + embedded copy, `rules/workflow-core.md`,
+      `skills/workflow/README.md`; home directory only for T3 after confirmation
+    - avoided: Go code, guard core
+    - wave 1:
+      - T1 stage names: replace slash-command syntax with stage names; neutral F1 wording; model pins →
+        tiers (`deep`, `standard`, `fast`) with one host mapping table. check: `rg -n
+        '`/(check|work|to-plan|brainstorm|handoff|watzup)\b' cli/docs/embedded docs/playbooks
+        docs/WORKFLOW.md` 0 lines; `rg -n 'opus|sonnet|haiku' cli/docs/embedded` hits only the mapping table.
+      - T2 rule fix: `rules/workflow-core.md` routes `check` at phase end and before a PR, not before
+        every commit. check: `rg -n 'Before any commit' rules/workflow-core.md` 0 lines.
+    - wave 2:
+      - T3 single skill source: inspect `~/.agents/skills` and `~/.claude/skills`, show the owner the
+        exact `trash`/`ln -s` commands, run them only on confirmation. check: `readlink ~/.claude/skills`
+        prints the `~/.agents/skills` path; `ls ~/.claude/skills | wc -l` equals the source count.
+    - phase check: gate commands; `bash scripts/verify-doc-links.sh`.
 
 ## Progress
 - none
@@ -98,7 +254,7 @@ updated: 2026-09-19
 
 ## Current State and Next Action
 - active_phase: none
-- lifecycle_status: not-planned
+- lifecycle_status: planned
 - blockers: none
-- open_items: [to-plan must define stable phases, waves, tasks, and checks]
-- exact_next_action: to-plan
+- open_items: none
+- exact_next_action: work full p1-drift-check
