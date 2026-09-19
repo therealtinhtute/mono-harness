@@ -55,8 +55,9 @@ type updateOptions struct {
 // RunUpdate refreshes the managed set (ADR 0011). Playbooks and WORKFLOW.md
 // are overwritten, docs/PROJECT.md is written only when absent, and the
 // AGENTS block is replaced between its markers unless it was edited by hand
-// since the last write. Every refusal is decided before the first write, so
-// a refused update leaves every file as it was.
+// since the last write. A single active plan in the older 9-section format
+// is migrated (MigratePlan). Every refusal is decided before the first write,
+// so a refused update leaves every file as it was.
 func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 	root := o.Root
 	targets, err := AllTargets()
@@ -91,6 +92,11 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 		fmt.Fprintln(stdout, "\nMove local text outside the markers, or rerun with --force to replace the block. Nothing was written.")
 		return fmt.Errorf("%s block edited by hand; rerun with --force to replace it", agentsTarget)
 	}
+	mig, err := preparePlanMigration(root)
+	if err != nil {
+		fmt.Fprintf(stdout, "refused    plan migration: %v. Nothing was written.\n", err)
+		return err
+	}
 
 	planned := map[string]string{}
 	for _, t := range targets {
@@ -124,6 +130,16 @@ func RunUpdate(o updateOptions, stdout *strings.Builder) error {
 			}
 		}
 		baseFiles[agentsTarget] = sha([]byte(want))
+	}
+
+	if mig.path != "" {
+		if werr := writeFileAtomic(filepath.Join(root, mig.path), mig.data); werr != nil {
+			return werr
+		}
+		planned[mig.path] = "migrated"
+	}
+	if mig.notice != "" {
+		fmt.Fprintf(stdout, "notice     %s\n", mig.notice)
 	}
 
 	giNote, gerr := reconcileGitignore(root, gitignoreWants)

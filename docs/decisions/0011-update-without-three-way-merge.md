@@ -68,6 +68,11 @@ Neither surface needs a merge:
   explicit reset, and the guard protects only `update`.
 - A block checked out with CRLF line endings compares as LF, so `autocrlf` is
   not mistaken for a hand edit.
+- `update` also migrates a single active plan in the older 9-section format to
+  the 5-section one in place, copying `## Validation` byte for byte
+  (`cli/internal/installer/migrate.go`). Any other heading set, or more than one
+  active plan, is left untouched with a `notice`; the decision is made before
+  the first write.
 
 ## Authority
 

@@ -60,7 +60,8 @@ and bounded work.
   item, the rule it breaks, its authority, and what to do — never a bare
   validation failure.
 - **Safe to adopt and to leave.** `install`/`update`/`uninstall` manage only
-  the doc set, merging rather than clobbering the files a project owns.
+  the doc set, merging rather than clobbering the files a project owns; the one
+  exception is `update` migrating a 9-section active plan, Validation bytes kept.
 
 ## Non-goals
 
@@ -150,7 +151,10 @@ when absent; after that it belongs to the project. The marked `AGENTS.md` block
 is replaced between its markers; if it was edited since zharness last wrote it,
 update prints the diff, writes nothing, and exits non-zero until you move the
 edit outside the markers or pass `--force` (rerunning `install` resets the block without asking). `--check` reports drift without
-writing (`--all`: every repository in `~/.config/zharness/repos`). Uninstall
+writing (`--all`: every repository in `~/.config/zharness/repos`). A single active
+plan in the older 9-section format is migrated in place to the 5-section format
+with its `## Validation` bytes unchanged; any other heading set, or more than one
+active plan, is left alone with a `notice`. Uninstall
 removes managed files only; consumer-owned bytes are never deleted.
 
 ## Optional skills
