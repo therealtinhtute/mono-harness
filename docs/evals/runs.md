@@ -1,7 +1,7 @@
 # Routing Eval Run Log
 
 One row per case per trial for the manual protocol in
-`docs/plans/active/harness-eval-loop.md`. Case definitions are frozen in `docs/evals/routing.md`;
+`docs/plans/completed/harness-eval-loop.md`. Case definitions are frozen in `docs/evals/routing.md`;
 artifacts are under `docs/evals/evidence/`.
 
 Nothing reads this file automatically. It is evidence, consulted only when a maintainer requests a
