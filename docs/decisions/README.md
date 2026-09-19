@@ -16,6 +16,7 @@ An ADR here is a record, not a proposal. It is written after the decision has la
 | [0006](0006-v015-authority.md) | v0.15 deleted the derived index; live authority is ARCHITECTURE + CONTRACT | Accepted |
 | [0010](0010-local-failure-ledger.md) | A local failure ledger is maintainer-owned and optional for consumers | Accepted |
 | [0011](0011-update-without-three-way-merge.md) | `update` drops three-way merge: hash-guarded AGENTS block, write-once PROJECT.md | Accepted |
+| [0012](0012-five-section-plan-and-update-migration.md) | Plans have five sections; `update` migrates one nine-section active plan, Validation bytes unchanged | Accepted |
 
 ## Writing a new one
 

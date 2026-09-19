@@ -7,7 +7,7 @@ Accepted. 2026-09-19. Supersedes the `Merge: true` half of
 (stash transaction) of [ADR 0008](0008-recorded-ownership-and-transactional-recovery.md).
 ADR 0008 decisions 1–4 (ownership ledger, `unknown` means keep, legacy seeding,
 honest uninstall summary) are unchanged. Authority: R4–R7 of
-`docs/plans/active/zharness-slim.md`.
+`docs/plans/completed/zharness-slim.md`.
 
 ## Context
 
@@ -76,7 +76,7 @@ Neither surface needs a merge:
 
 ## Authority
 
-- `docs/plans/active/zharness-slim.md` — R4, R5, R6, R7; owner approval 2026-09-19.
+- `docs/plans/completed/zharness-slim.md` — R4, R5, R6, R7; owner approval 2026-09-19.
 - `README.md` — *Safe to adopt and to leave*.
 - `docs/decisions/0007-fresh-overwrite-for-playbooks-and-workflow.md`,
   `docs/decisions/0008-recorded-ownership-and-transactional-recovery.md` — the

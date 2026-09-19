@@ -39,12 +39,12 @@
   update / uninstall; everything else is git-committed markdown under `docs/`
   plus fail-closed pre-commit guards (proof re-execution, high-risk and full
   independent-judge, at most one active plan).
-- where state lives: `docs/plans/active/*.md` (append-only Progress /
-  Decisions / Validation) and `.zharness/base/` (sha256 manifest + ownership
+- where state lives: `docs/plans/active/*.md` (append-only Log /
+  Validation) and `.zharness/base/` (sha256 manifest + ownership
   ledger), plus the repo registry `~/.config/zharness/repos` — no SQLite anywhere.
 - entrypoints: `cli/internal/interfaces/root.go`; embedded doc set under
   `cli/docs/embedded/` projected to `docs/`; hooks via
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- plan: docs/plans/active/zharness-slim.md (active, p1-drift-check and p2-drop-threeway checked)
+- plan: none active; last completed docs/plans/completed/zharness-slim.md

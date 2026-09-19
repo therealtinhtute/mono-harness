@@ -1,7 +1,7 @@
 ---
 id: zharness-slim-20260919T1200Z
 lane: high-risk
-status: active
+status: completed
 created: 2026-09-19
 updated: 2026-09-19
 ---
@@ -119,7 +119,7 @@ updated: 2026-09-19
 - planning_status: planned
 - phases:
   - phase_slug: `p1-drift-check`
-    status: checked
+    status: done
     - goal: R1, R2, R3, R16.
     - depends_on: none
     - surfaces: `cli/internal/installer/{registry,check}.go` (+ tests), `installer.go`, `update.go`,
@@ -150,7 +150,7 @@ updated: 2026-09-19
       `go build -o "$TMPDIR/zh" ./cmd/zharness && "$TMPDIR/zh" update --check --root ~/Lab/Ligaturizer;
       test $? -eq 1 && git -C ~/Lab/Ligaturizer status --short` (exit 1, no new changes there).
   - phase_slug: `p2-drop-threeway`
-    status: checked
+    status: done
     - goal: R4, R5, R6, R7.
     - depends_on: `p1-drift-check`
     - surfaces: `cli/internal/installer/*.go` (+ tests), `cli/internal/interfaces/manage.go`,
@@ -180,7 +180,7 @@ updated: 2026-09-19
       install → edit AGENTS block → `update` (non-zero, `find . -type f | sort | xargs shasum` identical)
       → `update --force` (block restored) → `uninstall` (managed set gone, user files kept).
   - phase_slug: `p3-slim-plan`
-    status: checked
+    status: done
     - goal: R8, R9, R10, R11, R12, R13.
     - depends_on: `p2-drop-threeway`
     - surfaces: `docs/playbooks/*.md` and embedded copies, `docs/WORKFLOW.md` and embedded copy,
@@ -218,7 +218,7 @@ updated: 2026-09-19
         not modified. check: `git diff --quiet master -- docs/plans/completed/`.
     - phase check: gate commands; `bash scripts/test-guards.sh`; `diff <(git show master:scripts/install-git-hooks.sh | awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on') <(awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh)` empty.
   - phase_slug: `p4-portability`
-    status: checked
+    status: done
     - goal: R14, R15.
     - depends_on: `p3-slim-plan`
     - surfaces: playbooks + embedded copies, WORKFLOW.md + embedded copy, `rules/workflow-core.md`,
@@ -238,36 +238,8 @@ updated: 2026-09-19
     - phase check: gate commands; `bash scripts/verify-doc-links.sh`.
 
 ## Log
-- 2026-09-19T13:10Z — p1-drift-check — wave 1 — T1 — task_status=in-progress — phase start (run anchor 2026-09-19T13:10Z)
-- 2026-09-19T13:40Z — p1-drift-check — wave 1 — T1 — task_status=DONE — `go test ./internal/installer/ -run Registry` pass (3 tests; TestMain isolates XDG_CONFIG_HOME) — cli/internal/installer/registry.go, registry_test.go, installer.go, update.go, uninstall.go
-- 2026-09-19T13:40Z — p1-drift-check — wave 1 — T2 — task_status=DONE — `go test ./internal/installer/ ./internal/interfaces/ -run Check` pass (6 tests) — cli/internal/installer/check.go, check_test.go, cli/internal/interfaces/manage.go, manage_test.go
-- 2026-09-19T13:40Z — p1-drift-check — wave 1 — summary — T1, T2 DONE
-- 2026-09-19T13:55Z — p1-drift-check — wave 2 — T3 — task_status=DONE — `bash -n scripts/install-zharness.sh` ok; `bash scripts/test-install-zharness.sh` 4 passed — scripts/install-zharness.sh
-- 2026-09-19T13:55Z — p1-drift-check — wave 2 — T4 — task_status=DONE — `bash scripts/test-guards.sh` 46 passed, 0 failed (4 new R16 cases); guard core diff vs HEAD empty — scripts/install-git-hooks.sh, scripts/test-guards.sh
-- 2026-09-19T13:55Z — p1-drift-check — wave 2 — summary — T3, T4 DONE; phase checks: go test/vet/build/gofmt clean, doc links OK, `zh update --check --root ~/Lab/Ligaturizer` exit 1 with 11 drift lines and its `git status` unchanged
-- 2026-09-19T08:31Z — p1-drift-check — gate — requests — task_status=DONE — (1) `canonicalRoot` (EvalSymlinks, raw-path fallback) in register/unregister + `TestRegistry_SymlinkedPathIsOneEntry`; (2) `--all` prints `error    <root>: <err>`, continues, exits non-zero + `TestRunCheck_AllContinuesPastUnreadableRoot`; (4) `mv … || return 1`; `go test ./...`, `go vet`, gofmt clean, test-guards 46 passed — cli/internal/installer/registry.go, registry_test.go, check.go, check_test.go, scripts/install-git-hooks.sh
-
-- 2026-09-19T08:41Z — p2-drop-threeway — wave 1 — T1 — task_status=DONE — ADR 0011 with path:line citations, index row; ADR 0007/0008 status lines point to it; `bash scripts/verify-doc-links.sh` OK — docs/decisions/0011-update-without-three-way-merge.md, README.md, 0007, 0008
-- 2026-09-19T08:41Z — p2-drop-threeway — wave 1 — T2 — task_status=DONE — `go test ./internal/installer/ -run Agents` pass (untouched → replaced; hand-edited → error, tree unchanged, diff + --force hint; --force → replaced; no recorded hash → accepted) — cli/internal/installer/update.go, installer.go, installer_test.go, cli/internal/interfaces/manage.go
-- 2026-09-19T08:41Z — p2-drop-threeway — wave 1 — T3 — task_status=DONE — `go test ./internal/installer/ -run Project` pass (custom PROJECT.md byte-identical after update; check still names a missing heading) — cli/internal/installer/installer.go, update.go, check.go
-- 2026-09-19T08:41Z — p2-drop-threeway — wave 2 — T4 — task_status=DONE — threeway.go and stash_test.go trashed; `--continue`/`--abort` gone; `git diff master -- ownership_test.go` empty; installer non-test LOC 1,381 (master 1,794); `go test ./...`, `go vet`, gofmt clean — cli/internal/installer/*.go, manage.go, manage_test.go
-- 2026-09-19T08:41Z — p2-drop-threeway — phase check — task_status=DONE — test-guards 46 passed; test-install-zharness 4 passed; guard core cmp identical; temp-repo install → edit block → update exit 1 with tree byte-identical → --force exit 0 → uninstall leaves only user files; upgrade from a master-built install keeps edited PROJECT.md and ledger, drops blobs; README, ARCHITECTURE, CONTRACT, PROJECT.md updated
-- 2026-09-19T08:49Z — p2-drop-threeway — gate — requests — task_status=DONE — (1) `update` refuses and `update --check` reports `conflict` while a pre-0011 `.zharness/conflicts.json` exists + `TestUpdate_LegacyConflicts_RefusesAndCheckReports`; (2) AGENTS.md, docs/README.md, skills/workflow/README.md no longer describe three-way merge; (3) documented in ADR 0011 and README; (4) CRLF block compared as LF + CRLF subtest; `go test ./...`, `go vet`, gofmt clean, doc links OK — cli/internal/installer/update.go, check.go, installer.go, installer_test.go, AGENTS.md, docs/README.md, skills/workflow/README.md, README.md, docs/decisions/0011-*.md, docs/ARCHITECTURE.md
-- 2026-09-19T08:54Z — p3-slim-plan — wave 1 — T1 — task_status=in-progress — phase start (run anchor 2026-09-19T08:54Z)
-- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — T1 — task_status=DONE — playbooks rewritten to the 5-section format, lanes, `bounded|gate|full`, R10 entry shape, R11 compaction; `diff -r docs/playbooks cli/docs/embedded/playbooks` and WORKFLOW diff empty; forbidden-term rg 0 lines; 5,321 words (was 5,427); `go test ./internal/embedded/` pass with updated contract phrases — docs/playbooks/*.md, cli/docs/embedded/playbooks/*.md, cli/internal/embedded/embedded_test.go, skills/workflow/README.md, skills/workflow/check/SKILL.md, docs/ARCHITECTURE.md
-- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — T2 — task_status=DONE — 4 templates trashed, `ls cli/docs/embedded/templates` = project.identity.md; embed.go/embedded.go/manifest_disk_test.go comments fixed; site workflow page updated; `bash scripts/verify-doc-links.sh` OK; `cd cli && go test ./...` pass — cli/docs/embedded/templates/, cli/docs/embedded/embed.go, cli/internal/embedded/*.go, site/docs/workflow.html, docs/audit/multi-stack-harness-audit.md
-- 2026-09-19T08:59Z — p3-slim-plan — wave 1 — summary — T1, T2 DONE
-- 2026-09-19T09:03Z — p3-slim-plan — wave 2 — T3 — task_status=DONE — `go test ./internal/installer/ -run Migrate` pass (9 sections in any order → 5, Validation sha equal, second run no-op; missing/extra/duplicate/renamed/no headings untouched; update migrates once, unknown set → notice, file unchanged); handoff sets `lifecycle_status: completed`; `go test ./...`, `go vet`, gofmt clean; migrate.go 179 LOC — cli/internal/installer/migrate.go, migrate_test.go, update.go, docs/playbooks/handoff.md, cli/docs/embedded/playbooks/handoff.md, cli/internal/embedded/embedded_test.go
-- 2026-09-19T09:04Z — p3-slim-plan/T4 — done — built binary (isolated XDG_CONFIG_HOME) migrated this plan: `migrated docs/plans/active/zharness-slim.md`, rerun prints no migrated/notice line; Validation sha256 5299741334218835656d53ef27347e72caba5b7635e605c7bc2449d4cf23e580 before = after; diff limited to headings, frontmatter `intake_id`, `story_id` and status bullets; git status otherwise unchanged; `bash .git/hooks/pre-commit` on the staged index rc=0; negative R2 probe (anchored `verdict: APPROVED` + `` `false` `` staged) rc=1, plan restored and hook rc=0 — docs/plans/active/zharness-slim.md
-- 2026-09-19T09:05Z — p3-slim-plan/T5 — done — R11 compaction on a scratch copy of `docs/plans/completed/harness-eval-loop.md`: 6 `task_status=` Log entries and 1 superseded p3-failure-ledger Validation entry dropped; `wc -w` 7,237 → 5,909 (−18%); `git diff --quiet HEAD -- docs/plans/completed/` rc=0 — no repository file
-- 2026-09-19T09:05Z — p3-slim-plan — done — phase check: `cd cli && go test ./...`, `go vet ./...`, gofmt clean; `bash scripts/test-guards.sh` 46 passed, 0 failed; `bash scripts/test-install-zharness.sh` 4 passed; `bash scripts/verify-doc-links.sh` OK; guard-core diff vs master empty; forbidden-term rg 0 lines
-- 2026-09-19T09:12Z — p3-slim-plan — done — gate requests 1–3 fixed (README.md, docs/decisions/0011-update-without-three-way-merge.md, site/docs/architecture.html, T4 Log entry); request 4 left as is (theoretical, fails closed); `bash scripts/verify-doc-links.sh` OK
-- 2026-09-19T09:13Z — p4-portability — start — phase start (run anchor 2026-09-19T09:13Z)
-- 2026-09-19T09:15Z — p4-portability/T1 — done — WORKFLOW.md stage table gains a model-tier column (deep/standard/fast) and one host mapping table; work-full step 8's F1 line is host-neutral; slash-syntax rg 0 lines; `rg -n -i 'opus|sonnet|haiku' cli/docs/embedded` hits only WORKFLOW.md's mapping row; embedded copies identical; `go test ./...` pass — docs/WORKFLOW.md, cli/docs/embedded/WORKFLOW.md, docs/playbooks/work-full.md, cli/docs/embedded/playbooks/work-full.md
-- 2026-09-19T09:15Z — p4-portability/T2 — done — `rules/workflow-core.md` routes `check` at phase end or before a PR; `rg -n 'Before any commit' rules/workflow-core.md` 0 lines — rules/workflow-core.md
-- 2026-09-19T10:04Z — p4-portability/T3 — done — owner confirmed; the 9 stale ~/.agents/skills copies were trashed and replaced by the newer ~/.claude/skills copies, the 7 ~/.claude-only entries moved to ~/.agents/skills, every remaining ~/.claude/skills entry verified to be a link into or identical to the source, then `trash ~/.claude/skills && ln -s ~/.agents/skills ~/.claude/skills`; `readlink ~/.claude/skills` = /Users/tinhtute/.agents/skills; 45 entries through the link = 45 in the source — home directory only
-- 2026-09-19T10:04Z — p4-portability — done — phase check: gofmt clean, `go vet ./...`, `go test ./...` pass; `bash scripts/verify-doc-links.sh` OK; `bash scripts/test-guards.sh` 46 passed, 0 failed
 - 2026-09-19T11:11Z — p4-portability — decision — independent `check full` APPROVE_WITH_REQUESTS; the owner waived the LOC request; the site/docs request stays an open item
+- 2026-09-19T11:17Z — p4-portability — decision — absorb: adr docs/decisions/0011-update-without-three-way-merge.md (P2 update without three-way merge), docs/decisions/0012-five-section-plan-and-update-migration.md (P3 plan format and migration); follow-up outside this plan: site/docs/architecture.html and site/docs/cli.html still describe three-way merge and `--continue`/`--abort`
 
 ### Decisions
 - 2026-09-19 — lock — the installed `.git/hooks/pre-commit` was stale (3-argument call into the
@@ -389,8 +361,8 @@ updated: 2026-09-19
   - judge_model: claude-sonnet-5
 
 ## Current State and Next Action
-- active_phase: p4-portability
-- lifecycle_status: checked
+- active_phase: none
+- lifecycle_status: completed
 - blockers: none
-- open_items: site/docs/*.html still describe three-way merge (see Decisions)
-- exact_next_action: closing handoff (close p1–p4, absorb, compact, move to completed)
+- open_items: none
+- exact_next_action: open a PR for `feat/zharness-slim` into `master`
