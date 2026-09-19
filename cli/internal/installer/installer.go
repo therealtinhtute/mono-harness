@@ -22,33 +22,37 @@ import (
 const legacyDBName = "harness" + ".db"
 
 const (
-	zharnessDir      = ".zharness"
-	baseDir          = ".zharness/base"
-	upstreamDir      = ".zharness/base/upstream"
-	originalDir      = ".zharness/base/original"
-	stashDir         = ".zharness/update-stash"
-	conflictsFile    = ".zharness/conflicts.json"
-	manifestFile     = ".zharness/base/manifest.json"
-	projectTemplate  = "templates/project.identity.md"
-	blockBegin       = "<!-- ZHARNESS:BEGIN -->"
-	blockEnd         = "<!-- ZHARNESS:END -->"
-	gitignoreMarker  = "# zharness v0.15 managed set"
-	playbookDirTgt   = "docs/playbooks"
-	workflowTarget   = "docs/WORKFLOW.md"
-	projectTarget    = "docs/PROJECT.md"
-	agentsTarget     = "AGENTS.md"
-	gitignoreTarget  = ".gitignore"
-	conflictOpenTag  = "<<<<<<< zharness update (incoming)"
-	conflictSepTag   = "======="
-	conflictCloseTag = ">>>>>>> zharness (local)"
+	zharnessDir     = ".zharness"
+	baseDir         = ".zharness/base"
+	originalDir     = ".zharness/base/original"
+	manifestFile    = ".zharness/base/manifest.json"
+	projectTemplate = "templates/project.identity.md"
+	blockBegin      = "<!-- ZHARNESS:BEGIN -->"
+	blockEnd        = "<!-- ZHARNESS:END -->"
+	gitignoreMarker = "# zharness v0.15 managed set"
+	playbookDirTgt  = "docs/playbooks"
+	workflowTarget  = "docs/WORKFLOW.md"
+	projectTarget   = "docs/PROJECT.md"
+	agentsTarget    = "AGENTS.md"
+	gitignoreTarget = ".gitignore"
+)
+
+// Pre-ADR 0011 update artifacts. The blob store is deleted by the next install
+// or update. A leftover conflict list makes update refuse and check report
+// drift; it and the stash (possibly the last copy of bytes from an interrupted
+// update) are deleted only by the owner or by uninstall.
+const (
+	legacyUpstreamDir   = ".zharness/base/upstream"
+	legacyStashDir      = ".zharness/update-stash"
+	legacyConflictsFile = ".zharness/conflicts.json"
 )
 
 // Target is one managed-file mapping from an embedded source path to a
 // destination path inside the consuming repository.
 type Target struct {
-	Src   string // path inside embedded.FS (or embedded.Templates)
-	Dst   string // repo-root-relative destination
-	Merge bool   // true: three-way merge with consumer edits; false: always overwrite with upstream bytes
+	Src  string // path inside embedded.FS (or embedded.Templates)
+	Dst  string // repo-root-relative destination
+	Once bool   // true: written only when absent, then project-owned; false: always overwrite with upstream bytes
 }
 
 func playbookTargets() ([]Target, error) {
@@ -70,7 +74,7 @@ func AllTargets() ([]Target, error) {
 	}
 	all := append([]Target{
 		{Src: "WORKFLOW.md", Dst: workflowTarget},
-		{Src: projectTemplate, Dst: projectTarget, Merge: true},
+		{Src: projectTemplate, Dst: projectTarget, Once: true},
 	}, tg...)
 	return all, nil
 }
@@ -171,11 +175,6 @@ func findOriginal(root, dst string) (string, bool) {
 	return "", false
 }
 
-func shaSum(b []byte) []byte {
-	h := sha256.Sum256(b)
-	return h[:]
-}
-
 func sha(b []byte) string {
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
@@ -192,34 +191,29 @@ type manifest struct {
 	Files           []manifestEntry `json:"files"`
 }
 
-func loadBase(root string) (*manifest, map[string][]byte, error) {
-	m := &manifest{}
+// loadBase returns the recorded base: the sha256 of the bytes zharness last
+// wrote for each managed path (ADR 0011 decision 5).
+func loadBase(root string) (map[string]string, error) {
+	files := map[string]string{}
 	raw, err := os.ReadFile(filepath.Join(root, manifestFile))
 	if os.IsNotExist(err) {
-		return m, map[string][]byte{}, nil
+		return files, nil
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("read base manifest: %w", err)
+		return nil, fmt.Errorf("read base manifest: %w", err)
 	}
+	m := &manifest{}
 	if err := jsonUnmarshal(raw, m); err != nil {
-		return nil, nil, fmt.Errorf("parse %s: %w", manifestFile, err)
+		return nil, fmt.Errorf("parse %s: %w", manifestFile, err)
 	}
-	files := map[string][]byte{}
 	for _, fe := range m.Files {
-		data, rerr := os.ReadFile(filepath.Join(root, upstreamDir, fe.SHA+".bin"))
-		if rerr != nil {
-			return nil, nil, fmt.Errorf("read base blob for %s: %w", fe.Path, rerr)
-		}
-		files[fe.Path] = data
+		files[fe.Path] = fe.SHA
 	}
-	return m, files, nil
+	return files, nil
 }
 
-func saveBase(root string, ver string, files map[string][]byte) error {
-	if err := os.RemoveAll(filepath.Join(root, upstreamDir)); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Join(root, upstreamDir), 0o755); err != nil {
+func saveBase(root string, ver string, files map[string]string) error {
+	if err := os.RemoveAll(filepath.Join(root, legacyUpstreamDir)); err != nil {
 		return err
 	}
 	keys := make([]string, 0, len(files))
@@ -229,12 +223,7 @@ func saveBase(root string, ver string, files map[string][]byte) error {
 	sortStrings(keys)
 	entries := make([]manifestEntry, 0, len(keys))
 	for _, dst := range keys {
-		sum := fmt.Sprintf("%x", shaSum(files[dst]))
-		blob := filepath.Join(root, upstreamDir, sum+".bin")
-		if err := os.WriteFile(blob, files[dst], 0o644); err != nil {
-			return err
-		}
-		entries = append(entries, manifestEntry{Path: dst, SHA: sum})
+		entries = append(entries, manifestEntry{Path: dst, SHA: files[dst]})
 	}
 	m := &manifest{ZharnessVersion: ver, InstalledAt: time.Now().UTC().Format(time.RFC3339), Files: entries}
 	out, err := jsonMarshal(m)
@@ -300,11 +289,11 @@ func Install(root, version string, stdout *strings.Builder) error {
 	if err != nil {
 		return err
 	}
-	_, prev, err := loadBase(root)
+	prev, err := loadBase(root)
 	if err != nil {
 		return err
 	}
-	files := map[string][]byte{}
+	files := map[string]string{}
 	for k, v := range prev {
 		files[k] = v
 	}
@@ -330,36 +319,34 @@ func Install(root, version string, stdout *strings.Builder) error {
 			return err
 		}
 		dstP := filepath.Join(root, t.Dst)
-		if !t.Merge {
+		paths = append(paths, t.Dst)
+		if !t.Once {
 			// Pure upstream mirror (playbooks, WORKFLOW.md): always overwrite,
 			// no diff against what's on disk.
 			if err := writeFileAtomic(dstP, up); err != nil {
 				return err
 			}
 			fmt.Fprintf(stdout, "installed  %s\n", t.Dst)
-			files[t.Dst] = up
-			paths = append(paths, t.Dst)
+			files[t.Dst] = sha(up)
 			continue
 		}
 		local, lerr := os.ReadFile(dstP)
 		switch {
 		case os.IsNotExist(lerr):
-			if err := os.MkdirAll(filepath.Dir(dstP), 0o755); err != nil {
-				return err
-			}
-			if err := os.WriteFile(dstP, up, 0o644); err != nil {
+			if err := writeFileAtomic(dstP, up); err != nil {
 				return err
 			}
 			fmt.Fprintf(stdout, "installed  %s\n", t.Dst)
+			files[t.Dst] = sha(up)
+			continue
 		case string(local) == string(up):
 			fmt.Fprintf(stdout, "current    %s\n", t.Dst)
 		default:
-			// Local drift on a whole-file managed copy: installer never
-			// silently overwrites; record upstream for update to reconcile.
-			fmt.Fprintf(stdout, "drifted    %s (left untouched; `zharness update` will merge)\n", t.Dst)
+			fmt.Fprintf(stdout, "kept       %s (project-owned; never overwritten)\n", t.Dst)
 		}
-		files[t.Dst] = up
-		paths = append(paths, t.Dst)
+		if _, ok := files[t.Dst]; !ok {
+			files[t.Dst] = sha(up)
+		}
 	}
 
 	agentsUp, err := embedded.FS.ReadFile("AGENTS.md")
@@ -398,7 +385,7 @@ func Install(root, version string, stdout *strings.Builder) error {
 			fmt.Fprintf(stdout, "current    %s (block already up to date)\n", agentsTarget)
 		}
 	}
-	files[agentsTarget] = []byte(canonicalAgentsBlock(newBlock))
+	files[agentsTarget] = sha([]byte(canonicalAgentsBlock(newBlock)))
 	paths = append(paths, agentsTarget)
 
 	if err := appendGitignoreEntries(root, own, stdout); err != nil {

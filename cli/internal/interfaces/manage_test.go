@@ -27,6 +27,9 @@ func TestUpdateCheck_Flags(t *testing.T) {
 	if err := run(t, "update", "--all"); err == nil || !strings.Contains(err.Error(), "--all requires --check") {
 		t.Fatalf("--all without --check = %v", err)
 	}
+	if err := run(t, "update", "--check", "--force", "--root", repo); err == nil || !strings.Contains(err.Error(), "read-only") {
+		t.Fatalf("--check --force = %v", err)
+	}
 	if err := run(t, "update", "--check", "--root", repo); err != nil {
 		t.Fatalf("clean --check = %v", err)
 	}

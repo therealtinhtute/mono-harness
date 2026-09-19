@@ -18,7 +18,7 @@ func Uninstall(root string, stdout *strings.Builder) error {
 	if err != nil {
 		return err
 	}
-	_, baseFiles, err := loadBase(root)
+	baseFiles, err := loadBase(root)
 	if err != nil {
 		return err
 	}
@@ -45,11 +45,11 @@ func Uninstall(root string, stdout *strings.Builder) error {
 		}
 	}
 
-	_ = os.RemoveAll(filepath.Join(root, stashDir))
-	_ = saveConflicts(root, nil)
+	_ = os.RemoveAll(filepath.Join(root, legacyStashDir))
+	_ = os.Remove(filepath.Join(root, legacyConflictsFile))
 	_ = os.Remove(filepath.Join(root, manifestFile))
 	_ = os.Remove(filepath.Join(root, ownershipFile))
-	_ = os.RemoveAll(filepath.Join(root, upstreamDir))
+	_ = os.RemoveAll(filepath.Join(root, legacyUpstreamDir))
 	_ = os.RemoveAll(filepath.Join(root, originalDir))
 	_ = os.RemoveAll(filepath.Join(root, baseDir))
 	_ = removeDirIfEmpty(filepath.Join(root, zharnessDir))
@@ -100,10 +100,10 @@ func dropLine(blob, want string) string {
 	return out
 }
 
-// removeManagedFile compares against the recorded base (the last upstream
-// version the consumer reconciled onto), not the live embedded bytes. The
-// ledger decides whether the file may be deleted at all.
-func removeManagedFile(root, rel string, base []byte, tracked bool, origin string, removed *int, kept *[]string, stdout *strings.Builder) {
+// removeManagedFile compares against the recorded base (the sha256 of the
+// bytes zharness last wrote), not the live embedded bytes. The ledger decides
+// whether the file may be deleted at all.
+func removeManagedFile(root, rel, base string, tracked bool, origin string, removed *int, kept *[]string, stdout *strings.Builder) {
 	dstP := filepath.Join(root, rel)
 	local, err := os.ReadFile(dstP)
 	if os.IsNotExist(err) {
@@ -119,7 +119,7 @@ func removeManagedFile(root, rel string, base []byte, tracked bool, origin strin
 		// No recorded base at all: the file cannot be compared to anything,
 		// so it is not "locally modified" — it is unattributable. Say that.
 		keep("no recorded base; provenance unknown, delete manually if intended")
-	case isSame(local, base):
+	case sha(local) == base:
 		switch {
 		case origin == originPreexisting && hasOrig:
 			_ = os.WriteFile(dstP, orig, 0o644)

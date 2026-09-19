@@ -21,8 +21,11 @@ func Check(root string) ([]string, error) {
 		return nil, err
 	}
 	var drift []string
+	if _, err := os.Stat(filepath.Join(root, legacyConflictsFile)); err == nil {
+		drift = append(drift, "conflict "+legacyConflictsFile+" (unresolved pre-0011 update)")
+	}
 	for _, t := range targets {
-		if t.Merge {
+		if t.Once {
 			continue
 		}
 		want, err := srcBytes(t)
