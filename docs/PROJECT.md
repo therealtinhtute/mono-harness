@@ -19,7 +19,9 @@
   backfill of consumer history.
 - No application runtime, credentials, schema validation, or product policy.
 - No scanning or merging of `~/.claude`, `~/.codex`, `~/.agents`,
-  `~/.config/opencode` (except the single codex config line in R7).
+  `~/.config/opencode` (except the single codex config line in R7); the only
+  other home-directory file zharness writes is its repo registry
+  `~/.config/zharness/repos`.
 
 ## What are the gate commands?
 - run from: the repository root
@@ -45,4 +47,4 @@
   `scripts/install-git-hooks.sh`.
 
 ## What are we working on right now?
-- plan: docs/plans/active/multi-stack-harness-readiness.md (active, in-progress)
+- plan: docs/plans/active/zharness-slim.md (active, not-planned)
