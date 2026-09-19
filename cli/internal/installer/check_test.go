@@ -94,7 +94,7 @@ func TestRunCheck_AllReportsMissingAndFailsOnDrift(t *testing.T) {
 		t.Fatalf("RunCheck --all = %v, want ErrDrift\n%s", err, sb.String())
 	}
 	out := sb.String()
-	for _, want := range []string{"current  " + clean, "drift    " + drifted, "missing: " + gone, "1 repository(ies) drifted"} {
+	for _, want := range []string{"current  " + canonicalRoot(clean), "drift    " + canonicalRoot(drifted), "missing: " + gone, "1 repository(ies) drifted"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
@@ -109,6 +109,30 @@ func TestRunCheck_AllMissingOnlyIsClean(t *testing.T) {
 	var sb strings.Builder
 	if err := RunCheck("", true, &sb); err != nil {
 		t.Fatalf("missing roots alone must not fail: %v\n%s", err, sb.String())
+	}
+}
+
+func TestRunCheck_AllContinuesPastUnreadableRoot(t *testing.T) {
+	isolatedRegistry(t)
+	broken := tempRepo(t, true)
+	good := tempRepo(t, true)
+	mustInstall(t, broken)
+	mustInstall(t, good)
+	wf := filepath.Join(broken, workflowTarget)
+	if err := os.Remove(wf); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(wf, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var sb strings.Builder
+	err := RunCheck("", true, &sb)
+	if err == nil || errors.Is(err, ErrDrift) {
+		t.Fatalf("RunCheck = %v, want a could-not-check error\n%s", err, sb.String())
+	}
+	out := sb.String()
+	if !strings.Contains(out, "error    "+canonicalRoot(broken)) || !strings.Contains(out, "current  "+canonicalRoot(good)) {
+		t.Fatalf("expected error line and the next root checked:\n%s", out)
 	}
 }
 

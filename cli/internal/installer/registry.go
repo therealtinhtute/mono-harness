@@ -22,6 +22,15 @@ func registryPath() (string, error) {
 	return filepath.Join(dir, "zharness", "repos"), nil
 }
 
+// canonicalRoot resolves symlinks so one repository reached through two
+// paths (macOS /var vs /private/var, a symlinked checkout) is one entry.
+func canonicalRoot(root string) string {
+	if r, err := filepath.EvalSymlinks(root); err == nil {
+		return r
+	}
+	return root
+}
+
 // Registered returns the recorded repository roots in file order.
 func Registered() ([]string, error) {
 	p, err := registryPath()
@@ -59,6 +68,7 @@ func writeRegistry(roots []string) error {
 // register and unregister are advisory: a read-only or missing home must
 // never fail the verb that called them, so errors become a warning line.
 func register(root string, stdout *strings.Builder) {
+	root = canonicalRoot(root)
 	roots, err := Registered()
 	if err == nil {
 		for _, r := range roots {
@@ -74,6 +84,7 @@ func register(root string, stdout *strings.Builder) {
 }
 
 func unregister(root string, stdout *strings.Builder) {
+	root = canonicalRoot(root)
 	roots, err := Registered()
 	if err == nil {
 		kept := roots[:0]

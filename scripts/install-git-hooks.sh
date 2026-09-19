@@ -495,7 +495,7 @@ HOOK_EOF
     echo "🔄 replacing stale zharness pre-commit hook"
   fi
 
-  mv "$new" "$hook_file"
+  mv "$new" "$hook_file" || return 1
   chmod +x "$hook_file"
   echo "✅ Created: $hook_file"
 }

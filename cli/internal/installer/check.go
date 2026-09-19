@@ -106,7 +106,7 @@ func RunCheck(root string, all bool, stdout *strings.Builder) error {
 		}
 		roots = reg
 	}
-	drifted := 0
+	drifted, failed := 0, 0
 	for _, r := range roots {
 		if fi, err := os.Stat(r); err != nil || !fi.IsDir() {
 			fmt.Fprintf(stdout, "missing: %s\n", r)
@@ -114,7 +114,9 @@ func RunCheck(root string, all bool, stdout *strings.Builder) error {
 		}
 		lines, err := Check(r)
 		if err != nil {
-			return fmt.Errorf("%s: %w", r, err)
+			failed++
+			fmt.Fprintf(stdout, "error    %s: %v\n", r, err)
+			continue
 		}
 		if len(lines) == 0 {
 			fmt.Fprintf(stdout, "current  %s\n", r)
@@ -125,6 +127,9 @@ func RunCheck(root string, all bool, stdout *strings.Builder) error {
 		for _, l := range lines {
 			fmt.Fprintf(stdout, "  %s\n", l)
 		}
+	}
+	if failed > 0 {
+		return fmt.Errorf("%d repository(ies) could not be checked", failed)
 	}
 	if drifted > 0 {
 		fmt.Fprintf(stdout, "%d repository(ies) drifted — run `zharness update` in each.\n", drifted)

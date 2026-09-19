@@ -37,8 +37,8 @@ func TestRegistry_InstallTwiceRecordsOnce_UninstallRemoves(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || got[0] != root {
-		t.Fatalf("registry = %v, want [%s]", got, root)
+	if want := canonicalRoot(root); len(got) != 1 || got[0] != want {
+		t.Fatalf("registry = %v, want [%s]", got, want)
 	}
 
 	var sb strings.Builder
@@ -66,8 +66,29 @@ func TestRegistry_UpdateRegisters(t *testing.T) {
 		t.Fatalf("update: %v\n%s", err, sb.String())
 	}
 	got, _ := Registered()
-	if len(got) != 1 || got[0] != root {
-		t.Fatalf("registry = %v, want [%s]", got, root)
+	if want := canonicalRoot(root); len(got) != 1 || got[0] != want {
+		t.Fatalf("registry = %v, want [%s]", got, want)
+	}
+}
+
+func TestRegistry_SymlinkedPathIsOneEntry(t *testing.T) {
+	isolatedRegistry(t)
+	root := tempRepo(t, true)
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(root, link); err != nil {
+		t.Fatal(err)
+	}
+	mustInstall(t, root)
+	mustInstall(t, link)
+	if got, _ := Registered(); len(got) != 1 {
+		t.Fatalf("registry = %v, want one entry", got)
+	}
+	var sb strings.Builder
+	if err := Uninstall(link, &sb); err != nil {
+		t.Fatalf("uninstall: %v\n%s", err, sb.String())
+	}
+	if got, _ := Registered(); len(got) != 0 {
+		t.Fatalf("registry after uninstall via symlink = %v, want empty", got)
 	}
 }
 
