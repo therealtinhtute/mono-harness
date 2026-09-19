@@ -15,7 +15,7 @@ Require the active plan with `status: active` and a complete `## Goal`. Exactly 
 
 ## Owned Plan Section
 
-`## Phases and Verification`: the approach and its risks first, then the phases. A `normal` plan has one phase and a flat task list; a `high-risk` plan adds `constraints:` and `recovery:`, and each phase carries its goal, dependencies, surfaces, waves, and a phase check:
+`## Phases and Verification`: the approach and its risks first, then the phases. A `normal` plan has one phase and a flat task list; a `high-risk` plan adds `constraints:` and `recovery:`, and each phase carries its goal, dependencies, surfaces, `escalate_when:`, waves, and a phase check:
 
 ```markdown
 ## Phases and Verification
@@ -25,8 +25,9 @@ Require the active plan with `status: active` and a complete `## Goal`. Exactly 
   status: planned
   - goal: R1, R2 | depends_on: none
   - surfaces: <touched> | avoided: <untouched>
+  - escalate_when: <condition that stops the phase and asks the owner>
   - wave 1:
-    - T1 <task> — check: `<command>`
+    - T1 <task> — output: <expected result> — check: `<command>` — stop_if: <condition>
   - phase check: `<command>`
 ```
 
@@ -41,13 +42,13 @@ Invariants:
 
 ## Steps
 
-1. **Read the plan** — extract outcome, authority, requirements, non-goals, lane, and constraints.
+1. **Read the plan** — extract outcome, success signal, actors, authority, requirements with their acceptance checks, non-goals, lane, constraints, and the validation expectations they set (`success_signal:` and each `acceptance:`).
 2. **Choose the smallest viable approach** — write the path, why it is preferred, the rejected alternative, risks, mitigations, and stop/recovery conditions at the head of the section.
 3. **Define phases** — `normal`: one phase. `high-risk`: split only where dependency, risk, or independent verification warrants; order by real dependency and risk reduction, not size; each phase leaves the system usable if the next never lands.
-4. **Build tasks** — per phase: tasks (waves only in `high-risk`; same wave only for tasks that can proceed independently), touched and avoided surfaces, expected outputs, stop conditions.
+4. **Build tasks** — per phase: tasks (waves only in `high-risk`; same wave only for tasks that can proceed independently), touched and avoided surfaces, and on each task its `output:` and `stop_if:`. `high-risk`: each phase names `escalate_when:`.
 5. **Write checks before execution** — every meaningful task gets an observable command or inspection. Missing verification is a planning blocker; `work` may not invent it later.
 6. **Update the file** — replace `approach: not-planned` with the section; set Current State `exact_next_action: work full phase {first-phase-slug}`.
-7. **Verify coherence** — unique phase slugs, acyclic dependencies, statuses coherent with `## Log`, no second initiative markdown anywhere in the tree.
+7. **Verify coherence** — unique phase slugs, acyclic dependencies, statuses coherent with `## Log`, no second initiative markdown anywhere in the tree. Traceability: every requirement appears in some phase `goal:`, and every requirement's `acceptance:` maps to at least one task `check:` or phase check; a gap is a planning blocker.
 
 ## Exit Conditions
 

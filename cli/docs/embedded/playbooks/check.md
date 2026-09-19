@@ -25,7 +25,7 @@ Only durable gate/full may: append to `## Validation`; update the selected phase
 1. **Load scope without changing intent** — read the diff and repository verification instructions. Gate/full: also read the phase entry and the tails of `## Log` and `## Validation`. `bounded` may consult a plan for context but stays response-only.
 2. **Classify depth and drift** — quick/standard/deep by blast radius, not only line count. Label scope on-target, drift, or incomplete. A phase-boundary violation blocks a clean durable verdict.
 3. **Run the automated gate** — applicable tests, type checks, lint/static analysis, and build, in repository-defined order. IF `scripts/record-check.sh` exists → `bash scripts/record-check.sh -- "cmd1" "cmd2" …`. Else capture each command's output to a temp file and preserve its exit code (`rc=$?`; never pipe into `head`/`tail` in a way that clobbers `rc`). Validation bullets cite the raw commands, not the wrapper.
-4. **Review plan alignment** (gate/full) — compare the diff with the Goal's requirements and non-goals, phase surfaces, task checks, and Log `decision` entries. Missing planned proof is a finding even when local tests pass. IF `docs/evals/failures.md` exists → for every failure class recorded two or more times, state whether the diff is clean of it.
+4. **Review plan alignment** (gate/full) — compare the diff with the Goal's requirements and non-goals, phase surfaces, task checks, and Log `decision` entries. Missing planned proof is a finding even when local tests pass. For each requirement the phase `goal:` names, judge its `acceptance:` (none → judge the requirement text) and record it in the entry's `requirements:` line as `met`, `not met`, or `partial (→ <phase>)` when a later phase's `goal:` also names it. `not met` is a material plan contradiction; `partial` is not a finding. `full` on the final phase also judges the Goal's `success_signal:`. Record `rollback_point:` as the commit the phase can be reverted to. IF `docs/evals/failures.md` exists → for every failure class recorded two or more times, state whether the diff is clean of it.
 5. **Manual review** — `full`: the complete Security, Performance, Architecture, and Code Quality review; for a class-of-bug fix, search sibling instances and state whether coverage is complete. `gate` does not perform that complete manual review. `bounded`: the requested or scope-appropriate review.
 6. **Evaluate required proof** — `tiny`: command output; `normal`: unit plus command output; `high-risk`: unit, integration, manual review, and command output. Name every missing class exactly.
 7. **Choose the verdict** — any critical issue or material plan contradiction → `REQUEST_CHANGES`; major non-critical findings → at least `APPROVE_WITH_REQUESTS`; no blocking findings → `APPROVED`. Declare the judge (`same-session` IF the reviewer authored the diff, else `independent`) and the reviewing model identifier. A `same-session` `APPROVED`/`APPROVE_WITH_REQUESTS` must name at least one aspect not independently verified. A `full` entry, and any entry on a `high-risk` lane, must declare `judge: independent`.
@@ -42,6 +42,7 @@ End the response with:
 
 ```text
 mode: gate | full | bounded
+depth: quick | standard | deep
 scope: on target | drift | incomplete
 gate: pass | fail
 verdict: APPROVED | APPROVE_WITH_REQUESTS | REQUEST_CHANGES
@@ -53,7 +54,7 @@ proof_gaps: none | exact missing classes
 
 ## What the Guards Cannot Check
 
-Name any that applies in `proof_gaps:`: `judge: independent` is testimony, not proof; an unparsed (misspelled, buried, or unanchored) verdict is ignored, not rejected, so guard silence can mean "unparsed"; a range guard compares endpoints, so an entry added and removed inside one push is out of scope.
+Name any that applies in `proof_gaps:`: `judge: independent` is testimony, not proof; an unparsed (misspelled, buried, or unanchored) verdict is ignored, not rejected, so guard silence can mean "unparsed"; a range guard compares endpoints, so an entry added and removed inside one push is out of scope; a `requirements:` line is testimony, and the proof it cites re-runs only when it is also a proof sub-bullet.
 
 ## Exit Conditions
 
