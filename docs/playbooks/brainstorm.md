@@ -39,10 +39,12 @@ lane: normal
 # <Title>
 
 ## Goal
-- outcome: <observable result and how success is checked>
+- outcome: <observable result>
+- success_signal: <measurable check that proves the outcome>
+- actors: <who uses or is affected by the change>
 - authority: <owner decision, spec, or source files>
 - requirements:
-  - R1: <falsifiable requirement> | source: <authority>
+  - R1: <falsifiable requirement> | acceptance: <how it is verified> | source: <authority>
 - non-goals:
   - NG1: <explicit exclusion>
 
@@ -68,12 +70,12 @@ lane: normal
 1. **Classify** — mode, lane, risk flags, affected surfaces. `tiny` → stop and route to `work bounded`.
 2. **Gather minimum authority** — read named sources and repository instructions. Check prior lessons first: `grep -ri "<topic keywords>" docs/memory/` (plain committed files, never a database). Discovery may clarify scope, never expand it.
 3. **Compare options** — 2–3 viable paths, or 1–2 alternatives rejected by authoritative sources. State recommendation and trade-offs before locking.
-4. **Clarify the boundary** — require a concrete outcome, constraints, accepted requirements, non-goals, and checkable success conditions. Stop rather than invent an unresolved product decision.
+4. **Clarify the boundary** — require a concrete outcome, a measurable `success_signal:`, the affected actors, constraints, accepted requirements each with an `acceptance:` check, and non-goals. Stop rather than invent an unresolved product decision.
 5. **Choose the slug** — short and stable. The canonical active path is `docs/plans/active/{slug}.md`; never create a second durable initiative markdown for the same work.
 6. **Answer project identity (the stage's single forced write)** — IF `docs/PROJECT.md` is absent → copy `cli/docs/embedded/templates/project.identity.md`; IF that template is also absent (consumer repo) → run `zharness install`. Fill every identity question inline. The lock never completes while any `<...>` question remains: halt and name them. Only the owner-facing scope decision may justify pausing here.
 7. **Create a new lock** — confirm no non-empty plan exists under `docs/plans/active/`; IF one exists → stop and name it; the owner must complete or move it aside first. Create `docs/plans/active/{slug}.md` from the skeleton with the lane set, `## Goal` filled, and the bootstrap values shown everywhere else.
 8. **Refine an existing lock** — read the plan; preserve the lane (unless reclassification is explicitly approved) and every section except `## Goal`; update Goal in place. IF the refinement changes what the project is or how it is verified → update the affected `docs/PROJECT.md` answers in the same pass.
-9. **Self-review** — confirm: no `<...>` placeholder remains in the plan or `docs/PROJECT.md`; requirements are numbered and falsifiable; outcome, requirements, and non-goals agree; rejected alternatives were surfaced; bootstrap state is honest; no second markdown exists.
+9. **Self-review** — confirm: no `<...>` placeholder remains in the plan or `docs/PROJECT.md`; requirements are numbered and falsifiable, and each has an `acceptance:`; `success_signal:` is checkable; outcome, requirements, and non-goals agree; rejected alternatives were surfaced; bootstrap state is honest; no second markdown exists.
 10. **Review gate** — show the plan path, the answered `docs/PROJECT.md`, and a concise decision summary. Explicit execution intent may satisfy the gate only when scope is bounded and no unresolved product decision, destructive action, or outward-facing action remains; otherwise wait for approval before routing to `to-plan`.
 
 ## Exit Conditions

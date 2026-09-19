@@ -61,10 +61,10 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 
 | Skill | Owns | Mechanism |
 | :--- | :--- | :--- |
-| `brainstorm` | Goal (lane in frontmatter) | playbook + hand-edited markdown |
-| `to-plan` | Phases and Verification | playbook + hand-edited markdown |
+| `brainstorm` | Goal: outcome, success_signal, actors, requirements with `acceptance:`, non-goals (lane in frontmatter) | playbook + hand-edited markdown |
+| `to-plan` | Phases and Verification: approach, risks, tasks with `output:`/`check:`/`stop_if:`, `escalate_when:` on high-risk; every requirement traced to a check | playbook + hand-edited markdown |
 | `work` | Log (append-only) | playbook + hand-edited markdown |
-| `check` | Validation (append-only) | playbook + nested proof sub-bullets |
+| `check` | Validation (append-only): proofs, `requirements:` coverage, `rollback_point:` | playbook + nested proof sub-bullets |
 | `handoff` | Current State and Next Action, phase closure | playbook + absorb line + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |
 | `git` / `interview` | no plan sections | enrichment optional, never blocking |

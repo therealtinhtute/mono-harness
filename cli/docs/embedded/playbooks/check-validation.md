@@ -8,13 +8,15 @@ Loaded by `docs/playbooks/check.md` step 8 in durable `gate`/`full` mode, includ
 - <UTC> — phase `<phase-slug>` — verdict: APPROVED — mode: gate
   - `<command>` — <result in at most 3 lines>
   - scope: on target | drift | incomplete — <one line>
+  - requirements: R1 met (<proof>) | R2 not met (<gap>) | R3 partial (→ <phase>)
+  - rollback_point: <commit the phase can be reverted to>
   - requests: none | <numbered findings with path:line>
   - not_independently_verified: <aspect> (same-session only)
   - judge: independent | same-session
   - judge_model: <model identifier>
 ```
 
-Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, verdict, judge declaration, reviewing model identifier, and proof gaps. Two positions are load-bearing, so the commit-time guard can find them:
+Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, verdict, requirement coverage, rollback point, judge declaration, reviewing model identifier, and proof gaps. Two positions are load-bearing, so the commit-time guard can find them:
 
 - The first line carries the anchored token `verdict: <VERDICT>`. A verdict on a sub-bullet, or without the `verdict:` anchor, is skipped in silence: no rejection, no re-execution.
 - Each proof command is a nested sub-bullet, indented at least two spaces, whose text begins with the bare command in single backticks: no label before the opening backtick, no double backticks, no backtick inside the command (it truncates there and re-executes a broken fragment; use a character class or a shell-free equivalent). Trailing annotation after the closing backtick is safe; keep it to at most 3 lines of output.
