@@ -33,7 +33,7 @@ Invoke these skills proactively at the right moment — user does not need to ty
 - Approved roadmap or spec exists and user says "let's go" / "implement" / "cook" / "làm đi" → invoke `work`.
 
 ## Quality and Shipping
-- Before any commit, push, or PR → invoke `check`.
+- Phase end (gate) or before opening a PR → invoke `check`; a plain commit needs only the pre-commit hook.
 - Commit, push, create PR, merge → invoke `git`.
 
 ## Session End

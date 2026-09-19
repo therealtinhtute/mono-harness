@@ -12,16 +12,24 @@ Repository docs, code, tests, and observable runtime behavior define current tru
 
 The lifecycle needs no binary: route through the table and read only the named playbook and any companion it routes you to. `zharness` (install / update / uninstall) scaffolds and updates these managed docs; it plays no part in running a stage.
 
-| Stage | Playbook |
-|---|---|
-| brainstorm | `docs/playbooks/brainstorm.md` |
-| to-plan | `docs/playbooks/to-plan.md` |
-| work | `docs/playbooks/work.md` |
-| check | `docs/playbooks/check.md` |
-| handoff | `docs/playbooks/handoff.md` |
-| watzup | `docs/playbooks/watzup.md` |
+| Stage | Playbook | Model tier |
+|---|---|---|
+| brainstorm | `docs/playbooks/brainstorm.md` | deep |
+| to-plan | `docs/playbooks/to-plan.md` | deep |
+| work | `docs/playbooks/work.md` | standard |
+| check | `docs/playbooks/check.md` | deep |
+| handoff | `docs/playbooks/handoff.md` | standard |
+| watzup | `docs/playbooks/watzup.md` | fast |
 
 `git` and `interview` keep skill-local procedure and are never harness-gated.
+
+A tier is a capability class, not a model name. Each host maps tiers once:
+
+| Host | deep | standard | fast |
+|---|---|---|---|
+| Claude Code | opus | sonnet | haiku |
+
+Do not switch model or agent mid-phase: prompt cache is per model, so a switch re-reads the phase cold.
 
 ## Execution boundary
 
