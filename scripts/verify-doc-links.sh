@@ -55,7 +55,7 @@ trap 'rm -f "$LIST"' EXIT
 find docs cli skills rules setup -name '*.md' -type f \
   -not -path 'docs/plans/*' \
   -not -path 'cli/testdata/*' >"$LIST"
-for extra in CLAUDE.md README.md; do
+for extra in AGENTS.md README.md; do
   if [ -f "$extra" ]; then
     printf '%s\n' "$extra" >>"$LIST"
   fi
