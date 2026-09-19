@@ -6,6 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.23.0] — 2026-09-19
+
+### Added
+
+- `zharness update --check [--all]` reports drift from the running binary
+  without writing and exits 1 on drift; `--all` checks every repository in
+  `~/.config/zharness/repos`, which `install`/`update` register and `uninstall`
+  removes. `scripts/install-zharness.sh` runs it after an upgrade, and
+  `scripts/install-git-hooks.sh` replaces a stale zharness-owned pre-commit hook.
+- `update` migrates a single 9-section active plan to the 5-section format in
+  place, `## Validation` bytes unchanged (ADR 0012). Any other heading set, or
+  more than one active plan, is left alone with a `notice`.
+- Plans carry spec and evaluation criteria as fields: Goal `success_signal:`,
+  `actors:` and a per-requirement `acceptance:`; tasks `output:`/`check:`/
+  `stop_if:`, high-risk phases `escalate_when:`; `to-plan` traces every
+  requirement to a check; `check` records `requirements:` coverage and
+  `rollback_point:` in Validation.
+
+### Changed
+
+- `update` no longer merges. `docs/PROJECT.md` is written only when absent. The
+  `AGENTS.md` block is replaced between its markers; if it was edited since the
+  last write, `update` prints the diff, writes nothing, and exits 1 unless
+  `--force` (ADR 0011).
+- The plan is five sections — Goal, Phases and Verification, Log, Validation,
+  Current State and Next Action — scaled by lane (`tiny` needs no plan). Phase
+  `status:` is a bare line under `phase_slug:`. Closing `handoff` compacts Log
+  and Validation and writes `lifecycle_status: completed`.
+- `check` has three modes: `gate`, `full`, `bounded`.
+- Stages name model tiers (deep/standard/fast) instead of model names.
+
+### Removed
+
+- Three-way merge, `update --continue`/`--abort`, the update stash,
+  `.zharness/conflicts.json`, and `.zharness/base/upstream/` (deleted on the
+  next `update`).
+- `intake_id`/`story_id` and the unused check/handoff/spec/plan templates.
+
+**Upgrade:** run `zharness update` in each consumer repository, or
+`zharness update --check --all` to list the ones that drift. Anyone scripting
+`update --continue`/`--abort` must drop it.
+
 ## [v0.22.1] — 2026-09-19
 
 ### Changed
