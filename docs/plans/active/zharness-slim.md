@@ -218,7 +218,7 @@ updated: 2026-09-19
         not modified. check: `git diff --quiet master -- docs/plans/completed/`.
     - phase check: gate commands; `bash scripts/test-guards.sh`; `diff <(git show master:scripts/install-git-hooks.sh | awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on') <(awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh)` empty.
   - phase_slug: `p4-portability`
-    status: planned
+    status: checked
     - goal: R14, R15.
     - depends_on: `p3-slim-plan`
     - surfaces: playbooks + embedded copies, WORKFLOW.md + embedded copy, `rules/workflow-core.md`,
@@ -262,6 +262,12 @@ updated: 2026-09-19
 - 2026-09-19T09:05Z — p3-slim-plan/T5 — done — R11 compaction on a scratch copy of `docs/plans/completed/harness-eval-loop.md`: 6 `task_status=` Log entries and 1 superseded p3-failure-ledger Validation entry dropped; `wc -w` 7,237 → 5,909 (−18%); `git diff --quiet HEAD -- docs/plans/completed/` rc=0 — no repository file
 - 2026-09-19T09:05Z — p3-slim-plan — done — phase check: `cd cli && go test ./...`, `go vet ./...`, gofmt clean; `bash scripts/test-guards.sh` 46 passed, 0 failed; `bash scripts/test-install-zharness.sh` 4 passed; `bash scripts/verify-doc-links.sh` OK; guard-core diff vs master empty; forbidden-term rg 0 lines
 - 2026-09-19T09:12Z — p3-slim-plan — done — gate requests 1–3 fixed (README.md, docs/decisions/0011-update-without-three-way-merge.md, site/docs/architecture.html, T4 Log entry); request 4 left as is (theoretical, fails closed); `bash scripts/verify-doc-links.sh` OK
+- 2026-09-19T09:13Z — p4-portability — start — phase start (run anchor 2026-09-19T09:13Z)
+- 2026-09-19T09:15Z — p4-portability/T1 — done — WORKFLOW.md stage table gains a model-tier column (deep/standard/fast) and one host mapping table; work-full step 8's F1 line is host-neutral; slash-syntax rg 0 lines; `rg -n -i 'opus|sonnet|haiku' cli/docs/embedded` hits only WORKFLOW.md's mapping row; embedded copies identical; `go test ./...` pass — docs/WORKFLOW.md, cli/docs/embedded/WORKFLOW.md, docs/playbooks/work-full.md, cli/docs/embedded/playbooks/work-full.md
+- 2026-09-19T09:15Z — p4-portability/T2 — done — `rules/workflow-core.md` routes `check` at phase end or before a PR; `rg -n 'Before any commit' rules/workflow-core.md` 0 lines — rules/workflow-core.md
+- 2026-09-19T10:04Z — p4-portability/T3 — done — owner confirmed; the 9 stale ~/.agents/skills copies were trashed and replaced by the newer ~/.claude/skills copies, the 7 ~/.claude-only entries moved to ~/.agents/skills, every remaining ~/.claude/skills entry verified to be a link into or identical to the source, then `trash ~/.claude/skills && ln -s ~/.agents/skills ~/.claude/skills`; `readlink ~/.claude/skills` = /Users/tinhtute/.agents/skills; 45 entries through the link = 45 in the source — home directory only
+- 2026-09-19T10:04Z — p4-portability — done — phase check: gofmt clean, `go vet ./...`, `go test ./...` pass; `bash scripts/verify-doc-links.sh` OK; `bash scripts/test-guards.sh` 46 passed, 0 failed
+- 2026-09-19T11:11Z — p4-portability — decision — independent `check full` APPROVE_WITH_REQUESTS; the owner waived the LOC request; the site/docs request stays an open item
 
 ### Decisions
 - 2026-09-19 — lock — the installed `.git/hooks/pre-commit` was stale (3-argument call into the
@@ -318,6 +324,8 @@ updated: 2026-09-19
 - 2026-09-19 — p3-slim-plan/T5 — the T5 check compares against `master`, but `harness-eval-loop.md` was added on
   this branch (d5c48f7), so `git diff master` is non-empty by construction. The check that states the intent
   (the completed file is not modified) is `git diff --quiet HEAD -- docs/plans/completed/`.
+- 2026-09-19 — p4-portability/T3 — ~/.claude/skills was the live copy (sync-skills installs there; 9 skills newer than ~/.agents/skills), so the newer copies were moved into ~/.agents/skills before the swap rather than trashed. `sync.sh` trashes per skill, so it keeps working through the directory symlink. `~/.claude/rules/workflow-core.md` is a separate copy of `rules/workflow-core.md` and still has the old line; it is outside this repo and was left unchanged.
+- 2026-09-19 — p4-portability — owner waived the Goal success_signal "non-test Go lines in `cli/internal/installer/` drop by at least 400 from 1,794": the final count is 1,585 (−209). P2 alone reached 1,381 (−413); P3's `migrate.go` (179 lines, R12) and the P2 gate fix (+25) came after the target was set. `migrate.go` is transitional: delete it once no consumer repository holds a 9-section active plan.
 
 ## Validation
 - 2026-09-19T08:29Z — phase `p1-drift-check` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -363,10 +371,26 @@ updated: 2026-09-19
   - not verified: T5 word counts (the scratch copy was not kept); the hook on the final compaction commit (reasoned, not run).
   - judge: independent
   - judge_model: claude-opus-5
+- 2026-09-19T11:11Z — phase `p4-portability` — verdict: APPROVE_WITH_REQUESTS — mode: full
+  - `cd cli && go test ./... -count=1` — ok, all 4 packages
+  - `cd cli && go vet ./... && test -z "$(gofmt -l .)"` — vet clean, gofmt clean
+  - `bash scripts/test-guards.sh` — guards: 46 passed, 0 failed
+  - `XDG_CONFIG_HOME=$(mktemp -d) bash scripts/test-install-zharness.sh` — summary: 4 passed, 0 failed
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - `bash -c 'diff <(git show master:scripts/install-git-hooks.sh | awk '"'"'$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on'"'"') <(awk '"'"'$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on'"'"' scripts/install-git-hooks.sh)'` — empty: guard core identical to master
+  - `! rg -n '\x60/(check|work|to-plan|brainstorm|handoff|watzup)\b' cli/docs/embedded docs/playbooks docs/WORKFLOW.md` — 0 slash-syntax lines
+  - `bash -c '! rg -n -i "opus|sonnet|haiku" cli/docs/embedded | grep -v WORKFLOW.md'` — model names only in the WORKFLOW.md mapping row
+  - `! rg -n 'Before any commit' rules/workflow-core.md` — 0 lines
+  - scope: on target. This is the whole-initiative review of master...HEAD plus the working tree. Security and data loss: none found. Every refusal is decided before the first write, writes are atomic, registry roots are canonicalized, and the hook install separates foreign hooks from stale-ours outside the guard core. Performance: none. Code quality: tests assert real behavior; no dead three-way code remains. Requirements: R1–R16 met, except R11, which runs at the closing handoff.
+  - requests: (1) major — the Goal LOC success_signal is unmet (1,585 vs ≤1,394) — owner waived it; see Decisions. (2) minor — `site/docs/architecture.html` and `site/docs/cli.html` still describe three-way merge and `--continue`/`--abort`. This is an acknowledged open item outside the plan's surfaces and does not block close.
+  - evidence outside the repository: `readlink ~/.claude/skills` = /Users/tinhtute/.agents/skills; `/bin/ls -A` counts 45 = 45; `sync.sh` trashes per skill through the directory symlink.
+  - not verified: live P1/P2 runs against real repositories were not re-run; R11 compaction runs at close.
+  - judge: independent
+  - judge_model: claude-sonnet-5
 
 ## Current State and Next Action
-- active_phase: p3-slim-plan
+- active_phase: p4-portability
 - lifecycle_status: checked
 - blockers: none
 - open_items: site/docs/*.html still describe three-way merge (see Decisions)
-- exact_next_action: commit p3-slim-plan, then `work full phase p4-portability`
+- exact_next_action: closing handoff (close p1–p4, absorb, compact, move to completed)
