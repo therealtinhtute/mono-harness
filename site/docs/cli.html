@@ -61,30 +61,12 @@
         </div>
         <div class="spec-row">
           <div class="spec-idx">02</div>
-          <div class="spec-scene"><code>--json</code></div>
-          <div class="spec-cell"><span class="badge">boolean</span></div>
-          <div class="spec-cell">Emit machine-readable JSON output for automated scripting and tool consumption.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">03</div>
-          <div class="spec-scene"><code>--dry-run</code></div>
-          <div class="spec-cell"><span class="badge">boolean</span></div>
-          <div class="spec-cell">Simulate execution without modifying files on disk.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">04</div>
-          <div class="spec-scene"><code>--force</code></div>
-          <div class="spec-cell"><span class="badge">boolean</span></div>
-          <div class="spec-cell">Override non-fatal safety guards during operations.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">05</div>
           <div class="spec-scene"><code>-h, --help</code></div>
           <div class="spec-cell"><span class="badge">boolean</span></div>
           <div class="spec-cell">Display command-line help for root or any verb.</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">06</div>
+          <div class="spec-idx">03</div>
           <div class="spec-scene"><code>-v, --version</code></div>
           <div class="spec-cell"><span class="badge">boolean</span></div>
           <div class="spec-cell">Display the zharness binary version string.</div>
@@ -103,26 +85,26 @@
         <div class="spec-row">
           <div class="spec-idx">01</div>
           <div class="spec-scene"><code>zharness install</code></div>
-          <div class="spec-cell">Scaffolds the managed doc set (<code>WORKFLOW.md</code>, playbooks, <code>AGENTS.md</code> block, ignore entries). Records upstream base hashes in <code>.zharness/base/</code>. Idempotent.</div>
+          <div class="spec-cell">Scaffolds the managed doc set (<code>WORKFLOW.md</code>, <code>PROJECT.md</code>, playbooks, <code>AGENTS.md</code> block, ignore entry). Records a sha256 manifest in <code>.zharness/base/</code> and the repository in <code>~/.config/zharness/repos</code>. Idempotent.</div>
           <div class="spec-cell"><code>0</code> success, <code>1</code> error</div>
         </div>
         <div class="spec-row">
           <div class="spec-idx">02</div>
           <div class="spec-scene"><code>zharness update</code></div>
-          <div class="spec-cell">Executes a 3-way merge of the managed doc set against <code>.zharness/base/</code>. Clean regions auto-merge; conflicts pause with standard markers.</div>
-          <div class="spec-cell"><code>0</code> clean, <code>1</code> error, <code>2</code> conflict</div>
+          <div class="spec-cell">Overwrites playbooks and <code>WORKFLOW.md</code>; writes <code>PROJECT.md</code> only when absent; replaces the <code>AGENTS.md</code> block between its markers, refusing with a diff if the block was edited since the last write. Every refusal runs before the first write. Migrates a single 9-section active plan to 5 sections, <code>## Validation</code> bytes unchanged.</div>
+          <div class="spec-cell"><code>0</code> success, <code>1</code> error, refusal, or drift (<code>--check</code>)</div>
         </div>
         <div class="spec-row">
           <div class="spec-idx">03</div>
           <div class="spec-scene"><code>zharness uninstall</code></div>
-          <div class="spec-cell">Removes managed workflow files only. User-modified files diverging from base and upstream are preserved with a warning.</div>
-          <div class="spec-cell"><code>0</code> clean, <code>1</code> error, <code>3</code> warning</div>
+          <div class="spec-cell">Removes managed files whose bytes match what zharness last wrote; locally modified ones are kept and listed. Removes the repository from the registry.</div>
+          <div class="spec-cell"><code>0</code> success, <code>1</code> error</div>
         </div>
       </div>
 
       <div class="prose reveal">
         <h2>Command flags reference<i>.</i></h2>
-        <p>Specific flags available per verb.</p>
+        <p>Flags beyond <code>--root</code> and <code>--help</code>. <code>install</code> and <code>uninstall</code> take none.</p>
       </div>
 
       <div class="spec reveal">
@@ -130,64 +112,28 @@
           <div></div><div>Verb</div><div>Flag</div><div>Description</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">01.1</div>
-          <div class="spec-scene"><code>install</code></div>
-          <div class="spec-cell"><code>--scaffold</code></div>
-          <div class="spec-cell">Generate missing project identity and workflow scaffolds.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">01.2</div>
-          <div class="spec-scene"><code>install</code></div>
-          <div class="spec-cell"><code>--track-only</code></div>
-          <div class="spec-cell">Record base hashes in <code>.zharness/base/</code> without writing template files.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">01.3</div>
-          <div class="spec-scene"><code>install</code></div>
-          <div class="spec-cell"><code>--target &lt;dir&gt;</code></div>
-          <div class="spec-cell">Specify custom installation target directory.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">01.4</div>
-          <div class="spec-scene"><code>install</code></div>
-          <div class="spec-cell"><code>--skip-agents</code></div>
-          <div class="spec-cell">Skip updating or appending the <code>AGENTS.md</code> capability block.</div>
-        </div>
-        <div class="spec-row">
           <div class="spec-idx">02.1</div>
           <div class="spec-scene"><code>update</code></div>
-          <div class="spec-cell"><code>--continue</code></div>
-          <div class="spec-cell">Finalize update and update base hashes after manual resolution of conflict markers.</div>
+          <div class="spec-cell"><code>--force</code></div>
+          <div class="spec-cell">Replace an <code>AGENTS.md</code> block edited since the last write (default: refuse and print the diff).</div>
         </div>
         <div class="spec-row">
           <div class="spec-idx">02.2</div>
           <div class="spec-scene"><code>update</code></div>
-          <div class="spec-cell"><code>--abort</code></div>
-          <div class="spec-cell">Restore the pre-update state byte-for-byte from the stash snapshot.</div>
+          <div class="spec-cell"><code>--check</code></div>
+          <div class="spec-cell">Report drift from this binary without writing; exit <code>1</code> on drift. Takes no <code>--force</code>.</div>
         </div>
         <div class="spec-row">
           <div class="spec-idx">02.3</div>
           <div class="spec-scene"><code>update</code></div>
-          <div class="spec-cell"><code>--theirs</code></div>
-          <div class="spec-cell">Resolve conflicting chunks favoring upstream changes.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">02.4</div>
-          <div class="spec-scene"><code>update</code></div>
-          <div class="spec-cell"><code>--ours</code></div>
-          <div class="spec-cell">Resolve conflicting chunks favoring local workspace modifications.</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">03.1</div>
-          <div class="spec-scene"><code>uninstall</code></div>
-          <div class="spec-cell"><code>--purge</code></div>
-          <div class="spec-cell">Force removal of all managed artifacts including tracking metadata in <code>.zharness/</code>.</div>
+          <div class="spec-cell"><code>--all</code></div>
+          <div class="spec-cell">With <code>--check</code>: every repository in <code>~/.config/zharness/repos</code>.</div>
         </div>
       </div>
 
       <div class="prose reveal">
         <h2>Terminal usage<i>.</i></h2>
-        <p>Common invocation patterns for installation, updates, and conflict resolution.</p>
+        <p>Common invocation patterns for installation, drift checks, updates, and removal.</p>
       </div>
 
       <div class="terminal-block reveal">
@@ -200,34 +146,32 @@
         </div>
         <pre><code><span class="tok-cmt"># 1. Scaffold managed documentation into the repository</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">install</span>
-<span class="tok-out">scaffolded: docs/playbooks/brainstorm.md</span>
-<span class="tok-out">scaffolded: docs/playbooks/to-plan.md</span>
-<span class="tok-out">scaffolded: docs/playbooks/work.md</span>
-<span class="tok-out">scaffolded: docs/playbooks/check.md</span>
-<span class="tok-out">scaffolded: docs/playbooks/handoff.md</span>
-<span class="tok-out">scaffolded: docs/playbooks/watzup.md</span>
-<span class="tok-out">recorded base: .zharness/base/ (6 playbooks, WORKFLOW.md)</span>
+<span class="tok-out">installed  docs/WORKFLOW.md</span>
+<span class="tok-out">installed  docs/PROJECT.md</span>
+<span class="tok-out">installed  docs/playbooks/brainstorm.md</span>
+<span class="tok-out">…</span>
+<span class="tok-out">installed  AGENTS.md (created)</span>
+<span class="tok-out">updated    .gitignore (+.zharness/)</span>
 <span class="tok-out">exit: 0</span>
 
-<span class="tok-cmt"># 2. Update managed documentation with upstream releases</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span>
-<span class="tok-out">merging: docs/playbooks/work.md (clean)</span>
-<span class="tok-out">merging: docs/playbooks/check.md (conflict)</span>
-<span class="tok-flag">CONFLICT:</span> <span class="tok-out">docs/playbooks/check.md contains overlapping edits.</span>
-<span class="tok-cmt"># Resolve conflict markers and run: zharness update --continue</span>
-<span class="tok-cmt"># Or restore previous state with: zharness update --abort</span>
-<span class="tok-out">exit: 2</span>
+<span class="tok-cmt"># 2. Report drift from this binary without writing</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span> <span class="tok-kw">--check</span>
+<span class="tok-out">drift    /path/to/repo</span>
+<span class="tok-out">  stale    docs/playbooks/work.md</span>
+<span class="tok-out">exit: 1</span>
 
-<span class="tok-cmt"># 3. Finalize after resolving conflict markers</span>
-<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span> <span class="tok-kw">--continue</span>
-<span class="tok-out">finalized: docs/playbooks/check.md</span>
-<span class="tok-out">updated base: .zharness/base/check.md</span>
+<span class="tok-cmt"># 3. Refresh the managed docs</span>
+<span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span>
+<span class="tok-out">refreshed      docs/WORKFLOW.md</span>
+<span class="tok-out">refreshed      docs/playbooks/work.md</span>
+<span class="tok-out">…</span>
+<span class="tok-out">update complete.</span>
 <span class="tok-out">exit: 0</span>
 
 <span class="tok-cmt"># 4. Safe uninstallation</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">uninstall</span>
-<span class="tok-out">removed: docs/playbooks/brainstorm.md</span>
-<span class="tok-out">preserved: docs/playbooks/custom-notes.md (user-modified)</span>
+<span class="tok-out">uninstall complete — 11 managed file(s) removed, 1 kept:</span>
+<span class="tok-out">  docs/playbooks/work.md — locally modified; delete manually if intended</span>
 <span class="tok-out">exit: 0</span></code></pre>
       </div>
 
@@ -241,7 +185,7 @@
         <div class="safety-item"><span class="s-key">docs/playbooks/*.md</span><span class="s-val">Canonical stage execution procedures, managed and synchronized via <code>zharness update</code>.</span></div>
         <div class="safety-item"><span class="s-key">docs/decisions/</span><span class="s-val">Immutable Architecture Decision Records (ADRs) numbered sequentially.</span></div>
         <div class="safety-item"><span class="s-key">docs/memory/</span><span class="s-val">Cross-session durable facts and preferences tracked in plain markdown.</span></div>
-        <div class="safety-item"><span class="s-key">.zharness/base/</span><span class="s-val">Upstream hash snapshots recorded during install/finalize, used as BASE in 3-way merges.</span></div>
+        <div class="safety-item"><span class="s-key">.zharness/base/</span><span class="s-val">sha256 manifest of what zharness last wrote; guards the <code>AGENTS.md</code> block and scopes uninstall.</span></div>
         <div class="safety-item"><span class="s-key">scripts/install-git-hooks.sh</span><span class="s-val">Fail-closed pre-commit validation hook (proof re-execution + independent judge separation).</span></div>
       </div>
     </article>

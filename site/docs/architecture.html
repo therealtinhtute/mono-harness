@@ -61,7 +61,7 @@
         <span class="tok-prm">|</span>
         <span class="tok-prm">v</span>
 <span class="tok-cmd">install</span>                          <span class="tok-out">scaffolds the managed set, records a base, reports brownfield read-only</span>
-<span class="tok-cmd">update</span>                           <span class="tok-out">fresh-overwrites playbooks/WORKFLOW.md; three-way merges PROJECT.md and the AGENTS.md block onto the recorded base</span>
+<span class="tok-cmd">update</span>                           <span class="tok-out">fresh-overwrites playbooks/WORKFLOW.md; hash-guarded AGENTS.md block replace; PROJECT.md only when absent</span>
 <span class="tok-cmd">uninstall</span>                        <span class="tok-out">removes the managed set; consumer bytes are never destroyed</span></code></pre>
       </div>
 
@@ -83,7 +83,7 @@
             <h3 style="margin: 0; font-family: var(--mono); font-size: 16px;">zharness update</h3>
             <span class="badge">Sync</span>
           </div>
-          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Playbooks and <code>WORKFLOW.md</code> are pure upstream mirrors — always overwritten, no merge, no conflict. <code>PROJECT.md</code> and the <code>AGENTS.md</code> block still get a diff3 three-way merge against the recorded base, flagged with standard git conflict markers on overlap.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin: 0;">Playbooks and <code>WORKFLOW.md</code> are pure upstream mirrors — always overwritten, no merge, no conflict. <code>PROJECT.md</code> is written only when absent. The <code>AGENTS.md</code> block is replaced between its markers; if it was edited since the last write, update prints the diff and writes nothing unless <code>--force</code>. <code>--check</code> reports drift without writing.</p>
         </div>
         <div class="card">
           <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
@@ -96,7 +96,7 @@
 
       <div class="prose reveal">
         <p><code>AllTargets</code> is the managed set: <code>docs/WORKFLOW.md</code>, <code>docs/PROJECT.md</code> (scaffolded from identity template), and the six playbooks. <code>AGENTS.md</code> is handled separately and surgically &mdash; only the marked <code>ZHARNESS</code> block inside it is swapped; consumer prose around it is untouched.</p>
-        <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries plus content-addressed upstream blobs. Update diffs local edits against that recorded base with a diff3 merge; overlapping edits stop with in-file conflict markers, resolved by a human via <code>--continue</code> or discarded via <code>--abort</code>.</p>
+        <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries recording what zharness last wrote. There is no merge and no conflict state: every refusal check runs before the first write, so a refused update leaves every file as it was (ADR 0011).</p>
       </div>
 
       <div class="prose reveal">
@@ -191,7 +191,7 @@
           <div class="spec-idx">06</div>
           <div class="spec-scene"><code>.zharness/base/</code></div>
           <div class="spec-cell"><span class="badge">Bookkeeping</span></div>
-          <div class="spec-cell">Base manifest (<code>manifest.json</code>) and upstream blobs for diff3 merges; gitignored.</div>
+          <div class="spec-cell">sha256 manifest (<code>manifest.json</code>) of what zharness last wrote; gitignored.</div>
         </div>
       </div>
 

@@ -175,24 +175,30 @@
 
 <span class="tok-kw">## Goal</span>
 <span class="tok-punct">-</span> outcome: <span class="tok-str">refresh tokens rotate on a sliding expiration window</span>
+<span class="tok-punct">-</span> success_signal: <span class="tok-str">a token used after 15 idle minutes is rejected</span>
+<span class="tok-punct">-</span> actors: <span class="tok-str">API clients holding refresh tokens</span>
+<span class="tok-punct">-</span> requirements:
+  <span class="tok-punct">-</span> R1: <span class="tok-str">each refresh issues a new token and revokes the old one | acceptance: auth tests | source: owner</span>
 
 <span class="tok-kw">## Phases and Verification</span>
 <span class="tok-punct">-</span> approach: <span class="tok-str">rotate in the token service; middleware only reads</span>
 <span class="tok-punct">-</span> phase_slug: `token-refresh`
   status: <span class="tok-str">checked</span>
-  <span class="tok-punct">-</span> T1 token generator — check: `go test ./pkg/auth/...`
-  <span class="tok-punct">-</span> T2 HTTP middleware — check: `go test ./pkg/http/...`
+  <span class="tok-punct">-</span> goal: R1 | depends_on: none
+  <span class="tok-punct">-</span> T1 token generator — output: rotating tokens — check: `go test ./pkg/auth/...` — stop_if: old token still valid
+  <span class="tok-punct">-</span> T2 HTTP middleware — output: reads only — check: `go test ./pkg/http/...` — stop_if: middleware writes tokens
 
 <span class="tok-kw">## Log</span>
 <span class="tok-punct">-</span> <span class="tok-str">2026-08-28T04:00Z — token-refresh/T1 — done —</span> `go test ./pkg/auth/...` passed (<span class="tok-num">14</span> tests).
 <span class="tok-punct">-</span> <span class="tok-str">2026-08-28T04:30Z — token-refresh — decision —</span> 15-minute sliding window, 7-day absolute max.
 
 <span class="tok-kw">## Validation</span>
-<span class="tok-punct">-</span> <span class="tok-cmd">verdict:</span> <span class="tok-str">APPROVED</span>
-<span class="tok-punct">-</span> <span class="tok-opt">judge:</span> <span class="tok-str">independent</span>
-<span class="tok-punct">-</span> Proofs:
-  <span class="tok-punct">-</span> `go test -race ./...` (exit <span class="tok-num">0</span>)
-  <span class="tok-punct">-</span> `golangci-lint run` (exit <span class="tok-num">0</span>)</code></pre>
+<span class="tok-punct">-</span> <span class="tok-str">2026-08-28T05:00Z — phase `token-refresh` —</span> <span class="tok-cmd">verdict:</span> <span class="tok-str">APPROVED</span> — mode: gate
+  <span class="tok-punct">-</span> `go test -race ./...` — exit <span class="tok-num">0</span>
+  <span class="tok-punct">-</span> `golangci-lint run` — exit <span class="tok-num">0</span>
+  <span class="tok-punct">-</span> requirements: <span class="tok-str">R1 met (`go test ./pkg/auth/...`)</span>
+  <span class="tok-punct">-</span> rollback_point: <span class="tok-str">a1b2c3d</span>
+  <span class="tok-punct">-</span> <span class="tok-opt">judge:</span> <span class="tok-str">independent</span></code></pre>
       </div>
 
       <div class="pull-quote reveal">
