@@ -67,6 +67,18 @@ sha256_of() {
   fi
 }
 
+# discard: remove repository paths. `trash` where available — the repository's
+# convention for this initiative — and `rm -rf` otherwise so the script still
+# runs on Linux. Scratch paths under $WORK use `rm -rf` directly: they are
+# outside the repository and trashing them would only litter the Trash.
+discard() {  # <path>...
+  if command -v trash >/dev/null 2>&1; then
+    trash "$@"
+  else
+    rm -rf "$@"
+  fi
+}
+
 # normalize: stdin -> stdout. Literal replacement, so a scratch path holding a
 # regex metacharacter cannot corrupt the fixture.
 normalize() {
@@ -109,7 +121,7 @@ tree() {  # <root> <out-file>
 # copy_raw: a byte-for-byte copy of <src> (minus .git) into <dst>.
 copy_raw() {  # <src> <dst>
   local src="$1" dst="$2" p
-  rm -rf "$dst"
+  discard "$dst"
   mkdir -p "$dst"
   while IFS= read -r p; do
     p=${p#./}
@@ -127,6 +139,14 @@ copy_raw() {  # <src> <dst>
 # exact everywhere else — bytes, layout, and the manifest's recorded hashes.
 verify_go_installed() {  # <fresh> <fixture>
   local fresh="$1" fixture="$2" a b rc=0
+  # `tree` normalizes installed_at on both sides, so without this check an old
+  # tokenized capture would still compare equal and the raw-fixture rule would
+  # be unenforced — the exact regression this fixture was fixed for.
+  if ! grep -qE '"installed_at":"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}:[0-9]{2})"' \
+       "$fixture/.zharness/base/manifest.json"; then
+    echo "❌ go-installed/.zharness/base/manifest.json carries no RFC3339 installed_at" >&2
+    return 1
+  fi
   a=$(mktemp)
   b=$(mktemp)
   tree "$fresh" "$a"
@@ -217,15 +237,23 @@ EOF
 EOF
 }
 
-# run: capture one invocation as a fixture directory.
-run() {  # <scenario-name> <cwd> <argv...>
-  local name="$1" cwd="$2"; shift 2
+# run: capture one invocation as a fixture directory. The expected exit code is
+# declared, not recorded: a rerun that silently blessed an unexpected success
+# or failure would turn the oracle into a snapshot of whatever happened.
+run() {  # <scenario-name> <expected-exit> <cwd> <argv...>
+  local name="$1" want="$2" cwd="$3"; shift 3
   local dir="$HERE/$name" rel rc=0
   rel=${cwd#"$SCEN"}; rel=${rel#/}; [ -n "$rel" ] || rel=.
   rm -rf "$dir"
   mkdir -p "$dir"
   printf '%s $ zharness %s\n' "$rel" "$*" > "$dir/cmd"
   zharness "$cwd" "$@" > "$dir/.stdout" 2> "$dir/.stderr" || rc=$?
+  if [ "$rc" -ne "$want" ]; then
+    echo "❌ $name: expected exit $want, got $rc" >&2
+    sed 's/^/   stdout | /' "$dir/.stdout" >&2
+    sed 's/^/   stderr | /' "$dir/.stderr" >&2
+    exit 1
+  fi
   printf '%s\n' "$rc" > "$dir/exit"
   normalize < "$dir/.stdout" > "$dir/stdout"
   normalize < "$dir/.stderr" > "$dir/stderr"
@@ -241,41 +269,43 @@ run_silent() {  # <cwd> <argv...>
 
 # --------------------------------------------------------------- fixtures ---
 
+# Build first: a build failure must not leave the tracked fixtures deleted from
+# the worktree.
+echo "building Go zharness at HEAD with -X main.version=$GOLDEN_VERSION"
+( cd "$CLI" && CGO_ENABLED=0 go build -ldflags "-X main.version=$GOLDEN_VERSION" -o "$BIN" ./cmd/zharness )
+
 # A stale scenario directory would survive a rename, so the generated set is
 # rebuilt from scratch every run. go-installed/ is not generated: it is a raw
 # one-time capture, validated below rather than rewritten.
 for d in "$HERE"/*/; do
   [ -d "$d" ] || continue
   [ "$d" = "$HERE/go-installed/" ] && continue
-  rm -rf "$d"
+  discard "$d"
 done
-
-echo "building Go zharness at HEAD with -X main.version=$GOLDEN_VERSION"
-( cd "$CLI" && CGO_ENABLED=0 go build -ldflags "-X main.version=$GOLDEN_VERSION" -o "$BIN" ./cmd/zharness )
 
 # 1. install, greenfield.
 begin install-greenfield
 new_repo "$SCEN/repo"
-run install-greenfield "$SCEN/repo" install
+run install-greenfield 0 "$SCEN/repo" install
 
 # 2. install, brownfield: the marked block is appended to a pre-existing
 #    AGENTS.md and docs/PROJECT.md is left alone.
 begin install-brownfield
 new_repo "$SCEN/repo"
 brownfield "$SCEN/repo"
-run install-brownfield "$SCEN/repo" install
+run install-brownfield 0 "$SCEN/repo" install
 
 # 3. install twice: the second run reports everything current.
 begin install-twice
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
-run install-twice "$SCEN/repo" install
+run install-twice 0 "$SCEN/repo" install
 
 # 4. update, clean.
 begin update-clean
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
-run update-clean "$SCEN/repo" update
+run update-clean 0 "$SCEN/repo" update
 
 # 5. update with a hand-edited AGENTS block: refuse, print the diff, exit 1.
 begin update-refuse-edited-block
@@ -284,7 +314,7 @@ run_silent "$SCEN/repo" install
 awk '{ print } /<!-- ZHARNESS:BEGIN -->/ { print "hand-edited line" }' \
   "$SCEN/repo/AGENTS.md" > "$SCEN/repo/AGENTS.md.tmp"
 mv "$SCEN/repo/AGENTS.md.tmp" "$SCEN/repo/AGENTS.md"
-run update-refuse-edited-block "$SCEN/repo" update
+run update-refuse-edited-block 1 "$SCEN/repo" update
 
 # 6. update --force: the same hand edit is replaced.
 begin update-force
@@ -293,20 +323,20 @@ run_silent "$SCEN/repo" install
 awk '{ print } /<!-- ZHARNESS:BEGIN -->/ { print "hand-edited line" }' \
   "$SCEN/repo/AGENTS.md" > "$SCEN/repo/AGENTS.md.tmp"
 mv "$SCEN/repo/AGENTS.md.tmp" "$SCEN/repo/AGENTS.md"
-run update-force "$SCEN/repo" update --force
+run update-force 0 "$SCEN/repo" update --force
 
 # 7. update --check, clean: exit 0.
 begin update-check-clean
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
-run update-check-clean "$SCEN/repo" update --check
+run update-check-clean 0 "$SCEN/repo" update --check
 
 # 8. update --check, drifted: exit 1.
 begin update-check-drift
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
 printf '\n<!-- drift -->\n' >> "$SCEN/repo/docs/playbooks/work.md"
-run update-check-drift "$SCEN/repo" update --check
+run update-check-drift 1 "$SCEN/repo" update --check
 
 # 9. update --check --all over two registered repositories, one clean and one
 #    drifted: the per-root loop, both verdict lines, and the summary.
@@ -316,7 +346,7 @@ new_repo "$SCEN/repo-b"
 run_silent "$SCEN/repo-a" install
 run_silent "$SCEN/repo-b" install
 printf '\n<!-- drift -->\n' >> "$SCEN/repo-b/docs/playbooks/work.md"
-run update-check-all "$SCEN/repo-a" update --check --all
+run update-check-all 1 "$SCEN/repo-a" update --check --all
 
 # 10. update --check --all over two clean registered repositories: exit 0, two
 #     current lines, and no summary line at all. A port that prints the
@@ -326,36 +356,36 @@ new_repo "$SCEN/repo-a"
 new_repo "$SCEN/repo-b"
 run_silent "$SCEN/repo-a" install
 run_silent "$SCEN/repo-b" install
-run update-check-all-clean "$SCEN/repo-a" update --check --all
+run update-check-all-clean 0 "$SCEN/repo-a" update --check --all
 
 # 11. update --all without --check: refused before anything is read.
 begin update-all-without-check
 new_repo "$SCEN/repo"
-run update-all-without-check "$SCEN/repo" update --all
+run update-all-without-check 1 "$SCEN/repo" update --all
 
 # 12. update --check --force: refused before anything is read.
 begin update-check-force
 new_repo "$SCEN/repo"
-run update-check-force "$SCEN/repo" update --check --force
+run update-check-force 1 "$SCEN/repo" update --check --force
 
 # 13. uninstall, clean.
 begin uninstall-clean
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
-run uninstall-clean "$SCEN/repo" uninstall
+run uninstall-clean 0 "$SCEN/repo" uninstall
 
 # 14. uninstall with a locally modified managed file: kept, with a warning.
 begin uninstall-locally-modified
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
 printf '\n<!-- local edit -->\n' >> "$SCEN/repo/docs/playbooks/work.md"
-run uninstall-locally-modified "$SCEN/repo" uninstall
+run uninstall-locally-modified 0 "$SCEN/repo" uninstall
 
 # 15. --root on install from outside the repository, given as a relative path.
 begin root-flag-outside-repo
 new_repo "$SCEN/repo"
 mkdir -p "$SCEN/outside"
-run root-flag-outside-repo "$SCEN/outside" install --root ../repo
+run root-flag-outside-repo 0 "$SCEN/outside" install --root ../repo
 
 # 16. --root on update from outside the repository. The flag is registered
 #     separately on each verb, so pinning it on install alone leaves update
@@ -364,14 +394,14 @@ begin update-root-outside-repo
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
 mkdir -p "$SCEN/outside"
-run update-root-outside-repo "$SCEN/outside" update --root ../repo
+run update-root-outside-repo 0 "$SCEN/outside" update --root ../repo
 
 # 17. --root on uninstall from outside the repository.
 begin uninstall-root-outside-repo
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
 mkdir -p "$SCEN/outside"
-run uninstall-root-outside-repo "$SCEN/outside" uninstall --root ../repo
+run uninstall-root-outside-repo 0 "$SCEN/outside" uninstall --root ../repo
 
 # R4 fixture: a repository installed by the Go binary, captured raw. Captured
 # once; every later run re-installs into a scratch repo and requires the
