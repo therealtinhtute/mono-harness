@@ -568,3 +568,201 @@ fn append_gitignore_entries(
     ));
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::fs;
+
+    use super::*;
+    use crate::test_support::{install_ok, read_file, temp_repo, write_file, IsolatedEnv};
+
+    /// Folded at compile time so a tree scan cannot match its own guard list.
+    const LEGACY_DB_NAME: &str = concat!("harness", ".db");
+
+    #[test]
+    fn install_greenfield_managed_set_and_base() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        let out = install_ok(root);
+
+        for w in [
+            WORKFLOW_TARGET,
+            "docs/playbooks/work.md",
+            "docs/playbooks/watzup.md",
+            PROJECT_TARGET,
+            AGENTS_TARGET,
+            GITIGNORE_TARGET,
+            MANIFEST_FILE,
+        ] {
+            assert!(root.join(w).exists(), "missing {w}");
+        }
+        assert!(
+            !root.join(LEGACY_DB_NAME).exists(),
+            "installer created a database; it must not"
+        );
+        assert!(
+            !root.join(LEGACY_UPSTREAM_DIR).exists(),
+            "install created the pre-ADR 0011 blob store"
+        );
+        let base = load_base(root).unwrap();
+        assert!(
+            !base.get(AGENTS_TARGET).unwrap_or(&String::new()).is_empty()
+                && !base
+                    .get(PROJECT_TARGET)
+                    .unwrap_or(&String::new())
+                    .is_empty(),
+            "manifest lacks recorded hashes: {base:?}"
+        );
+        let gi = read_file(root, GITIGNORE_TARGET);
+        assert!(
+            gi.contains(&format!("/{ZHRNESS_DIR}/")),
+            "gitignore missing /{ZHRNESS_DIR}/ entry"
+        );
+        let ag = read_file(root, AGENTS_TARGET);
+        assert!(
+            ag.contains(BLOCK_BEGIN) && ag.contains("no parallel control-plane state"),
+            "AGENTS.md block not installed correctly"
+        );
+        let pj = read_file(root, PROJECT_TARGET);
+        let lines = pj.trim_end_matches('\n').split('\n').count();
+        assert!(
+            lines <= 50,
+            "project template exceeds 50 lines ({lines}):\n{pj}"
+        );
+        assert!(
+            pj.contains("<one sentence: what the product IS>"),
+            "project template lost its unanswered-question form"
+        );
+        assert!(
+            out.contains("greenfield"),
+            "expected greenfield note in report:\n{out}"
+        );
+
+        let before: Vec<(String, String)> = [WORKFLOW_TARGET, PROJECT_TARGET, AGENTS_TARGET]
+            .iter()
+            .map(|f| (f.to_string(), read_file(root, f)))
+            .collect();
+        install_ok(root);
+        for (f, b) in &before {
+            assert_eq!(
+                &read_file(root, f),
+                b,
+                "re-install mutated managed file {f}"
+            );
+        }
+        let count = read_file(root, GITIGNORE_TARGET)
+            .matches(&format!("/{ZHRNESS_DIR}/"))
+            .count();
+        assert_eq!(count, 1, "ignore entries duplicated on re-install");
+    }
+
+    /// A fresh-overwrite target (playbook or WORKFLOW.md) that already exists
+    /// with drifted content — e.g. hand-edited before zharness ever ran — is
+    /// overwritten with upstream bytes unconditionally. Only the write-once
+    /// docs/PROJECT.md is left as found.
+    #[test]
+    fn install_fresh_overwrite_targets_drifted_local_file_overwritten() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        write_file(
+            root,
+            WORKFLOW_TARGET,
+            "pre-existing hand-edited WORKFLOW.md\n",
+        );
+        write_file(
+            root,
+            "docs/playbooks/work.md",
+            "pre-existing hand-edited playbook\n",
+        );
+
+        let out = install_ok(root);
+
+        assert_ne!(
+            read_file(root, WORKFLOW_TARGET),
+            "pre-existing hand-edited WORKFLOW.md\n",
+            "WORKFLOW.md drift left untouched; fresh-overwrite target must always install upstream bytes"
+        );
+        assert_ne!(
+            read_file(root, "docs/playbooks/work.md"),
+            "pre-existing hand-edited playbook\n",
+            "playbook drift left untouched; fresh-overwrite target must always install upstream bytes"
+        );
+        assert!(
+            !out.contains("drifted"),
+            "fresh-overwrite targets must never report drifted:\n{out}"
+        );
+        assert!(
+            out.contains(&format!("installed  {WORKFLOW_TARGET}")),
+            "expected installed report for {WORKFLOW_TARGET}:\n{out}"
+        );
+    }
+
+    /// R3 (guard-v3): the `_` -> `__` + `/` -> `_2F` mapping is injective —
+    /// distinct managed paths can never share an original-file name — and the
+    /// legacy v0.15.0 mapping (`/` -> `__`) is still found on upgrade.
+    #[test]
+    fn safe_path_injective_and_legacy_fallback() {
+        let paths = [
+            "a/b.md",
+            "a__b.md",
+            "a_2Fb.md",
+            "a/b__c.md",
+            "a__b_2Fc.md",
+            "a/b/c.md",
+            "a__b__c.md",
+            WORKFLOW_TARGET,
+            "docs/WORKFLOW_2.md",
+        ];
+        let mut seen: HashMap<String, &str> = HashMap::new();
+        for p in paths {
+            let s = safe_path(p);
+            if let Some(prev) = seen.insert(s.clone(), p) {
+                panic!("safe_path collision: {prev:?} and {p:?} both map to {s:?}");
+            }
+        }
+        assert_eq!(safe_path("a/b.md"), "a_2Fb.md");
+        assert_eq!(
+            legacy_safe_path("a/b.md"),
+            legacy_safe_path("a__b.md"),
+            "fixture: legacy mapping must collide on these two paths"
+        );
+        assert_ne!(
+            safe_path("a/b.md"),
+            safe_path("a__b.md"),
+            "new mapping must separate the historically colliding paths"
+        );
+
+        // end-to-end: an original recorded under the LEGACY name is still
+        // found by read_original, and capture_original never overwrites it.
+        let repo = temp_repo();
+        let root = repo.path();
+        fs::create_dir_all(root.join(ORIGINAL_DIR)).unwrap();
+        let legacy_bytes = b"legacy-recorded original\n";
+        let legacy_name = root
+            .join(ORIGINAL_DIR)
+            .join(format!("{}.orig", legacy_safe_path("docs/x.md")));
+        fs::write(&legacy_name, legacy_bytes).unwrap();
+        assert_eq!(
+            read_original(root, "docs/x.md").as_deref(),
+            Some(&legacy_bytes[..]),
+            "legacy original not found"
+        );
+        write_file(root, "docs/x.md", "current bytes\n");
+        capture_original(root, "docs/x.md").unwrap();
+        assert!(
+            !root
+                .join(ORIGINAL_DIR)
+                .join(format!("{}.orig", safe_path("docs/x.md")))
+                .exists(),
+            "capture_original wrote a second original despite the legacy one"
+        );
+        assert_eq!(
+            fs::read(&legacy_name).unwrap(),
+            legacy_bytes,
+            "capture_original perturbed the legacy original"
+        );
+    }
+}

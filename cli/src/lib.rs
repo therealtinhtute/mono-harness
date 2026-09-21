@@ -10,6 +10,9 @@ pub mod cli;
 pub mod embedded;
 pub mod installer;
 
+#[cfg(test)]
+mod test_support;
+
 use std::process::ExitCode;
 
 use clap::error::ErrorKind;
