@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.23.1] — 2026-09-21
+
+### Changed
+
+- Every live instruction that routed agents to write scratch or reports into
+  `.kit/` now points at the correct home: per-machine cache to
+  `.zharness/cache/` (already gitignored for every consumer), durable plans
+  to `docs/plans/active/`, and durable evidence to `docs/audit/`,
+  `docs/research/`, or `docs/templates/`. `TestNoLegacyKitPaths` guards
+  against the path reappearing in `skills/`, `rules/`, `scripts/`, or docs.
+  No CLI runtime behavior changed; historical records describing `.kit/` as
+  it was are left untouched.
+
 ## [v0.23.0] — 2026-09-19
 
 ### Added
