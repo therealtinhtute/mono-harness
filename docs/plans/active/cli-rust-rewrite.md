@@ -35,7 +35,7 @@ lane: high-risk
   - recovery: before P3 merges, trash `Cargo.toml`/`src/`/`tests/`, and Go stays authoritative. After P3, `git revert` the cutover merge restores Go, goreleaser, and CI in one step. Consumer manifests stay readable both ways (R4 keeps the format).
 - constraints: preserve the `.zharness/base/manifest.json` schema (`zharness_version`, `installed_at`, `files[].path`, `files[].sha256`) and the repo registry at `$XDG_CONFIG_HOME/zharness/repos` (fallback `~/.config/zharness/repos`). Touch nothing under `scripts/` except as R7 requires (NG2). Delete with `trash`.
 - phase_slug: `p1-golden-fixtures`
-  status: in-progress
+  status: checked
   - goal: R1 | depends_on: none
   - surfaces: `cli/testdata/golden/` (new: `capture.sh`, one dir per scenario with `stdout`, `stderr`, `exit`, `tree.sha256`, plus a `go-installed/` repo snapshot for R4) | avoided: all Go sources, CI, docs
   - escalate_when: a Go verb's behavior depends on something the capture cannot isolate (network, real `$HOME` state), or reveals a Go bug the owner must choose to keep or fix in Rust.
@@ -92,10 +92,27 @@ lane: high-risk
 - 2026-09-21T14:44:56Z — p1-golden-fixtures — done — the independent gate found two holes in R1's named flags and both are now closed: `update --check --all` was pinned only with one drifted repository, so the zero-drift shape (two `current` lines, no summary line, exit 0) was free to drift — `update-check-all-clean` now pins it; and `--root` was pinned only on install although manage.go registers it separately on all three verbs — `update-root-outside-repo` and `uninstall-root-outside-repo` now pin it on update and uninstall. Scenario count 14 → 17; `bash cli/testdata/golden/capture.sh` exits 0, `git diff --exit-code -- cli/testdata/golden` is empty, `ls cli/testdata/golden | wc -l` is 19, and `cd cli && go test ./...` passes. Changed: cli/testdata/golden/capture.sh, cli/testdata/golden/{update-check-all-clean,update-root-outside-repo,uninstall-root-outside-repo}/** (new).
 
 ## Validation
+- 2026-09-21T14:48:23Z — phase `p1-golden-fixtures` — verdict: APPROVE_WITH_REQUESTS — mode: gate
+  - `bash cli/testdata/golden/capture.sh` — exit 0; "go-installed/ verified against a fresh Go install"; "captured 18 fixture directories" (17 scenarios + go-installed/).
+  - `git diff --exit-code -- cli/testdata/golden` — exit 0, empty output: the capture is byte-reproducible.
+  - `ls cli/testdata/golden | wc -l` — exit 0, 19 entries, above the phase check's >= 14 floor.
+  - `cd cli && go test ./...` — exit 0; cmd/zharness [no test files], docs/embedded, internal/embedded, internal/installer, internal/interfaces all ok.
+  - `test -s cli/testdata/golden/go-installed/.zharness/base/manifest.json` — exit 0 (T2 check).
+  - `git ls-files --error-unmatch cli/testdata/golden/go-installed/.zharness/base/manifest.json cli/testdata/golden/go-installed/.zharness/base/ownership.tsv cli/testdata/golden/go-installed/.zharness/base/original/AGENTS.md.orig cli/testdata/golden/go-installed/.zharness/base/original/docs_2FPROJECT.md.orig` — exit 0; all four tracked despite the fixture's own /.zharness/ ignore rule.
+  - `cmp cli/docs/embedded/playbooks/work.md cli/testdata/golden/go-installed/docs/playbooks/work.md` — exit 0; the fixture carries the binary's embedded bytes, not a snapshot of the environment.
+  - `test "$(cat cli/testdata/golden/update-check-all-clean/exit)" = 0 && test "$(grep -c "^current" cli/testdata/golden/update-check-all-clean/stdout)" = 2 && ! grep -q "repository(ies) drifted" cli/testdata/golden/update-check-all-clean/stdout` — exit 0; the zero-drift --check --all shape is pinned (two current lines, no summary, exit 0).
+  - `grep -q "install --root" cli/testdata/golden/root-flag-outside-repo/cmd && grep -q "update --root" cli/testdata/golden/update-root-outside-repo/cmd && grep -q "uninstall --root" cli/testdata/golden/uninstall-root-outside-repo/cmd` — exit 0; --root is pinned on all three verbs, each from outside the repository.
+  - `! grep -rqE "/var/folders|/private/|/Users/|zharness-golden-" cli/testdata/golden/install-greenfield cli/testdata/golden/update-check-all-clean cli/testdata/golden/go-installed` — exit 0; no absolute path survives into a committed fixture.
+  - scope: on target — all 103 changed paths in 0cc8fa9..HEAD sit under docs/plans/active/cli-rust-rewrite.md or cli/testdata/golden/; no Go source, CI, cli/docs/, or scripts/ touched.
+  - requirements: R1 met (17 scenario fixtures plus the raw go-installed/ snapshot, committed and script-generated; the "Rust test suite replays them" half is partial → p2-rust-port, whose T4/T5 write cli/tests/golden.rs and cli/tests/go_manifest_compat.rs)
+  - rollback_point: 0cc8fa9 (the phase diff base; reverting 7608181..2407fe7 or checking out 0cc8fa9 -- cli/testdata/golden restores the pre-phase tree)
+  - requests: 1. cli/testdata/golden/capture.sh:311-328 — pin update --check --all with an empty registry and with a vanished registered root (both exit 0 today, both unpinned). 2. cli/testdata/golden/capture.sh:341-352 — pin uninstall on a brownfield repo (the unmarked AGENTS.md branch, exit 0, unpinned). 3. cli/testdata/golden/capture.sh:37 — file modes are deliberately unrecorded; a port writing 0o600 passes every fixture. 4. cli/testdata/golden/capture.sh:384,395 — the two fail-closed guards have no automated regression test.
+  - judge: independent
+  - judge_model: devin/deepseek-v4-1-flash
 
 ## Current State and Next Action
-- active_phase: p1-golden-fixtures
-- lifecycle_status: in-progress
+- active_phase: none
+- lifecycle_status: checked
 - blockers: none
-- open_items: exact version number for the breaking release (v0.24.0 under 0.x semver vs v1.0.0) — owner decides before P3 T4 (CHANGELOG) and P4 T1 (tag)
-- exact_next_action: gate phase p1-golden-fixtures with an independent judge, then work full phase p2-rust-port
+- open_items: exact version number for the breaking release (v0.24.0 under 0.x semver vs v1.0.0) — owner decides before P3 T4 (CHANGELOG) and P4 T1 (tag); four non-blocking requests from the p1 gate are recorded in the Validation entry and belong to p2-rust-port's T4/T5 scope
+- exact_next_action: work full phase p2-rust-port
