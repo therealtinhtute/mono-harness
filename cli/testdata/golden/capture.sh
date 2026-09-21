@@ -318,34 +318,60 @@ run_silent "$SCEN/repo-b" install
 printf '\n<!-- drift -->\n' >> "$SCEN/repo-b/docs/playbooks/work.md"
 run update-check-all "$SCEN/repo-a" update --check --all
 
-# 10. update --all without --check: refused before anything is read.
+# 10. update --check --all over two clean registered repositories: exit 0, two
+#     current lines, and no summary line at all. A port that prints the
+#     summary unconditionally passes every other fixture but not this one.
+begin update-check-all-clean
+new_repo "$SCEN/repo-a"
+new_repo "$SCEN/repo-b"
+run_silent "$SCEN/repo-a" install
+run_silent "$SCEN/repo-b" install
+run update-check-all-clean "$SCEN/repo-a" update --check --all
+
+# 11. update --all without --check: refused before anything is read.
 begin update-all-without-check
 new_repo "$SCEN/repo"
 run update-all-without-check "$SCEN/repo" update --all
 
-# 11. update --check --force: refused before anything is read.
+# 12. update --check --force: refused before anything is read.
 begin update-check-force
 new_repo "$SCEN/repo"
 run update-check-force "$SCEN/repo" update --check --force
 
-# 12. uninstall, clean.
+# 13. uninstall, clean.
 begin uninstall-clean
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
 run uninstall-clean "$SCEN/repo" uninstall
 
-# 13. uninstall with a locally modified managed file: kept, with a warning.
+# 14. uninstall with a locally modified managed file: kept, with a warning.
 begin uninstall-locally-modified
 new_repo "$SCEN/repo"
 run_silent "$SCEN/repo" install
 printf '\n<!-- local edit -->\n' >> "$SCEN/repo/docs/playbooks/work.md"
 run uninstall-locally-modified "$SCEN/repo" uninstall
 
-# 14. --root from outside the repository, given as a relative path.
+# 15. --root on install from outside the repository, given as a relative path.
 begin root-flag-outside-repo
 new_repo "$SCEN/repo"
 mkdir -p "$SCEN/outside"
 run root-flag-outside-repo "$SCEN/outside" install --root ../repo
+
+# 16. --root on update from outside the repository. The flag is registered
+#     separately on each verb, so pinning it on install alone leaves update
+#     and uninstall free to drop it.
+begin update-root-outside-repo
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+mkdir -p "$SCEN/outside"
+run update-root-outside-repo "$SCEN/outside" update --root ../repo
+
+# 17. --root on uninstall from outside the repository.
+begin uninstall-root-outside-repo
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+mkdir -p "$SCEN/outside"
+run uninstall-root-outside-repo "$SCEN/outside" uninstall --root ../repo
 
 # R4 fixture: a repository installed by the Go binary, captured raw. Captured
 # once; every later run re-installs into a scratch repo and requires the
