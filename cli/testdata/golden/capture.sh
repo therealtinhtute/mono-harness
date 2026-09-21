@@ -23,6 +23,15 @@
 # byte-for-byte except for `installed_at`. To re-capture after the embedded
 # doc set changes, delete the directory and run this script again.
 #
+# The fixture carries the .gitignore the installer wrote, which excludes
+# .zharness/ — so the manifest, the ownership ledger and the captured
+# originals are invisible to `git status` until they are force-added:
+#
+#   git add -f cli/testdata/golden/go-installed
+#
+# This script fails if they are ignored, rather than let the R4 fixture
+# silently never reach the commit.
+#
 # Normalization applies to the scenario fixtures only: it replaces the
 # scenario scratch root with <SCRATCH>, any remaining scratch parent with
 # <WORK>, and every `installed_at` value with <TIMESTAMP>. File modes are
@@ -39,6 +48,7 @@ GOLDEN_VERSION=0.0.0-golden
 
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 CLI=$(cd "$HERE/../.." && pwd -P)
+REPO=$(cd "$CLI/.." && pwd -P)
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/zharness-golden-XXXXXX")
 WORK=$(cd "$WORK" && pwd -P)
@@ -350,6 +360,16 @@ if [ -d "$HERE/go-installed" ]; then
 else
   copy_raw "$SCEN/repo" "$HERE/go-installed"
   echo "go-installed/ captured raw (delete it to re-capture)"
+fi
+
+# The fixture's own .gitignore excludes .zharness/, so an un-force-added
+# capture is invisible to `git status` and the R4 manifest would silently
+# never reach the commit. Fail rather than let that happen.
+if git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1 &&
+   git -C "$REPO" check-ignore -q "cli/testdata/golden/go-installed/.zharness/base/manifest.json" 2>/dev/null; then
+  echo "❌ cli/testdata/golden/go-installed/.zharness/ is ignored by the fixture's own .gitignore." >&2
+  echo "   Stage it with: git add -f cli/testdata/golden/go-installed" >&2
+  exit 1
 fi
 
 echo "captured $(find "$HERE" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ') fixture directories"
