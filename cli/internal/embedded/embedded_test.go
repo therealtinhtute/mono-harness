@@ -1,6 +1,9 @@
 package embedded
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -318,5 +321,30 @@ func TestOnePlan_PlaybookContract(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Live instructions must not route agents to the retired .kit/ directory;
+// per-machine scratch lives under .zharness/cache/. docs/ is excluded because
+// it also holds historical records that describe .kit/ accurately.
+func TestNoLegacyKitPaths(t *testing.T) {
+	const repoRoot = "../../.."
+	for _, rel := range []string{"skills", "rules", "scripts", "setup", "site", "README.md", "AGENTS.md"} {
+		err := filepath.WalkDir(filepath.Join(repoRoot, rel), func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return err
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if strings.Contains(string(data), ".kit/") {
+				t.Errorf("%s references retired .kit/; use .zharness/cache/ or docs/", path)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("walk %s: %v", rel, err)
+		}
 	}
 }

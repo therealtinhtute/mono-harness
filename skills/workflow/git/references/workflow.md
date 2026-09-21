@@ -135,7 +135,7 @@ Merge from `origin/{FROM_BRANCH}`, never the local branch — this ensures only 
 ✓ pushed: yes/no
 ```
 
-**For `pr`/`merge`:** save a report to `.kit/cache/reports/git/{YYYYMMDD-HHmm}-{operation}.md` (gitignored local scratch — `git` is a sidecar skill and does not own harness lifecycle artifacts), with frontmatter `title`, `description`, `status: completed`, `created`, `tags: [git, {operation}]`.
+**For `pr`/`merge`:** save a report to `.zharness/cache/reports/git/{YYYYMMDD-HHmm}-{operation}.md` (gitignored local scratch — `git` is a sidecar skill and does not own harness lifecycle artifacts), with frontmatter `title`, `description`, `status: completed`, `created`, `tags: [git, {operation}]`.
 
 ## Error Handling
 

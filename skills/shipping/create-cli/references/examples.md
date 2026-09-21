@@ -15,7 +15,7 @@ tags: [create-cli, examples]
 - User type: ops engineers and CI pipelines
 - Language: Go (single binary, no runtime dependency)
 
-**Spec excerpt (saved to `.kit/planning/cli-orkit-spec.md`):**
+**Spec excerpt (saved to `docs/plans/active/cli-orkit.md`, `## Spec`):**
 ```
 orkit deploy <service> [--env staging|prod] [--dry-run] [--json]
 orkit status <service> [--watch] [--json]

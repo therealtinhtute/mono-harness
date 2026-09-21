@@ -15,7 +15,7 @@ Generate quality dashboard for all skills
 
 Options:
   -h, --help       Show this help message
-  -o, --output     Output file (default: .kit/reports/quality/dashboard.md)
+  -o, --output     Output file (default: .zharness/cache/reports/quality/dashboard.md)
 
 Examples:
   ./generate-dashboard.sh
@@ -242,7 +242,7 @@ function main() {
   done
 
   if [ -z "$output_file" ]; then
-    output_file=".kit/reports/quality/dashboard.md"
+    output_file=".zharness/cache/reports/quality/dashboard.md"
     mkdir -p "$(dirname "$output_file")"
   fi
 

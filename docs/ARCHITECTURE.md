@@ -55,7 +55,7 @@ The binary carries two embedded filesystems (`cli/docs/embedded/`): the managed 
 | `docs/memory/*.md` | memory as files; agents grep directly (`docs/memory/{id}.md`) |
 | `docs/decisions/`, `docs/research/`, `docs/audit/` | authoritative records |
 | `docs/playbooks/`, `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/` instead |
-| `.zharness/` | installer bookkeeping (base manifest + blobs); gitignored |
+| `.zharness/` | installer bookkeeping (base manifest + blobs) and `cache/` per-machine scratch; gitignored |
 
 Task execution status lives only in append-only `## Log`; task definitions carry no status fields. Bookkeeping is hand-appended — the binary writes no plan rows.
 

@@ -166,7 +166,7 @@ Like greenfield Phase 3, but ordered to minimize breakage:
 
 ## Output Format
 
-Save to: `.kit/planning/cli-{name}-spec.md` (spec) and `.kit/planning/cli-{name}-roadmap.md` (roadmap).
+Save to: `docs/plans/active/cli-{name}.md`, one plan with a `## Spec` and a `## Roadmap` section. IF another plan is already active under `docs/plans/active/` → append `## CLI Spec` and `## CLI Roadmap` sections to it instead of creating a new file.
 
 These integrate with `/brainstorm → /to-plan → /work` workflow.
 

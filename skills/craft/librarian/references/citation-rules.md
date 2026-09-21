@@ -14,13 +14,13 @@ result or cached file, don't present it as fact.
 
 **Rule:** Must cite cached file with line range.
 
-**Format:** `.kit/cache/github/owner/repo/path:lineStart-lineEnd`
+**Format:** `.zharness/cache/github/owner/repo/path:lineStart-lineEnd`
 
 **Examples:**
 
 ✅ **Correct:**
 ```
-The `NewCmdRoot` function is defined in `.kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-56`
+The `NewCmdRoot` function is defined in `.zharness/cache/github/cli/cli/pkg/cmd/root/root.go:42-56`
 ```
 
 ❌ **Wrong:**
@@ -45,7 +45,7 @@ textMatches are hints, not evidence.
 
 **Rule:** Cite command output or `owner/repo:path` format.
 
-**Format:** `owner/repo:path` or `.kit/cache/github/owner/repo/path`
+**Format:** `owner/repo:path` or `.zharness/cache/github/owner/repo/path`
 
 **Examples:**
 
@@ -59,7 +59,7 @@ The repo contains these TypeScript files:
 
 ✅ **Correct:**
 ```
-The file exists at `.kit/cache/github/cli/cli/README.md`
+The file exists at `.zharness/cache/github/cli/cli/README.md`
 ```
 
 ❌ **Wrong:**
@@ -99,7 +99,7 @@ This is the only place where NewCmdRoot is defined (overconfident)
 
 ### ✅ Valid Evidence
 
-1. **Cached file content** — you ran Read tool on `.kit/cache/github/owner/repo/path`
+1. **Cached file content** — you ran Read tool on `.zharness/cache/github/owner/repo/path`
 2. **Command output** — you ran `gh api` or `gh search` and saw the result
 3. **Local tool output** — you ran `rg`, `grep`, `find` on cached files
 
@@ -114,7 +114,7 @@ This is the only place where NewCmdRoot is defined (overconfident)
 
 ### Code with Line Range
 ```
-Function definition: `.kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-56`
+Function definition: `.zharness/cache/github/cli/cli/pkg/cmd/root/root.go:42-56`
 
     42  func NewCmdRoot() *cobra.Command {
     43      cmd := &cobra.Command{
@@ -127,9 +127,9 @@ Function definition: `.kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-56`
 ### Multiple Locations
 ```
 Found in 3 files:
-1. `.kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-56` — main definition
-2. `.kit/cache/github/cli/cli/pkg/cmd/root/root_test.go:15-20` — test usage
-3. `.kit/cache/github/cli/cli/cmd/gh/main.go:8` — import statement
+1. `.zharness/cache/github/cli/cli/pkg/cmd/root/root.go:42-56` — main definition
+2. `.zharness/cache/github/cli/cli/pkg/cmd/root/root_test.go:15-20` — test usage
+3. `.zharness/cache/github/cli/cli/cmd/gh/main.go:8` — import statement
 ```
 
 ### Path-Only Citation
@@ -148,7 +148,7 @@ Repository structure (from tree API):
 
 ✅ **Good:**
 ```go
-// .kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-46
+// .zharness/cache/github/cli/cli/pkg/cmd/root/root.go:42-46
 func NewCmdRoot() *cobra.Command {
     cmd := &cobra.Command{
         Use:   "gh",

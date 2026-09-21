@@ -6,7 +6,7 @@ Console output showing created files and next steps.
 
 ## Analysis reports
 
-Save to: `.kit/reports/turbo/{YYYYMMDD}-analysis.md`
+Save to: `docs/audit/{YYYY-MM-DD}-turbo-analysis.md`
 
 Frontmatter:
 ```yaml

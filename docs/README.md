@@ -52,4 +52,4 @@ An existing path under `docs/` that is missing from this table is a defect in th
 | `skills/` | the installable agent skills; each has its own `SKILL.md` |
 | `rules/` | source for the global rules installed into `~/.claude/rules/` |
 | (legacy) a per-machine derived index | removed from the architecture in v0.15 — archive: v0.15 section of CHANGELOG.md |
-| `.kit/` | per-machine scratch — cache, conflicts, logs; fully gitignored |
+| `.zharness/cache/` | per-machine scratch — skill caches and local reports; gitignored with `/.zharness/` |
