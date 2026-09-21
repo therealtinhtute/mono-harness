@@ -1,6 +1,6 @@
 # Output Format for GitHub Research Findings
 
-Structured Markdown format for writing research findings to `.kit/reports/github/{topic}.md`.
+Structured Markdown format for research findings, reported inline or saved to `docs/research/{topic}.md` when a plan cites them.
 
 ## File Structure
 
@@ -93,7 +93,7 @@ I searched the repo and found some files and then cached them and read them.
 **Purpose:** List where things are, with brief context.
 
 **Format:**
-- Cached file: `.kit/cache/github/owner/repo/path:lineStart-lineEnd`
+- Cached file: `.zharness/cache/github/owner/repo/path:lineStart-lineEnd`
 - Uncached path: `owner/repo:path`
 - Include GitHub URL when helpful: `https://github.com/owner/repo/blob/ref/path#L42-L56`
 
@@ -107,10 +107,10 @@ I searched the repo and found some files and then cached them and read them.
 ✅ **Good:**
 ```markdown
 ## Locations
-- `.kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-56` — main definition, returns *cobra.Command
+- `.zharness/cache/github/cli/cli/pkg/cmd/root/root.go:42-56` — main definition, returns *cobra.Command
   - https://github.com/cli/cli/blob/trunk/pkg/cmd/root/root.go#L42-L56
-- `.kit/cache/github/cli/cli/pkg/cmd/root/root_test.go:15-20` — test usage
-- `.kit/cache/github/cli/cli/cmd/gh/main.go:8` — import statement
+- `.zharness/cache/github/cli/cli/pkg/cmd/root/root_test.go:15-20` — test usage
+- `.zharness/cache/github/cli/cli/cmd/gh/main.go:8` — import statement
 ```
 
 ✅ **Good (structure only):**
@@ -144,7 +144,7 @@ I searched the repo and found some files and then cached them and read them.
 ✅ **Good (code evidence):**
 ```markdown
 ## Evidence
-- `.kit/cache/github/cli/cli/pkg/cmd/root/root.go:42-46` — function signature confirms return type
+- `.zharness/cache/github/cli/cli/pkg/cmd/root/root.go:42-46` — function signature confirms return type
 
     42  func NewCmdRoot() *cobra.Command {
     43      cmd := &cobra.Command{
@@ -249,13 +249,13 @@ results). All examples follow the hooks pattern with dependency arrays. Cached 3
 representative examples for detailed citation.
 
 ## Locations
-- `.kit/cache/github/facebook/react/packages/react/src/ReactHooks.js:150-165` — main hook implementation
+- `.zharness/cache/github/facebook/react/packages/react/src/ReactHooks.js:150-165` — main hook implementation
   - https://github.com/facebook/react/blob/main/packages/react/src/ReactHooks.js#L150-L165
-- `.kit/cache/github/facebook/react/packages/react-reconciler/src/ReactFiberHooks.js:1200-1250` — reconciler implementation
-- `.kit/cache/github/facebook/react/packages/react-dom/src/client/ReactDOMComponent.js:89-95` — usage example
+- `.zharness/cache/github/facebook/react/packages/react-reconciler/src/ReactFiberHooks.js:1200-1250` — reconciler implementation
+- `.zharness/cache/github/facebook/react/packages/react-dom/src/client/ReactDOMComponent.js:89-95` — usage example
 
 ## Evidence
-- `.kit/cache/github/facebook/react/packages/react/src/ReactHooks.js:150-155` — hook signature
+- `.zharness/cache/github/facebook/react/packages/react/src/ReactHooks.js:150-155` — hook signature
 
     150  export function useEffect(
     151    create: () => (() => void) | void,

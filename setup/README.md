@@ -29,7 +29,6 @@ After install: edit `~/.claude/settings.json` → set `ANTHROPIC_AUTH_TOKEN`.
 
 | Hook | Event | What it does |
 | :--- | :--- | :--- |
-| `mandatory-instructions.cjs` | UserPromptSubmit | Injects today's date + `.kit/` path convention |
 | `question-validator.cjs` | PostToolUse | Detects prose questions, logs violations |
 | `privacy-guard.cjs` | PreToolUse | Blocks reads of sensitive files (`.env`, keys, etc.) |
 | `scout-block.cjs` | PreToolUse | Blocks heavy directories via `~/.claude/.orkitignore` |

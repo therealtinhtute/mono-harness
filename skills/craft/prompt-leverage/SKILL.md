@@ -107,7 +107,7 @@ If the prompt is already strong, say so and make only minimal edits.
 Return upgraded prompt directly in response.
 
 **Template mode:**
-Save to: `.kit/reports/prompts/{YYYYMMDD}-{slug}.md`
+Save to: `docs/templates/prompt-{slug}.md`
 
 Frontmatter:
 ```yaml

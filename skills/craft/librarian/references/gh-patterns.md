@@ -112,8 +112,8 @@ gh api "repos/$REPO/contents/pkg?ref=$REF" --jq '.[] | [.type, .path] | @tsv'
 
 Download and decode file content:
 ```bash
-mkdir -p ".kit/cache/github/$REPO/$(dirname "$FILE")"
-gh api "repos/$REPO/contents/$FILE?ref=$REF" --jq .content | tr -d '\n' | base64 --decode > ".kit/cache/github/$REPO/$FILE"
+mkdir -p ".zharness/cache/github/$REPO/$(dirname "$FILE")"
+gh api "repos/$REPO/contents/$FILE?ref=$REF" --jq .content | tr -d '\n' | base64 --decode > ".zharness/cache/github/$REPO/$FILE"
 ```
 
 Example:
@@ -122,10 +122,10 @@ REPO='cli/cli'
 REF='trunk'
 FILE='pkg/cmd/root/root.go'
 
-mkdir -p ".kit/cache/github/$REPO/$(dirname "$FILE")"
-gh api "repos/$REPO/contents/$FILE?ref=$REF" --jq .content | tr -d '\n' | base64 --decode > ".kit/cache/github/$REPO/$FILE"
+mkdir -p ".zharness/cache/github/$REPO/$(dirname "$FILE")"
+gh api "repos/$REPO/contents/$FILE?ref=$REF" --jq .content | tr -d '\n' | base64 --decode > ".zharness/cache/github/$REPO/$FILE"
 
-echo "Cached to: .kit/cache/github/$REPO/$FILE"
+echo "Cached to: .zharness/cache/github/$REPO/$FILE"
 ```
 
 ## Pattern 6: Refine Locally After Caching
@@ -133,16 +133,16 @@ echo "Cached to: .kit/cache/github/$REPO/$FILE"
 Use local tools on cached files:
 ```bash
 # Search with ripgrep (line numbers)
-rg -n '<pattern>' ".kit/cache/github/$REPO"
+rg -n '<pattern>' ".zharness/cache/github/$REPO"
 
 # Search with grep (line numbers)
-grep -rn '<pattern>' ".kit/cache/github/$REPO"
+grep -rn '<pattern>' ".zharness/cache/github/$REPO"
 
 # Find files
-find ".kit/cache/github/$REPO" -name "*.ts"
+find ".zharness/cache/github/$REPO" -name "*.ts"
 
 # Count lines
-wc -l ".kit/cache/github/$REPO/$FILE"
+wc -l ".zharness/cache/github/$REPO/$FILE"
 ```
 
 Examples:
@@ -150,13 +150,13 @@ Examples:
 REPO='cli/cli'
 
 # Find all occurrences of "NewCmd"
-rg -n "NewCmd" ".kit/cache/github/$REPO"
+rg -n "NewCmd" ".zharness/cache/github/$REPO"
 
 # Find TypeScript files
-find ".kit/cache/github/$REPO" -name "*.ts"
+find ".zharness/cache/github/$REPO" -name "*.ts"
 
 # Search for imports
-rg -n "^import.*from" ".kit/cache/github/$REPO"
+rg -n "^import.*from" ".zharness/cache/github/$REPO"
 ```
 
 ## Pattern 7: Get Line-Numbered Evidence
@@ -164,13 +164,13 @@ rg -n "^import.*from" ".kit/cache/github/$REPO"
 Extract specific lines with context:
 ```bash
 # Using nl (number lines)
-nl -ba ".kit/cache/github/$REPO/$FILE" | sed -n '42,56p'
+nl -ba ".zharness/cache/github/$REPO/$FILE" | sed -n '42,56p'
 
 # Using sed with line numbers
-sed -n '42,56p' ".kit/cache/github/$REPO/$FILE" | nl -ba
+sed -n '42,56p' ".zharness/cache/github/$REPO/$FILE" | nl -ba
 
 # Using head/tail
-head -n 56 ".kit/cache/github/$REPO/$FILE" | tail -n 15 | nl -ba -v 42
+head -n 56 ".zharness/cache/github/$REPO/$FILE" | tail -n 15 | nl -ba -v 42
 ```
 
 Examples:
@@ -179,10 +179,10 @@ REPO='cli/cli'
 FILE='pkg/cmd/root/root.go'
 
 # Lines 42-56 with line numbers
-nl -ba ".kit/cache/github/$REPO/$FILE" | sed -n '42,56p'
+nl -ba ".zharness/cache/github/$REPO/$FILE" | sed -n '42,56p'
 
 # Context around line 50 (±5 lines)
-nl -ba ".kit/cache/github/$REPO/$FILE" | sed -n '45,55p'
+nl -ba ".zharness/cache/github/$REPO/$FILE" | sed -n '45,55p'
 ```
 
 ## Error Handling

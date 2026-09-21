@@ -78,7 +78,7 @@ See `references/dev-commands.md` for full command reference.
 
 See `references/output-format.md` for full spec.
 - Scaffolding: console output with created files and next steps.
-- Analysis: Save to: `.kit/reports/turbo/{YYYYMMDD}-analysis.md` — Frontmatter: title, description, status, created, tags.
+- Analysis: Save to: `docs/audit/{YYYY-MM-DD}-turbo-analysis.md` — Frontmatter: title, description, status, created, tags.
 </instructions>
 
 <references>

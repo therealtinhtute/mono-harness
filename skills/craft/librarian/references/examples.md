@@ -12,10 +12,10 @@ tags: [librarian, examples, github]
 **Steps:**
 1. `gh search code "RunE" --repo cli/cli --limit 10`
 2. Cache top result: `gh api repos/cli/cli/contents/pkg/cmd/root.go?ref=main`
-3. `rg -n "RunE" .kit/cache/github/cli/cli/pkg/cmd/root.go`
+3. `rg -n "RunE" .zharness/cache/github/cli/cli/pkg/cmd/root.go`
 
 **Findings:**
-- `.kit/cache/github/cli/cli/pkg/cmd/root.go:88` — `RunE` assigned inline as a closure
+- `.zharness/cache/github/cli/cli/pkg/cmd/root.go:88` — `RunE` assigned inline as a closure
 - Pattern: every subcommand sets `RunE`, never `Run`, for consistent error propagation
 
 ---
@@ -49,4 +49,4 @@ tags: [librarian, examples, github]
 - `charmbracelet/bubbletea` uses env only for debug flags, not user config
 - Recommendation: use viper with `AutomaticEnv()` + `BindPFlags()`
 
-**Saved to:** `.kit/reports/github/cli-config-patterns.md`
+**Saved to:** `docs/research/cli-config-patterns.md`
