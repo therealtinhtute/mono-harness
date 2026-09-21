@@ -1,0 +1,322 @@
+#!/usr/bin/env bash
+# capture.sh — freeze the Go zharness behavior as golden fixtures (plan R1).
+#
+#   bash cli/testdata/golden/capture.sh
+#
+# Builds the Go binary at the current HEAD with a pinned version string,
+# replays every scenario against a scratch repository under an isolated
+# HOME/XDG_CONFIG_HOME, normalizes the nondeterministic bytes, and writes one
+# directory per scenario:
+#
+#   <scenario>/cmd          the invocation that was captured
+#   <scenario>/stdout       normalized stdout
+#   <scenario>/stderr       normalized stderr
+#   <scenario>/exit         exit code
+#   <scenario>/tree.sha256  normalized tree, sorted: "<sha256>  <path>" per
+#                           file, "dir  <path>/" per directory
+#
+# It also writes go-installed/, the R4 fixture: a repository installed by the
+# Go binary, normalized, with no .git (the replay test supplies its own).
+#
+# Normalization replaces the scenario scratch root with <SCRATCH>, any
+# remaining scratch parent with <WORK>, and every `installed_at` value with
+# <TIMESTAMP>. File modes are deliberately not recorded: they follow the
+# caller's umask, so they are an environment artifact, not behavior.
+#
+# Determinism is the whole point. Run it twice and `git diff --exit-code --
+# cli/testdata/golden` must be empty. If two captures in a row differ, stop:
+# the fixture is not an oracle.
+
+set -euo pipefail
+
+GOLDEN_VERSION=0.0.0-golden
+
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+CLI=$(cd "$HERE/../.." && pwd -P)
+
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/zharness-golden-XXXXXX")
+WORK=$(cd "$WORK" && pwd -P)
+trap 'rm -rf "$WORK"' EXIT
+
+BIN="$WORK/zharness"
+SCEN=""
+
+# ---------------------------------------------------------------- helpers ---
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | cut -d' ' -f1
+  else
+    shasum -a 256 | cut -d' ' -f1
+  fi
+}
+
+# normalize: stdin -> stdout. Literal replacement, so a scratch path holding a
+# regex metacharacter cannot corrupt the fixture.
+normalize() {
+  awk -v scen="$SCEN" -v work="$WORK" '
+    function lit(s, from, to,   out, i) {
+      if (from == "") return s
+      out = ""
+      while ((i = index(s, from)) > 0) {
+        out = out substr(s, 1, i - 1) to
+        s = substr(s, i + length(from))
+      }
+      return out s
+    }
+    {
+      line = lit($0, scen, "<SCRATCH>")
+      line = lit(line, work, "<WORK>")
+      gsub(/"installed_at":"[^"]*"/, "\"installed_at\":\"<TIMESTAMP>\"", line)
+      print line
+    }
+  '
+}
+
+# tree: every path under <root> except .git, sorted, with normalized content
+# hashes. Directories are listed because an empty directory is observable
+# state (uninstall removes the ones it emptied).
+tree() {  # <root> <out-file>
+  local root="$1" out="$2" p
+  {
+    while IFS= read -r p; do
+      p=${p#./}
+      if [ -d "$root/$p" ]; then
+        printf 'dir  %s/\n' "$p"
+      else
+        printf '%s  %s\n' "$(normalize < "$root/$p" | sha256_of)" "$p"
+      fi
+    done < <(cd "$root" && find . -mindepth 1 -name '.git' -prune -o -print | LC_ALL=C sort)
+  } > "$out"
+}
+
+# copy_normalized: a normalized copy of <src> (minus .git) into <dst>.
+copy_normalized() {  # <src> <dst>
+  local src="$1" dst="$2" p
+  rm -rf "$dst"
+  mkdir -p "$dst"
+  while IFS= read -r p; do
+    p=${p#./}
+    if [ -d "$src/$p" ]; then
+      mkdir -p "$dst/$p"
+    else
+      mkdir -p "$dst/$(dirname "$p")"
+      normalize < "$src/$p" > "$dst/$p"
+    fi
+  done < <(cd "$src" && find . -mindepth 1 -name '.git' -prune -o -print | LC_ALL=C sort)
+}
+
+# Every invocation runs with a cleared environment: the scratch HOME and
+# XDG_CONFIG_HOME are the only state the binary may read or write, and git
+# reads no user or system config.
+zharness() {  # <cwd> <argv...>
+  local cwd="$1"; shift
+  ( cd "$cwd" && env -i \
+      PATH="$PATH" \
+      HOME="$SCEN/home" \
+      XDG_CONFIG_HOME="$SCEN/xdg" \
+      GIT_CONFIG_NOSYSTEM=1 \
+      GIT_CONFIG_GLOBAL=/dev/null \
+      LC_ALL=C \
+      "$BIN" "$@" )
+}
+
+gitq() {  # <cwd> <git-args...>
+  local cwd="$1"; shift
+  ( cd "$cwd" && env -i \
+      PATH="$PATH" \
+      HOME="$SCEN/home" \
+      XDG_CONFIG_HOME="$SCEN/xdg" \
+      GIT_CONFIG_NOSYSTEM=1 \
+      GIT_CONFIG_GLOBAL=/dev/null \
+      LC_ALL=C \
+      git "$@" )
+}
+
+begin() {  # <scenario-name>
+  SCEN="$WORK/$1"
+  rm -rf "$SCEN"
+  mkdir -p "$SCEN/home" "$SCEN/xdg"
+}
+
+new_repo() {  # <path>
+  mkdir -p "$1"
+  gitq "$1" init -q -b main
+}
+
+# The brownfield shape shared by install-brownfield and go-installed: an
+# AGENTS.md and a docs/PROJECT.md that predate zharness. PROJECT.md answers
+# every template heading, so `update --check` on it is clean.
+brownfield() {  # <repo>
+  cat > "$1/AGENTS.md" <<'EOF'
+# Agents
+
+Consumer-authored guidance that predates zharness.
+EOF
+  mkdir -p "$1/docs"
+  cat > "$1/docs/PROJECT.md" <<'EOF'
+# PROJECT — identity
+
+## What is this project?
+- A consumer repository that predates zharness.
+
+## Who is it for?
+- The team that owns it.
+
+## Non-goals
+- Everything zharness does not manage.
+
+## What are the gate commands?
+- run from: repository root
+- tests: `make test`
+- types: n/a
+- lint: `make lint`
+- build: `make build`
+- format: n/a
+
+## Architecture in one breath
+- runtime shape: one service
+- where state lives: git
+- what are the entrypoints: `cmd/serve`
+
+## What are we working on right now?
+- plan: docs/plans/active/consumer.md (active)
+EOF
+}
+
+# run: capture one invocation as a fixture directory.
+run() {  # <scenario-name> <cwd> <argv...>
+  local name="$1" cwd="$2"; shift 2
+  local dir="$HERE/$name" rel rc=0
+  rel=${cwd#"$SCEN"}; rel=${rel#/}; [ -n "$rel" ] || rel=.
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  printf '%s $ zharness %s\n' "$rel" "$*" > "$dir/cmd"
+  zharness "$cwd" "$@" > "$dir/.stdout" 2> "$dir/.stderr" || rc=$?
+  printf '%s\n' "$rc" > "$dir/exit"
+  normalize < "$dir/.stdout" > "$dir/stdout"
+  normalize < "$dir/.stderr" > "$dir/stderr"
+  rm -f "$dir/.stdout" "$dir/.stderr"
+  tree "$SCEN" "$dir/tree.sha256"
+}
+
+# run_silent: setup invocations whose output is not the fixture.
+run_silent() {  # <cwd> <argv...>
+  local cwd="$1"; shift
+  zharness "$cwd" "$@" > /dev/null 2>&1
+}
+
+# --------------------------------------------------------------- fixtures ---
+
+# A stale scenario directory would survive a rename, so the generated set is
+# rebuilt from scratch every run.
+for d in "$HERE"/*/; do
+  [ -d "$d" ] || continue
+  rm -rf "$d"
+done
+
+echo "building Go zharness at HEAD with -X main.version=$GOLDEN_VERSION"
+( cd "$CLI" && CGO_ENABLED=0 go build -ldflags "-X main.version=$GOLDEN_VERSION" -o "$BIN" ./cmd/zharness )
+
+# 1. install, greenfield.
+begin install-greenfield
+new_repo "$SCEN/repo"
+run install-greenfield "$SCEN/repo" install
+
+# 2. install, brownfield: the marked block is appended to a pre-existing
+#    AGENTS.md and docs/PROJECT.md is left alone.
+begin install-brownfield
+new_repo "$SCEN/repo"
+brownfield "$SCEN/repo"
+run install-brownfield "$SCEN/repo" install
+
+# 3. install twice: the second run reports everything current.
+begin install-twice
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+run install-twice "$SCEN/repo" install
+
+# 4. update, clean.
+begin update-clean
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+run update-clean "$SCEN/repo" update
+
+# 5. update with a hand-edited AGENTS block: refuse, print the diff, exit 1.
+begin update-refuse-edited-block
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+awk '{ print } /<!-- ZHARNESS:BEGIN -->/ { print "hand-edited line" }' \
+  "$SCEN/repo/AGENTS.md" > "$SCEN/repo/AGENTS.md.tmp"
+mv "$SCEN/repo/AGENTS.md.tmp" "$SCEN/repo/AGENTS.md"
+run update-refuse-edited-block "$SCEN/repo" update
+
+# 6. update --force: the same hand edit is replaced.
+begin update-force
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+awk '{ print } /<!-- ZHARNESS:BEGIN -->/ { print "hand-edited line" }' \
+  "$SCEN/repo/AGENTS.md" > "$SCEN/repo/AGENTS.md.tmp"
+mv "$SCEN/repo/AGENTS.md.tmp" "$SCEN/repo/AGENTS.md"
+run update-force "$SCEN/repo" update --force
+
+# 7. update --check, clean: exit 0.
+begin update-check-clean
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+run update-check-clean "$SCEN/repo" update --check
+
+# 8. update --check, drifted: exit 1.
+begin update-check-drift
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+printf '\n<!-- drift -->\n' >> "$SCEN/repo/docs/playbooks/work.md"
+run update-check-drift "$SCEN/repo" update --check
+
+# 9. update --check --all over two registered repositories, one clean and one
+#    drifted: the per-root loop, both verdict lines, and the summary.
+begin update-check-all
+new_repo "$SCEN/repo-a"
+new_repo "$SCEN/repo-b"
+run_silent "$SCEN/repo-a" install
+run_silent "$SCEN/repo-b" install
+printf '\n<!-- drift -->\n' >> "$SCEN/repo-b/docs/playbooks/work.md"
+run update-check-all "$SCEN/repo-a" update --check --all
+
+# 10. update --all without --check: refused before anything is read.
+begin update-all-without-check
+new_repo "$SCEN/repo"
+run update-all-without-check "$SCEN/repo" update --all
+
+# 11. update --check --force: refused before anything is read.
+begin update-check-force
+new_repo "$SCEN/repo"
+run update-check-force "$SCEN/repo" update --check --force
+
+# 12. uninstall, clean.
+begin uninstall-clean
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+run uninstall-clean "$SCEN/repo" uninstall
+
+# 13. uninstall with a locally modified managed file: kept, with a warning.
+begin uninstall-locally-modified
+new_repo "$SCEN/repo"
+run_silent "$SCEN/repo" install
+printf '\n<!-- local edit -->\n' >> "$SCEN/repo/docs/playbooks/work.md"
+run uninstall-locally-modified "$SCEN/repo" uninstall
+
+# 14. --root from outside the repository, given as a relative path.
+begin root-flag-outside-repo
+new_repo "$SCEN/repo"
+mkdir -p "$SCEN/outside"
+run root-flag-outside-repo "$SCEN/outside" install --root ../repo
+
+# R4 fixture: a repository installed by the Go binary, normalized, no .git.
+begin go-installed
+new_repo "$SCEN/repo"
+brownfield "$SCEN/repo"
+run_silent "$SCEN/repo" install
+copy_normalized "$SCEN/repo" "$HERE/go-installed"
+
+echo "captured $(find "$HERE" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ') fixture directories"

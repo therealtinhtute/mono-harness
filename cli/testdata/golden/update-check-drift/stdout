@@ -1,0 +1,3 @@
+drift    <SCRATCH>/repo
+  stale    docs/playbooks/work.md
+1 repository(ies) drifted — run `zharness update` in each.
