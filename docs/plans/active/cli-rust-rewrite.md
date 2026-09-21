@@ -44,7 +44,7 @@ lane: high-risk
     - T2 Snapshot a repo installed by the Go binary (tree + raw `.zharness/base/manifest.json`) into `cli/testdata/golden/go-installed/` for R4. — output: snapshot dir — check: `test -s cli/testdata/golden/go-installed/.zharness/base/manifest.json` — stop_if: manifest missing
   - phase check: `bash cli/testdata/golden/capture.sh && git diff --exit-code -- cli/testdata/golden && ls cli/testdata/golden | wc -l` (≥ 14 entries) `&& cd cli && go test ./...`
 - phase_slug: `p2-rust-port`
-  status: planned
+  status: in-progress
   - goal: R2, R3, R4 | depends_on: p1-golden-fixtures
   - surfaces: `cli/Cargo.toml`, `cli/Cargo.lock`, `cli/src/**`, `cli/tests/**`, `cli/.gitignore` (`target/`) | avoided: Go sources (they must still build and pass), `.github/`, `docs/`, `scripts/`
   - escalate_when: a golden cannot be matched without changing written bytes or exit codes; the size after profile tuning is > 1.85 MB; or porting needs a dependency beyond `clap`, `include_dir` (or `rust-embed`), `serde`/`serde_json`, `sha2`, and dev-deps `tempfile`.
@@ -100,6 +100,12 @@ lane: high-risk
 - 2026-09-21T15:01:09Z — p1-golden-fixtures — decision — the gate's `rollback_point` second clause is also wrong, and the previous correction did not catch it: `git checkout 0cc8fa9 -- cli/testdata/golden` cannot restore the pre-phase tree, because `cli/testdata/golden` does not exist at `0cc8fa9` (`git ls-tree 0cc8fa9 -- cli/testdata/golden` returns nothing), and `git checkout <commit> -- <path>` errors on a pathspec absent from that commit rather than deleting the added files. The phase is 103 pure additions and zero modifications (`git diff --name-status 0cc8fa9..HEAD` is all `A`), so the correct rollback is `git rm -r cli/testdata/golden docs/plans/active/cli-rust-rewrite.md`, or `git reset --hard 0cc8fa9` when nothing else is in flight. The committed Validation entry stays append-only; this line is the correction of record.
 - 2026-09-21T15:01:09Z — p1-golden-fixtures — decision — reverting the `trash` change from the previous hardening commit: the generator's cleanup loop removes only directories it regenerates in the same run, so trashing them would fill the Trash with 17 entries per run while adding no recovery git does not already provide, and it would make the script depend on a macOS-only binary. The plan's "delete with `trash`" constraint governs deliberate deletions of repository content — such as re-capturing `go-installed/` by hand — not a generator rebuilding its own output; the script now says so where the loop lives.
 
+- 2026-09-21T15:12:27Z — p2-rust-port — start — phase opened; wave 1 scaffolds the crate (T1) and ports the projection-parity test (T2), wave 2 ports `internal/installer` module by module (T3), wave 3 writes the golden replay test (T4), the R4 compat test (T5) and measures the release size (T6). The Go sources stay buildable throughout, so the phase check runs both suites.
+
+- 2026-09-21T15:25:41Z — p2-rust-port/T1 — done — `cd cli && cargo build --release && ./target/release/zharness --help` exits 0 and renders the three verbs with the same flags as `manage.go`. Exit codes are parity, not text, so they were checked against the Go binary directly: bare invocation, unknown subcommand, `-v`, `--version`, `install --bogus` and `--help` all match (0, 1, 0, 0, 1, 0). Clap's defaults would have exited 2 on usage errors and 0 on a bare invocation with no help, so `run()` maps clap error kinds explicitly and `-v` is registered by hand. `--version` prints `zharness version <v>`, matching cobra. Changed: cli/Cargo.toml, cli/.gitignore, cli/src/{main,lib,cli,embedded}.rs (new).
+- 2026-09-21T15:25:41Z — p2-rust-port/T2 — done — `cd cli && cargo test --test projection_parity` passes both tests. The embedded set mirrors `go:embed`'s file list exactly: `AGENTS.md` and `WORKFLOW.md` via `include_bytes!`, `playbooks/` and `templates/` via `include_dir!` on those subdirectories only — embedding `docs/embedded` whole would have shipped `embed.go` and `parity_test.go` in the binary and put them in the manifest. R3's acceptance was verified by mutation: appending a line to `docs/playbooks/work.md` fails `projection_parity`, and reverting it passes. Changed: cli/tests/projection_parity.rs (new).
+- 2026-09-21T15:25:41Z — p2-rust-port — decision — T1 and T3 are being implemented in one pass rather than strictly wave by wave: a CLI whose verb bodies dispatch to functions that do not exist yet is a stub, and the delivery contract forbids shipping stubs. The crate, the CLI surface and the installer modules land together; each task's own check is still run in plan order, and the Log records them separately.
+
 ## Validation
 - 2026-09-21T14:48:23Z — phase `p1-golden-fixtures` — verdict: APPROVE_WITH_REQUESTS — mode: gate
   - `bash cli/testdata/golden/capture.sh` — exit 0; "go-installed/ verified against a fresh Go install"; "captured 18 fixture directories" (17 scenarios + go-installed/).
@@ -140,8 +146,8 @@ lane: high-risk
   - judge_model: devin/deepseek-v4-1-flash
 
 ## Current State and Next Action
-- active_phase: none
-- lifecycle_status: checked
+- active_phase: p2-rust-port
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: exact version number for the breaking release (v0.24.0 under 0.x semver vs v1.0.0) — owner decides before P3 T4 (CHANGELOG) and P4 T1 (tag); five non-blocking requests from the p1 gates are recorded in the Validation entries and belong to p2-rust-port's T4/T5 scope
-- exact_next_action: work full phase p2-rust-port
+- exact_next_action: work full phase p2-rust-port, wave 1 (T1 scaffold the crate, T2 embed the doc set and port the projection-parity test)
