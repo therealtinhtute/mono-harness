@@ -67,18 +67,6 @@ sha256_of() {
   fi
 }
 
-# discard: remove repository paths. `trash` where available — the repository's
-# convention for this initiative — and `rm -rf` otherwise so the script still
-# runs on Linux. Scratch paths under $WORK use `rm -rf` directly: they are
-# outside the repository and trashing them would only litter the Trash.
-discard() {  # <path>...
-  if command -v trash >/dev/null 2>&1; then
-    trash "$@"
-  else
-    rm -rf "$@"
-  fi
-}
-
 # normalize: stdin -> stdout. Literal replacement, so a scratch path holding a
 # regex metacharacter cannot corrupt the fixture.
 normalize() {
@@ -121,7 +109,7 @@ tree() {  # <root> <out-file>
 # copy_raw: a byte-for-byte copy of <src> (minus .git) into <dst>.
 copy_raw() {  # <src> <dst>
   local src="$1" dst="$2" p
-  discard "$dst"
+  rm -rf "$dst"
   mkdir -p "$dst"
   while IFS= read -r p; do
     p=${p#./}
@@ -277,10 +265,16 @@ echo "building Go zharness at HEAD with -X main.version=$GOLDEN_VERSION"
 # A stale scenario directory would survive a rename, so the generated set is
 # rebuilt from scratch every run. go-installed/ is not generated: it is a raw
 # one-time capture, validated below rather than rewritten.
+#
+# `rm -rf` rather than `trash`: these are the script's own output, regenerated
+# in this same run, and already tracked in git — trashing them would fill the
+# Trash with 17 directories per run while adding no recovery git does not
+# already provide. The plan's "delete with trash" constraint governs deliberate
+# deletions of repository content, such as re-capturing go-installed/ by hand.
 for d in "$HERE"/*/; do
   [ -d "$d" ] || continue
   [ "$d" = "$HERE/go-installed/" ] && continue
-  discard "$d"
+  rm -rf "$d"
 done
 
 # 1. install, greenfield.
