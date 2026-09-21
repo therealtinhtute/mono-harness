@@ -35,7 +35,7 @@ lane: high-risk
   - recovery: before P3 merges, trash `Cargo.toml`/`src/`/`tests/`, and Go stays authoritative. After P3, `git revert` the cutover merge restores Go, goreleaser, and CI in one step. Consumer manifests stay readable both ways (R4 keeps the format).
 - constraints: preserve the `.zharness/base/manifest.json` schema (`zharness_version`, `installed_at`, `files[].path`, `files[].sha256`) and the repo registry at `$XDG_CONFIG_HOME/zharness/repos` (fallback `~/.config/zharness/repos`). Touch nothing under `scripts/` except as R7 requires (NG2). Delete with `trash`.
 - phase_slug: `p1-golden-fixtures`
-  status: checked
+  status: in-progress
   - goal: R1 | depends_on: none
   - surfaces: `cli/testdata/golden/` (new: `capture.sh`, one dir per scenario with `stdout`, `stderr`, `exit`, `tree.sha256`, plus a `go-installed/` repo snapshot for R4) | avoided: all Go sources, CI, docs
   - escalate_when: a Go verb's behavior depends on something the capture cannot isolate (network, real `$HOME` state), or reveals a Go bug the owner must choose to keep or fix in Rust.
@@ -95,6 +95,8 @@ lane: high-risk
 
 - 2026-09-21T14:54:29Z — p1-golden-fixtures — done — four generator defects found by review are fixed in capture.sh, with the fixture data unchanged (verified: `git diff --exit-code -- cli/testdata/golden ':!cli/testdata/golden/capture.sh'` is empty). (1) The Go build now runs before the cleanup loop, so a build failure can no longer leave every tracked fixture deleted from the worktree. (2) `run` takes an expected exit code and aborts with the scenario name, both codes and the captured output when it differs — previously a rerun silently blessed an unexpected success or failure by overwriting `exit`; verified by flipping `update-check-drift` to 0 and observing `❌ update-check-drift: expected exit 0, got 1`. (3) `verify_go_installed` now rejects a manifest whose `installed_at` is not RFC3339, because `tree` normalizes that field on both sides and would otherwise have accepted the tokenized capture this fixture was fixed for; verified by tokenizing the manifest and observing the rejection. (4) Repository paths are removed with `trash` where available (the plan's constraint) and `rm -rf` otherwise, so the script still runs on Linux; scratch paths under `$WORK` keep `rm -rf` since they are outside the repository.
 
+- 2026-09-21T14:58:38Z — p1-golden-fixtures — start — phase reopened for an amendment gate. The hardening commit `c272d6a` changed the phase's artifact after the phase had been set `checked`, which invalidates that gate: `check.md` requires the phase and Current State to read `in-progress` before any check runs, so a verdict taken against a `checked` phase would have skipped its own preflight. Status is back to `in-progress` in both places and the phase is re-gated from scratch.
+
 ## Validation
 - 2026-09-21T14:48:23Z — phase `p1-golden-fixtures` — verdict: APPROVE_WITH_REQUESTS — mode: gate
   - `bash cli/testdata/golden/capture.sh` — exit 0; "go-installed/ verified against a fresh Go install"; "captured 18 fixture directories" (17 scenarios + go-installed/).
@@ -115,8 +117,8 @@ lane: high-risk
   - judge_model: devin/deepseek-v4-1-flash
 
 ## Current State and Next Action
-- active_phase: none
-- lifecycle_status: checked
+- active_phase: p1-golden-fixtures
+- lifecycle_status: in-progress
 - blockers: none
-- open_items: exact version number for the breaking release (v0.24.0 under 0.x semver vs v1.0.0) — owner decides before P3 T4 (CHANGELOG) and P4 T1 (tag); four non-blocking requests from the p1 gate are recorded in the Validation entry and belong to p2-rust-port's T4/T5 scope
-- exact_next_action: work full phase p2-rust-port
+- open_items: exact version number for the breaking release (v0.24.0 under 0.x semver vs v1.0.0) — owner decides before P3 T4 (CHANGELOG) and P4 T1 (tag); four non-blocking requests from the first p1 gate are recorded in its Validation entry and belong to p2-rust-port's T4/T5 scope
+- exact_next_action: re-gate phase p1-golden-fixtures with an independent judge after the generator-hardening amendment, then work full phase p2-rust-port
