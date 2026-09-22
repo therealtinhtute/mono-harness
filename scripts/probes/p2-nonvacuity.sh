@@ -52,14 +52,27 @@ print('fix hunks reverted (tests kept)')
 PYEOF
 
 echo "--- pre-fix test run (expect 3 FAILED) ---"
-(cd cli && cargo test --lib refuses_symlink 2>&1 | grep -E '^test |^test result')
+pre=$(cd cli && cargo test --lib refuses_symlink 2>&1 | grep -E '^test |^test result')
+printf '%s\n' "$pre"
 restore
 trap - EXIT
 
 echo "--- restore check ---"
 after_mod=$(sha256sum "$MOD" | cut -d' ' -f1)
 after_uni=$(sha256sum "$UNI" | cut -d' ' -f1)
-[ "$before_mod" = "$after_mod" ] && echo "mod.rs restored byte-identically" || echo "mod.rs NOT RESTORED"
-[ "$before_uni" = "$after_uni" ] && echo "uninstall.rs restored byte-identically" || echo "uninstall.rs NOT RESTORED"
 echo "--- post-restore test run (expect 3 ok) ---"
-(cd cli && cargo test --lib refuses_symlink 2>&1 | grep -E '^test result')
+post=$(cd cli && cargo test --lib refuses_symlink 2>&1 | grep -E '^test result')
+printf '%s\n' "$post"
+
+# Fail closed: the proof is only meaningful if all three clauses hold.
+fail=0
+printf '%s\n' "$pre" | grep -q 'test result: FAILED\. 0 passed; 3 failed' ||
+	{ echo "NONVACUITY_FAIL: the pre-fix run did not fail all three"; fail=1; }
+[ "$before_mod" = "$after_mod" ] ||
+	{ echo "NONVACUITY_FAIL: mod.rs not restored byte-identically"; fail=1; }
+[ "$before_uni" = "$after_uni" ] ||
+	{ echo "NONVACUITY_FAIL: uninstall.rs not restored byte-identically"; fail=1; }
+printf '%s\n' "$post" | grep -q 'test result: ok\. 3 passed' ||
+	{ echo "NONVACUITY_FAIL: the post-restore run did not pass all three"; fail=1; }
+echo "NONVACUITY_FAIL=$fail"
+exit $fail

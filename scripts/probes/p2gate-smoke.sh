@@ -50,3 +50,4 @@ chk "C managed path holds the restored original" "# my workflow, written before 
 
 echo "--- scratch: $S ---"
 echo "SMOKE_FAIL=$fail"
+exit $fail
