@@ -35,6 +35,12 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 #   select or shadow the entry's own; and an entry STARTS at any unindented
 #   `- ` line, the leading timestamp being optional, so undated entries are
 #   visible to both guards.
+#   FLOOR: entries already committed at ZHARNESS_GUARD_HISTORICAL_FLOOR are
+#       never re-executed. A push whose before-SHA predates the v0.24 cutover
+#       makes the pre-cutover entries look new, and their proofs cannot run at
+#       this HEAD (the Go tree they build is deleted, and their phase ranges no
+#       longer match). The floor is a constant, not a marker an agent writes:
+#       an entry that did not exist at that commit is never exempt.
 #   PHASE-DONE: a plan staged/pushed under docs/plans/completed/ whose Current
 #   State declares lifecycle_status: completed must show every phase
 #   status: done in ## Phases and Verification. Found 2026-09-07: a handoff
@@ -114,6 +120,36 @@ zharness_run_proof() {                     # <command>
   fi
 }
 
+zharness_guard_historical_floor_hashes() {  # <root> <path> <out-file> <floor>
+  # Append the sha256 of every Validation entry present in <path> at <floor>.
+  # A floor that does not resolve, or a path absent there, appends nothing and
+  # the guard behaves exactly as it did before this exemption existed. The
+  # floor is passed at the call site, never read from the environment: an
+  # ambient variable would be a bypass an agent could export.
+  local root="$1" path="$2" out="$3" floor="$4"
+  local blob scratch efile
+  git -C "$root" rev-parse --verify --quiet "${floor}^{commit}" >/dev/null 2>&1 || return 0
+  scratch=$(mktemp -d)
+  blob="$scratch/floor.md"
+  if ! git -C "$root" show "${floor}:${path}" > "$blob" 2>/dev/null; then
+    case "$path" in
+      docs/plans/completed/*)
+        git -C "$root" show "${floor}:docs/plans/active/${path##*/}" > "$blob" 2>/dev/null || : > "$blob"
+        ;;
+      *) : > "$blob" ;;
+    esac
+  fi
+  if [ -s "$blob" ]; then
+    mkdir -p "$scratch/e"
+    zharness_dump_entries "$blob" "$scratch/e"
+    for efile in "$scratch"/e/e*.txt; do
+      [ -f "$efile" ] || continue
+      sha256sum "$efile" | cut -d' ' -f1 >> "$out"
+    done
+  fi
+  rm -rf "$scratch"
+}
+
 zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
   local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out body verdict cmds scratch h efile header line
   # Old-side entry hashes live in a file, not an associative array: `local -A`
@@ -135,6 +171,11 @@ zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
     [ -f "$efile" ] || continue
     sha256sum "$efile" | cut -d' ' -f1 >> "$oldhashes"
   done
+  # FLOOR: entries already committed at the historical floor are exempt. The
+  # floor is the PR #97 merge, the last commit at which every pre-cutover
+  # Validation entry was already committed.
+  zharness_guard_historical_floor_hashes \
+    "$(git rev-parse --show-toplevel 2>/dev/null || echo .)" "$path" "$oldhashes" 4cd86cf
 
   for efile in "$scratch"/n/e*.txt; do
     [ -f "$efile" ] || continue

@@ -653,6 +653,58 @@ else
 fi
 rm -rf "$hk"
 
+# FLOOR: entries already committed at the historical floor are exempt, so the
+# pre-cutover range whose proofs cannot run at this HEAD is accepted; an
+# unresolvable floor appends nothing and changes no behavior.
+ftmp=$(mktemp -d)
+mkdir -p "$ftmp/repo/docs/plans/active"
+(
+	cd "$ftmp/repo" || exit 1
+	git init -q .
+	git config user.email t@example.com
+	git config user.name t
+	cat > docs/plans/active/p.md <<'EOF'
+---
+status: active
+lane: normal
+---
+## Validation
+- `2026-01-01T00:00:00Z` — phase `p1` — verdict: APPROVED — mode: gate
+  - `false`
+EOF
+	git add -A && git commit -qm floor
+	git rev-parse HEAD > "$ftmp/floor"
+	cat >> docs/plans/active/p.md <<'EOF'
+- `2026-01-02T00:00:00Z` — phase `p2` — verdict: APPROVED — mode: gate
+  - `false`
+EOF
+	git add -A && git commit -qm after
+)
+: > "$ftmp/hashes"
+zharness_guard_historical_floor_hashes "$ftmp/repo" docs/plans/active/p.md "$ftmp/hashes" "$(cat "$ftmp/floor")"
+[ "$(wc -l < "$ftmp/hashes")" = 1 ] &&
+	ok "FLOOR emits the floor commit's entry hashes" ||
+	bad "FLOOR expected 1 hash, got $(wc -l < "$ftmp/hashes")"
+
+: > "$ftmp/hashes2"
+zharness_guard_historical_floor_hashes "$ftmp/repo" docs/plans/active/p.md "$ftmp/hashes2" deadbeef
+[ ! -s "$ftmp/hashes2" ] &&
+	ok "FLOOR unresolvable floor appends nothing" ||
+	bad "FLOOR unresolvable floor appended $(wc -l < "$ftmp/hashes2") hash(es)"
+
+if git rev-parse --verify --quiet fe814b4a^{commit} >/dev/null 2>&1 &&
+	git rev-parse --verify --quiet 4cd86cf^{commit} >/dev/null 2>&1; then
+	ftmp2=$(mktemp -d)
+	if zhuards_guard_plans "docs/plans/active/cli-rust-rewrite.md" fe814b4a 4cd86cf "$ftmp2" >/dev/null 2>&1; then
+		ok "FLOOR the pre-cutover range is exempt"
+	else
+		bad "FLOOR the pre-cutover range is still rejected"
+	fi
+else
+	echo "  skip - FLOOR range fe814b4a..4cd86cf not in this checkout"
+fi
+rm -rf "$ftmp" "$ftmp2"
+
 rm -rf "$tmp" "$GUARD"
 echo
 echo "guards: $pass passed, $fail failed"
