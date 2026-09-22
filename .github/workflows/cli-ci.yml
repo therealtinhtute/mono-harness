@@ -133,7 +133,7 @@ jobs:
         run: |
           source /tmp/guard.sh
           event=push
-          [ "${{ github.event_name }}" = "pull_request" ] && event=pr
+          [ "${{ github.event_name }}" = "pull_request" ] && event="pr"
           revspec=$(zharness_guard_revspec "$event") || exit 1
           gbase=$(printf '%s' "$revspec" | cut -f1)
           ghead=$(printf '%s' "$revspec" | cut -f2)

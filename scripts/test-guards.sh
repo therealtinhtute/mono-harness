@@ -682,7 +682,7 @@ EOF
 )
 : > "$ftmp/hashes"
 zharness_guard_historical_floor_hashes "$ftmp/repo" docs/plans/active/p.md "$ftmp/hashes" "$(cat "$ftmp/floor")"
-[ "$(wc -l < "$ftmp/hashes")" = 1 ] &&
+[ "$(wc -l < "$ftmp/hashes" | tr -d " ")" = 1 ] &&
 	ok "FLOOR emits the floor commit's entry hashes" ||
 	bad "FLOOR expected 1 hash, got $(wc -l < "$ftmp/hashes")"
 
