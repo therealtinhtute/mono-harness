@@ -38,7 +38,7 @@ Find this repository's existing validation owner. Typical owners here:
 
 - `bash scripts/test-guards.sh` and `scripts/install-git-hooks.sh` (ZGUARD-CORE)
 - `bash scripts/verify-doc-links.sh`
-- `cd cli && go test ./...`
+- `cd cli && cargo test`
 
 Implement the smallest deterministic check at the lowest layer that can inspect
 the whole accepted scope. Do not add a `zharness` subcommand, a new linter, or a

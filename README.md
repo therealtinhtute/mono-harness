@@ -185,7 +185,7 @@ remain. Pin `v0.14.x` if you still need that binary.
 ## Development
 
 ```bash
-cd cli && CGO_ENABLED=0 go build ./... && go vet ./... && go test ./...
+cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 bash scripts/verify-doc-links.sh
 bash scripts/test-guards.sh
 ```

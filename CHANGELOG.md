@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.24.0] — 2026-09-22
+
+### Changed
+
+- The CLI is rewritten from Go to Rust. The crate lives in `cli/`; the Go
+  sources, `go.mod`, `go.sum`, and `.goreleaser.yaml` are gone. The three
+  verbs, their flags, their exit codes, the bytes they write, and the
+  `.zharness/base/manifest.json` schema are unchanged — a manifest written by
+  Go v0.23.1 is read, updated, and uninstalled without a forced reinstall.
+  **Migration:** install the new binary the same way; nothing in a consumer
+  repository changes. Building from source is now `cd cli && cargo build
+  --release` instead of `go build ./cmd/zharness`.
+- Help, usage, and error text now comes from clap, not cobra: `Available
+  Commands:` and `Flags:` render as `Commands:` and `Options:`, and clap adds
+  its own `-h, --help  Print help` line. Exit codes are unchanged — 0 for
+  help and for a bare invocation, 1 for a usage error, not clap's default 2.
+  **Migration:** anything parsing help text must be updated; anything
+  checking exit codes needs no change.
+- Releases publish under the `cli/vX.Y.Z` tag itself, named `zharness X.Y.Z`,
+  instead of goreleaser's bare `vX.Y.Z` tag. The four archives keep their
+  `zharness_{os}_{arch}.tar.gz` names and `checksums.txt` is still written.
+  **Migration:** `scripts/install-zharness.sh` already resolves the latest
+  release by name, so it needs no change; a script that downloads by bare tag
+  must switch to the `cli/v...` tag.
+- The size target is enforced in CI: the `size-gate` job fails if the
+  linux/amd64 stripped binary exceeds 1,850,000 bytes. The local release
+  build is 732,648 bytes (823,888 for musl), against the Go v0.23.1 baseline
+  of 3,715,506.
+
+### Removed
+
+- `cli/cmd/`, `cli/internal/`, `cli/go.mod`, `cli/go.sum`, and
+  `cli/.goreleaser.yaml`. **Migration:** none for consumers; contributors
+  build with cargo.
+
 ## [v0.23.1] — 2026-09-21
 
 ### Changed

@@ -3,9 +3,9 @@
 #
 # Usage: install-zharness.sh [tag]
 #   tag defaults to the latest zharness release. Releases are triggered by
-#   pushing a "cli/vX.Y.Z" tag, but goreleaser requires its current-tag to
-#   parse as semver, so the published release itself is always tagged with
-#   the bare version (e.g. "v0.1.0"), not the "cli/v..." trigger tag.
+#   pushing a "cli/vX.Y.Z" tag, and the release is published under that same
+#   tag with the name "zharness X.Y.Z" — the name is what the default lookup
+#   below matches on, so the tag prefix stays free to change.
 #
 # Requires: gh (authenticated against this repo), tar.
 set -euo pipefail

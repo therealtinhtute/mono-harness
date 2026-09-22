@@ -1,14 +1,28 @@
-# zharness contract — v0.16
+# zharness contract — v0.24
 
 ## What the binary is
 
 `zharness` is an installer/updater binary. v0.15 deleted the lifecycle
-command surface and the derived-database layer from source. v0.16 does not
-change that surface. The binary registers exactly three verbs — `install`,
-`update`, and `uninstall` — as listed below and in `cli/internal/interfaces/root.go`.
+command surface and the derived-database layer from source. v0.24 rewrites
+the implementation from Go to Rust without changing that surface. The binary
+registers exactly three verbs — `install`, `update`, and `uninstall` — as
+listed below and in `cli/src/cli.rs`.
 
 The command list in this contract therefore mirrors exactly what
-`cli/internal/interfaces/root.go` registers, and vice versa.
+`cli/src/cli.rs` registers, and vice versa.
+
+## How it is built
+
+The crate lives in `cli/` (`Cargo.toml`, `src/`, `tests/`). The managed doc
+set is embedded at compile time from `cli/docs/embedded/`: `AGENTS.md` and
+`WORKFLOW.md` through `include_bytes!`, `playbooks/` and `templates/`
+through `include_dir!`. `cli/tests/projection_parity.rs` is what keeps the
+embedded playbooks byte-identical to their projection under `docs/`.
+
+The version string is compile-time: `cli/src/cli.rs` reads `ZHARNESS_VERSION`
+through `option_env!` and falls back to `CARGO_PKG_VERSION`. The release
+workflow sets it from the `cli/v...` tag — the same guarantee the Go build
+got from `-X main.version` at link time, by a different mechanism.
 
 ## Command surface (unchanged since v0.15)
 
@@ -76,6 +90,14 @@ and where consumers should pin: see the v0.15 section of the root
 `CHANGELOG.md`, the archive of record for this removal.
 
 ## Breaking change
+
+v0.24 is a breaking release for the CLI's implementation and release
+mechanics: help, usage and error text differs from cobra's, and releases
+publish under the `cli/v...` tag instead of the bare version. The three
+verbs, their flags, their exit codes, the bytes they write and the
+`.zharness/base/manifest.json` schema are unchanged — a manifest written by
+Go v0.23.1 is read, updated and uninstalled by the Rust binary without a
+forced reinstall. See the v0.24 section of the root `CHANGELOG.md`.
 
 v0.15 is a breaking release. Consumers should pin the last 0.14.x release to
 keep the previous lifecycle binary working; see the v0.15 section of the root

@@ -32,10 +32,10 @@ This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh
 │       ├── librarian/
 │       ├── create-skill/
 │       └── prompt-leverage/
-├── cli/                    # zharness Go binary — install/update/uninstall only
-│   ├── cmd/zharness/           # main package (cobra)
-│   ├── internal/               # embedded/, installer/, interfaces/
-│   └── docs/embedded/          # go:embed source for playbooks/templates
+├── cli/                    # zharness Rust crate — install/update/uninstall only
+│   ├── src/                    # cli.rs (clap surface), embedded.rs, installer/
+│   ├── tests/                  # golden replay, projection parity, Go-manifest compat
+│   └── docs/embedded/          # include_bytes!/include_dir! source for playbooks/templates
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
 │   ├── ask-user-question.md   # AskUserQuestion enforcement
 │   ├── english.md             # English coaching
@@ -80,8 +80,11 @@ ladder in `docs/patterns/encoding-invariants.md` — declare the level, do not
 assert enforcement the repository does not have.
 
 ```bash
-# [CI] Go CLI: build, vet, test — .github/workflows/cli-ci.yml, job `build-test`
-cd cli && CGO_ENABLED=0 go build ./... && go vet ./... && go test ./...
+# [CI] Rust CLI: format, lint, test — .github/workflows/cli-ci.yml, job `build-test`
+cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
+
+# [CI] Rust CLI size target — .github/workflows/cli-ci.yml, job `size-gate`
+cd cli && cargo build --release --target x86_64-unknown-linux-musl && test "$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)" -le 1850000
 
 # [CI] Guard fixture tests for the pre-commit hook's ZGUARD-CORE block
 # .github/workflows/cli-ci.yml, job `hook-guard`
@@ -96,7 +99,7 @@ bash scripts/verify-doc-links.sh
 `scripts/validate-skill.sh` is `Optional hook`: it runs on changed skills from
 the pre-commit hook only, which requires `bash scripts/install-git-hooks.sh --force`.
 
-Run a single Go test: `cd cli && go test ./internal/installer/... -run TestName`.
+Run a single Rust test: `cd cli && cargo test --lib installer::registry::tests::registry_update_registers`.
 
 ## Skill Pipeline
 
@@ -114,7 +117,7 @@ brainstorm → to-plan → work → check → git → handoff  (new work)
 
 `interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `to-plan`, or between `to-plan` and `work`.
 
-State underneath this pipeline is committed markdown: the plan documents under `docs/plans/active/{slug}.md` (moved to `docs/plans/completed/` on closure) are the record, and fail-closed pre-commit guards in `scripts/install-git-hooks.sh` enforce proof re-execution, an independent judge on high-risk and on `full` checks, and at most one active plan. There is no database — the SQLite store and the whole lifecycle command surface were deleted in v0.15 (see `docs/ARCHITECTURE.md`). The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines) that route straight to `docs/playbooks/<stage>.md`; the operating logic lives there, not in the skill files, so any agent that can read a file and run git can execute the same lifecycle with no binary installed. `zharness` itself is now three verbs — `install` / `update` / `uninstall` — which scaffold that managed doc set, fresh-overwriting playbooks/WORKFLOW.md on update, replacing the hash-guarded `AGENTS.md` block, and writing `docs/PROJECT.md` only when absent (ADR 0011). See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for the historical 0.14.x adoption path. Editing a playbook: change `cli/docs/embedded/playbooks/<stage>.md`, then copy the same bytes to `docs/playbooks/<stage>.md` — `cd cli && go test ./...` fails (`TestProjectionParity`) if the two drift.
+State underneath this pipeline is committed markdown: the plan documents under `docs/plans/active/{slug}.md` (moved to `docs/plans/completed/` on closure) are the record, and fail-closed pre-commit guards in `scripts/install-git-hooks.sh` enforce proof re-execution, an independent judge on high-risk and on `full` checks, and at most one active plan. There is no database — the SQLite store and the whole lifecycle command surface were deleted in v0.15 (see `docs/ARCHITECTURE.md`). The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines) that route straight to `docs/playbooks/<stage>.md`; the operating logic lives there, not in the skill files, so any agent that can read a file and run git can execute the same lifecycle with no binary installed. `zharness` itself is now three verbs — `install` / `update` / `uninstall` — which scaffold that managed doc set, fresh-overwriting playbooks/WORKFLOW.md on update, replacing the hash-guarded `AGENTS.md` block, and writing `docs/PROJECT.md` only when absent (ADR 0011). See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for the historical 0.14.x adoption path. Editing a playbook: change `cli/docs/embedded/playbooks/<stage>.md`, then copy the same bytes to `docs/playbooks/<stage>.md` — `cd cli && cargo test --test projection_parity` fails if the two drift.
 
 ## Prompt Engineering Reference
 

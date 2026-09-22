@@ -28,18 +28,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: "1.25"
+          components: clippy, rustfmt
 
-      - name: Build (CGO disabled)
-        run: CGO_ENABLED=0 go build ./...
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli
 
-      - name: Vet
-        run: go vet ./...
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Test
-        run: go test ./...
+        run: cargo test
+
+  size-gate:
+    # R8: the size target is a success signal, so it is enforced rather than
+    # measured. The plan's target is <= 1,850,000 bytes for the stripped
+    # darwin/arm64 build; linux/amd64 is the largest of the four release
+    # targets, so it is the one that can fail first.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli
+
+      - name: Build the release binary for x86_64-unknown-linux-musl
+        run: cargo build --release --target x86_64-unknown-linux-musl
+
+      - name: Fail if the stripped binary exceeds 1,850,000 bytes
+        run: |
+          size=$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)
+          echo "linux/amd64 stripped binary: $size bytes"
+          test "$size" -le 1850000
 
   hook-guard:
     # R4: re-run the v0.15 fail-closed guards (R2 proof re-execution + R3
