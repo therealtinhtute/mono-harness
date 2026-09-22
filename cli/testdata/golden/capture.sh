@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# capture.sh — freeze the Go zharness behavior as golden fixtures (plan R1).
+# capture.sh — the record of how the golden fixtures were produced (plan R1).
 #
-#   bash cli/testdata/golden/capture.sh
+#   HISTORICAL — this script can no longer run. It built the Go binary at the
+#   pre-cutover HEAD, and the Go tree it built was deleted in the v0.24
+#   cutover, so running it now exits 1. It is kept because it is the only
+#   record of how cli/testdata/golden/ was generated; the fixtures themselves
+#   are frozen and replayed by cli/tests/golden.rs.
 #
-# Builds the Go binary at the current HEAD with a pinned version string,
-# replays every scenario against a scratch repository under an isolated
-# HOME/XDG_CONFIG_HOME, normalizes the nondeterministic bytes, and writes one
-# directory per scenario:
+# What it did: built the Go binary at the then-current HEAD with a pinned
+# version string, replayed every scenario against a scratch repository under
+# an isolated HOME/XDG_CONFIG_HOME, normalized the nondeterministic bytes, and
+# wrote one directory per scenario:
 #
 #   <scenario>/cmd          the invocation that was captured
 #   <scenario>/stdout       normalized stdout

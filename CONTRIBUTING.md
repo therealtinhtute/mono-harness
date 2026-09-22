@@ -24,7 +24,7 @@ claude-code add-dir /path/to/your/local/skill
   `references/` and `scripts/` subdirectories.
 - `rules/` — source of truth for global Claude Code rules installed to
   `~/.claude/rules/`.
-- `cli/` — the Go CLI (`zharness`) that backs the workflow harness.
+- `cli/` — the Rust CLI (`zharness`) that backs the workflow harness.
 - `docs/` — repo-wide reference docs, including
   `docs/prompt-engineering-principles.md`.
 

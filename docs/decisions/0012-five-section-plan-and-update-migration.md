@@ -4,6 +4,8 @@
 
 Accepted. 2026-09-19. Authority: R8–R13 of `docs/plans/completed/zharness-slim.md`.
 
+The implementation citations below were repointed from the Go sources to the Rust port in the v0.24 cutover; the decisions and their rationale are unchanged, and symbol names in the decision text are the Go ones as decided.
+
 ## Context
 
 An active plan had nine `## ` sections (Outcome, Authority and Requirements,
@@ -39,14 +41,14 @@ stay byte-identical so CI and installed hooks agree.
    byte for byte (`docs/playbooks/handoff.md`, step 6).
 5. **`update` migrates one legacy plan.** A single active plan whose headings are
    exactly the nine-section set (any order) is rewritten in place
-   (`cli/internal/installer/migrate.go:35`): sections merge, `intake_id`/`story_id`
+   (`cli/src/installer/migrate.rs`): sections merge, `intake_id`/`story_id`
    lines drop, phase `- status:` bullets become bare. The Validation body is
    copied byte for byte and re-checked before writing
-   (`cli/internal/installer/migrate.go:73`). A plan already in the five-section
+   (`cli/src/installer/migrate.rs`). A plan already in the five-section
    shape is left alone silently; any other heading set, or more than one active
    plan, is left untouched with a `notice`; an unreadable plan or a migration
    that would change Validation makes `update` refuse before any write. The decision is
-   made before the first write (`cli/internal/installer/update.go:95`).
+   made before the first write (`cli/src/installer/update.rs`).
 
 Rejected:
 

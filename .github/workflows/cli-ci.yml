@@ -36,6 +36,9 @@ jobs:
         with:
           workspaces: cli
 
+      - name: Build
+        run: cargo build
+
       - name: Format
         run: cargo fmt --check
 
@@ -48,7 +51,7 @@ jobs:
   size-gate:
     # R8: the size target is a success signal, so it is enforced rather than
     # measured. The plan's target is <= 1,850,000 bytes for the stripped
-    # darwin/arm64 build; linux/amd64 is the largest of the four release
+    # darwin/arm64 build; linux/amd64 is the largest of the three release
     # targets, so it is the one that can fail first.
     runs-on: ubuntu-latest
     defaults:
