@@ -92,8 +92,10 @@ and where consumers should pin: see the v0.15 section of the root
 ## Breaking change
 
 v0.24 is a breaking release for the CLI's implementation and release
-mechanics: help, usage and error text differs from cobra's, and releases
-publish under the `cli/v...` tag instead of the bare version. The three
+mechanics: help, usage and error text differs from cobra's, releases publish
+under the `cli/v...` tag instead of the bare version, and darwin/amd64 is no
+longer built (Apple discontinued x86_64 macOS and GitHub is retiring its
+Intel runners; Intel Macs run the arm64 binary under Rosetta 2). The three
 verbs, their flags, their exit codes, the bytes they write and the
 `.zharness/base/manifest.json` schema are unchanged — a manifest written by
 Go v0.23.1 is read, updated and uninstalled by the Rust binary without a

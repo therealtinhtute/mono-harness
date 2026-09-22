@@ -25,11 +25,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   **Migration:** anything parsing help text must be updated; anything
   checking exit codes needs no change.
 - Releases publish under the `cli/vX.Y.Z` tag itself, named `zharness X.Y.Z`,
-  instead of goreleaser's bare `vX.Y.Z` tag. The four archives keep their
+  instead of goreleaser's bare `vX.Y.Z` tag. The archives keep their
   `zharness_{os}_{arch}.tar.gz` names and `checksums.txt` is still written.
   **Migration:** `scripts/install-zharness.sh` already resolves the latest
   release by name, so it needs no change; a script that downloads by bare tag
   must switch to the `cli/v...` tag.
+- darwin/amd64 is no longer built. Apple discontinued x86_64 macOS and GitHub
+  is retiring its Intel runners, so the matrix ships darwin/arm64 and both
+  linux architectures. **Migration:** Intel Mac users run the arm64 binary
+  under Rosetta 2, or build from source with
+  `cd cli && cargo build --release --target x86_64-apple-darwin`.
 - The size target is enforced in CI: the `size-gate` job fails if the
   linux/amd64 stripped binary exceeds 1,850,000 bytes. The local release
   build is 732,648 bytes (823,888 for musl), against the Go v0.23.1 baseline
