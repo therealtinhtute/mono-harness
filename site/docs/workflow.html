@@ -86,7 +86,7 @@
             <h3 style="margin: 0;">3. work</h3>
             <span class="badge">playbook</span>
           </div>
-          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Orchestrates implementation wave-by-wave. Dispatches independent tasks to subagents or executes inline, capturing observable evidence and recording step results in the active plan.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Executes the next phase of the active plan (<code>full</code>) or a direct change (<code>bounded</code>). Runs tasks in waves on the high-risk lane, captures observable evidence, appends task results to <code>## Log</code>, and ends every phase with a <code>check</code> gate.</p>
           <div style="font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);"><code>docs/playbooks/work.md</code></div>
         </div>
 
@@ -95,7 +95,7 @@
             <h3 style="margin: 0;">4. check</h3>
             <span class="badge">playbook</span>
           </div>
-          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Pre-commit verification gate. Runs test suites, typecheckers, and linters; validates git diff cleanliness; re-runs proof commands; and enforces independent judge reviews on high-risk lanes.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Quality gate in three modes: <code>bounded</code> (response-only evidence), <code>gate</code> (automated phase gate, appends to <code>## Validation</code>), and <code>full</code> (gate plus the complete Security, Performance, Architecture, and Code Quality review, once, on the final phase). <code>full</code> and high-risk entries require <code>judge: independent</code>.</p>
           <div style="font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);"><code>docs/playbooks/check.md</code></div>
         </div>
 
@@ -104,7 +104,7 @@
             <h3 style="margin: 0;">5. handoff</h3>
             <span class="badge">playbook</span>
           </div>
-          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Session state persistence. Summarizes completed waves, captures unresolved blockers, documents architectural decisions, and records immediate next actions in the active plan.</p>
+          <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">Session close-out. Records blockers and the exact next action in <code>## Current State and Next Action</code>. On final close, appends one <code>absorb:</code> decision (<code>none</code>, or an ADR, guard, or memory) and <code>git mv</code>s the plan to <code>docs/plans/completed/</code>.</p>
           <div style="font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);"><code>docs/playbooks/handoff.md</code></div>
         </div>
 
@@ -143,7 +143,7 @@
           <div class="spec-idx">03</div>
           <div class="spec-scene"><code>/check bounded</code></div>
           <div class="spec-cell"><span class="badge">Targeted</span></div>
-          <div class="spec-cell">Lightweight gate running relevant linters and unit tests for bounded changes.</div>
+          <div class="spec-cell">Runs the relevant tests and linters for a direct change and returns evidence in the response only. Never writes to a plan.</div>
         </div>
         <div class="spec-row">
           <div class="spec-idx">04</div>
@@ -155,7 +155,7 @@
 
       <div class="prose reveal">
         <h2>Execution Boundary &amp; State Model<i>.</i></h2>
-        <p>The execution boundary in mono-harness is strictly append-only and file-driven:</p>
+        <p>A plan has exactly five sections: <code>## Goal</code>, <code>## Phases and Verification</code>, <code>## Log</code>, <code>## Validation</code>, and <code>## Current State and Next Action</code>. At most one plan may be active. Execution state is append-only and file-driven:</p>
         <ul>
           <li><strong>Log:</strong> Task results, blockers, and decisions with their rationale append directly to <code>## Log</code> in <code>docs/plans/active/{slug}.md</code>.</li>
           <li><strong>Validation:</strong> Quality gates, proof command outputs, and approval verdicts append to <code>## Validation</code>.</li>
@@ -196,9 +196,19 @@
 <span class="tok-punct">-</span> <span class="tok-str">2026-08-28T05:00Z — phase `token-refresh` —</span> <span class="tok-cmd">verdict:</span> <span class="tok-str">APPROVED</span> — mode: gate
   <span class="tok-punct">-</span> `go test -race ./...` — exit <span class="tok-num">0</span>
   <span class="tok-punct">-</span> `golangci-lint run` — exit <span class="tok-num">0</span>
+  <span class="tok-punct">-</span> scope: <span class="tok-str">on target — token service and middleware only</span>
   <span class="tok-punct">-</span> requirements: <span class="tok-str">R1 met (`go test ./pkg/auth/...`)</span>
   <span class="tok-punct">-</span> rollback_point: <span class="tok-str">a1b2c3d</span>
-  <span class="tok-punct">-</span> <span class="tok-opt">judge:</span> <span class="tok-str">independent</span></code></pre>
+  <span class="tok-punct">-</span> requests: <span class="tok-str">none</span>
+  <span class="tok-punct">-</span> <span class="tok-opt">judge:</span> <span class="tok-str">independent</span>
+  <span class="tok-punct">-</span> <span class="tok-opt">judge_model:</span> <span class="tok-str">claude-opus-5</span>
+
+<span class="tok-kw">## Current State and Next Action</span>
+<span class="tok-punct">-</span> active_phase: <span class="tok-str">token-refresh</span>
+<span class="tok-punct">-</span> lifecycle_status: <span class="tok-str">checked</span>
+<span class="tok-punct">-</span> blockers: <span class="tok-str">none</span>
+<span class="tok-punct">-</span> open_items: <span class="tok-str">none</span>
+<span class="tok-punct">-</span> exact_next_action: <span class="tok-str">check full on token-refresh (final phase), then handoff</span></code></pre>
       </div>
 
       <div class="pull-quote reveal">

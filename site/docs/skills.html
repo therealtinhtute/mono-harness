@@ -56,7 +56,7 @@
       </div>
 
       <div class="prose reveal">
-        <h2>Workflow Skills (8)<i>.</i></h2>
+        <h2>Workflow Skills (10)<i>.</i></h2>
         <p>Workflow skills govern the full lifecycle of a development initiative: requirement locking, phased planning, wave execution, quality gates, and git operations.</p>
       </div>
 
@@ -170,6 +170,34 @@
           <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
             <strong>Trigger:</strong> <code>/interview [topic]</code><br>
             <strong>Output:</strong> Disambiguated requirements and constraints
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">encode-invariant</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            Turns an accepted repository rule into the smallest native guard, with positive and negative proof. Never invents policy.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/encode-invariant [rule]</code><br>
+            <strong>Output:</strong> A guard plus proof that it rejects the violation
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">improve-harness</h3>
+            <span class="badge">workflow</span>
+          </div>
+          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
+            One explicit, evidence-backed improvement to agent guidance or validation after observed, reusable friction. A different session must rerun it before success is claimed.
+          </p>
+          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
+            <strong>Trigger:</strong> <code>/improve-harness [friction]</code><br>
+            <strong>Output:</strong> One scoped guidance or validation change
           </div>
         </div>
       </div>

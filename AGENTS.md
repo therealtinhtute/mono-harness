@@ -129,7 +129,7 @@ When writing or editing skills (SKILL.md), rules (rules/*.md), or any agent inst
 - **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, optional `references/` and `scripts/` directories.
 - **rules/ directory:** Source-of-truth for rules installed to `~/.claude/rules/`. Keep in sync with installed versions.
 - **Private repo:** Installable via SSH (`git@github.com:therealtinhtute/mono-harness.git`) as long as local SSH keys are configured.
-- **`site/` is hand-authored, not generated.** A static GitHub Pages site (`.github/workflows/pages.yml` deploys on push to `site/**`) that narrates the same architecture/workflow story as `docs/`; it does not regenerate from `docs/*.md` and can drift — it currently describes v0.16 behavior.
+- **`site/` is hand-authored, not generated.** A static GitHub Pages site (`.github/workflows/pages.yml` deploys on push to `site/**`) that narrates the same architecture/workflow story as `docs/`; it does not regenerate from `docs/*.md` and can drift — it was last brought in line with v0.24.0.
 
 <!-- ZHARNESS:BEGIN -->
 ## Harness

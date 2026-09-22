@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Contributing — mono-harness</title>
-  <meta name="description" content="Development workflow, skill validation, Go CLI testing, pre-commit hooks, and how to contribute to mono-harness.">
+  <meta name="description" content="Development workflow, skill validation, Rust CLI testing, pre-commit hooks, and how to contribute to mono-harness.">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +40,7 @@
       <header class="page-head reveal">
         <p class="kicker">docs · contribute</p>
         <h1>Contributing Guide<i>.</i></h1>
-        <p class="lede">Guidelines for developing skills, modifying the Go CLI, running validation suites, and opening pull requests. Security disclosures should be submitted privately via <a href="https://github.com/therealtinhtute/mono-harness/blob/master/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</p>
+        <p class="lede">Guidelines for developing skills, modifying the Rust CLI, running validation suites, and opening pull requests. Security disclosures should be submitted privately via <a href="https://github.com/therealtinhtute/mono-harness/blob/master/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</p>
       </header>
 
       <div class="prose reveal">
@@ -94,7 +94,7 @@
 
       <div class="prose reveal">
         <h2>CLI Development &amp; Testing<i>.</i></h2>
-        <p>The <code>zharness</code> CLI is implemented in Go 1.25 with <code>CGO_ENABLED=0</code> for portability. CI enforces zero test failures, clean <code>go vet</code>, and formatting compliance.</p>
+        <p>The <code>zharness</code> CLI is a Rust crate in <code>cli/</code>. CI (<code>.github/workflows/cli-ci.yml</code>) runs <code>cargo fmt --check</code>, <code>cargo clippy -D warnings</code>, and <code>cargo test</code>, and a size gate keeps the Linux musl release binary at or under 1,850,000 bytes. The tests include golden replay, playbook projection parity, and compatibility with manifests written by the Go-era binary.</p>
       </div>
 
       <div class="terminal-block reveal">
@@ -103,19 +103,20 @@
             <span class="terminal-dot"></span>
           </div>
           <span class="terminal-title">bash — build and test cli</span>
-          <button class="copy-btn" data-copy data-cmd="cd cli && go test ./...">COPY</button>
+          <button class="copy-btn" data-copy data-cmd="cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># Navigate to CLI module</span>
 <span class="tok-prm">$</span><span class="tok-cmd">cd</span> cli
 
-<span class="tok-cmt"># Compile binary</span>
-<span class="tok-prm">$</span>CGO_ENABLED=<span class="tok-num">0</span> <span class="tok-cmd">go</span> build ./...
-
-<span class="tok-cmt"># Run static analysis</span>
-<span class="tok-prm">$</span><span class="tok-cmd">go</span> vet ./...
+<span class="tok-cmt"># Check formatting and lint</span>
+<span class="tok-prm">$</span><span class="tok-cmd">cargo</span> fmt <span class="tok-kw">--check</span>
+<span class="tok-prm">$</span><span class="tok-cmd">cargo</span> clippy <span class="tok-kw">--all-targets</span> -- <span class="tok-kw">-D</span> warnings
 
 <span class="tok-cmt"># Execute test suite</span>
-<span class="tok-prm">$</span><span class="tok-cmd">go</span> test <span class="tok-kw">-v</span> ./...</code></pre>
+<span class="tok-prm">$</span><span class="tok-cmd">cargo</span> test
+
+<span class="tok-cmt"># Build the release binary</span>
+<span class="tok-prm">$</span><span class="tok-cmd">cargo</span> build <span class="tok-kw">--release</span></code></pre>
       </div>
 
       <div class="prose reveal">
@@ -153,18 +154,21 @@
       </div>
 
       <div class="prose reveal">
-        <p>The hook enforces two non-negotiable rules on staged commits:</p>
+        <p>The hook enforces four fail-closed rules on staged commits, and <code>cli-ci.yml</code> re-runs them on every push:</p>
         <ol>
           <li><strong>Proof Re-execution:</strong> Any newly added plan review verdict of <code>APPROVED</code> or <code>APPROVE_WITH_REQUESTS</code> must have every nested proof command successfully re-executed by the hook before the commit is accepted.</li>
-          <li><strong>Independent Judge:</strong> Any plan in a <code>high-risk</code> lane requires an independent judge declaration; same-session reviews are rejected.</li>
+          <li><strong>Independent Judge (high-risk):</strong> On a <code>lane: high-risk</code> plan, a new Validation entry declaring <code>judge: same-session</code> is rejected.</li>
+          <li><strong>Independent Judge (full):</strong> Any <code>mode: full</code> entry declaring <code>judge: same-session</code> is rejected, on every lane.</li>
+          <li><strong>One Active Plan:</strong> More than one non-empty file under <code>docs/plans/active/</code> is rejected.</li>
         </ol>
+        <p>A stale hook from an earlier install is replaced automatically. A foreign pre-commit hook is refused unless you pass <code>--force</code>.</p>
       </div>
 
       <div class="prose reveal">
         <h2>Pull Request Checklist<i>.</i></h2>
         <p>Before opening a pull request on GitHub, verify:</p>
         <ul>
-          <li>Run targeted checks for changed components (skills validator, <code>go test ./...</code>, or doc link checker).</li>
+          <li>Run targeted checks for changed components (skills validator, <code>cargo test</code>, <code>scripts/test-guards.sh</code>, or doc link checker).</li>
           <li>Ensure all commit messages adhere to Conventional Commits format (e.g. <code>feat(cli): ...</code>, <code>fix(skills): ...</code>, <code>docs(site): ...</code>).</li>
           <li>Never commit API keys, personal auth tokens, or private settings files.</li>
         </ul>

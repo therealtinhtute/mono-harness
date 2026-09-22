@@ -50,7 +50,7 @@
           <li><strong>Node.js 18+</strong> — Required for skill discovery and global CLI execution.</li>
           <li><strong>jq</strong> — Required for terminal statusline processing.</li>
           <li><strong>Git</strong> — Version control for repository tracking and hooks.</li>
-          <li><strong>Go 1.25+</strong> (Optional) — Required only if compiling the <code>zharness</code> binary from source.</li>
+          <li><strong>Rust (stable)</strong> (Optional) — Required only if compiling the <code>zharness</code> binary from source.</li>
           <li><strong>SSH Access</strong> — Valid key configured for <code>git@github.com:therealtinhtute/mono-harness.git</code>.</li>
         </ul>
         <p>After installation, review <code>~/.claude/settings.json</code> and ensure <code>ANTHROPIC_AUTH_TOKEN</code> or relevant provider tokens are set in your shell environment.</p>
@@ -67,9 +67,9 @@
             <span class="terminal-dot"></span>
           </div>
           <span class="terminal-title">prompt — bootstrap this repository</span>
-          <button class="copy-btn" data-copy data-cmd="Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md and the AGENTS.md block merge instead). Plans live only in docs/plans/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.">COPY</button>
+          <button class="copy-btn" data-copy data-cmd="Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md is never overwritten, and an edited AGENTS.md block makes update refuse with a diff). Plans live only in docs/plans/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.">COPY</button>
         </div>
-        <pre style="white-space: pre-wrap; overflow-x: visible;"><code>Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md and the AGENTS.md block merge instead). Plans live only in docs/plans/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.</code></pre>
+        <pre style="white-space: pre-wrap; overflow-x: visible;"><code>Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md is never overwritten, and an edited AGENTS.md block makes update refuse with a diff). Plans live only in docs/plans/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.</code></pre>
       </div>
 
       <div class="prose reveal">
@@ -140,14 +140,15 @@
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;">
             <h3 style="margin:0;">Build From Source</h3>
-            <span class="badge">Go 1.25</span>
+            <span class="badge">Rust</span>
           </div>
           <p style="font-size:14px; color:var(--ink-soft); margin-bottom:16px;">
-            Compile the binary directly with Go 1.25 and CGO disabled.
+            Compile the binary with a stable Rust toolchain.
           </p>
           <div class="terminal-block" style="margin:0;">
             <pre><code><span class="tok-prm">$</span><span class="tok-cmd">cd</span> cli
-<span class="tok-prm">$</span>CGO_ENABLED=<span class="tok-num">0</span> <span class="tok-cmd">go</span> build -o ~/.local/bin/zharness ./cmd/zharness
+<span class="tok-prm">$</span><span class="tok-cmd">cargo</span> build --release
+<span class="tok-prm">$</span><span class="tok-cmd">cp</span> target/release/zharness ~/.local/bin/zharness
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">--version</span></code></pre>
           </div>
         </div>
@@ -191,7 +192,7 @@
         </div>
         <pre><code><span class="tok-cmt"># 1. Verify CLI installation</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">--version</span>
-<span class="tok-out">zharness version v0.15.0</span>
+<span class="tok-out">zharness version 0.24.0</span>
 
 <span class="tok-cmt"># 2. Verify CLI commands</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">install</span> <span class="tok-kw">--help</span>

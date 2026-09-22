@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Architecture — mono-harness</title>
-  <meta name="description" content="How the harness actually works as of v0.16: committed markdown is truth, three scaffolding verbs, fail-closed pre-commit guards, and zero daemons.">
+  <meta name="description" content="How the harness actually works as of v0.24: committed markdown is truth, three scaffolding verbs, fail-closed pre-commit guards, and zero daemons.">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +40,7 @@
       <header class="page-head reveal">
         <p class="kicker">docs · architecture</p>
         <h1>Architecture<i>.</i></h1>
-        <p class="lede">How the harness actually works as of v0.16 (binary surface from the v0.15 &ldquo;slim&rdquo; cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under <code>docs/decisions/</code>; this page describes the running system.</p>
+        <p class="lede">How the harness actually works as of v0.24 (a Rust binary with the three-verb surface from the v0.15 &ldquo;slim&rdquo; cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under <code>docs/decisions/</code>; this page describes the running system.</p>
       </header>
 
       <div class="prose reveal">
@@ -55,9 +55,9 @@
             <span class="terminal-dot"></span>
           </div>
           <span class="terminal-title">zharness — architecture overview</span>
-          <span class="badge">Go 1.25</span>
+          <span class="badge">Rust</span>
         </div>
-        <pre><code><span class="tok-path">cli/cmd/zharness</span>                 <span class="tok-cmt">one Go binary (cobra), three verbs</span>
+        <pre><code><span class="tok-path">cli/src/main.rs</span>                  <span class="tok-cmt">one Rust binary (clap), three verbs</span>
         <span class="tok-prm">|</span>
         <span class="tok-prm">v</span>
 <span class="tok-cmd">install</span>                          <span class="tok-out">scaffolds the managed set, records a base, reports brownfield read-only</span>
@@ -67,7 +67,7 @@
 
       <div class="prose reveal">
         <h2>The Three Verbs<i>.</i></h2>
-        <p>The Go CLI <code>zharness</code> operates strictly as a repository maintenance tool:</p>
+        <p>The <code>zharness</code> CLI operates strictly as a repository maintenance tool:</p>
       </div>
 
       <div class="card-grid reveal">
@@ -95,8 +95,8 @@
       </div>
 
       <div class="prose reveal">
-        <p><code>AllTargets</code> is the managed set: <code>docs/WORKFLOW.md</code>, <code>docs/PROJECT.md</code> (scaffolded from identity template), and the six playbooks. <code>AGENTS.md</code> is handled separately and surgically &mdash; only the marked <code>ZHARNESS</code> block inside it is swapped; consumer prose around it is untouched.</p>
-        <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries recording what zharness last wrote. There is no merge and no conflict state: every refusal check runs before the first write, so a refused update leaves every file as it was (ADR 0011).</p>
+        <p><code>all_targets</code> (<code>cli/src/installer/mod.rs</code>) is the managed set: <code>docs/WORKFLOW.md</code>, <code>docs/PROJECT.md</code> (scaffolded from identity template), and the eight playbooks (six stages plus the <code>work-full</code> and <code>check-validation</code> companions). <code>AGENTS.md</code> is handled separately and surgically &mdash; only the marked <code>ZHARNESS</code> block inside it is swapped; consumer prose around it is untouched.</p>
+        <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries recording what zharness last wrote, and the ownership ledger <code>ownership.tsv</code>. There is no merge and no conflict state: every refusal check runs before the first write, so a refused update leaves every file as it was (ADR 0011).</p>
       </div>
 
       <div class="prose reveal">
@@ -191,14 +191,15 @@
           <div class="spec-idx">06</div>
           <div class="spec-scene"><code>.zharness/base/</code></div>
           <div class="spec-cell"><span class="badge">Bookkeeping</span></div>
-          <div class="spec-cell">sha256 manifest (<code>manifest.json</code>) of what zharness last wrote; gitignored.</div>
+          <div class="spec-cell">sha256 manifest (<code>manifest.json</code>) of what zharness last wrote, plus the <code>ownership.tsv</code> ledger; gitignored.</div>
         </div>
       </div>
 
       <div class="prose reveal">
-        <h2>Evolution &amp; Simplicity in v0.15<i>.</i></h2>
+        <h2>Evolution: v0.15 to v0.24<i>.</i></h2>
         <p>In versions prior to v0.15, the harness utilized secondary derived indexes, complex caching layers, and background runtime assumptions.</p>
-        <p>In the v0.15 &ldquo;slim&rdquo; release, all secondary indexes, background runtime assumptions, and legacy commands were completely eliminated. The resulting architecture is zero-daemon and zero-database: committed markdown files are the sole source of truth, and the Go binary is strictly a three-verb scaffolding tool.</p>
+        <p>In the v0.15 &ldquo;slim&rdquo; release, all secondary indexes, background runtime assumptions, and legacy commands were completely eliminated. The resulting architecture is zero-daemon and zero-database: committed markdown files are the sole source of truth, and the binary is strictly a three-verb scaffolding tool.</p>
+        <p>v0.24.0 rewrote that binary from Go to Rust. The verbs, flags, exit codes, written bytes, and manifest schema are unchanged, and the stripped binary shrank from about 3.0 MiB to about 574 KiB (darwin/arm64).</p>
       </div>
 
       <div class="pull-quote reveal">

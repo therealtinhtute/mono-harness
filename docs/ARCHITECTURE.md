@@ -2,7 +2,7 @@
 
 <!-- zharness:pin 2d4bc5a2015113cd85c3134b04bffc18f94887d1 -->
 
-How the harness actually works as of v0.16 (binary surface from the v0.15 "slim" cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
+How the harness actually works as of v0.24 (a Rust binary with the three-verb surface from the v0.15 "slim" cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
 
 ## The one idea
 

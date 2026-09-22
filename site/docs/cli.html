@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The zharness CLI — mono-harness</title>
-  <meta name="description" content="The zharness v0.15 CLI: the slim installer and updater for the markdown-first workflow harness.">
+  <meta name="description" content="The zharness v0.24 CLI: the Rust installer and updater for the markdown-first workflow harness.">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,13 +40,13 @@
       <header class="page-head reveal">
         <p class="kicker">docs · cli</p>
         <h1>The zharness CLI<i>.</i></h1>
-        <p class="lede">A focused Go binary for scaffolding, updating, and removing the managed markdown workflow doc set. Built for Go 1.25 with CGO disabled.</p>
+        <p class="lede">A small Rust binary (about 574 KiB) that scaffolds, updates, and removes the managed markdown workflow doc set. It has no runtime dependencies and ships for macOS arm64 and Linux amd64/arm64.</p>
       </header>
 
       <div class="prose reveal">
-        <h2>Architecture (v0.15)<i>.</i></h2>
-        <p>In <code>v0.15</code>, <code>zharness</code> is streamlined into a dedicated installer and updater binary. The previous runtime command surface and derived database layer were removed from source. State lives exclusively in git-committed markdown, and fail-closed safety guarantees live in repository pre-commit hooks.</p>
-        <p>The CLI registers exactly three verbs: <code>install</code>, <code>update</code>, and <code>uninstall</code>, alongside standard root flags <code>--help</code> and <code>--version</code>.</p>
+        <h2>Architecture (v0.24)<i>.</i></h2>
+        <p><code>zharness</code> has been an installer and updater only since <code>v0.15</code>, which removed the runtime command surface and the derived database layer. <code>v0.24.0</code> rewrote it from Go to Rust (clap). The verbs, flags, exit codes, written bytes, and <code>.zharness/base/manifest.json</code> schema are unchanged, and a manifest written by Go <code>v0.23.1</code> updates without a forced reinstall. Help text now uses clap's <code>Commands:</code>/<code>Options:</code> headings. State lives exclusively in git-committed markdown, and fail-closed safety guarantees live in repository pre-commit hooks.</p>
+        <p>The CLI registers exactly three verbs: <code>install</code>, <code>update</code>, and <code>uninstall</code>. The root takes <code>--help</code> and <code>--version</code>; every verb takes <code>--root</code>.</p>
       </div>
 
       <div class="spec reveal">

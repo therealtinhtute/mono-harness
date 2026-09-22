@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>mono-harness — Architectural Minimalism for AI Agents</title>
-<meta name="description" content="Committed markdown is truth. The Go zharness binary manages the doc set with 3 verbs (install, update, uninstall). Zero opaque databases, zero background daemons." />
+<meta name="description" content="Committed markdown is truth. The Rust zharness binary manages the doc set with 3 verbs (install, update, uninstall). Zero opaque databases, zero background daemons." />
 <meta name="theme-color" content="#F6F5F0" />
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,7 +43,7 @@
 <header class="hero">
   <div class="hero-inner">
     <div class="hero-eyebrow fade-up">
-      <span>AI AGENT WORKBENCH · MONO-HARNESS v0.15</span>
+      <span>AI AGENT WORKBENCH · MONO-HARNESS v0.24</span>
       <span>COMMITTED MARKDOWN IS TRUTH · ZERO DAEMONS</span>
     </div>
     <div class="hero-marquee" aria-label="MONO-HARNESS">
@@ -71,8 +71,8 @@
         </div>
         <div class="hero-meta fade-up" style="animation-delay:0.75s">
           <span><b>MIT</b> LICENSE</span>
-          <span><b>CLI</b> v0.15</span>
-          <span><b>GO</b> 1.25+</span>
+          <span><b>CLI</b> v0.24</span>
+          <span><b>RUST</b> ~574 KiB</span>
           <span><b>SKILLS</b> 14 MOUNTED</span>
           <span><b>CI</b> PASSING</span>
           <a href="https://github.com/therealtinhtute/mono-harness" target="_blank" rel="noopener">GITHUB REPO ↗</a>
@@ -159,13 +159,13 @@
         <span class="path-num">ii.</span>
         <span class="path-en">Three CLI Verbs</span>
         <div class="path-name">Scaffolding, not a resident runtime</div>
-        <p class="path-desc">The <code>zharness</code> Go binary owns exactly <code>install</code>, <code>update</code>, and <code>uninstall</code>. Zero resident background daemons, zero network sockets, and zero runtime bloat.</p>
+        <p class="path-desc">The <code>zharness</code> Rust binary owns exactly <code>install</code>, <code>update</code>, and <code>uninstall</code>. Zero resident background daemons, zero network sockets, and zero runtime bloat.</p>
       </div>
       <div class="path-col">
         <span class="path-num">iii.</span>
         <span class="path-en">Fail-Closed Guards</span>
         <div class="path-name">Automated pre-commit validation</div>
-        <p class="path-desc">Pre-commit hooks automatically re-execute verification proofs on <code>APPROVED</code> entries and enforce independent judge separation on high-risk lanes.</p>
+        <p class="path-desc">Pre-commit hooks automatically re-execute verification proofs on <code>APPROVED</code> entries and enforce an independent judge on high-risk lanes and <code>full</code> checks.</p>
       </div>
     </div>
 
@@ -233,13 +233,13 @@
       <span class="sec-num">05</span>
       <span class="sec-tag">Commands</span>
       <span class="spacer"></span>
-      <span class="sec-ghost">One Go binary</span>
+      <span class="sec-ghost">One Rust binary</span>
     </div>
     <h2 class="reveal">One lightweight binary.<br />One inspectable control plane<i>.</i></h2>
 
     <div class="cmd-list reveal">
       <div class="cmd-row"><div class="c">zharness <span class="blue">install</span></div><div class="d">Scaffold the managed documentation set and playbooks into the current repository</div></div>
-      <div class="cmd-row"><div class="c">zharness <span class="blue">update</span></div><div class="d">Update the managed doc set while preserving existing plans and repository modifications</div></div>
+      <div class="cmd-row"><div class="c">zharness <span class="blue">update</span></div><div class="d">Refresh playbooks and WORKFLOW.md; replace the AGENTS.md block (refusing if it was edited); never overwrite PROJECT.md or plans</div></div>
       <div class="cmd-row"><div class="c">zharness <span class="blue">uninstall</span></div><div class="d">Cleanly remove the managed doc set and restore clean repository state</div></div>
       <div class="cmd-row"><div class="c">npx skills add <span class="blue">therealtinhtute/mono-harness</span></div><div class="d">Mount all 16 mono-harness skills into your current AI agent workspace</div></div>
       <div class="cmd-row"><div class="c">bash <span class="blue">setup/install.sh</span></div><div class="d">Run the complete global Claude Code bootstrap (CLAUDE.md, rules, statusline, skills)</div></div>
