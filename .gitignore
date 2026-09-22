@@ -9,3 +9,6 @@ __pycache__/
 .opencode/
 # zharness v0.15 managed set
 /.zharness/
+
+# git skill local scratch (sidecar reports, never repo content)
+.kit/
