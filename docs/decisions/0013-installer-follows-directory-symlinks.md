@@ -26,4 +26,3 @@ Easy: nothing changes for a repository whose managed directories are real direct
 
 - Reproduced 2026-09-22 at `45cfcbe` in a scratch repository whose `docs` is a symlink to a directory outside it: `zharness install --root <repo>` exits 0, and the outside directory receives `PROJECT.md`, `WORKFLOW.md` and `playbooks/`.
 - `cli/src/installer/mod.rs:122` — `write_file_atomic`, its `create_dir_all` call and the `create_new` temp open.
-- `docs/plans/completed/cli-rust-rewrite-followups.md`, Validation entry 2026-09-22T09:33:51Z, request 1 — where the review recorded the finding.

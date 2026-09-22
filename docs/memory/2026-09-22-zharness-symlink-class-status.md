@@ -18,4 +18,3 @@ Do not re-derive the file-level class as open — it is fixed and tested. The op
 
 - `docs/decisions/0013-installer-follows-directory-symlinks.md`
 - `cli/src/installer/mod.rs`, `cli/src/installer/uninstall.rs` — the three sites and their `refuses_symlink` tests
-- `docs/plans/completed/cli-rust-rewrite-followups.md`, Validation entry 2026-09-22T09:33:51Z, request 1
