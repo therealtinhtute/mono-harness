@@ -207,3 +207,25 @@ fn clean(p: &Path) -> PathBuf {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    /// The root command registers exactly the three managed-set verbs: no
+    /// missing verb and no extra one.
+    #[test]
+    fn root_cmd_exact_three_verbs() {
+        let mut got: Vec<String> = Cli::command()
+            .get_subcommands()
+            .map(|c| c.get_name().to_string())
+            .collect();
+        got.sort();
+        let mut want = ["install", "uninstall", "update"]
+            .map(str::to_string)
+            .to_vec();
+        want.sort();
+        assert_eq!(got, want, "root command verbs");
+    }
+}

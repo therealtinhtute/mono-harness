@@ -765,4 +765,40 @@ mod tests {
             "capture_original perturbed the legacy original"
         );
     }
+
+    /// A brownfield install reports the two-plan advisory and the foreign
+    /// state it found, and writes nothing outside the managed set.
+    #[test]
+    fn install_brownfield_report_only_preserves_bytes() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        let claude = "# Consumer CLAUDE.md\nhand-authored bytes\n";
+        write_file(root, "CLAUDE.md", claude);
+        write_file(root, "README.md", "readme");
+        write_file(root, "workflow-state.yml", "state: legacy");
+        write_file(root, "docs/plans/active/aaa.md", "# plan a");
+        write_file(root, "docs/plans/active/bbb.md", "# plan b");
+
+        let out = install_ok(root);
+
+        assert_eq!(
+            read_file(root, "CLAUDE.md"),
+            claude,
+            "consumer CLAUDE.md rewritten — forbidden by R10/R18"
+        );
+        assert!(
+            out.contains("active plans under docs/plans/active: 2")
+                && out.contains("reconcile which plan stays live"),
+            "missing plan-reconcile advisory:\n{out}"
+        );
+        assert!(
+            out.contains("workflow-state.yml"),
+            "foreign state file not reported:\n{out}"
+        );
+        assert!(
+            out.contains("nothing outside the managed set is written"),
+            "report must state read-only nature"
+        );
+    }
 }

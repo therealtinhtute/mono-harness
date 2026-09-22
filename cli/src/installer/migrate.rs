@@ -249,3 +249,208 @@ pub fn apply_plan_migration(root: &Path, mig: &PlanMigration) -> Result<(), Stri
     }
     write_file_atomic(&root.join(&mig.path), &mig.data)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::installer::sha;
+    use crate::test_support::{
+        install_ok, read_file, temp_repo, update_ok, write_file, IsolatedEnv,
+    };
+
+    /// The legacy `## Validation` body, byte for byte as a pre-5-section plan
+    /// carried it. Migration must copy it verbatim.
+    const LEGACY_VALIDATION: &str = "- 2026-09-19T08:29Z — phase `p1` — verdict: APPROVED — mode: gate\n  - `true` — ok\n  - judge: independent\n";
+
+    fn legacy_body(h: &str) -> String {
+        match h {
+            "Outcome" => "- result: x\n\n".to_string(),
+            "Authority and Requirements" => "- R1: y\n\n".to_string(),
+            "Non-goals" => "- NG1: z\n\n".to_string(),
+            "Approach and Risks" => "- approach: a\n\n".to_string(),
+            "Phases and Verification" => {
+                "- phases:\n  - phase_slug: `p1`\n    - story_id: `p1-1`\n    - status: checked\n    - goal: R1\n\n"
+                    .to_string()
+            }
+            "Progress" => "- 2026-09-19T08:00Z — p1 — task_status=DONE — ok\n\n".to_string(),
+            "Decisions" => "- 2026-09-19 — p1 — chose a\n\n".to_string(),
+            "Validation" => format!("{LEGACY_VALIDATION}\n"),
+            "Current State and Next Action" => {
+                "- active_phase: p1\n- lifecycle_status: checked\n".to_string()
+            }
+            other => panic!("no body for {other}"),
+        }
+    }
+
+    /// A 9-section plan with the given heading order.
+    fn legacy_plan(order: &[&str]) -> String {
+        let mut s = String::from(
+            "---\nid: p-1\nintake_id: i-1\nlane: normal\nstatus: active\n---\n\n# Plan: p\n\n",
+        );
+        for h in order {
+            s.push_str(&format!("## {h}\n{}", legacy_body(h)));
+        }
+        s
+    }
+
+    fn headings_of(s: &str) -> Vec<String> {
+        s.split('\n')
+            .filter(|l| l.starts_with("## "))
+            .map(|l| l.to_string())
+            .collect()
+    }
+
+    /// The legacy 9-section plan migrates to the 5-section one in either
+    /// heading order, drops `intake_id`/`story_id` and each phase's
+    /// `- status:` bullet, copies `## Validation` verbatim, and is idempotent.
+    #[test]
+    fn migrate_plan_legacy_to_five_sections() {
+        let reordered = [
+            "Outcome",
+            "Authority and Requirements",
+            "Non-goals",
+            "Approach and Risks",
+            "Phases and Verification",
+            "Current State and Next Action",
+            "Validation",
+            "Decisions",
+            "Progress",
+        ];
+        for (name, order) in [
+            ("canonical order", LEGACY_PLAN_SECTIONS.to_vec()),
+            ("current state before validation", reordered.to_vec()),
+        ] {
+            let input = legacy_plan(&order);
+            let (out, changed) =
+                migrate_plan(input.as_bytes()).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert!(changed, "{name}: migrate_plan reported no change");
+            let got = String::from_utf8(out.clone()).expect("migrated plan is UTF-8");
+
+            let want = [
+                "## Goal",
+                "## Phases and Verification",
+                "## Log",
+                "## Validation",
+                "## Current State and Next Action",
+            ];
+            assert_eq!(
+                headings_of(&got).join("|"),
+                want.join("|"),
+                "{name}: headings"
+            );
+            for s in [
+                "### Authority and Requirements\n- R1: y",
+                "### Non-goals\n",
+                "### Decisions\n- 2026-09-19 — p1 — chose a",
+                "## Phases and Verification\n- approach: a\n\n- phases:",
+                "  - phase_slug: `p1`\n    status: checked\n",
+            ] {
+                assert!(got.contains(s), "{name}: missing {s:?} in:\n{got}");
+            }
+            assert!(
+                got.contains(&format!("## Validation\n{LEGACY_VALIDATION}")),
+                "{name}: Validation body not copied verbatim"
+            );
+            for s in ["intake_id", "story_id", "- status:"] {
+                assert!(!got.contains(s), "{name}: still contains {s:?}");
+            }
+            assert!(
+                got.starts_with(
+                    "---\nid: p-1\nlane: normal\nstatus: active\n---\n\n# Plan: p\n\n## Goal\n"
+                ),
+                "{name}: frontmatter or preamble changed:\n{got}"
+            );
+
+            let (_, _, before) = split_plan(&input).expect("input splits");
+            let (_, _, after) = split_plan(&got).expect("output splits");
+            assert_eq!(
+                sha(before["Validation"].as_bytes()),
+                sha(after["Validation"].as_bytes()),
+                "{name}: Validation bytes changed"
+            );
+
+            let (again, changed) = migrate_plan(&out).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert!(
+                !changed && again == out,
+                "{name}: second run changed the plan"
+            );
+        }
+    }
+
+    /// Any heading set that is not exactly the legacy nine is returned
+    /// unchanged, so an unrecognized plan is never rewritten.
+    #[test]
+    fn migrate_plan_unknown_sets_untouched() {
+        let mut dup = LEGACY_PLAN_SECTIONS.to_vec();
+        dup.push("Progress");
+        let canonical = legacy_plan(&LEGACY_PLAN_SECTIONS);
+        let cases = [
+            ("missing section", legacy_plan(&LEGACY_PLAN_SECTIONS[..8])),
+            ("extra heading", format!("{canonical}## Notes\nx\n")),
+            ("duplicate heading", legacy_plan(&dup)),
+            (
+                "renamed heading",
+                canonical.replace("## Current State and Next Action", "## Current State"),
+            ),
+            ("no headings", "# plan a".to_string()),
+        ];
+        for (name, input) in cases {
+            let (out, changed) =
+                migrate_plan(input.as_bytes()).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert!(
+                !changed && out == input.as_bytes(),
+                "{name}: migrate_plan changed an unknown plan"
+            );
+        }
+    }
+
+    /// `update` migrates the one active plan and reports it; a second update
+    /// leaves it alone.
+    #[test]
+    fn update_migrates_active_plan() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        install_ok(root);
+        let plan = "docs/plans/active/p.md";
+        write_file(root, plan, &legacy_plan(&LEGACY_PLAN_SECTIONS));
+
+        let out = update_ok(root);
+        assert!(
+            out.contains(&format!("migrated       {plan}")),
+            "no migrated line:\n{out}"
+        );
+        assert!(
+            read_file(root, plan).contains("## Log\n"),
+            "plan not migrated"
+        );
+
+        let out = update_ok(root);
+        assert!(
+            !out.contains("migrated") && !out.contains("notice"),
+            "second update touched the plan:\n{out}"
+        );
+    }
+
+    /// An active plan whose section set is unrecognized is left byte-identical
+    /// and reported with a notice.
+    #[test]
+    fn update_unknown_plan_left_with_notice() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        install_ok(root);
+        let plan = "docs/plans/active/p.md";
+        let input = format!("{}## Notes\nx\n", legacy_plan(&LEGACY_PLAN_SECTIONS));
+        write_file(root, plan, &input);
+
+        let out = update_ok(root);
+        assert!(
+            out.contains(&format!(
+                "notice     {plan} has an unrecognized section set"
+            )),
+            "no notice:\n{out}"
+        );
+        assert_eq!(read_file(root, plan), input, "unknown plan was modified");
+    }
+}
