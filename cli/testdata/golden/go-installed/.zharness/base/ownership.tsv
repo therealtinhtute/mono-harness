@@ -1,0 +1,14 @@
+file	docs/WORKFLOW.md	created_by_installer
+file	docs/PROJECT.md	preexisting
+file	docs/playbooks/brainstorm.md	created_by_installer
+file	docs/playbooks/check-validation.md	created_by_installer
+file	docs/playbooks/check.md	created_by_installer
+file	docs/playbooks/handoff.md	created_by_installer
+file	docs/playbooks/to-plan.md	created_by_installer
+file	docs/playbooks/watzup.md	created_by_installer
+file	docs/playbooks/work-full.md	created_by_installer
+file	docs/playbooks/work.md	created_by_installer
+file	AGENTS.md	preexisting
+file	.gitignore	created_by_installer
+gitignore	# zharness v0.15 managed set	created_by_installer
+gitignore	/.zharness/	created_by_installer

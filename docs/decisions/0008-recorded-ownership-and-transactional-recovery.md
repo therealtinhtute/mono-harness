@@ -5,9 +5,11 @@
 Accepted. 2026-09-08. Authority for the externally observable behavior changes
 in `docs/plans/completed/audit-integrity-remediation.md` (F01, F04, F05, F06, F07).
 Narrows the "consumer bytes are never destroyed" claim in
-`cli/internal/installer/uninstall.go` from an assertion into an enforced rule.
+`cli/src/installer/uninstall.rs` from an assertion into an enforced rule.
 The stash transaction is superseded by [ADR 0011](0011-update-without-three-way-merge.md);
 the ownership ledger stands.
+
+The implementation citations below were repointed from the Go sources to the Rust port in the v0.24 cutover; the decisions and their rationale are unchanged, and symbol names in the decision text are the Go ones as decided.
 
 ## Context
 

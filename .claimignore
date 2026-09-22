@@ -30,3 +30,9 @@ CLAUDE.md  # deleted when guidance consolidated into AGENTS.md; historical audit
 
 docs/research/cli-config-patterns.md  # illustrative example in librarian/references/examples.md showing where a cited research report is saved, not a file in this repo
 docs/plans/active/cli-orkit.md        # illustrative example in create-cli/references/examples.md showing where a CLI spec plan is saved, not a file in this repo
+
+cli/internal/interfaces/root.go          # historical audit measurement (docs/references/zharness-v015/research-links.md); deleted in the v0.24 Rust cutover, archived in the root CHANGELOG v0.24.0 section
+cli/internal/embedded/embedded_test.go   # historical audit measurement (docs/audit/playbook-token-audit.md, docs/audit/harness-engineering-gap-audit.md, docs/audit/2026-09-16-better-harness-eval-audit.md); deleted in the v0.24 Rust cutover
+cli/internal/installer/installer.go      # historical audit measurement (docs/audit/multi-stack-agent-readiness-audit.md, docs/audit/multi-stack-harness-audit.md); deleted in the v0.24 Rust cutover
+cli/internal/installer/uninstall.go      # historical audit measurement (docs/audit/2026-09-07-integrity-review.md); deleted in the v0.24 Rust cutover
+cli/internal/installer/update.go         # historical audit measurement (docs/audit/2026-09-07-integrity-review.md); deleted in the v0.24 Rust cutover

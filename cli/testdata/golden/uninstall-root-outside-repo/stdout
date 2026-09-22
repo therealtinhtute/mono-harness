@@ -1,0 +1,13 @@
+removed   docs/WORKFLOW.md
+removed   docs/PROJECT.md
+removed   docs/playbooks/brainstorm.md
+removed   docs/playbooks/check-validation.md
+removed   docs/playbooks/check.md
+removed   docs/playbooks/handoff.md
+removed   docs/playbooks/to-plan.md
+removed   docs/playbooks/watzup.md
+removed   docs/playbooks/work-full.md
+removed   docs/playbooks/work.md
+removed   AGENTS.md (created by install; only generated boilerplate outside the block)
+removed   .gitignore
+uninstall complete — 12 managed file(s) removed; nothing else was touched.

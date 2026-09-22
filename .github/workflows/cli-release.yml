@@ -6,41 +6,91 @@ on:
       - "cli/v*"
 
 jobs:
-  goreleaser:
+  build:
+    name: ${{ matrix.asset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            asset: darwin_arm64
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            asset: linux_amd64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            asset: linux_arm64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli
+          key: ${{ matrix.target }}
+
+      # Tags are prefixed "cli/v0.24.0" (monorepo convention: components tag
+      # independently). The version is compile-time — cli/src/cli.rs reads
+      # ZHARNESS_VERSION through option_env!, falling back to
+      # CARGO_PKG_VERSION — so the bare semver is what the binary must embed.
+      # The Go contract injected the same value at link time (-X main.version).
+      - name: Build
+        run: |
+          version="${GITHUB_REF_NAME#cli/v}"
+          echo "building zharness $version for ${{ matrix.target }}"
+          ZHARNESS_VERSION="$version" cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        run: |
+          tar -czf "zharness_${{ matrix.asset }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" zharness
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zharness_${{ matrix.asset }}
+          path: cli/zharness_${{ matrix.asset }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0
+          path: dist
+          merge-multiple: true
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
+      - name: Write checksums.txt
+        run: |
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
+          cat checksums.txt
 
-      # Tags are prefixed "cli/v0.1.0" (monorepo convention: components tag
-      # independently). goreleaser's version templating expects a bare
-      # semver tag, so tell it the un-prefixed version via
-      # GORELEASER_CURRENT_TAG rather than the real git.ref_name.
-      - name: Derive bare semver tag
-        id: tag
-        run: echo "version=${GITHUB_REF_NAME#cli/}" >> "$GITHUB_OUTPUT"
-
-      # goreleaser's git-state validation resolves GORELEASER_CURRENT_TAG
-      # against a real git tag pointing at the released commit. Only the
-      # prefixed "cli/v..." tag exists in the repo, so create a local
-      # (never pushed) bare-semver tag for goreleaser to find.
-      - name: Create local bare tag for goreleaser
-        run: git tag "${{ steps.tag.outputs.version }}" "$GITHUB_SHA"
-
-      - name: Run goreleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: "~> v2"
-          args: release --clean --config .goreleaser.yaml
-          workdir: cli
+      # Mirrors the old release tool's `prerelease: auto`: a version carrying
+      # a `-` suffix (v0.24.0-rc.1) publishes as a prerelease, a bare one does
+      # not.
+      # This job has no checkout, so `gh` cannot infer the repository from a
+      # git remote — `--repo` is what makes the call resolvable.
+      - name: Create the GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ steps.tag.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#cli/v}"
+          prerelease=""
+          case "$version" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "zharness $version" \
+            --notes "zharness $version" \
+            $prerelease \
+            dist/*.tar.gz dist/checksums.txt

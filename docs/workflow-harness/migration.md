@@ -11,12 +11,12 @@ bash scripts/install-zharness.sh        # downloads the latest zharness release 
 zharness --version
 ```
 
-Releases are cut by pushing a `cli/vX.Y.Z` tag, but goreleaser requires its current-tag to parse as semver, so it publishes the actual GitHub Release under the bare version (e.g. `v0.1.0`), not the `cli/v...` tag used to trigger CI (`cli/.goreleaser.yaml`). `install-zharness.sh` resolves the latest release by name (`zharness ...`), not by tag prefix, to account for this. First release (`v0.1.0`) shipped from [#26](https://github.com/therealtinhtute/mono-harness/issues/26).
+Releases were cut by pushing a `cli/vX.Y.Z` tag; goreleaser published the GitHub Release under the bare version (e.g. `v0.1.0`) rather than the trigger tag, because its current-tag had to parse as semver (`cli/.goreleaser.yaml`, removed in the Rust cutover). `install-zharness.sh` resolves the latest release by name (`zharness ...`), not by tag prefix, so the change of tag convention did not break it. First release (`v0.1.0`) shipped from [#26](https://github.com/therealtinhtute/mono-harness/issues/26).
 
 Building from source instead of installing a release:
 ```bash
-cd cli && go build -o /tmp/zharness ./cmd/zharness
-/tmp/zharness --version   # prints a dev-build version; skills' version gate accepts this
+cd cli && cargo build --release
+./target/release/zharness --version   # prints the crate version; skills' version gate accepts this
 ```
 
 ## New-adopter path (no existing `.kit/`)

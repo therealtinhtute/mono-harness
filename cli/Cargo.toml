@@ -1,0 +1,27 @@
+[package]
+name = "zharness"
+version = "0.23.1"
+edition = "2021"
+description = "Installer/updater for the markdown-first workflow harness"
+license = "MIT"
+publish = false
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+include_dir = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"
+
+# The size target is a success signal, not a preference: the stripped
+# darwin/arm64 binary must stay at or under 1.85 MB, half the Go v0.23.1
+# baseline of 3,715,506 bytes.
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

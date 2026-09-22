@@ -25,24 +25,24 @@
 
 ## What are the gate commands?
 - run from: the repository root
-- tests: `cd cli && go test ./...`
-- types: n/a (the Go compiler is the type gate; `build:` covers it)
-- lint: `cd cli && go vet ./...`
-- build: `cd cli && go build ./...`
-- format: `test -z "$(gofmt -l cli)"`
+- tests: `cd cli && cargo test`
+- types: n/a (the Rust compiler is the type gate; `build:` covers it)
+- lint: `cd cli && cargo clippy --all-targets -- -D warnings`
+- build: `cd cli && cargo build`
+- format: `cd cli && cargo fmt --check`
 - also required: `bash scripts/verify-doc-links.sh`
-- Phase gates per plan: doc links, go tests, S4 `rg -i "sqlite|harness\.db" cli/`
+- Phase gates per plan: doc links, cargo tests, S4 `rg -i "sqlite|harness\.db" cli/`
   = 0, kill-list bounded scan = 0 actionable, kill-switch smoke.
 
 ## Architecture in one breath
-- runtime shape: one Go binary (`cli/cmd/zharness`) exposing exactly install /
+- runtime shape: one Rust binary (`cli/src/main.rs`) exposing exactly install /
   update / uninstall; everything else is git-committed markdown under `docs/`
   plus fail-closed pre-commit guards (proof re-execution, high-risk and full
   independent-judge, at most one active plan).
 - where state lives: `docs/plans/active/*.md` (append-only Log /
   Validation) and `.zharness/base/` (sha256 manifest + ownership
   ledger), plus the repo registry `~/.config/zharness/repos` — no SQLite anywhere.
-- entrypoints: `cli/internal/interfaces/root.go`; embedded doc set under
+- entrypoints: `cli/src/cli.rs`; embedded doc set under
   `cli/docs/embedded/` projected to `docs/`; hooks via
   `scripts/install-git-hooks.sh`.
 
