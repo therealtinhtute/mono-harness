@@ -3,7 +3,7 @@ dir  repo-a/
 13e8eb7d3420b175dfcb86669ebd4ce16fb64f9deca136037167e1a01f6bd295  repo-a/.gitignore
 dir  repo-a/.zharness/
 dir  repo-a/.zharness/base/
-3bf45926576cfe6b4981589b61cb08928c9dbdbbcece4d5d9c5035f0be05fdaf  repo-a/.zharness/base/manifest.json
+314b9018f42daf061a74caab1a96ac153b00cdd7c2cdd881cef70252703f83e5  repo-a/.zharness/base/manifest.json
 89ea06e1614cb064c7845407003e99402cdbafa844d321e7074636c484f3a3bf  repo-a/.zharness/base/ownership.tsv
 521207bbef9657bfee59a8a8c8fb6ae5f4eaa6bd983622b1d2f695c52cd1aa0c  repo-a/AGENTS.md
 dir  repo-a/docs/
@@ -11,7 +11,7 @@ f301daec08b78740c761433de0ec01c5aeaac6f82652cc9fcbaa51ac71065092  repo-a/docs/PR
 65d016e04b6d776ce32a7ad4af6977c4cc42ba31c9d279f5dbdd0e18baf72c2d  repo-a/docs/WORKFLOW.md
 dir  repo-a/docs/playbooks/
 ff90c0ed8fda2058e6056df81edc7c2cef913014612156a051b62da5fe488c3e  repo-a/docs/playbooks/brainstorm.md
-43744a5084168859158bed361097ca6e15c0ed97090d3a476c7cfe2a426402ef  repo-a/docs/playbooks/check-validation.md
+7453d161e895d2aebc8385e42905c1260bd74d5ae98d558417b68e046bda7550  repo-a/docs/playbooks/check-validation.md
 4bc435a659f42b7847a3ef7c14ed364c39bb242d92ffbf40be78dfbfaaaa7df0  repo-a/docs/playbooks/check.md
 3f6c4df6ed2eec51eda2e61558c596d91214df2cc47017443a4d00f4b04f6e15  repo-a/docs/playbooks/handoff.md
 0d90faf4a008cf1dca0f8d752752603d58e689a46a0b18e0a55c3087b61d35c4  repo-a/docs/playbooks/to-plan.md
@@ -22,7 +22,7 @@ dir  repo-b/
 13e8eb7d3420b175dfcb86669ebd4ce16fb64f9deca136037167e1a01f6bd295  repo-b/.gitignore
 dir  repo-b/.zharness/
 dir  repo-b/.zharness/base/
-3bf45926576cfe6b4981589b61cb08928c9dbdbbcece4d5d9c5035f0be05fdaf  repo-b/.zharness/base/manifest.json
+314b9018f42daf061a74caab1a96ac153b00cdd7c2cdd881cef70252703f83e5  repo-b/.zharness/base/manifest.json
 89ea06e1614cb064c7845407003e99402cdbafa844d321e7074636c484f3a3bf  repo-b/.zharness/base/ownership.tsv
 521207bbef9657bfee59a8a8c8fb6ae5f4eaa6bd983622b1d2f695c52cd1aa0c  repo-b/AGENTS.md
 dir  repo-b/docs/
@@ -30,7 +30,7 @@ f301daec08b78740c761433de0ec01c5aeaac6f82652cc9fcbaa51ac71065092  repo-b/docs/PR
 65d016e04b6d776ce32a7ad4af6977c4cc42ba31c9d279f5dbdd0e18baf72c2d  repo-b/docs/WORKFLOW.md
 dir  repo-b/docs/playbooks/
 ff90c0ed8fda2058e6056df81edc7c2cef913014612156a051b62da5fe488c3e  repo-b/docs/playbooks/brainstorm.md
-43744a5084168859158bed361097ca6e15c0ed97090d3a476c7cfe2a426402ef  repo-b/docs/playbooks/check-validation.md
+7453d161e895d2aebc8385e42905c1260bd74d5ae98d558417b68e046bda7550  repo-b/docs/playbooks/check-validation.md
 4bc435a659f42b7847a3ef7c14ed364c39bb242d92ffbf40be78dfbfaaaa7df0  repo-b/docs/playbooks/check.md
 3f6c4df6ed2eec51eda2e61558c596d91214df2cc47017443a4d00f4b04f6e15  repo-b/docs/playbooks/handoff.md
 0d90faf4a008cf1dca0f8d752752603d58e689a46a0b18e0a55c3087b61d35c4  repo-b/docs/playbooks/to-plan.md
