@@ -14,6 +14,7 @@ pub mod update;
 
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -112,12 +113,30 @@ fn hex(b: &[u8]) -> String {
 
 /// Write `data` to `p` through a sibling temp file and a rename, so a reader
 /// never sees a half-written managed file.
+///
+/// The temp path is predictable, so it is a symlink an attacker can plant
+/// inside a consumer repository. The stale entry is unlinked first — `unlink`
+/// removes the link itself, never its target — and the file is then created
+/// with `create_new`, so anything that reappears between the two calls aborts
+/// the write instead of being followed.
 pub fn write_file_atomic(p: &Path, data: &[u8]) -> Result<(), String> {
     if let Some(dir) = p.parent() {
         fs::create_dir_all(dir).map_err(|e| format!("mkdir {}: {e}", dir.display()))?;
     }
     let tmp = PathBuf::from(format!("{}.tmp-zharness", p.display()));
-    fs::write(&tmp, data).map_err(|e| format!("write {}: {e}", tmp.display()))?;
+    match fs::remove_file(&tmp) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(format!("write {}: {e}", tmp.display())),
+    }
+    let mut f = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&tmp)
+        .map_err(|e| format!("write {}: {e}", tmp.display()))?;
+    f.write_all(data)
+        .map_err(|e| format!("write {}: {e}", tmp.display()))?;
+    drop(f);
     fs::rename(&tmp, p).map_err(|e| format!("rename {}: {e}", p.display()))
 }
 
@@ -495,7 +514,7 @@ pub fn install(root: &Path, version: &str, out: &mut String) -> Result<(), Strin
             }
             let (repl_body, _) = apply_agents_block("", &new_block);
             let body = format!("{AGENTS_CREATED_HEADER}\n\n{repl_body}");
-            fs::write(&ap, body).map_err(|e| format!("write {}: {e}", ap.display()))?;
+            write_file_atomic(&ap, body.as_bytes())?;
             out.push_str(&format!("installed  {AGENTS_TARGET} (created)\n"));
         }
         Err(e) => return Err(format!("read {}: {e}", ap.display())),
@@ -799,6 +818,59 @@ mod tests {
         assert!(
             out.contains("nothing outside the managed set is written"),
             "report must state read-only nature"
+        );
+    }
+
+    /// A symlink planted at the predictable temp path must never be followed:
+    /// the bytes land on the managed path and the link's target is untouched.
+    #[test]
+    fn write_file_atomic_refuses_symlink() {
+        let repo = temp_repo();
+        let root = repo.path();
+        let outside = root.join("outside.txt");
+        fs::write(&outside, "outside bytes\n").unwrap();
+        let target = root.join("managed.md");
+        let tmp = root.join("managed.md.tmp-zharness");
+        std::os::unix::fs::symlink(&outside, &tmp).unwrap();
+
+        write_file_atomic(&target, b"managed bytes\n").unwrap();
+
+        assert_eq!(
+            fs::read_to_string(&outside).unwrap(),
+            "outside bytes\n",
+            "write_file_atomic followed a symlink planted at the temp path"
+        );
+        assert_eq!(fs::read_to_string(&target).unwrap(), "managed bytes\n");
+        assert!(
+            !fs::symlink_metadata(&tmp)
+                .map(|m| m.file_type().is_symlink())
+                .unwrap_or(false),
+            "the planted symlink survived the write"
+        );
+    }
+
+    /// A dangling symlink at AGENTS.md must not be followed: install replaces
+    /// the link with a regular file and never creates the link's target.
+    #[test]
+    fn agents_md_refuses_symlink() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        let outside = root.join("outside.txt");
+        std::os::unix::fs::symlink(&outside, root.join(AGENTS_TARGET)).unwrap();
+
+        install_ok(root);
+
+        assert!(
+            !outside.exists(),
+            "install created AGENTS.md through a dangling symlink"
+        );
+        assert!(
+            fs::symlink_metadata(root.join(AGENTS_TARGET))
+                .unwrap()
+                .file_type()
+                .is_file(),
+            "AGENTS.md is not a regular file after install"
         );
     }
 }

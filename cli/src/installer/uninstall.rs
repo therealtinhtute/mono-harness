@@ -140,7 +140,9 @@ fn remove_managed_file(
         ),
         Some(base) if sha(&local) == base => match (origin.as_str(), orig.as_ref()) {
             (ORIGIN_PREEXISTING, Some(o)) => {
-                let _ = fs::write(&dst_p, o);
+                // Through the atomic writer: a symlink planted at the managed
+                // path must be replaced, never followed.
+                let _ = write_file_atomic(&dst_p, o);
                 out.push_str(&format!("restored  {rel} (pre-install original)\n"));
             }
             (ORIGIN_CREATED, _) => {
@@ -450,6 +452,40 @@ mod tests {
         assert!(
             find_original(root, WORKFLOW_TARGET).is_none(),
             "fixture: an original would have made the provenance knowable"
+        );
+    }
+
+    /// A symlink planted at the managed path must not receive the restored
+    /// original's bytes: the restore replaces the link, never its target.
+    #[test]
+    fn uninstall_restore_refuses_symlink() {
+        let _env = IsolatedEnv::new();
+        let repo = temp_repo();
+        let root = repo.path();
+        let mine = "# my workflow, written before zharness\n";
+        write_file(root, WORKFLOW_TARGET, mine);
+        install_ok(root); // brownfield install captures the original
+
+        // The link's target carries the recorded base, so the restore branch
+        // is the one that fires.
+        let outside = root.join("outside.txt");
+        fs::write(&outside, embedded_str("WORKFLOW.md")).unwrap();
+        let managed = root.join(WORKFLOW_TARGET);
+        fs::remove_file(&managed).unwrap();
+        std::os::unix::fs::symlink(&outside, &managed).unwrap();
+
+        let mut out = String::new();
+        uninstall(root, &mut out).unwrap_or_else(|e| panic!("uninstall: {e}\n{out}"));
+
+        assert_eq!(
+            fs::read_to_string(&outside).unwrap(),
+            embedded_str("WORKFLOW.md"),
+            "uninstall restored a pre-install original through a symlink:\n{out}"
+        );
+        assert_eq!(
+            read_file(root, WORKFLOW_TARGET),
+            mine,
+            "the managed path did not receive the restored original:\n{out}"
         );
     }
 }
