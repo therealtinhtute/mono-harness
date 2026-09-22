@@ -110,6 +110,19 @@ jobs:
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: git rev-parse -q --verify "refs/heads/$DEFAULT_BRANCH" >/dev/null || git branch "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+      # The follow-ups plan's retained Validation entries cite two probe
+      # scripts at /tmp and actionlint. Both are committed under
+      # scripts/probes/ and provided here, so a fresh checkout can re-execute
+      # those proofs unchanged instead of failing on a missing file or tool.
+      - name: Provide the retained proofs' environment
+        run: |
+          cp scripts/probes/p2-nonvacuity.sh scripts/probes/p2gate-smoke.sh /tmp/
+          chmod +x /tmp/p2-nonvacuity.sh /tmp/p2gate-smoke.sh
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o /tmp/actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          tar -xzf /tmp/actionlint.tar.gz -C "$HOME/.local/bin" actionlint
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Run guards against the pushed range's plan changes
         env:
           ZHARNESS_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
