@@ -2,6 +2,7 @@
 
 - id: 2026-09-22-zharness-atomic-write-symlink
 - created: 2026-09-22
+- superseded_by: 2026-09-22-zharness-symlink-class-status (2026-09-22)
 - topic: cli/src/installer, write_file_atomic, symlink-following temp path, deferred defect
 
 ## Fact
