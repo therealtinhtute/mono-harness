@@ -40,8 +40,8 @@ skill, but you can run them directly:
 # Exceptions live in .claimignore and each one requires a `# reason`.
 bash scripts/verify-doc-links.sh
 
-# Go CLI test suite.
-cd cli && go test ./...
+# Rust CLI test suite.
+cd cli && cargo test
 ```
 
 ## Writing or editing a skill
