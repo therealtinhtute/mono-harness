@@ -14,6 +14,7 @@ Pure delta on SOUL (concise/verdict-first), Karpathy (minimal change), and Hard 
 - Call a tool only when the next step consumes its output. No speculative reads, greps, or "let me just check" calls.
 - Never re-run a read-only check already run this session (`audit`, `status`, `diff`, `grep`, `--version`, test suites) — reuse the result you already have.
 - Batch independent calls in one block. Don't serialize what has no dependency.
+- Long foreground calls may auto-background; the result is injected as a follow-up when the job finishes. Never poll a backgrounded job (`sleep`/`ps`/`pgrep`/`top`/`tail -f`/`watch`) — do other work, or end your reply, and you will be woken with its output.
 - Subagents have overhead; for small tasks a subagent costs more than it saves — see the Agent tool's own guidance, don't spawn unless asked or context-isolation clearly wins.
 
 ## 2. Check-in cadence
