@@ -439,7 +439,7 @@ source "$_zhtmp/guard.sh"
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir" "$_zhtmp"' EXIT
 
-echo "🔍 v0.15 guards on staged plans..."
+echo "🔍 Plan guards on staged plans..."
 revspec=$(zharness_guard_revspec staged) || exit 1
 gbase=$(printf '%s' "$revspec" | cut -f1)
 ghead=$(printf '%s' "$revspec" | cut -f2)
@@ -467,11 +467,11 @@ fi
 
 if [ "$guard_failed" -gt 0 ]; then
   echo ""
-  echo "❌ v0.15 guards rejected this commit."
+  echo "❌ Plan guards rejected this commit."
   echo "Fix the failing proof command(s) or provide an independent judge, then commit again."
   exit 1
 fi
-echo "✅ v0.15 guards passed"
+echo "✅ Plan guards passed"
 
 echo ""
 echo "🔍 Validating changed skills..."
@@ -613,7 +613,7 @@ function main() {
   echo "🎉 Git hooks installed successfully"
   echo ""
   echo "Hooks installed:"
-  echo "  - pre-commit: v0.15 R2/R3 guards + changed-skill validation"
+  echo "  - pre-commit: plan guards (R2/R3) + changed-skill validation"
   echo "  - commit-msg: Validates commit message format"
 }
 
