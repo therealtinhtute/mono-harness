@@ -15,9 +15,11 @@ finding cites evidence a reader can open: a digest line, a turn number, or
   the current directory (`~/.claude/projects/<cwd with non-alphanumerics as ->/*.jsonl`).
 - A named session: pass its id or `.jsonl` path.
 - Another agent (Codex: `~/.codex/sessions/**/*.jsonl`) or a pasted transcript:
-  read it directly and collect the same five signals the digest prints —
-  tool-call counts, errored results, repeated identical calls, largest results,
-  user prompts.
+  read it directly and collect the signals the digest prints — token and
+  compaction totals, tool-call counts, errored results, repeated identical
+  calls, largest results, user prompts, and answers to structured questions.
+- The digest lists sub-agent logs when they exist; digest one only when a
+  finding depends on what that sub-agent did.
 - Open the raw log only to confirm a specific turn the digest points at.
 
 ## 2. Read the repository's guardrails before judging
@@ -45,9 +47,11 @@ Scan all seven before ranking; a category earns a finding only with evidence.
   location) gets a deterministic check; only a **judgement** call (cross-file
   consistency, surrounding style) gets a written review rule.
 - **Steering weight** — AGENTS.md/CLAUDE.md carries rules that belong in a check or review rule; it should hold navigation pointers.
-- **Tool economy** — large results, repeated identical calls, or a token-heavy custom tool in the digest.
+- **Tool economy** — large results, repeated identical calls, a compaction, a peak context near the window, or a token-heavy custom tool in the digest.
 - **No-ops** — a steering line the session shows had no effect on behaviour; removing it would change nothing.
 - **Information access** — the agent lacked a log, service, or doc it needed and guessed or asked.
+
+Steering signals: a user prompt that corrects or redirects, and a structured answer that rejects the `(Recommended)` option, each mark a place where the agent's default was wrong — trace it to a category above.
 
 ## 4. Rank by severity
 

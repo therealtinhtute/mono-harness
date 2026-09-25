@@ -9,8 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `skills`: `retro`, a user-invoked session retrospective. It reads a
-  session through `scripts/session-digest.py` (tool-call counts, errors,
-  repeated calls, largest results, user prompts), checks the repo's existing
+  session through `scripts/session-digest.py` (token and compaction
+  totals, tool-call counts, errors, repeated calls, largest results, user
+  prompts, structured-question answers), checks the repo's existing
   guards and review surface first, reports at most 5 evidence-cited findings
   ranked `S1`–`S3` with one marked `Next`, and — only after the user approves
   it — fixes that one finding as a guard or as a rerun-gated experiment.
@@ -19,8 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   round asks every decision whose prerequisites are settled, with a
   recommended answer on each question. The agent looks up facts itself; only
   decisions go to the user; decisions only an absent person can make become
-  `open_question: … | owner: …`. The grill is done when the frontier is empty
-  and every Goal field is concrete, then it offers a lock. `raw` runs at most
+  `open_question: … | owner: …`. Each round also stress-tests terms, edge
+  cases, and code contradictions. The grill is done when the frontier is
+  empty and `to-plan` could plan from the Goal without a single question;
+  it flags `adr candidate` decisions, then offers a lock. `raw` runs at most
   2 rounds and prints decided / assumed / open.
 
 ### Removed

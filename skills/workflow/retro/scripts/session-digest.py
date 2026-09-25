@@ -52,7 +52,8 @@ def main():
     calls = {}
     counts = collections.Counter()
     repeats = collections.Counter()
-    errors, results, prompts = [], [], []
+    errors, results, prompts, answers = [], [], [], []
+    peak_context = output_tokens = compactions = 0
 
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -62,8 +63,16 @@ def main():
                 continue
             if rec.get("isSidechain"):
                 continue
+            if rec.get("type") == "system" and "compact" in str(rec.get("subtype", "")):
+                compactions += 1
             msg = rec.get("message") or {}
             content = msg.get("content")
+            usage = msg.get("usage") if rec.get("type") == "assistant" else None
+            if usage:
+                context = sum(usage.get(k) or 0 for k in (
+                    "input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+                peak_context = max(peak_context, context)
+                output_tokens += usage.get("output_tokens") or 0
             if rec.get("type") == "assistant" and isinstance(content, list):
                 for b in content:
                     if b.get("type") == "tool_use":
@@ -77,16 +86,25 @@ def main():
                         prompts.append(short(content, 240))
                     continue
                 for b in content or []:
+                    if b.get("type") == "text" and not b.get("text", "").startswith("<"):
+                        prompts.append(short(b["text"], 240))
                     if b.get("type") != "tool_result":
                         continue
                     name, sig = calls.get(b.get("tool_use_id"), ("?", ""))
                     body = text_of(b.get("content"))
                     results.append((len(body), name, sig))
+                    if name == "AskUserQuestion":
+                        answers.append(short(body, 240))
                     if b.get("is_error"):
                         errors.append((name, short(body)))
 
     print(f"session: {path}")
     print(f"user prompts: {len(prompts)}  tool calls: {sum(counts.values())}")
+    print(f"peak context tokens: {peak_context}  output tokens: {output_tokens}  "
+          f"compactions: {compactions}")
+    subagents = glob.glob(os.path.join(path[: -len(".jsonl")], "subagents", "*.jsonl"))
+    if subagents:
+        print(f"sub-agent logs: {len(subagents)} (pass one as the argument to digest it)")
     print("\n## tool calls by name")
     for name, n in counts.most_common():
         print(f"- {name}: {n}")
@@ -104,6 +122,9 @@ def main():
     print("\n## user prompts (corrections and steering show up here)")
     for i, p in enumerate(prompts, 1):
         print(f"{i}. {p}")
+    print(f"\n## answers to structured questions ({len(answers)})")
+    for a in answers:
+        print(f"- {a}")
 
 
 if __name__ == "__main__":
