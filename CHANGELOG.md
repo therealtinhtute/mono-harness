@@ -43,6 +43,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- `cli`: the golden replay test (`tests/golden.rs`), the Go-manifest
+  compatibility test (`tests/go_manifest_compat.rs`), and their fixtures under
+  `cli/testdata/golden/`. Every edit to an embedded playbook forced a hand
+  re-bless of those fixtures. CLI output and exit codes, and reading a
+  manifest written by Go v0.23.1, are no longer covered end to end;
+  `projection_parity` and the unit tests remain.
 - `skills`: `encode-invariant` and `improve-harness`, folded into `retro` as
   its guard and experiment fix modes. Their references moved unchanged to
   `skills/workflow/retro/references/`. **Migration:** reinstall the skills;

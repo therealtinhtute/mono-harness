@@ -50,11 +50,8 @@ trap 'rm -f "$LIST"' EXIT
 # docs/plans/** is excluded by category, not by exception: a plan artifact must be
 # able to name a file it will create, and a completed plan is an immutable record
 # of paths as they were. Neither is a live cross-reference.
-# cli/testdata/** is excluded by category, not by exception: it is a frozen Go test
-# fixture whose stale paths are asserted input, not live repository documentation.
 find docs cli skills rules setup -name '*.md' -type f \
-  -not -path 'docs/plans/*' \
-  -not -path 'cli/testdata/*' >"$LIST"
+  -not -path 'docs/plans/*' >"$LIST"
 for extra in AGENTS.md README.md; do
   if [ -f "$extra" ]; then
     printf '%s\n' "$extra" >>"$LIST"

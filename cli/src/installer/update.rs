@@ -283,9 +283,9 @@ mod tests {
     }
 
     /// The AGENTS block is replaced between its markers unless it was edited
-    /// since zharness last wrote it (ADR 0011). The refusal half of that
-    /// contract is pinned end-to-end by the `update-refuse-edited-block` and
-    /// `update-force` golden fixtures; the branches below are not.
+    /// since zharness last wrote it (ADR 0011). These tests pin the
+    /// replace-and-keep-prose branches; the refusal half has no end-to-end
+    /// test since the golden fixtures were removed.
     #[test]
     fn update_agents_block_untouched_is_replaced_and_prose_kept() {
         let _env = IsolatedEnv::new();
