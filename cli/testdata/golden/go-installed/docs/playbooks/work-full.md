@@ -5,7 +5,7 @@ Loaded by `docs/playbooks/work.md` once the resolved mode is `full`. Preconditio
 ## Owned Plan Sections
 
 - the selected phase's lifecycle `status:` line in `## Phases and Verification`
-- `## Log` — append-only, one line per entry: `- <UTC> — <phase>[/<task>] — <kind> — <text>`, where kind is `start|done|blocked|decision`. A `done` line names the exact check and its result plus changed surfaces; a `blocked` line names the blocker and `failure_class`; a `decision` line states a deviation, trade-off, or wrong assumption with its rationale.
+- `## Log` — append-only, one line per entry: `- <UTC> — <phase>[/<task>] — <kind> — <text>`, where kind is `start|done|blocked|decision`. A `done` line names the exact check and its result plus changed surfaces, and for a behavior task the test that went red first; a `blocked` line names the blocker and `failure_class`; a `decision` line states a deviation, trade-off, or wrong assumption with its rationale.
 - `## Current State and Next Action` — active phase, lifecycle status, blockers, open items, one exact next action
 
 Preserve everything else: Goal, approach, phase/task definitions, prior Log entries, validation evidence. Do not add or update task-definition `status` fields. `## Log` is the sole task execution-status source. Timestamps come from `date -u`, never estimated.
@@ -21,7 +21,12 @@ Preserve everything else: Goal, approach, phase/task definitions, prior Log entr
    Read the target phase block under `## Phases and Verification` and the tail of `## Log`. Select the requested phase, else the first non-done phase whose dependencies are done. Stop IF Current State and the phase block disagree on status (reconcile first), or IF no non-empty active plan exists (recommend `brainstorm lock`).
 2. **Check boundaries** — compare the requested diff and working tree against the phase's touched/avoided surfaces. Work already outside authority → stop `BLOCKED_CONTRACT_DRIFT`; a task without a check → stop `BLOCKED_VERIFICATION`.
 3. **Start the run** — set that phase's plan status to `in-progress`, set Current State to the same phase/status, and append a `start` Log entry. Never continue while statuses disagree.
-4. **Execute tasks** — in plan order (waves in order when the plan has them); parallelize only tasks the plan marks independent; read every target before editing; stay inside approved surfaces.
+4. **Execute tasks** — in plan order (waves in order when the plan has them); parallelize only tasks the plan marks independent; read every target before editing; stay inside approved surfaces. A task that changes behavior runs **red → green**:
+   - **Red** — write one test at the task's planned seam and run it; it must fail, for the reason the task names.
+   - **Green** — write the least code that passes it; later tasks get no speculative code.
+   - Tests assert behavior through the seam's public interface. A test the task needs at an unplanned seam is a plan gap → `decision` Log entry and ask.
+   - Refactoring beyond what the task needs belongs to `check`'s review, outside this loop.
+   A task that changes no behavior (docs, config, a wide mechanical refactor) skips red and runs its check.
 5. **Verify each task** — run its exact command. One targeted fix after a failure; a second failure is `BLOCKED_VERIFICATION` → append its `blocked` entry, naming the failed command as the gap, *before* any further edit.
 6. **Log** — append a `done` entry per verified task; batching a wave's `done` entries into one edit is fine. A `blocked` entry is written immediately, together with any `done` entries still held. Every `blocked` entry includes `failure_class: MISSING_CONTEXT|WRONG_TOOL|BAD_OUTPUT|REPEATED_LOOP|UNSAFE_ACTION|LOST_DECISION|UNKNOWN`. Append a `decision` entry only IF execution finds a plan gap, valid trade-off, deviation, or wrong assumption; never rewrite an earlier entry.
 7. **Refresh Current State** — active phase, `lifecycle_status: in-progress`, blockers, open items, exact next action. The plan stays `status: active` until final closure.

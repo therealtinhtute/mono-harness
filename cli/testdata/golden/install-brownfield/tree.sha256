@@ -3,7 +3,7 @@ dir  repo/
 13e8eb7d3420b175dfcb86669ebd4ce16fb64f9deca136037167e1a01f6bd295  repo/.gitignore
 dir  repo/.zharness/
 dir  repo/.zharness/base/
-59c590628d95d8994087a3d4906aece243c55387acbdd4d79ac7b7ce73ed1db8  repo/.zharness/base/manifest.json
+fc8df24e2f60f94df54012bba488bda4cd2295f55860a86ae0698cbb3d640f25  repo/.zharness/base/manifest.json
 dir  repo/.zharness/base/original/
 d2c3046647597d1c6ab1b43d4505ef809c2d7ed49d108761a87a723c2629b076  repo/.zharness/base/original/AGENTS.md.orig
 fd9111ddfa64a9400974d28f6b5006184286d7b1d6098d58dd01c425391b750e  repo/.zharness/base/original/docs_2FPROJECT.md.orig
@@ -15,11 +15,11 @@ fd9111ddfa64a9400974d28f6b5006184286d7b1d6098d58dd01c425391b750e  repo/docs/PROJ
 dir  repo/docs/playbooks/
 c9c199bdf5ac4e6b53dadf5381705b2505ec47480cd6d6e61f76972ee47278cc  repo/docs/playbooks/brainstorm.md
 7453d161e895d2aebc8385e42905c1260bd74d5ae98d558417b68e046bda7550  repo/docs/playbooks/check-validation.md
-4bc435a659f42b7847a3ef7c14ed364c39bb242d92ffbf40be78dfbfaaaa7df0  repo/docs/playbooks/check.md
+e1ee2e0c68db9ffd00fc3dcb79ef4c87b6d9abff2e401c06e9f84d1158af5a15  repo/docs/playbooks/check.md
 3f6c4df6ed2eec51eda2e61558c596d91214df2cc47017443a4d00f4b04f6e15  repo/docs/playbooks/handoff.md
-0d90faf4a008cf1dca0f8d752752603d58e689a46a0b18e0a55c3087b61d35c4  repo/docs/playbooks/to-plan.md
+367b7eda9629e581dccc2fac29c2ad7678234d4a81a739f13a83fb863cda5274  repo/docs/playbooks/to-plan.md
 4f0360241733b8c8e3cb4b031ac522073db61650a196b7aadfe104fd10f589b7  repo/docs/playbooks/watzup.md
-9b5b916bd60619dd3282c0cdf8a0f6074ddc520179e371671e40330f0b05f713  repo/docs/playbooks/work-full.md
+50859c7516f74620f506fb69b445acab44f2319ee358cc43be03294cf7549d25  repo/docs/playbooks/work-full.md
 6ce8de3bd5c3db9c1ec17e1fa87b0dff7c17f4e3d79bb10b93dda0e4cc54f6f5  repo/docs/playbooks/work.md
 dir  xdg/
 dir  xdg/zharness/

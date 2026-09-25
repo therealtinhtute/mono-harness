@@ -21,6 +21,7 @@ Require the active plan with `status: active` and a complete `## Goal`. Exactly 
 ## Phases and Verification
 - approach: <chosen path and why; the rejected alternative>
 - risks: <risk → mitigation; stop and recovery condition>
+- seams: <public interfaces where behavior is tested; existing ones first>
 - phase_slug: `<slug>`
   status: planned
   - goal: R1, R2 | depends_on: none
@@ -45,11 +46,16 @@ Invariants:
 1. **Read the plan** — extract outcome, success signal, actors, authority, requirements with their acceptance checks, non-goals, lane, constraints, and the validation expectations they set (`success_signal:` and each `acceptance:`).
 2. **Choose the smallest viable approach** — write the path, why it is preferred, the rejected alternative, risks, mitigations, and stop/recovery conditions at the head of the section.
 3. **Define phases** — `normal`: one phase. `high-risk`: split only where dependency, risk, or independent verification warrants; order by real dependency and risk reduction, not size; each phase leaves the system usable if the next never lands.
-4. **Build tasks** — per phase: tasks (waves only in `high-risk`; same wave only for tasks that can proceed independently), touched and avoided surfaces, and on each task its `output:` and `stop_if:`. `high-risk`: each phase names `escalate_when:`.
-5. **Write checks before execution** — every meaningful task gets an observable command or inspection. Missing verification is a planning blocker; `work` may not invent it later.
-6. **Update the file** — replace `approach: not-planned` with the section; set Current State `exact_next_action: work full phase {first-phase-slug}`.
-7. **Verify coherence** — unique phase slugs, acyclic dependencies, statuses coherent with `## Log`, no second initiative markdown anywhere in the tree. Traceability: every requirement appears in some phase `goal:`, and every requirement's `acceptance:` maps to at least one task `check:` or phase check; a gap is a planning blocker.
+4. **Build tasks** — per phase: tasks (waves only in `high-risk`; same wave only for tasks that can proceed independently), touched and avoided surfaces, and on each task its `output:` and `stop_if:`. `high-risk`: each phase names `escalate_when:`. Slice every task as a **tracer bullet**:
+   - Vertical: a thin but complete path through every layer the change touches (data, logic, interface, test), verifiable on its own — never one horizontal layer.
+   - Sized to finish in one fresh context window.
+   - Prefactor first: a task that makes the change easy precedes the task that makes the change.
+   - Exception: a wide mechanical refactor (one rename or retype fanning across many call sites) is one task of its own, checked by the build or type check.
+5. **Pick the seams** — list in `seams:` the public interfaces where each task's behavior is observed and tested. Prefer existing seams, then the highest new one; fewer seams is better. IF a seam is new (no test yet exercises that interface) → confirm it with the user before writing the section.
+6. **Write checks before execution** — every meaningful task gets an observable command or inspection, run at one of its seams. Missing verification is a planning blocker; `work` may not invent it later.
+7. **Update the file** — replace `approach: not-planned` with the section; set Current State `exact_next_action: work full phase {first-phase-slug}`.
+8. **Verify coherence** — unique phase slugs, acyclic dependencies, statuses coherent with `## Log`, no second initiative markdown anywhere in the tree. Traceability: every requirement appears in some phase `goal:`, and every requirement's `acceptance:` maps to at least one task `check:` or phase check; a gap is a planning blocker.
 
 ## Exit Conditions
 
-Complete only when the plan holds a decision-complete approach, explicit risks and recovery, stable phases with coherent statuses, executable tasks, and exact verification commands, and the next action names the first executable phase for `work full`.
+Complete only when the plan holds a decision-complete approach, explicit risks and recovery, confirmed seams, tracer-bullet tasks, stable phases with coherent statuses, executable tasks, and exact verification commands, and the next action names the first executable phase for `work full`.
