@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `to-plan`: tasks are sliced as tracer bullets (vertical, one context
+  window each, prefactor first; a wide mechanical refactor is its own task),
+  and the section records `seams:` — the public interfaces tasks are tested
+  at. A new seam is confirmed with the user before the section is written.
+- `work` (full): a behavior task runs red → green at its planned seam — a
+  failing test first, then the least code that passes. The `done` Log line
+  names the test that went red. A test needed at an unplanned seam is a plan
+  gap, logged as a `decision`.
+- `check`: the `full` review (and a `bounded` diff review) runs on two axes
+  kept apart — Spec (requirements missing, partial, wrong, or scope creep)
+  and Standards (repo standards, Security/Performance/Architecture/Quality,
+  a Fowler smell baseline, and test anti-patterns) — as parallel sub-agents
+  where the harness supports them, reported without cross-axis reranking.
 - `skills`: `retro`, a user-invoked session retrospective. It reads a
   session through `scripts/session-digest.py` (token and compaction
   totals, tool-call counts, errors, repeated calls, largest results, user
