@@ -10,7 +10,7 @@
 
 The largest savings come from loading only what the active branch uses, not from rewording. Three targets dominate:
 
-- `git`: it reads its full `references/workflow.md` on every commit.
+- `git`: it reads its full `skills/workflow/git/references/workflow.md` on every commit.
 - `check.md`: it is loaded on every `work full` phase and every `check` run.
 - `AGENTS.md`: it sits in context on every turn.
 
@@ -30,7 +30,7 @@ If each file is split by branch, with the same pointer pattern `work.md` → `wo
 
 | Invocation | Loads | Tokens | Frequency |
 |---|---|---|---|
-| `git` | SKILL.md (644) + `references/workflow.md`, always read (2,112) | **~2,760** | Every commit |
+| `git` | SKILL.md (644) + `skills/workflow/git/references/workflow.md`, always read (2,112) | **~2,760** | Every commit |
 | `work full`, per phase | SKILL (256) + `work.md` (765) + `work-full.md` (1,288) + `check.md` (2,513) + `check-validation.md` (632) | **~5,450** | Every phase |
 | `check bounded` | SKILL (260) + `check.md` (2,513) | ~2,770 | Frequent |
 | `brainstorm explore` | SKILL (284) + `brainstorm.md` (2,184) | ~2,470 | Frequent |
