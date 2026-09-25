@@ -21,7 +21,7 @@ The lifecycle needs no binary: route through the table and read only the named p
 | handoff | `docs/playbooks/handoff.md` | standard |
 | watzup | `docs/playbooks/watzup.md` | fast |
 
-`git` and `interview` keep skill-local procedure and are never harness-gated.
+`git` keeps skill-local procedure and is never harness-gated.
 
 A tier is a capability class, not a model name. Each host maps tiers once:
 

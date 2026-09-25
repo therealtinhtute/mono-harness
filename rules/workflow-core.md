@@ -24,7 +24,7 @@ Invoke these skills proactively at the right moment — user does not need to ty
 - Close out with what changed, what verification ran, and any remaining risk.
 
 ## Design and Planning
-- Intent is fuzzy or contradictory before planning → invoke `interview` to clarify first.
+- Intent is fuzzy or contradictory before planning → invoke `brainstorm grill` to clarify first.
 - New feature, system, or architectural question with scope > 3 files → invoke `brainstorm`.
 - Architecture decision, "should we build X", "is this worth it" → invoke `think`.
 - Plan locked in `docs/plans/active/{slug}.md` or user says "make a plan" / "what are the steps" → invoke `to-plan`.
