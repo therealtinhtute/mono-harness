@@ -8,12 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- `skills`: `retro`, a read-only, user-invoked session retrospective. It
-  reads a session through `scripts/session-digest.py` (tool-call counts,
-  errors, repeated calls, largest results, user prompts), checks the repo's
-  existing guards and review surface first, and reports at most 5
-  evidence-cited findings ranked `S1`–`S3`, with one marked `Next` and
-  handed to `improve-harness` or `encode-invariant`.
+- `skills`: `retro`, a user-invoked session retrospective. It reads a
+  session through `scripts/session-digest.py` (tool-call counts, errors,
+  repeated calls, largest results, user prompts), checks the repo's existing
+  guards and review surface first, reports at most 5 evidence-cited findings
+  ranked `S1`–`S3` with one marked `Next`, and — only after the user approves
+  it — fixes that one finding as a guard or as a rerun-gated experiment.
+
+### Removed
+
+- `skills`: `encode-invariant` and `improve-harness`, folded into `retro` as
+  its guard and experiment fix modes. Their references moved unchanged to
+  `skills/workflow/retro/references/`. **Migration:** reinstall the skills;
+  invoke `/retro` where you invoked either removed skill. A plan already at
+  `docs/plans/active/harness-improvement-{slug}.md` keeps working as is.
 
 ## [v0.24.0] — 2026-09-22
 

@@ -22,8 +22,6 @@ This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh
 │   │   ├── git/
 │   │   ├── handoff/
 │   │   ├── watzup/
-│   │   ├── encode-invariant/
-│   │   ├── improve-harness/
 │   │   └── retro/
 │   ├── shipping/           # Build & ship code
 │   │   ├── create-cli/

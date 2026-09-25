@@ -36,3 +36,6 @@ cli/internal/embedded/embedded_test.go   # historical audit measurement (docs/au
 cli/internal/installer/installer.go      # historical audit measurement (docs/audit/multi-stack-agent-readiness-audit.md, docs/audit/multi-stack-harness-audit.md); deleted in the v0.24 Rust cutover
 cli/internal/installer/uninstall.go      # historical audit measurement (docs/audit/2026-09-07-integrity-review.md); deleted in the v0.24 Rust cutover
 cli/internal/installer/update.go         # historical audit measurement (docs/audit/2026-09-07-integrity-review.md); deleted in the v0.24 Rust cutover
+
+skills/workflow/encode-invariant/SKILL.md  # historical audit measurement (docs/audit/multi-stack-harness-audit.md); skill folded into retro as its guard mode
+skills/workflow/improve-harness/SKILL.md   # historical audit measurement (docs/audit/multi-stack-harness-audit.md); skill folded into retro as its experiment mode
