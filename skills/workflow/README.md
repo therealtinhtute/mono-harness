@@ -70,3 +70,4 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `git` / `interview` | no plan sections | enrichment optional, never blocking |
 | `encode-invariant` | no plan sections | non-spine; pattern `skills/workflow/encode-invariant/references/encoding-invariants.md`; never blocking on a missing binary |
 | `improve-harness` | no plan sections | non-spine; template `skills/workflow/improve-harness/references/harness-improvement.md`; never blocking on a missing binary |
+| `retro` | no plan sections | non-spine, read-only; logic `skills/workflow/retro/references/retro.md`, digest `skills/workflow/retro/scripts/session-digest.py`; hands one finding to `improve-harness` or `encode-invariant` |
