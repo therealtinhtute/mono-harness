@@ -4,10 +4,10 @@ Output: at most 5 findings, severity-ranked, each in the schema below, exactly
 one marked `Next`. No preamble. Steps 1–5 are read-only; step 6 edits files only
 after the user approves the `Next` finding, and fixes that one finding only.
 
-A retro improves the agent's **environment** (navigation, guards, steering,
-tools, information), never the code the session produced. Every finding must
-cite evidence a reader can open: a digest line, a turn number, or `file:line`.
-Drop any candidate you cannot cite.
+A retro targets the agent's **environment** (navigation, guards, steering,
+tools, information); the session's own code is evidence, not the target. Every
+finding cites evidence a reader can open: a digest line, a turn number, or
+`file:line`. Report only what you can cite.
 
 ## 1. Load the session
 
@@ -27,13 +27,16 @@ Drop any candidate you cannot cite.
   `Cargo.toml` / `Makefile` scripts), git hooks (`.git/hooks/`, a hook
   installer), and CI workflows.
 - Review surface: whatever reviews a diff here — a review playbook, a judge,
-  a `CODING_STANDARDS.md`, a review bot. Record which exist; assume none.
+  a `CODING_STANDARDS.md`, a review bot. Record which exist; treat anything you did not find as absent.
 
 A check that exists but is unwired, skipped, or silently broken is the finding —
 not a new check. A repo with no hook and no CI job running its lint/test is
 itself a finding.
 
 ## 3. Scan these categories
+
+Scan all seven before ranking; a category earns a finding only with evidence.
+
 
 - **Navigation** — the agent searched long or read wrong files first. Candidate fix: a pointer in the file the agent already reads.
 - **Automated checks** — the agent made an error a linter, type check, test, or hook would catch.
@@ -88,8 +91,8 @@ Pick the mode from the finding, not from preference:
 The fix is done when its proof ran. The *improvement* is claimed only after a
 later, different session re-runs the representative job and sets `Decision:`
 to keep, revise, or remove — until then report it as pending, not as improved.
-Do not install hooks, change CI providers, or touch branch protection unless the
-user authorizes that file separately.
+Hooks, CI providers, and branch protection change only when the user
+authorizes that file separately.
 
 <example id="1">
 ### 1. [S1] Automated checks — work claimed `cargo test` green; it was never run (Next)
