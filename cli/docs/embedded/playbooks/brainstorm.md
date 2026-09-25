@@ -6,7 +6,7 @@ Explore a decision in the response, grill intent until the Goal is concrete, or 
 
 ## Modes
 
-A leading subcommand (`explore`, `grill`, `raw`, `lock`, `refine`) sets the mode. Without one, choose from the request shape; ask only when mode or scope is genuinely ambiguous.
+A leading subcommand (`explore`, `grill`, `raw`, `lock`, `refine`) sets the mode. Without one, choose from the request shape — a request to grill, interview, or stress-test an idea or plan is `grill`; ask only when mode or scope is genuinely ambiguous.
 
 | Mode | Input | Durable effect |
 |---|---|---|
@@ -81,10 +81,11 @@ lane: normal
 
 ## Grill
 
-Map the request as a **design tree**: each decision branches into the decisions that depend on it. Work it in **rounds**.
+Grill **relentlessly**. Map the request as a **design tree**: each decision branches into the decisions that depend on it. Work it in **rounds**.
 
 - **Frontier** — every open decision whose prerequisites are settled. Ask the whole frontier in one round; a question that depends on another still open this round waits for a later round.
-- **Format** — use the harness's structured-question tool when it has one (at most 4 questions per call; split a larger frontier across calls in the same round). Otherwise number each question: `❓ **Q1** — **<title>**: <question, with choices>` then `➡️ <recommended answer>`. Every question carries a recommendation.
+- **Format** — use the harness's structured-question tool when it has one (at most 4 questions per call, recommended option first and labelled `(Recommended)`; split a larger frontier across calls in the same round). Otherwise number each question: `❓ **Q1** — **<title>**: <question, with choices>` then `➡️ <recommended answer>`. Every question carries a recommendation.
+- **Recompute** — after each round, settle what was answered and recompute the frontier; an answer that contradicts a settled decision reopens that branch.
 - **Facts vs decisions** — facts are yours: read the repo, docs, and `docs/memory/`, or dispatch a sub-agent, and ask the rest of the frontier while it runs. Decisions are the user's: put each one to them and wait.
 - **Absent owner** — a decision only someone else can make stays open as `open_question: <question> | owner: <who>`; keep grilling the other branches. An open question that blocks a requirement blocks the lock (step 4's stop rule).
 - **Done** — the frontier is empty and every Goal field is concrete: `outcome`, a checkable `success_signal`, `actors`, `authority`, each requirement with `acceptance:`, and `non-goals`. Then summarize the settled tree, list any `open_question:`, and ask: lock (or refine) now?
