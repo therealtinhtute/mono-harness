@@ -1,6 +1,6 @@
 # Harness improvement — {slug}
 
-Copy to `docs/plans/active/harness-improvement-{slug}.md` only when the user invokes `improve-harness`.
+Copy to `docs/plans/active/harness-improvement-{slug}.md` only when a `retro` fix runs in experiment mode.
 
 ## Baseline
 - representative job:

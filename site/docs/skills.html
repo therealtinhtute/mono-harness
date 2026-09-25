@@ -56,7 +56,7 @@
       </div>
 
       <div class="prose reveal">
-        <h2>Workflow Skills (10)<i>.</i></h2>
+        <h2>Workflow Skills (9)<i>.</i></h2>
         <p>Workflow skills govern the full lifecycle of a development initiative: requirement locking, phased planning, wave execution, quality gates, and git operations.</p>
       </div>
 
@@ -175,29 +175,15 @@
 
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">encode-invariant</h3>
+            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">retro</h3>
             <span class="badge">workflow</span>
           </div>
           <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
-            Turns an accepted repository rule into the smallest native guard, with positive and negative proof. Never invents policy.
+            Retrospective on a finished session: up to five evidence-cited, severity-ranked findings, then one approved fix &mdash; a native guard with positive and negative proof, or a scoped experiment awaiting a fresh-session rerun.
           </p>
           <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
-            <strong>Trigger:</strong> <code>/encode-invariant [rule]</code><br>
-            <strong>Output:</strong> A guard plus proof that it rejects the violation
-          </div>
-        </div>
-
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">improve-harness</h3>
-            <span class="badge">workflow</span>
-          </div>
-          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
-            One explicit, evidence-backed improvement to agent guidance or validation after observed, reusable friction. A different session must rerun it before success is claimed.
-          </p>
-          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
-            <strong>Trigger:</strong> <code>/improve-harness [friction]</code><br>
-            <strong>Output:</strong> One scoped guidance or validation change
+            <strong>Trigger:</strong> <code>/retro [session]</code><br>
+            <strong>Output:</strong> Ranked findings, then one guard or experiment
           </div>
         </div>
       </div>
@@ -302,7 +288,7 @@
 
       <div class="prose reveal">
         <h2>Reference Table<i>.</i></h2>
-        <p>Summary of all 16 skills, their classification, and intended operational roles.</p>
+        <p>Summary of all 15 skills, their classification, and intended operational roles.</p>
       </div>
 
       <div class="spec reveal">
@@ -395,15 +381,9 @@
         </div>
         <div class="spec-row">
           <div class="spec-idx">15</div>
-          <div class="spec-scene"><code>encode-invariant</code></div>
+          <div class="spec-scene"><code>retro</code></div>
           <div class="spec-cell"><span class="badge">Workflow</span></div>
-          <div class="spec-cell">Turn an accepted rule into a native guard with positive and negative proof</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">16</div>
-          <div class="spec-scene"><code>improve-harness</code></div>
-          <div class="spec-cell"><span class="badge">Workflow</span></div>
-          <div class="spec-cell">One friction, one intervention; no improvement claim without a fresh-session rerun</div>
+          <div class="spec-cell">Session retrospective: ranked findings, then one guard or one rerun-gated experiment</div>
         </div>
       </div>
     </article>
