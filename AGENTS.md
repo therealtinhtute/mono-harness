@@ -32,7 +32,7 @@ This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh
 │       └── prompt-leverage/
 ├── cli/                    # zharness Rust crate — install/update/uninstall only
 │   ├── src/                    # cli.rs (clap surface), embedded.rs, installer/
-│   ├── tests/                  # golden replay, projection parity, Go-manifest compat
+│   ├── tests/                  # projection parity
 │   └── docs/embedded/          # include_bytes!/include_dir! source for playbooks/templates
 ├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
 │   ├── ask-user-question.md   # AskUserQuestion enforcement

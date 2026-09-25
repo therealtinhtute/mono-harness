@@ -1,8 +1,0 @@
-dir  home/
-dir  repo/
-dir  repo/docs/
-dir  repo/docs/playbooks/
-eeec8ebace1c0ec6096c2836f2bae6a789d74490dd63e177dbcf4cf2481bbe31  repo/docs/playbooks/work.md
-dir  xdg/
-dir  xdg/zharness/
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  xdg/zharness/repos
