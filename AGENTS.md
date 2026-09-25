@@ -17,7 +17,6 @@ This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh
 │   │   ├── brainstorm/
 │   │   ├── to-plan/
 │   │   ├── work/
-│   │   ├── interview/
 │   │   ├── check/
 │   │   ├── git/
 │   │   ├── handoff/
@@ -108,13 +107,13 @@ watzup → work → check → git → handoff          (resume existing work)
 brainstorm → to-plan → work → check → git → handoff  (new work)
 ```
 - `watzup` — recap branch state, committed + uncommitted changes, handoff context, recommend next action (session start)
-- `brainstorm` — explore options and lock requirements into `docs/plans/active/{slug}.md` (4 modes: explore, lock-from-idea, lock-from-files, refine)
+- `brainstorm` — explore options and lock requirements into `docs/plans/active/{slug}.md` (subcommands: explore, grill, raw, lock, refine)
 - `to-plan` — generate executable phase plans from the locked plan's requirements
 - `work` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
 - `check` — pre-commit gate and post-implementation review (also invoked per phase by `work`)
 - `git` / `handoff` — session close-out
 
-`interview` is optional — use to grill fuzzy intent into a clear goal, or to validate an existing plan before `work`. Can sit between `brainstorm` and `to-plan`, or between `to-plan` and `work`.
+`brainstorm grill` is optional — use it to grill fuzzy intent into a concrete Goal, or to validate an existing plan before `work`. `brainstorm raw` is its fast first pass.
 
 State underneath this pipeline is committed markdown: the plan documents under `docs/plans/active/{slug}.md` (moved to `docs/plans/completed/` on closure) are the record, and fail-closed pre-commit guards in `scripts/install-git-hooks.sh` enforce proof re-execution, an independent judge on high-risk and on `full` checks, and at most one active plan. There is no database — the SQLite store and the whole lifecycle command surface were deleted in v0.15 (see `docs/ARCHITECTURE.md`). The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines) that route straight to `docs/playbooks/<stage>.md`; the operating logic lives there, not in the skill files, so any agent that can read a file and run git can execute the same lifecycle with no binary installed. `zharness` itself is now three verbs — `install` / `update` / `uninstall` — which scaffold that managed doc set, fresh-overwriting playbooks/WORKFLOW.md on update, replacing the hash-guarded `AGENTS.md` block, and writing `docs/PROJECT.md` only when absent (ADR 0011). See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for the historical 0.14.x adoption path. Editing a playbook: change `cli/docs/embedded/playbooks/<stage>.md`, then copy the same bytes to `docs/playbooks/<stage>.md` — `cd cli && cargo test --test projection_parity` fails if the two drift.
 

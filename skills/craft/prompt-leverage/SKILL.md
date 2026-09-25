@@ -32,7 +32,7 @@ task complexity and risk level.
 
 ## Defer To Instead
 - `create-skill` — creating new skills from scratch
-- `interview` — extracting requirements before prompt engineering
+- `brainstorm grill` — extracting requirements before prompt engineering
 - `brainstorm` — comparing multiple prompting approaches
 </context>
 

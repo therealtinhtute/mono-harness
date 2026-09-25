@@ -14,6 +14,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   guards and review surface first, reports at most 5 evidence-cited findings
   ranked `S1`–`S3` with one marked `Next`, and — only after the user approves
   it — fixes that one finding as a guard or as a rerun-gated experiment.
+- `brainstorm` 5.0.0: subcommands `explore` (default), `grill`, `raw`,
+  `lock`, `refine`. `grill` walks a design tree in frontier rounds: each
+  round asks every decision whose prerequisites are settled, with a
+  recommended answer on each question. The agent looks up facts itself; only
+  decisions go to the user; decisions only an absent person can make become
+  `open_question: … | owner: …`. The grill is done when the frontier is empty
+  and every Goal field is concrete, then it offers a lock. `raw` runs at most
+  2 rounds and prints decided / assumed / open.
 
 ### Removed
 
@@ -22,6 +30,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `skills/workflow/retro/references/`. **Migration:** reinstall the skills;
   invoke `/retro` where you invoked either removed skill. A plan already at
   `docs/plans/active/harness-improvement-{slug}.md` keeps working as is.
+- `skills`: `interview`, folded into `brainstorm grill` (deep) and
+  `brainstorm raw` (fast). Its separate validated-spec template is gone; a
+  grill writes the plan's `## Goal` directly on an approved lock.
+  **Migration:** invoke `/brainstorm grill [idea|plan path]` where you
+  invoked `/interview`, and `/brainstorm raw` for `mode:fast`.
 
 ## [v0.24.0] — 2026-09-22
 

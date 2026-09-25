@@ -1,6 +1,6 @@
 # Workflow Harness — Concept
 
-The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, interview, check, git, handoff`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to playbooks in the repository. This doc locks the mental model.
+The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, handoff`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to playbooks in the repository. This doc locks the mental model.
 
 ## 4-Layer Model
 
@@ -26,7 +26,7 @@ Once the plan is locked, `to-plan` writes its Phases and Verification (approach 
 ### Handoff/Resume — `handoff`, `watzup`
 `handoff` updates the plan's Current State and Next Action directly and, on final clean closure, records an `absorb:` line then moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders a session-start recap from Git state plus the plan alone.
 
-`git` and `interview` sit outside this spine — see mapping table below.
+`git` and `retro` sit outside this spine — see mapping table below.
 
 ## SDLC Stage Coverage
 
@@ -40,7 +40,7 @@ The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation 
 
 ### Non-spine skills do not stop on a missing binary
 
-`git` and `interview` own no plan sections. A missing `zharness` binary is never a reason to refuse staging, committing, or grilling an intent. The 6 spine skills are the same: markdown plus git is the system of record.
+`git` owns no plan sections, and `brainstorm grill`/`raw` write nothing until a lock is approved. A missing `zharness` binary is never a reason to refuse staging, committing, or grilling an intent. The 6 spine skills are the same: markdown plus git is the system of record.
 
 ## Thin-Trigger Template
 
@@ -67,5 +67,5 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `check` | Validation (append-only): proofs, `requirements:` coverage, `rollback_point:` | playbook + nested proof sub-bullets |
 | `handoff` | Current State and Next Action, phase closure | playbook + absorb line + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |
-| `git` / `interview` | no plan sections | enrichment optional, never blocking |
+| `git` | no plan sections | enrichment optional, never blocking |
 | `retro` | no plan sections, except an experiment-mode `docs/plans/active/harness-improvement-{slug}.md` | non-spine; logic `skills/workflow/retro/references/retro.md`, digest `skills/workflow/retro/scripts/session-digest.py`, guard mode `skills/workflow/retro/references/encoding-invariants.md`, experiment mode `skills/workflow/retro/references/harness-improvement.md`; never blocking on a missing binary |

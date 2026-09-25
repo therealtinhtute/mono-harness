@@ -49,14 +49,14 @@
       </div>
 
       <div class="strip reveal" style="margin: 28px 0;">
-        <div><b>Workflow (8)</b><span>Core lifecycle: brainstorm, to-plan, work, check, handoff, watzup, git, interview.</span></div>
+        <div><b>Workflow (8)</b><span>Core lifecycle: brainstorm, to-plan, work, check, handoff, watzup, git, retro.</span></div>
         <div><b>Craft (4)</b><span>Precision tools: write, librarian, create-skill, prompt-leverage.</span></div>
         <div><b>Shipping (2)</b><span>Domain specialists: create-cli, turbo-mono-platform.</span></div>
         <div><b>100% Markdown</b><span>Plain text instructions with progressive reference loading.</span></div>
       </div>
 
       <div class="prose reveal">
-        <h2>Workflow Skills (9)<i>.</i></h2>
+        <h2>Workflow Skills (8)<i>.</i></h2>
         <p>Workflow skills govern the full lifecycle of a development initiative: requirement locking, phased planning, wave execution, quality gates, and git operations.</p>
       </div>
 
@@ -67,10 +67,10 @@
             <span class="badge">workflow</span>
           </div>
           <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
-            Explore design options, evaluate architecture trade-offs, and lock requirements into <code>docs/plans/active/{slug}.md</code>.
+            Explore design options, grill fuzzy intent round by round, and lock requirements into <code>docs/plans/active/{slug}.md</code>. Subcommands: explore, grill, raw, lock, refine.
           </p>
           <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
-            <strong>Trigger:</strong> <code>/brainstorm</code><br>
+            <strong>Trigger:</strong> <code>/brainstorm [explore|grill|raw|lock|refine]</code><br>
             <strong>Output:</strong> Locked spec in active plan
           </div>
         </div>
@@ -156,20 +156,6 @@
           <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
             <strong>Trigger:</strong> <code>/git [commit|push|pr]</code><br>
             <strong>Output:</strong> Atomic commits and clean pull requests
-          </div>
-        </div>
-
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-            <h3 style="margin:0; font-family:var(--mono); font-size:16px;">interview</h3>
-            <span class="badge">workflow</span>
-          </div>
-          <p style="font-size:14px; color:var(--ink-soft); margin-bottom:14px;">
-            Grill intent through structured questions. Systematically walks every branch of a decision tree before implementation begins.
-          </p>
-          <div style="font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);">
-            <strong>Trigger:</strong> <code>/interview [topic]</code><br>
-            <strong>Output:</strong> Disambiguated requirements and constraints
           </div>
         </div>
 
@@ -288,7 +274,7 @@
 
       <div class="prose reveal">
         <h2>Reference Table<i>.</i></h2>
-        <p>Summary of all 15 skills, their classification, and intended operational roles.</p>
+        <p>Summary of all 14 skills, their classification, and intended operational roles.</p>
       </div>
 
       <div class="spec reveal">
@@ -339,48 +325,42 @@
         </div>
         <div class="spec-row">
           <div class="spec-idx">08</div>
-          <div class="spec-scene"><code>interview</code></div>
-          <div class="spec-cell"><span class="badge">Workflow</span></div>
-          <div class="spec-cell">Structured requirements grilling and intent resolution</div>
-        </div>
-        <div class="spec-row">
-          <div class="spec-idx">09</div>
           <div class="spec-scene"><code>write</code></div>
           <div class="spec-cell"><span class="badge">Craft</span></div>
           <div class="spec-cell">Audience-aware, non-robotic English and Vietnamese prose</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">10</div>
+          <div class="spec-idx">09</div>
           <div class="spec-scene"><code>librarian</code></div>
           <div class="spec-cell"><span class="badge">Craft</span></div>
           <div class="spec-cell">Remote GitHub code investigation and citation discovery</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">11</div>
+          <div class="spec-idx">10</div>
           <div class="spec-scene"><code>create-skill</code></div>
           <div class="spec-cell"><span class="badge">Craft</span></div>
           <div class="spec-cell">Authoring and validating skills.sh compliant skills</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">12</div>
+          <div class="spec-idx">11</div>
           <div class="spec-scene"><code>prompt-leverage</code></div>
           <div class="spec-cell"><span class="badge">Craft</span></div>
           <div class="spec-cell">Prompt engineering and execution specification design</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">13</div>
+          <div class="spec-idx">12</div>
           <div class="spec-scene"><code>create-cli</code></div>
           <div class="spec-cell"><span class="badge">Shipping</span></div>
           <div class="spec-cell">Command-line interface architecture and distribution design</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">14</div>
+          <div class="spec-idx">13</div>
           <div class="spec-scene"><code>turbo-mono-platform</code></div>
           <div class="spec-cell"><span class="badge">Shipping</span></div>
           <div class="spec-cell">Turborepo and full-stack TypeScript monorepo architecture</div>
         </div>
         <div class="spec-row">
-          <div class="spec-idx">15</div>
+          <div class="spec-idx">14</div>
           <div class="spec-scene"><code>retro</code></div>
           <div class="spec-cell"><span class="badge">Workflow</span></div>
           <div class="spec-cell">Session retrospective: ranked findings, then one guard or one rerun-gated experiment</div>
