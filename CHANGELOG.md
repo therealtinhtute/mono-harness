@@ -19,8 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `check`: the `full` review (and a `bounded` diff review) runs on two axes
   kept apart — Spec (requirements missing, partial, wrong, or scope creep)
   and Standards (repo standards, Security/Performance/Architecture/Quality,
-  a Fowler smell baseline, and test anti-patterns) — as parallel sub-agents
-  where the harness supports them, reported without cross-axis reranking.
+  a Fowler smell baseline, and test anti-patterns) — reported without
+  cross-axis reranking. One agent runs both axes by default; `full` uses two
+  parallel sub-agents only when the request asks for them or the user picks
+  them at a one-time prompt. `bounded` never spawns sub-agents unless asked.
 - `skills`: `retro`, a user-invoked session retrospective. It reads a
   session through `scripts/session-digest.py` (token and compaction
   totals, tool-call counts, errors, repeated calls, largest results, user
