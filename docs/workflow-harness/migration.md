@@ -40,7 +40,7 @@ If you already keep a root `CLAUDE.md`, `init` appends its managed block and lea
 
 ## Upgrading a repository that was initialized before the git deprojection
 
-`git.md` used to ship as a projected playbook. It no longer does — the `git` stage owns no harness entity, so its procedure moved to the git skill's own `references/` directory at `skills/workflow/git/references/workflow.md`, and `preflight git` now returns no playbook path.
+`git.md` used to ship as a projected playbook. It no longer does — the `git` stage owns no harness entity, so its procedure moved to the git skill's own `references/` directory at `skills/workflow/git/references/workflow.md` (since split: the commit flow now lives in `skills/workflow/git/SKILL.md`, `pr`/`merge` in that reference), and `preflight git` now returns no playbook path.
 
 **`init` will not clean this up for you.** The sync walks the binary's embedded doc set and never visits a row for a file that left it (`cli/internal/application/managed_docs.go:107`), so nothing deletes a projection that was removed upstream. After upgrading, an already-initialized repository still has a stale `docs/playbooks/git.md` on disk plus its `managed_docs` row, while nothing routes to either. Delete the file by hand:
 

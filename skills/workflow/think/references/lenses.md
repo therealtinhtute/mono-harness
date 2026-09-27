@@ -1,23 +1,6 @@
 # Thinking Lenses
 
-Load from `think` step 5, or for `think lens <name>`. Each lens is a question with a required output. Pick the 3–5 that fit; running all of them is ceremony. A lens that finds nothing gets one line ("reversibility: two-way door, no finding"), not a paragraph.
-
-## Core (almost always)
-
-**premise-collapse** — Which single assumption, if false, makes this plan wrong?
-- Output: "This assumes X. If X fails, Y happens." If X is load-bearing and fragile, deform the design to survive its failure.
-
-**pre-mortem** — It is six months later and this failed. What is the most likely story?
-- Output: the top 1–2 failure stories and the design change that prevents each. Inversion variant: "how would we guarantee failure?", then avoid that.
-
-**reversibility** — One-way door or two-way door?
-- Output: the rollback path and its cost (data, public API, users' muscle memory). Two-way door → decide fast with less evidence. One-way door → slow down, demand evidence, prefer a reversible first step.
-
-**simplicity-gate** — Does the chosen plan beat the brute-force version?
-- Minimal path: the one-line brute-force option; the plan must beat it on risk, rollback, or latency, not elegance.
-- Defensive layers: every try/catch, retry, fallback, or flag maps to one named failure mode; delete layers that only "might" fail.
-- Surface delta: list new commands, env vars, flags, services; prefer +0.
-- Compensating complexity: if most of the plan is workaround machinery around a misbehaving dependency, the premise is wrong; name a route change.
+Load from `think` step 5 for a non-core lens, or for `think lens <name>`. The four core lenses (premise-collapse, pre-mortem, reversibility, simplicity-gate) live in `think`'s SKILL.md under Core Lenses. Each lens is a question with a required output. Pick the 3–5 that fit; running all of them is ceremony. A lens that finds nothing gets one line ("reversibility: two-way door, no finding"), not a paragraph.
 
 ## Risk
 

@@ -69,5 +69,5 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `watzup` | console recap | git + plan reads only |
 | `git` | no plan sections | enrichment optional, never blocking |
 | `retro` | no plan sections, except an experiment-mode `docs/plans/active/harness-improvement-{slug}.md` | non-spine; logic `skills/workflow/retro/references/retro.md`, digest `skills/workflow/retro/scripts/session-digest.py`, guard mode `skills/workflow/retro/references/encoding-invariants.md`, experiment mode `skills/workflow/retro/references/harness-improvement.md`; never blocking on a missing binary |
-| `hunt` | no plan sections | non-spine; loop → hypotheses → fix → sweep in `skills/workflow/hunt/SKILL.md`, triage mode `skills/workflow/hunt/references/triage.md`; report-only unless a fix is requested |
+| `hunt` | no plan sections | non-spine; loop and hypotheses in `skills/workflow/hunt/SKILL.md`, fix/sweep `skills/workflow/hunt/references/fix.md`, bisect/regression `skills/workflow/hunt/references/bisect-regression.md`, triage mode `skills/workflow/hunt/references/triage.md`; report-only unless a fix is requested |
 | `think` | no plan sections, zero writes | non-spine; lenses `skills/workflow/think/references/lenses.md`; hands off to `brainstorm lock`, `to-plan`, or `hunt` |

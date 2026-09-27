@@ -60,6 +60,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   **Migration:** invoke `/brainstorm grill [idea|plan path]` where you
   invoked `/interview`, and `/brainstorm raw` for `mode:fast`.
 
+### Changed
+
+- Workflow token slim, phase 1 (`docs/audit/workflow-token-slim-audit.md`
+  R1, R4–R7, R9): `git` carries the commit flow in `SKILL.md` and reads
+  `references/workflow.md` only for `pr`/`merge`; `AGENTS.md` drops the
+  directory tree and pipeline prose for a pointer to
+  `skills/workflow/README.md`; `rules/` folds the restated discipline
+  sections into a new `karpathy-guidelines.md` §5; `hunt` reads only the
+  matching section of `failure-patterns.md`; `think` carries its four core
+  lenses inline. Workflow `SKILL.md` frontmatter keeps one `version:`, and
+  `hunt`/`think` attribution moves to each skill's `NOTICE.md`.
+
+- Workflow token slim, phase 2 (audit R2, R3): `check.md` and
+  `brainstorm.md` split by branch. `check-durable.md` holds the preflight,
+  owned plan state, and gate steps 4 and 8–11; `check-review.md` holds the
+  two review axes; "What the Guards Cannot Check" moves to
+  `check-validation.md`. `brainstorm-grill.md` holds the Grill loop and
+  `brainstorm-lock.md` the Plan Skeleton and lock steps 4–10. `zharness
+  update` delivers the four new files as managed playbooks; every pinned
+  contract phrase moved byte for byte. Known gap: `zharness update`
+  records no installer ownership for the four new files, so a later
+  `zharness uninstall` keeps them as provenance-unknown; delete them by
+  hand if needed.
+
+- Workflow token slim, phase 3 (audit R8): `hunt` loads by mode. Steps 5–7
+  move to `references/fix.md` (read by `fix`, and by `sweep` for step 6);
+  Bisect and Regression move to `references/bisect-regression.md`;
+  `triage` follows `references/triage.md` instead of steps 2–7.
+  `diagnose` now reads only steps 1–4.
+
 ## [v0.24.0] — 2026-09-22
 
 ### Changed

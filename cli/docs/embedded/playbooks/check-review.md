@@ -1,0 +1,10 @@
+# Playbook: check (manual review axes)
+
+Loaded by `docs/playbooks/check.md` step 5 for `full`, or for `bounded` when it reviews a diff. `gate` never loads it.
+
+- **Two axes, kept apart** — default: this agent runs them one after the other on the diff (`git diff <base>...HEAD`), finishing one report before starting the next. Sub-agents are opt-in, for `full` only: IF the request asks for sub-agents or parallel review → use them; IF it asks for a single agent → stay single; IF it says neither → before step 5, ask once with the structured-question tool (single agent (Recommended) / two parallel sub-agents) and follow the answer. Each sub-agent gets the diff command and only its own axis's sources. `bounded` never spawns sub-agents unless the request names them. Sub-agents keep the axes apart; they do not change the `judge:` declaration.
+- **Spec axis** — sources: the Goal's requirements and non-goals, and the phase `goal:`. Report requirements missing or partial, behavior nobody asked for (scope creep), and requirements that look implemented but wrong; cite the requirement ID for each.
+- **Standards axis** — sources: the repository's documented standards (AGENTS.md, docs it points to), plus Security, Performance, Architecture, Code Quality, and this baseline. Documented repo standards win over the baseline; skip whatever tooling already enforces. Each baseline item is a judgement label ("possible Feature Envy"), never a hard violation:
+  - Smells: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest.
+  - Tests: implementation-coupled (mocks internals, asserts through a side channel), tautological (recomputes the expected value the way the code does), horizontal (tests written in bulk ahead of the code they test).
+- Report under `Spec` and `Standards` headings without merging or reranking across them; step 7 weighs both.
