@@ -1,6 +1,6 @@
 # hunt: fix, sweep, and clean up (steps 5–7)
 
-Loaded by `hunt` at the end of step 4 for `fix`, and for `sweep` (step 6 only). `diagnose` never loads it. Steps 1–4 stay in `SKILL.md`.
+Loaded by `hunt` at the end of step 4 for `fix` and for `bisect`/`regression` with a fix authorization, and for `sweep` (step 6 only). `diagnose` never loads it. Steps 1–4 stay in `SKILL.md`.
 
 ### 5. Fix with a regression guard
 

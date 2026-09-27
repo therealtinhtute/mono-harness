@@ -86,6 +86,8 @@ git push origin HEAD   # or: git push -u origin HEAD if NO_UPSTREAM
 
 ## Output Format
 
+Report the summary only, never raw command output.
+
 **Console output:**
 ```
 ✓ staged: N files (+X/-Y lines)

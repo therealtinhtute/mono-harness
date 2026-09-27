@@ -79,7 +79,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `check-validation.md`. `brainstorm-grill.md` holds the Grill loop and
   `brainstorm-lock.md` the Plan Skeleton and lock steps 4–10. `zharness
   update` delivers the four new files as managed playbooks; every pinned
-  contract phrase moved byte for byte.
+  contract phrase moved byte for byte. Known gap: `zharness update`
+  records no installer ownership for the four new files, so a later
+  `zharness uninstall` keeps them as provenance-unknown; delete them by
+  hand if needed.
 
 - Workflow token slim, phase 3 (audit R8): `hunt` loads by mode. Steps 5–7
   move to `references/fix.md` (read by `fix`, and by `sweep` for step 6);
