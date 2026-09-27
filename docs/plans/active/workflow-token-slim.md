@@ -47,7 +47,7 @@ lane: high-risk
     - T6 boilerplate across the 10 workflow SKILL.md files: single `version:`, shorter fallback line, `Sources:` → `NOTICE.md`; add one `CHANGELOG.md` Unreleased entry for the phase — output: leaner frontmatter, MIT attribution kept in-tree — check: `sh -c 'for f in skills/workflow/*/SKILL.md; do ! grep -q "^metadata:" $f && ! grep -q "^Sources:" $f && bash scripts/validate-skill.sh $f >/dev/null || exit 1; done; test -f skills/workflow/hunt/NOTICE.md && test -f skills/workflow/think/NOTICE.md'` — stop_if: `metadata.version` turns out to be read by `npx skills` or any script
   - phase check: `bash scripts/verify-doc-links.sh && cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
 - phase_slug: `split-check-brainstorm`
-  status: planned
+  status: in-progress
   - goal: R2, R3 | depends_on: none
   - surfaces: `cli/docs/embedded/playbooks/{check,check-durable,check-review,check-validation,brainstorm,brainstorm-grill,brainstorm-lock}.md` and their `docs/playbooks/` copies, `cli/src/embedded.rs` (contract entries, `playbook_count`, doc comment), `docs/ARCHITECTURE.md`, `docs/README.md`, `CHANGELOG.md` | avoided: `scripts/install-git-hooks.sh`, `cli/src/installer/`, `site/`
   - escalate_when: a pinned phrase cannot move without changing its meaning, a guard parses text that would move, or `bounded`/`explore` still needs a moved block to finish
@@ -84,6 +84,12 @@ lane: high-risk
 - 2026-09-27T12:35:35Z — slim-always-on-and-git/T1 — decision — request 1: the `<security>` block was not a no-op (earlier T1 decision was wrong); restored byte for byte, and request 6 moves the `cm`/`cp` exit line back into SKILL.md; `git/SKILL.md` now 6,330 B vs 6,000 (+5.5%, inside ±15%)
 - 2026-09-27T12:35:35Z — slim-always-on-and-git — decision — request 5 edits `docs/README.md` and `docs/workflow-harness/migration.md`, outside the phase surfaces, to fix pointers this phase made stale; `skills/workflow/retro/references/retro.md` example pointer renamed to Layout and Pipeline
 - 2026-09-27T12:35:35Z — slim-always-on-and-git — done — requests 1, 2, 5, 6 fixed: security block diff empty vs ea60f19; `think` step 5 reaches every Risk/Design/Evidence/Communication lens and keeps the one-line no-finding rule (SKILL 9,020 B); doc-links OK; validate-skill passes all 10; task checks T2, T4, T5, T6 exit 0, T1 and T3 exit 1 on budget only (inside ±15%); surfaces: skills/workflow/git/SKILL.md, skills/workflow/git/references/workflow.md, skills/workflow/think/SKILL.md, skills/workflow/retro/references/retro.md, docs/README.md, docs/workflow-harness/migration.md
+- 2026-09-27T13:35:13Z — split-check-brainstorm — start — waves 1–3 (T1–T3) from 1d03538
+- 2026-09-27T13:38:52Z — split-check-brainstorm/T1 — done — T1 check exit 1 on the gate-path budget only: `check.md` 4,770 B (≤ 5,000 met; bounded path was 10,130), gate path check + check-durable + check-validation 11,357 B vs 10,700 (+6.1%, inside ±15%; was 12,677); cargo test 51 passed; contract entry split into check / check-durable / check-review, `a requirements: line is testimony` re-pointed to check-validation; surfaces: cli/docs/embedded/playbooks/{check,check-durable,check-review,check-validation}.md and docs/playbooks copies, cli/src/embedded.rs
+- 2026-09-27T13:38:52Z — split-check-brainstorm/T1 — decision — kept one-line stubs for steps 4 and 8 in `check.md` so every step number that `work-full.md`, `check-validation.md`, ADR 0010, and the Exit Conditions cite still resolves; the stubs cost ~650 B of the gate budget. `check-validation.md` line 3 now names `check-durable.md` step 8 as its loader
+- 2026-09-27T13:38:52Z — split-check-brainstorm/T2 — done — T2 check exit 0: `brainstorm.md` 3,105 B (was 8,805); skeleton and steps 5–10 moved byte for byte to `brainstorm-lock.md`, Grill to `brainstorm-grill.md`; cargo test 51 passed; surfaces: cli/docs/embedded/playbooks/{brainstorm,brainstorm-grill,brainstorm-lock}.md and docs/playbooks copies, cli/src/embedded.rs
+- 2026-09-27T13:38:52Z — split-check-brainstorm/T2 — decision — lock step 4 said "run the Grill loop below"; the loop now lives in another file, so the pointer names `docs/playbooks/brainstorm-grill.md` (the only non-byte-identical edit in moved text). `playbook_count_is_eight` renamed `playbook_count_is_twelve`. ADR 0012's "skeleton lives only in brainstorm.md" is left as a historical record
+- 2026-09-27T13:38:52Z — split-check-brainstorm/T3 — done — T3 check exit 0; ARCHITECTURE.md names twelve playbooks, docs/README.md 6 stage + 6 companions, embedded.rs doc comment updated, CHANGELOG entry added; README.md line 112 (outside surfaces) updated the same way; phase check green: preservation exit 0, doc-links OK, test-guards 47 passed, fmt/clippy clean, cargo test 51 passed, musl release 836,176 B ≤ 1,850,000
 
 ## Validation
 - 2026-09-27T12:23:05Z — phase `slim-always-on-and-git` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -106,8 +112,8 @@ lane: high-risk
   - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
-- active_phase: slim-always-on-and-git
-- lifecycle_status: checked
+- active_phase: split-check-brainstorm
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: requests 1–6 addressed after the gate (Log above); the final independent `check full` reviews the post-gate diff
-- exact_next_action: work full phase split-check-brainstorm
+- exact_next_action: independent judge runs check gate on phase split-check-brainstorm

@@ -109,7 +109,7 @@ A typo does not need a plan. A migration spanning sessions does.
 The managed set is:
 
 - a compact `AGENTS.md` entrypoint (marked `ZHARNESS` block only);
-- `docs/WORKFLOW.md`, the six stage playbooks, and their two companions;
+- `docs/WORKFLOW.md`, the six stage playbooks, and their six companions;
 - a `docs/PROJECT.md` identity scaffold;
 - `.zharness/base/` for update tracking (a sha256 manifest and the ownership ledger).
 

@@ -1,6 +1,6 @@
 # Playbook: check (Validation evidence)
 
-Loaded by `docs/playbooks/check.md` step 8 in durable `gate`/`full` mode, including `work`'s phase gate. `bounded` never loads it.
+Loaded by `docs/playbooks/check-durable.md` step 8 in durable `gate`/`full` mode, including `work`'s phase gate. `bounded` never loads it.
 
 ## Validation Entry Format
 
@@ -24,3 +24,7 @@ Every Validation entry must include timestamp, stable phase slug, exact command/
 Validation is append-only from an entry's first commit; never replace committed failed evidence or verdicts. The one exception is closing compaction in `handoff.md`, which keeps the last entry per phase byte-identical. An uncommitted entry may still be reshaped into the guard-visible form (the guard hashes only committed entries).
 
 **Proof re-execution contract** — each proof re-runs from the repository root under `sh -c` with no prior `cd`, activated virtualenv, or session function/alias; wrap bash-only syntax such as process substitution in `bash -c '…'`. Exported environment variables are inherited, so a proof must depend on neither their presence nor their absence. Bounded to 300 s IF `timeout` or `gtimeout` is on PATH, else unbounded. Carry any working directory or interpreter inline (`cd cli && cargo test`). Never test for a binary's presence or an OS version: re-execution happens on a bare checkout.
+
+## What the Guards Cannot Check
+
+Name any that applies in `proof_gaps:`: `judge: independent` is testimony, not proof; an unparsed (misspelled, buried, or unanchored) verdict is ignored, not rejected, so guard silence can mean "unparsed"; a range guard compares endpoints, so an entry added and removed inside one push is out of scope; a `requirements:` line is testimony, and the proof it cites re-runs only when it is also a proof sub-bullet.

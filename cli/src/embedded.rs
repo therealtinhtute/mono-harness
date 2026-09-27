@@ -49,8 +49,9 @@ pub fn read_file(path: &str) -> Option<&'static [u8]> {
     }
 }
 
-/// The canonical playbook file names (six stages plus the `work-full` and
-/// `check-validation` companions), sorted.
+/// The canonical playbook file names (six stages plus the `work-full`,
+/// `check-durable`, `check-review`, `check-validation`, `brainstorm-grill`, and
+/// `brainstorm-lock` companions), sorted.
 pub fn playbook_names() -> Vec<String> {
     let mut names: Vec<String> = PLAYBOOKS.files().map(|f| file_name(f.path())).collect();
     names.sort();
@@ -120,8 +121,8 @@ mod tests {
     }
 
     #[test]
-    fn playbook_count_is_eight() {
-        assert_eq!(playbook_count(), 8);
+    fn playbook_count_is_twelve() {
+        assert_eq!(playbook_count(), 12);
     }
 
     #[test]
@@ -241,22 +242,55 @@ mod tests {
                 name: "brainstorm locks honest bootstrap state",
                 path: "playbooks/brainstorm.md",
                 required: &[
+                    "read `docs/playbooks/brainstorm-grill.md` now",
+                    "read `docs/playbooks/brainstorm-lock.md` and `docs/playbooks/brainstorm-grill.md` now",
                     "## Goal",
+                    "explore creates no plans, reports, changesets, or markdown artifacts",
+                    "`tiny` → stop and route to `work bounded`",
+                ],
+                forbidden: &[
+                    "story_id",
+                    "intake_id",
+                    "## Progress",
+                    "## Decisions",
+                    "new-spec",
+                ],
+            },
+            PlaybookContract {
+                name: "brainstorm-lock writes the plan skeleton",
+                path: "playbooks/brainstorm-lock.md",
+                required: &[
+                    "Loaded by `docs/playbooks/brainstorm.md` for `lock` and `refine`",
                     "## Phases and Verification",
                     "## Log",
                     "## Validation",
                     "## Current State and Next Action",
                     "The canonical active path is `docs/plans/active/{slug}.md`",
                     "confirm no non-empty plan exists under `docs/plans/active/`",
-                    "explore creates no plans, reports, changesets, or markdown artifacts",
                     "approach: not-planned",
                     "exact_next_action: to-plan",
-                    "`tiny` → stop and route to `work bounded`",
                     "- success_signal:",
                     "- actors:",
                     "| acceptance: <how it is verified> |",
                     "those definitions are immutable",
                     "`## Log` is the sole task execution-status source",
+                ],
+                forbidden: &[
+                    "story_id",
+                    "intake_id",
+                    "## Progress",
+                    "## Decisions",
+                    "new-spec",
+                ],
+            },
+            PlaybookContract {
+                name: "brainstorm-grill grills in rounds",
+                path: "playbooks/brainstorm-grill.md",
+                required: &[
+                    "Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`",
+                    "Grill **relentlessly**",
+                    "**Frontier**",
+                    "**`raw`** — at most 2 rounds",
                 ],
                 forbidden: &[
                     "story_id",
@@ -321,33 +355,17 @@ mod tests {
                     // These pin the authored routing contract, not agent behavior.
                     "resolve to `bounded` without reading any plan",
                     "invalid initiative state never falls back to `bounded`",
-                    "count every non-empty markdown plan under `docs/plans/active/` before matching the requested initiative",
-                    "Require exactly one active plan in total",
-                    "stop even when only one matches the request",
-                    "Read only its selected phase and `## Current State and Next Action`",
-                    "re-reading after any compaction",
-                    "including unstarted, `checked`, or `done`",
-                    "stop before checks or writes",
                     "`bounded` (aliases: `simple`, `review`)",
                     "After the preflight succeeds, print the resolved mode before running checks or writing state",
                     "A failed preflight reports its blocker instead",
                     "`bounded` is always response-only",
                     "never appends to Validation",
-                    "set the phase status and Current State lifecycle status to `checked`",
-                    "keep the phase and Current State lifecycle status `in-progress`",
                     "Durable `gate` runs automated checks",
                     "`full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review",
                     "`gate` does not perform that complete manual review",
-                    "read `docs/playbooks/check-validation.md`",
-                    "The repository's pre-commit hook is the sole proof guarantee",
-                    "REQUEST_CHANGES entries may cite deliberately failing commands",
-                    "`## Log` is the sole task execution-status source",
-                    "record it in the entry's `requirements:` line",
-                    "`not met` is a material plan contradiction",
-                    "also judges the Goal's `success_signal:`",
-                    "a `requirements:` line is testimony",
-                    "Record `rollback_point:`",
                     "depth: quick | standard | deep",
+                    "read `docs/playbooks/check-durable.md` now",
+                    "read `docs/playbooks/check-review.md` now",
                 ],
                 forbidden: &[
                     "## Progress",
@@ -358,6 +376,52 @@ mod tests {
                     "Durable `gate`/`full` mode runs real checks and review",
                     "Gate/full: applicable commands have captured output, alignment and code review ran",
                 ],
+            },
+            PlaybookContract {
+                name: "check-durable owns preflight, plan state, and durable steps",
+                path: "playbooks/check-durable.md",
+                required: &[
+                    "## Validation",
+                    "Loaded by `docs/playbooks/check.md` step 2",
+                    "count every non-empty markdown plan under `docs/plans/active/` before matching the requested initiative",
+                    "Require exactly one active plan in total",
+                    "stop even when only one matches the request",
+                    "Read only its selected phase and `## Current State and Next Action`",
+                    "re-reading after any compaction",
+                    "including unstarted, `checked`, or `done`",
+                    "stop before checks or writes",
+                    "set the phase status and Current State lifecycle status to `checked`",
+                    "keep the phase and Current State lifecycle status `in-progress`",
+                    "read `docs/playbooks/check-validation.md`",
+                    "The repository's pre-commit hook is the sole proof guarantee",
+                    "REQUEST_CHANGES entries may cite deliberately failing commands",
+                    "`## Log` is the sole task execution-status source",
+                    "record it in the entry's `requirements:` line",
+                    "`not met` is a material plan contradiction",
+                    "also judges the Goal's `success_signal:`",
+                    "Record `rollback_point:`",
+                ],
+                forbidden: &[
+                    "## Progress",
+                    "receipt:",
+                    "mode: gate | full | review",
+                    "Before reading any plan, print the resolved mode",
+                    "whose selected phase reads `in-progress`; otherwise to `bounded`",
+                    "Durable `gate`/`full` mode runs real checks and review",
+                    "Gate/full: applicable commands have captured output, alignment and code review ran",
+                ],
+            },
+            PlaybookContract {
+                name: "check-review keeps the two review axes apart",
+                path: "playbooks/check-review.md",
+                required: &[
+                    "Loaded by `docs/playbooks/check.md` step 5",
+                    "**Two axes, kept apart**",
+                    "**Spec axis**",
+                    "**Standards axis**",
+                    "Report under `Spec` and `Standards` headings",
+                ],
+                forbidden: &[],
             },
             PlaybookContract {
                 name: "check-validation defines guard-visible evidence",
@@ -371,6 +435,8 @@ mod tests {
                     "- rollback_point:",
                     "Validation is append-only from an entry's first commit",
                     "**Proof re-execution contract**",
+                    "a `requirements:` line is testimony",
+                    "## What the Guards Cannot Check",
                 ],
                 forbidden: &[],
             },

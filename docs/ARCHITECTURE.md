@@ -21,7 +21,7 @@ update                           fresh-overwrites playbooks/WORKFLOW.md and the 
 uninstall                        removes the managed set; consumer bytes are never destroyed
 ```
 
-`all_targets` (`cli/src/installer/mod.rs`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the eight playbooks (six stages plus the `work-full` and `check-validation` companions). `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
+`all_targets` (`cli/src/installer/mod.rs`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the twelve playbooks (six stages plus six companions: `work-full`, `check-durable`, `check-review`, `check-validation`, `brainstorm-grill`, and `brainstorm-lock`). `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
 
 State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries (the bytes zharness last wrote) and the ownership ledger `ownership.tsv`. Update refuses before any write when the on-disk AGENTS block no longer matches its recorded hash, printing the diff; `--force` replaces it (`cli/src/installer/update.rs`, ADR 0011). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
 

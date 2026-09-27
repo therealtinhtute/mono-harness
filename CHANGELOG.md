@@ -72,6 +72,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   lenses inline. Workflow `SKILL.md` frontmatter keeps one `version:`, and
   `hunt`/`think` attribution moves to each skill's `NOTICE.md`.
 
+- Workflow token slim, phase 2 (audit R2, R3): `check.md` and
+  `brainstorm.md` split by branch. `check-durable.md` holds the preflight,
+  owned plan state, and gate steps 4 and 8–11; `check-review.md` holds the
+  two review axes; "What the Guards Cannot Check" moves to
+  `check-validation.md`. `brainstorm-grill.md` holds the Grill loop and
+  `brainstorm-lock.md` the Plan Skeleton and lock steps 4–10. `zharness
+  update` delivers the four new files as managed playbooks; every pinned
+  contract phrase moved byte for byte.
+
 ## [v0.24.0] — 2026-09-22
 
 ### Changed
