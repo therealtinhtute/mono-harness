@@ -291,6 +291,7 @@ mod tests {
                     "Grill **relentlessly**",
                     "**Frontier**",
                     "**`raw`** — at most 2 rounds",
+                    "4. **Clarify the boundary**",
                 ],
                 forbidden: &[
                     "story_id",
@@ -421,7 +422,15 @@ mod tests {
                     "**Standards axis**",
                     "Report under `Spec` and `Standards` headings",
                 ],
-                forbidden: &[],
+                forbidden: &[
+                    "## Progress",
+                    "receipt:",
+                    "mode: gate | full | review",
+                    "Before reading any plan, print the resolved mode",
+                    "whose selected phase reads `in-progress`; otherwise to `bounded`",
+                    "Durable `gate`/`full` mode runs real checks and review",
+                    "Gate/full: applicable commands have captured output, alignment and code review ran",
+                ],
             },
             PlaybookContract {
                 name: "check-validation defines guard-visible evidence",
@@ -438,7 +447,15 @@ mod tests {
                     "a `requirements:` line is testimony",
                     "## What the Guards Cannot Check",
                 ],
-                forbidden: &[],
+                forbidden: &[
+                    "## Progress",
+                    "receipt:",
+                    "mode: gate | full | review",
+                    "Before reading any plan, print the resolved mode",
+                    "whose selected phase reads `in-progress`; otherwise to `bounded`",
+                    "Durable `gate`/`full` mode runs real checks and review",
+                    "Gate/full: applicable commands have captured output, alignment and code review ran",
+                ],
             },
             PlaybookContract {
                 name: "handoff closes phases before initiatives",

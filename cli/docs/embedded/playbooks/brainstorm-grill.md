@@ -2,6 +2,10 @@
 
 Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`, and with `docs/playbooks/brainstorm-lock.md` for `lock` and `refine`.
 
+## Steps
+
+4. **Clarify the boundary** — run the Grill loop below over whatever is missing (the whole Goal in `grill`; only the gaps in `lock`/`refine`). Require a concrete outcome, a measurable `success_signal:`, the affected actors, constraints, accepted requirements each with an `acceptance:` check, and non-goals. Stop rather than invent an unresolved product decision.
+
 ## Grill
 
 Grill **relentlessly**. Map the request as a **design tree**: each decision branches into the decisions that depend on it. Work it in **rounds**.

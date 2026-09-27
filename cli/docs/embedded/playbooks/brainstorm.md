@@ -35,7 +35,7 @@ Pick the lane from risk, not size, and record it in frontmatter `lane:`.
 1. **Classify** — mode, lane, risk flags, affected surfaces. `tiny` → stop and route to `work bounded`.
 2. **Gather minimum authority** — read named sources and repository instructions. Check prior lessons first: `grep -ri "<topic keywords>" docs/memory/` (plain committed files, never a database). Discovery may clarify scope, never expand it.
 3. **Compare options** — 2–3 viable paths, or 1–2 alternatives rejected by authoritative sources. State recommendation and trade-offs before locking.
-4. **Clarify, then lock** (`grill`/`raw`/`lock`/`refine`) — steps 4–10 in the companions named under Modes.
+4. **Clarify the boundary** (`grill`/`raw`/`lock`/`refine`) — step 4 in `brainstorm-grill.md`; `lock`/`refine` continue with steps 5–10 in `brainstorm-lock.md`.
 
 ## Exit Conditions
 

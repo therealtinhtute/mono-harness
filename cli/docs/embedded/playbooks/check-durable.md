@@ -1,6 +1,6 @@
 # Playbook: check (durable gate and full)
 
-Loaded by `docs/playbooks/check.md` step 2 for durable `gate`/`full`. `bounded` never loads it. Numbering follows `check.md`.
+Loaded by `docs/playbooks/check.md` step 2 for durable `gate`/`full`. `bounded` never loads it. Numbering follows `check.md`: Preconditions step 2, then Steps 4 and 8–11.
 
 ## Preflight
 

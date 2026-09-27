@@ -1,6 +1,6 @@
 # Playbook: brainstorm (lock and refine)
 
-Loaded by `docs/playbooks/brainstorm.md` for `lock` and `refine`, together with `docs/playbooks/brainstorm-grill.md`. Steps 1–3 stay in `brainstorm.md`.
+Loaded by `docs/playbooks/brainstorm.md` for `lock` and `refine`, together with `docs/playbooks/brainstorm-grill.md`. Steps 1–3 stay in `brainstorm.md`; step 4 is in `brainstorm-grill.md`.
 
 ## Plan Skeleton
 
@@ -42,7 +42,6 @@ lane: normal
 
 ## Steps
 
-4. **Clarify the boundary** — run the Grill loop in `docs/playbooks/brainstorm-grill.md` over whatever is missing (the whole Goal in `grill`; only the gaps in `lock`/`refine`). Require a concrete outcome, a measurable `success_signal:`, the affected actors, constraints, accepted requirements each with an `acceptance:` check, and non-goals. Stop rather than invent an unresolved product decision.
 5. **Choose the slug** — short and stable. The canonical active path is `docs/plans/active/{slug}.md`; never create a second durable initiative markdown for the same work.
 6. **Answer project identity (the stage's single forced write)** — IF `docs/PROJECT.md` is absent → copy `cli/docs/embedded/templates/project.identity.md`; IF that template is also absent (consumer repo) → run `zharness install`. Fill every identity question inline. The lock never completes while any `<...>` question remains: halt and name them. Only the owner-facing scope decision may justify pausing here.
 7. **Create a new lock** — confirm no non-empty plan exists under `docs/plans/active/`; IF one exists → stop and name it; the owner must complete or move it aside first. Create `docs/plans/active/{slug}.md` from the skeleton with the lane set, `## Goal` filled, and the bootstrap values shown everywhere else.
