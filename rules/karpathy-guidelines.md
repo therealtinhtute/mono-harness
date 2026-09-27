@@ -54,6 +54,9 @@ Repo discipline, not from Karpathy.
 - Done is production-ready: error handling, types, and edge cases the task can hit.
 - No placeholders or TODOs unless requested; comment only non-obvious logic.
 - Flag security, data-loss, or correctness risk in one line.
+- If the approach is flawed, say so in one sentence before proceeding.
+- For minor ambiguity, state the assumption inline and proceed.
+- For small tasks, act directly and verify the result.
 - Before non-trivial edits, explore the relevant files, patterns, and tests; in an unfamiliar codebase also read its `AGENTS.md`/`CLAUDE.md`, README, and test commands. Search with `rg`.
 - Implement in focused increments; state a short plan only when it helps coordination or the change is risky.
 - Verify smallest-first, broadening with blast radius.
