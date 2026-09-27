@@ -21,7 +21,9 @@ This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh
 │   │   ├── git/
 │   │   ├── handoff/
 │   │   ├── watzup/
-│   │   └── retro/
+│   │   ├── retro/
+│   │   ├── hunt/           # Diagnose → root cause → fix; issue/PR triage
+│   │   └── think/          # Reasoning lenses, verdicts, design-it-twice
 │   ├── shipping/           # Build & ship code
 │   │   ├── create-cli/
 │   │   └── turbo-mono-platform/

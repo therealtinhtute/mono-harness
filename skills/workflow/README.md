@@ -6,7 +6,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, han
 
 - **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 8 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
+- **skills** — the 10 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
 - **cli** — `zharness`, the Go binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.
 
 ## Lifecycle
@@ -26,7 +26,7 @@ Once the plan is locked, `to-plan` writes its Phases and Verification (approach 
 ### Handoff/Resume — `handoff`, `watzup`
 `handoff` updates the plan's Current State and Next Action directly and, on final clean closure, records an `absorb:` line then moves the plan from `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`. `watzup` renders a session-start recap from Git state plus the plan alone.
 
-`git` and `retro` sit outside this spine — see mapping table below.
+`git`, `retro`, `hunt`, and `think` sit outside this spine — see mapping table below. `hunt` diagnoses a concrete symptom (and triages issue/PR queues); `think` reasons about a decision and writes nothing, handing a result worth keeping to `brainstorm lock`.
 
 ## SDLC Stage Coverage
 
@@ -69,3 +69,5 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `watzup` | console recap | git + plan reads only |
 | `git` | no plan sections | enrichment optional, never blocking |
 | `retro` | no plan sections, except an experiment-mode `docs/plans/active/harness-improvement-{slug}.md` | non-spine; logic `skills/workflow/retro/references/retro.md`, digest `skills/workflow/retro/scripts/session-digest.py`, guard mode `skills/workflow/retro/references/encoding-invariants.md`, experiment mode `skills/workflow/retro/references/harness-improvement.md`; never blocking on a missing binary |
+| `hunt` | no plan sections | non-spine; loop → hypotheses → fix → sweep in `skills/workflow/hunt/SKILL.md`, triage mode `skills/workflow/hunt/references/triage.md`; report-only unless a fix is requested |
+| `think` | no plan sections, zero writes | non-spine; lenses `skills/workflow/think/references/lenses.md`; hands off to `brainstorm lock`, `to-plan`, or `hunt` |
