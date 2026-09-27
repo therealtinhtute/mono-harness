@@ -47,7 +47,7 @@ lane: high-risk
     - T6 boilerplate across the 10 workflow SKILL.md files: single `version:`, shorter fallback line, `Sources:` → `NOTICE.md`; add one `CHANGELOG.md` Unreleased entry for the phase — output: leaner frontmatter, MIT attribution kept in-tree — check: `sh -c 'for f in skills/workflow/*/SKILL.md; do ! grep -q "^metadata:" $f && ! grep -q "^Sources:" $f && bash scripts/validate-skill.sh $f >/dev/null || exit 1; done; test -f skills/workflow/hunt/NOTICE.md && test -f skills/workflow/think/NOTICE.md'` — stop_if: `metadata.version` turns out to be read by `npx skills` or any script
   - phase check: `bash scripts/verify-doc-links.sh && cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
 - phase_slug: `split-check-brainstorm`
-  status: in-progress
+  status: checked
   - goal: R2, R3 | depends_on: none
   - surfaces: `cli/docs/embedded/playbooks/{check,check-durable,check-review,check-validation,brainstorm,brainstorm-grill,brainstorm-lock}.md` and their `docs/playbooks/` copies, `cli/src/embedded.rs` (contract entries, `playbook_count`, doc comment), `docs/ARCHITECTURE.md`, `docs/README.md`, `CHANGELOG.md` | avoided: `scripts/install-git-hooks.sh`, `cli/src/installer/`, `site/`
   - escalate_when: a pinned phrase cannot move without changing its meaning, a guard parses text that would move, or `bounded`/`explore` still needs a moved block to finish
@@ -110,10 +110,26 @@ lane: high-risk
   - enforcement: ci — pre-commit hook not installed in this clone; .github/workflows/cli-ci.yml job hook-guard re-runs the guard core on plan changes
   - judge: independent
   - judge_model: claude-opus-5-5
+- 2026-09-27T13:42:45Z — phase `split-check-brainstorm` — verdict: APPROVE_WITH_REQUESTS — mode: gate
+  - `bash -c 'test $(wc -c < cli/docs/embedded/playbooks/check.md) -le 5000 && test $(cat cli/docs/embedded/playbooks/{check,check-durable,check-validation}.md | wc -c) -le 12305 && cd cli && cargo test'` — exit 0; T1 at the risks: ±15% bound (10,700 × 1.15); check.md 4,770 B, gate path 11,365 B; cargo test 49 + 2 passed
+  - `bash -c 'test $(wc -c < cli/docs/embedded/playbooks/brainstorm.md) -le 3400 && cd cli && cargo test'` — exit 0 (T2); brainstorm.md 3,105 B
+  - `sh -c '! grep -q "eight playbooks" docs/ARCHITECTURE.md && bash scripts/verify-doc-links.sh'` — exit 0 (T3); doc links OK (0 findings)
+  - `bash -c 'comm -23 <(git show 2befb37:cli/src/embedded.rs | grep -oE "^ +\"[^\"]+\",\$" | sed "s/^ *//" | sort -u) <(grep -oE "^ +\"[^\"]+\",\$" cli/src/embedded.rs | sed "s/^ *//" | sort -u) | (! grep .)' && bash scripts/verify-doc-links.sh && bash scripts/test-guards.sh && cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cargo build --release --target x86_64-unknown-linux-musl && test "$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)" -le 1850000` — exit 0 (phase check); 169 pinned phrases at 2befb37 all still pinned; guards 47 passed; clippy clean; musl release 836,176 B
+  - `bash -c 'P=cli/docs/embedded/playbooks; N=$(cat $P/check.md $P/check-durable.md $P/check-review.md $P/check-validation.md); test "$(git show 1d03538:$P/check.md | grep -vxF -f <(echo "$N") | sed "s/^   //" | grep -vxF -f <(echo "$N") | grep -c "^5[.] [*][*]Manual review")" = 1 && test "$(git show 1d03538:$P/check.md | grep -vxF -f <(echo "$N") | sed "s/^   //" | grep -cvxF -f <(echo "$N"))" = 1'` — exit 0; every old check.md line is verbatim in the new set except step 5 (reworded) and the six axis lines (identical after de-indenting 3 spaces)
+  - `bash -c 'P=cli/docs/embedded/playbooks; N=$(cat $P/brainstorm.md $P/brainstorm-grill.md $P/brainstorm-lock.md); test "$(git show 1d03538:$P/brainstorm.md | grep -vxF -f <(echo "$N") | grep -c "^4[.] [*][*]Clarify the boundary")" = 1 && test "$(git show 1d03538:$P/brainstorm.md | grep -cvxF -f <(echo "$N"))" = 1 && test "$(git show 1d03538:$P/check-validation.md | grep -cvxF -f $P/check-validation.md)" = 1'` — exit 0; only lock step 4 and the check-validation.md loader line differ from 1d03538
+  - `sh -c 'for f in cli/docs/embedded/playbooks/*.md; do cmp "$f" "docs/playbooks/${f##*/}" || exit 1; done; test $(ls docs/playbooks | wc -l) -eq 12'` — exit 0; 12 projected playbooks byte-identical
+  - scope: on target — avoided surfaces (scripts/, cli/src/installer/, site/) untouched; README.md line 112 is a logged out-of-surface doc sync; depth standard; docs/evals/failures.md records four classes once each, so no recurring class applies
+  - requirements: R2 met under the risks: ±15% tolerance (check.md 4,770 B ≤ 5,000; gate path 11,365 B vs 10,700, +6.2%, was 12,677; literal T1 check exits 1 on that budget only; bounded never reaches check-durable.md; gate/full reach it by the mandatory pointer at check.md:14; full and bounded-on-diff reach check-review.md at check.md:25; contract and parity tests pass) | R3 met (brainstorm.md 3,105 B ≤ 3,400, was 8,805; Plan Skeleton and steps 5–10 byte-identical in brainstorm-lock.md, Grill byte-identical in brainstorm-grill.md; explore needs neither; see request 1 for the grill path)
+  - rollback_point: 1d03538
+  - requests: 1) cli/docs/embedded/playbooks/brainstorm.md:19,38 — `grill` and `raw` load only brainstorm-grill.md, but step 4 (which named grill: "the whole Goal in grill") now lives in brainstorm-lock.md:45, so the grill path no longer reads "constraints" or "Stop rather than invent an unresolved product decision", brainstorm-grill.md:14 cites "step 4's stop rule" in a file grill never loads, and the core stub promises "steps 4–10 in the companions" where the grill companion has none; route grill to lock step 4 (or fold its grill clause into the grill companion by a logged decision). 2) cli/docs/embedded/playbooks/check.md:25 and check-review.md:5–11 — unlogged non-identical edits beyond the Log's list: step 5 drops "run as the two axes below" and "on the same two axes when it reviews a diff" (meaning carried by the pointer), and the axis block moved from nested to top-level bullets; record both as a Log decision (NG3). 3) Log T1 done records the gate path as 11,357 B; it measures 11,365 B (the loader edit adds 8 B); correct the record in the next Log entry. 4) cli/src/embedded.rs:424,441 — check-review.md and check-validation.md, which inherited check.md text, carry `forbidden: &[]`, so only RETIRED guards them; low. 5) cli/docs/embedded/playbooks/check-durable.md:15–21 — list numbered 4, 8, 9, 10, 11 renders as 4–8 in CommonMark, and "check.md step 2" means the Preconditions list, not Steps step 2; low, raw text is unambiguous in context.
+  - proof_gaps: contract tests pin phrases, not agent routing; no eval exercises an agent on the split playbooks; complete manual review deferred to the final full check; judge: independent is testimony; the requirements: line is testimony beyond the proofs above
+  - enforcement: ci — pre-commit hook not installed in this clone; .github/workflows/cli-ci.yml job hook-guard re-runs the guard core
+  - judge: independent
+  - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
 - active_phase: split-check-brainstorm
-- lifecycle_status: in-progress
+- lifecycle_status: checked
 - blockers: none
-- open_items: requests 1–6 addressed after the gate (Log above); the final independent `check full` reviews the post-gate diff
-- exact_next_action: independent judge runs check gate on phase split-check-brainstorm
+- open_items: slim-always-on-and-git requests 1–6 addressed after its gate (Log above); split-check-brainstorm gate requests 1–5 (Validation 2026-09-27T13:42:45Z) open; the final independent `check full` reviews every post-gate diff
+- exact_next_action: work full phase split-hunt-modes
