@@ -45,4 +45,12 @@ Transform tasks into verifiable goals before starting:
 
 For multi-step tasks, state plan inline: `1. [step] → verify: [check]`.
 
+## 5. Output and Close-out
+
+- Code, commands, diffs, and concrete decisions over prose; prose only for decisions, risks, blockers, or non-obvious rationale. No basics, generic closers, or filler.
+- Done is production-ready: error handling, types, and edge cases the task can hit. No placeholders or TODOs unless requested; comment only non-obvious logic.
+- Flag security, data-loss, or correctness risk in one line.
+- Unfamiliar codebase: read its `AGENTS.md`/`CLAUDE.md`, README, and test commands before non-trivial edits. Search with `rg`.
+- Verify smallest-first, broadening with blast radius. Close out with what changed, what verification ran, and remaining risk.
+
 If you catch yourself writing code before stating assumptions, adding unrequested features, or starting without success criteria — stop and correct course.

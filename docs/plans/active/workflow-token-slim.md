@@ -33,7 +33,7 @@ lane: high-risk
 - recovery: each phase is one PR; revert that PR to restore the prior load. Phase 2 consumers who already ran `zharness update` keep working on the old single files until they update again.
 - seams: `cd cli && cargo test` (`one_plan_playbook_contract`, `projection_parity`, `playbook_count`); `bash scripts/validate-skill.sh <SKILL.md>`; `bash scripts/verify-doc-links.sh`; byte budgets via `wc -c`; phrase preservation via `bash -c 'comm -23 <(git show 2befb37:cli/src/embedded.rs | grep -oE "^ +\"[^\"]+\",\$" | sed "s/^ *//" | sort -u) <(grep -oE "^ +\"[^\"]+\",\$" cli/src/embedded.rs | sed "s/^ *//" | sort -u) | (! grep .)'` (preservation check). All exist; no new seam.
 - phase_slug: `slim-always-on-and-git`
-  status: planned
+  status: in-progress
   - goal: R1, R4, R5, R6, R7, R9 | depends_on: none
   - surfaces: `skills/workflow/*/SKILL.md`, `skills/workflow/git/references/workflow.md`, `skills/workflow/{hunt,think}/NOTICE.md`, `AGENTS.md`, `rules/*.md`, `CHANGELOG.md` | avoided: `cli/`, `docs/playbooks/`, `scripts/`, `site/`
   - escalate_when: a budget misses by more than 15%, or folding "Always-on Discipline" would drop an item that has no other home in `rules/`
@@ -70,12 +70,22 @@ lane: high-risk
   - phase check: `sh -c 'bash scripts/validate-skill.sh skills/workflow/hunt/SKILL.md && bash scripts/verify-doc-links.sh'`
 
 ## Log
+- 2026-09-27T12:06:02Z — slim-always-on-and-git — start — waves 1–2 (T1–T6) on z/eager-pasteur-7ybbdp from ea60f19
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T1 — done — T1 check exit 0; `git/SKILL.md` 5,957 B (commit path was 11,083); Steps 1–5 moved byte for byte (diff empty); `references/workflow.md` now `pr`/`merge` only (3,425 B); `review` → `check`; surfaces: skills/workflow/git/SKILL.md, skills/workflow/git/references/workflow.md
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T1 — decision — dropped the `<role>`, `<security>`, When to Use, and subagent-concision lines as no-ops: destructive-op confirmation and secret scanning stay in Steps 2 and 5; the `cm`/`cp` exit line stays in `references/workflow.md` to hold the 6,000 B budget
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T2 — done — T2 check exit 0; `AGENTS.md` 5,191 B (was 9,938); ZHARNESS block cmp-identical; Gate Commands diff empty; playbook-edit parity rule kept; surfaces: AGENTS.md
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T3 — decision — escalated: 7 of 10 Always-on items and most Workflow items had no other home in rules/; owner chose to fold them, reworded compactly, into new `karpathy-guidelines.md` §5 (NG3 applies to playbooks, not rules/)
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T3 — done — T3 check exit 1 on budget only: `rules/*.md` 8,252 B vs 7,700 (+7.2%, inside the ±15% tolerance in risks); no `Always-on Discipline` remains; surfaces: rules/execution-discipline.md, rules/workflow-core.md, rules/karpathy-guidelines.md
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T4 — decision — stop_if hit literally: Gotchas rows name no section; the pointer instead lists `## ` headings and reads only the section matching the symptom, keeping R7's targeted read; surfaced for owner acceptance
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T4 — done — T4 check exit 0; surfaces: skills/workflow/hunt/SKILL.md
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T5 — done — T5 check exit 0; `think/SKILL.md` 8,931 B, decide path was 12,974; Core section moved byte for byte; `lens <name>` row and `lenses.md` header point core lenses at SKILL.md; surfaces: skills/workflow/think/SKILL.md, skills/workflow/think/references/lenses.md
+- 2026-09-27T12:18:29Z — slim-always-on-and-git/T6 — done — T6 check exit 0; 9 SKILL files drop `metadata.version` (git promotes it to `version:`), 6 thin triggers drop "No binary runs the lifecycle.", `Sources:` → `NOTICE.md` for hunt/think; versions bumped git 1.3.0, hunt 1.1.0, think 1.1.0; CHANGELOG Unreleased Changed entry; phase check (doc-links, fmt, clippy, cargo test 51 passed) green
 
 ## Validation
 
 ## Current State and Next Action
-- active_phase: none
-- lifecycle_status: planned
+- active_phase: slim-always-on-and-git
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: none
-- exact_next_action: work full phase slim-always-on-and-git
+- exact_next_action: independent judge runs check gate on phase slim-always-on-and-git

@@ -1,12 +1,10 @@
 ---
 name: hunt
-version: "1.0.0"
+version: "1.1.0"
 model: opus
 description: "Find the root cause before any fix: build a red-capable repro loop, rank falsifiable hypotheses, prove, fix, sweep siblings. Also triages bug issues/PRs. Use on errors, crashes, regressions."
 argument-hint: "[diagnose|fix|bisect|regression|sweep|triage] [symptom, error, issue/PR ref]"
 compatibility: Designed for Claude Code
-metadata:
-  version: "1.0.0"
 ---
 
 # Hunt: Diagnose Before You Fix
@@ -74,7 +72,7 @@ A hypothesis with no prediction is a vibe; sharpen or discard it. A hypothesis t
 - Pick the instrument by bug class: pure logic (formula, off-by-one) → static reading; lifecycle/async/event-order → add the log while forming the hypothesis; rendering/compositor → DevTools layers before logs; performance → baseline numbers first, then bisect, then re-measure.
 - Run the one probe that would fail if the hypothesis were wrong. If evidence contradicts it, discard it completely and re-orient on what the probe showed. If adding a log changes the behavior, that is timing/lifecycle evidence, not noise.
 
-For a symptom that has recurred or smells like runtime state (caches, queues, generated output, PATH, locale, timeouts, entry points), load `references/failure-patterns.md` (gotchas table first) before adding a second fix. Domain traps: `references/ime-unicode.md` (IME, cursor drift, emoji), `references/rendering-debug.md` (PDF, print, fonts).
+For a symptom that has recurred or smells like runtime state (caches, queues, generated output, PATH, locale, timeouts, entry points), read only `## Gotchas` in `references/failure-patterns.md`, then list its headings (`grep -n '^## '`) and read only the section matching the symptom, before adding a second fix. Domain traps: `references/ime-unicode.md` (IME, cursor drift, emoji), `references/rendering-debug.md` (PDF, print, fonts).
 
 ### 5. Fix with a regression guard
 
@@ -146,5 +144,3 @@ Status: **resolved**, **resolved with caveats** (state them), or **blocked**.
 **Handoff (blocked, or after three failed hypotheses):** the symptom in one sentence; each hypothesis with its probe and why it was ruled out; evidence collected (log excerpts, repro steps, versions, config); what is still unknown; next steps naming any tool, access, or context the user must supply.
 
 Defer to: `check` for review of a diff with no concrete symptom; `think` for "should this exist / is it worth it"; `brainstorm` when the fix needs a product decision; `git` to commit after a fix.
-
-Sources: merges `hunt` from [tw93/Waza](https://github.com/tw93/Waza) (MIT) with `diagnosing-bugs`, `triage`, and `tdd` from [mattpocock/skills](https://github.com/mattpocock/skills) (MIT).

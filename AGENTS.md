@@ -6,62 +6,11 @@ This file provides guidance to coding agents (Claude Code, Codex, etc.) working 
 
 This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh`-compatible agent skill set for the SDLC, plus `zharness`, the Rust CLI/protocol that keeps that lifecycle legible and portable across coding agents. See README.md's Goals/Non-goals for the full scope.
 
-## Project Structure
+## Layout and Pipeline
 
-```
-.
-├── README.md               # Skill directory and install instructions
-├── AGENTS.md               # This file
-├── skills/                 # Installable agent skills (npx skills add)
-│   ├── workflow/           # Agentic orchestration chain
-│   │   ├── brainstorm/
-│   │   ├── to-plan/
-│   │   ├── work/
-│   │   ├── check/
-│   │   ├── git/
-│   │   ├── handoff/
-│   │   ├── watzup/
-│   │   ├── retro/
-│   │   ├── hunt/           # Diagnose → root cause → fix; issue/PR triage
-│   │   └── think/          # Reasoning lenses, verdicts, design-it-twice
-│   ├── shipping/           # Build & ship code
-│   │   ├── create-cli/
-│   │   └── turbo-mono-platform/
-│   └── craft/              # Research, writing, meta-skills
-│       ├── write/
-│       ├── librarian/
-│       ├── create-skill/
-│       └── prompt-leverage/
-├── cli/                    # zharness Rust crate — install/update/uninstall only
-│   ├── src/                    # cli.rs (clap surface), embedded.rs, installer/
-│   ├── tests/                  # projection parity
-│   └── docs/embedded/          # include_bytes!/include_dir! source for playbooks/templates
-├── rules/                  # Source for global Claude Code rules (installed to ~/.claude/rules/)
-│   ├── ask-user-question.md   # AskUserQuestion enforcement
-│   ├── english.md             # English coaching
-│   ├── execution-discipline.md # Lean tool-call economy, check-in cadence, stop-don't-guess
-│   └── karpathy-guidelines.md # Karpathy coding principles
-├── docs/                   # Workflow protocol, architecture, decisions, plans
-│   ├── WORKFLOW.md             # Protocol entrypoint — read this first
-│   ├── ARCHITECTURE.md         # Current design + historical (pre-v0.15) cuts
-│   ├── playbooks/              # Operating logic for the 6 spine skills
-│   ├── decisions/              # ADRs for hard-to-reverse calls
-│   ├── plans/{active,completed}/  # Durable plan lifecycle (see Skill Pipeline)
-│   └── prompt-engineering-principles.md  # Prompting principles for skills/rules
-├── scripts/                # Repo utility scripts
-│   ├── setup-statusline.sh    # Statusline installer
-│   ├── generate-dashboard.sh  # Dashboard generation
-│   ├── validate-skill.sh      # Skill validation
-│   └── install-git-hooks.sh   # Git hooks installer
-├── setup/                  # Example configs
-│   └── settings.json       # Claude Code settings template
-└── assets/                 # README visuals
-```
+Skills live in `skills/{workflow,shipping,craft}/<name>/`; the `zharness` crate in `cli/`; global rules in `rules/`; protocol, playbooks, ADRs, and plans in `docs/`. The workflow chain and its stage contracts: `skills/workflow/README.md`.
 
-Each skill directory contains:
-- `SKILL.md` — Required. Frontmatter + instructions for the agent.
-- `references/` — Optional. Detail docs loaded on-demand.
-- `scripts/` — Optional. Executable helpers.
+Plans are committed markdown (`docs/plans/active/{slug}.md`); pre-commit guards (`scripts/install-git-hooks.sh`) enforce proof re-execution, an independent judge on high-risk and `full` checks, and at most one active plan. Editing a playbook: change `cli/docs/embedded/playbooks/<stage>.md`, then copy the same bytes to `docs/playbooks/<stage>.md` — `cd cli && cargo test --test projection_parity` fails if the two drift.
 
 ## Development Commands
 
@@ -100,24 +49,6 @@ bash scripts/verify-doc-links.sh
 the pre-commit hook only, which requires `bash scripts/install-git-hooks.sh --force`.
 
 Run a single Rust test: `cd cli && cargo test --lib installer::registry::tests::registry_update_registers`.
-
-## Skill Pipeline
-
-Two entry points:
-```
-watzup → work → check → git → handoff          (resume existing work)
-brainstorm → to-plan → work → check → git → handoff  (new work)
-```
-- `watzup` — recap branch state, committed + uncommitted changes, handoff context, recommend next action (session start)
-- `brainstorm` — explore options and lock requirements into `docs/plans/active/{slug}.md` (subcommands: explore, grill, raw, lock, refine)
-- `to-plan` — generate executable phase plans from the locked plan's requirements
-- `work` — execute the plan wave-by-wave, verify per task, route to `check` as the phase gate
-- `check` — pre-commit gate and post-implementation review (also invoked per phase by `work`)
-- `git` / `handoff` — session close-out
-
-`brainstorm grill` is optional — use it to grill fuzzy intent into a concrete Goal, or to validate an existing plan before `work`. `brainstorm raw` is its fast first pass.
-
-State underneath this pipeline is committed markdown: the plan documents under `docs/plans/active/{slug}.md` (moved to `docs/plans/completed/` on closure) are the record, and fail-closed pre-commit guards in `scripts/install-git-hooks.sh` enforce proof re-execution, an independent judge on high-risk and on `full` checks, and at most one active plan. There is no database — the SQLite store and the whole lifecycle command surface were deleted in v0.15 (see `docs/ARCHITECTURE.md`). The 6 spine `SKILL.md` files (`watzup`, `brainstorm`, `to-plan`, `work`, `check`, `handoff`) are thin triggers (≤30 lines) that route straight to `docs/playbooks/<stage>.md`; the operating logic lives there, not in the skill files, so any agent that can read a file and run git can execute the same lifecycle with no binary installed. `zharness` itself is now three verbs — `install` / `update` / `uninstall` — which scaffold that managed doc set, fresh-overwriting playbooks/WORKFLOW.md on update, replacing the hash-guarded `AGENTS.md` block, and writing `docs/PROJECT.md` only when absent (ADR 0011). See `skills/workflow/README.md` for the full model and `docs/workflow-harness/migration.md` for the historical 0.14.x adoption path. Editing a playbook: change `cli/docs/embedded/playbooks/<stage>.md`, then copy the same bytes to `docs/playbooks/<stage>.md` — `cd cli && cargo test --test projection_parity` fails if the two drift.
 
 ## Prompt Engineering Reference
 

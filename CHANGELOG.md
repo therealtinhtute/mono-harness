@@ -60,6 +60,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   **Migration:** invoke `/brainstorm grill [idea|plan path]` where you
   invoked `/interview`, and `/brainstorm raw` for `mode:fast`.
 
+### Changed
+
+- Workflow token slim, phase 1 (`docs/audit/workflow-token-slim-audit.md`
+  R1, R4–R7, R9): `git` carries the commit flow in `SKILL.md` and reads
+  `references/workflow.md` only for `pr`/`merge`; `AGENTS.md` drops the
+  directory tree and pipeline prose for a pointer to
+  `skills/workflow/README.md`; `rules/` folds the restated discipline
+  sections into a new `karpathy-guidelines.md` §5; `hunt` reads only the
+  matching section of `failure-patterns.md`; `think` carries its four core
+  lenses inline. Workflow `SKILL.md` frontmatter keeps one `version:`, and
+  `hunt`/`think` attribution moves to each skill's `NOTICE.md`.
+
 ## [v0.24.0] — 2026-09-22
 
 ### Changed
