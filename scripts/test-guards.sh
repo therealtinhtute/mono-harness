@@ -653,6 +653,69 @@ else
 fi
 rm -rf "$hk"
 
+# PP: the pre-push hook guards the branch range, as CI does. Commit A lands an
+# entry whose proof passes; commit B breaks that proof without touching the
+# plan, so each pre-commit accepts. The push must be rejected until it holds.
+pp=$(mktemp -d)
+git init -q --bare "$pp/remote.git"
+mkdir -p "$pp/w/scripts"
+gfix "$pp/w"
+git -C "$pp/w" symbolic-ref HEAD refs/heads/master
+git -C "$pp/w" config core.hooksPath "$pp/w/.git/hooks"
+git -C "$pp/w" remote add origin "$pp/remote.git"
+cp scripts/install-git-hooks.sh "$pp/w/scripts/"
+git -C "$pp/w" add -A >/dev/null && git -C "$pp/w" commit -qm "chore: seed"
+git -C "$pp/w" push -q origin master 2>/dev/null
+( cd "$pp/w" && bash scripts/install-git-hooks.sh ) >/dev/null 2>&1
+[ -x "$pp/w/.git/hooks/pre-push" ] &&
+	ok "PP install creates the pre-push hook" ||
+	bad "PP install did not create the pre-push hook"
+pp_git() { ( cd "$pp/w" && git "$@" ) >/dev/null 2>&1; }
+pp_git checkout -qb feat
+printf 'x\n' > "$pp/w/flag.txt"
+mkdir -p "$pp/w/docs/plans/active"
+cat > "$pp/w/docs/plans/active/p.md" <<'EOF'
+---
+lane: normal
+---
+
+## Validation
+
+- `2026-09-01T00:00:00Z` — gate, verdict `APPROVED`
+  - `test -f flag.txt`
+EOF
+pp_git add -A && pp_git commit -qm "feat: land plan"
+pp_git rm -q flag.txt && pp_git commit -qm "fix: drop flag"
+[ "$(git -C "$pp/w" rev-list --count master..feat)" = 2 ] &&
+	ok "PP pre-commit accepts both commits (the single-commit gap)" ||
+	bad "PP fixture expected two accepted commits on feat"
+if pp_git push -q origin feat; then
+	bad "PP push of a range with a broken proof must be rejected"
+else
+	git -C "$pp/remote.git" rev-parse -q --verify refs/heads/feat >/dev/null &&
+		bad "PP rejected push still updated the remote" ||
+		ok "PP push of a range with a broken earlier proof is rejected"
+fi
+pp_git branch stale HEAD
+printf 'x\n' > "$pp/w/flag.txt"
+pp_git add -A && pp_git commit -qm "fix: restore flag"
+if pp_git push -q origin feat &&
+	[ "$(git -C "$pp/remote.git" rev-parse refs/heads/feat)" = "$(git -C "$pp/w" rev-parse HEAD)" ]; then
+	ok "PP push passes once the range's proofs hold"
+else
+	bad "PP push with passing proofs was rejected"
+fi
+pp_out=$( cd "$pp/w" && git push -q origin stale 2>&1 )
+pp_rc=$?
+[ "$pp_rc" -ne 0 ] && printf '%s' "$pp_out" | grep -q "not the checked-out HEAD" &&
+	ok "PP a plan-carrying ref other than HEAD is rejected, not guessed" ||
+	bad "PP a plan-carrying ref other than HEAD must be rejected (rc $pp_rc)"
+pp_git branch side master
+pp_git push -q origin side &&
+	ok "PP a ref with no plan changes pushes from any checkout" ||
+	bad "PP a ref with no plan changes was rejected"
+rm -rf "$pp"
+
 # FLOOR: entries already committed at the historical floor are exempt, so the
 # pre-cutover range whose proofs cannot run at this HEAD is accepted; an
 # unresolvable floor appends nothing and changes no behavior.

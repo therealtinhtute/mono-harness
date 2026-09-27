@@ -518,27 +518,106 @@ echo "✅ All skills validated"
 exit 0
 HOOK_EOF
 
+  install_hook_file "$new" "$hook_file" "$force"
+}
+
+function install_hook_file() {             # <new> <hook-file> <force>
+  local new="$1" hook_file="$2" force="$3" name
+  name=$(basename "$hook_file")
   # A kept stale hook calls the guard core with an outdated signature and
   # fails open, so an older hook of ours is always replaced. A hook that is
   # not ours is never overwritten without --force.
   if [ -f "$hook_file" ] && [ "$force" != "true" ]; then
     if cmp -s "$new" "$hook_file"; then
       rm -f "$new"
-      echo "✅ pre-commit hook up to date"
+      echo "✅ $name hook up to date"
       return 0
     fi
     if ! grep -q '^ZHARNESS_HOOK_SOURCE=' "$hook_file"; then
       rm -f "$new"
-      echo "❌ a foreign pre-commit hook exists at $hook_file"
+      echo "❌ a foreign $name hook exists at $hook_file"
       echo "Use --force to overwrite"
       return 1
     fi
-    echo "🔄 replacing stale zharness pre-commit hook"
+    echo "🔄 replacing stale zharness $name hook"
   fi
 
   mv "$new" "$hook_file" || return 1
   chmod +x "$hook_file"
   echo "✅ Created: $hook_file"
+}
+
+function create_pre_push_hook() {
+  local hook_file="$HOOKS_DIR/pre-push"
+  local force="$1"
+  local new="$hook_file.tmp-zharness"
+
+  cat > "$new" << 'HOOK_EOF'
+#!/bin/bash
+# Pre-push hook: re-run the plan guards over the whole branch range, the same
+# range CI's hook-guard job validates (ADR 0009). pre-commit sees one commit at
+# a time, so a later commit that breaks an earlier entry's proof passes every
+# local commit and fails only in CI. The range catches it before the push.
+
+export ZHARNESS_HOOK_SOURCE
+ROOT="$(git rev-parse --show-toplevel)"
+export ROOT
+ZHARNESS_HOOK_SOURCE="$ROOT/scripts/install-git-hooks.sh"
+refs=$(cat)
+zero=0000000000000000000000000000000000000000
+head_sha=$(git rev-parse HEAD)
+_zhtmp=$(mktemp -d)
+trap 'rm -rf "$_zhtmp"' EXIT
+# Enforce from the installer bytes being pushed, as CI does from its checkout.
+git show "$head_sha:scripts/install-git-hooks.sh" > "$_zhtmp/src.sh" 2>/dev/null ||
+  cp "$ZHARNESS_HOOK_SOURCE" "$_zhtmp/src.sh" || { echo "❌ cannot resolve guard source"; exit 1; }
+awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' "$_zhtmp/src.sh" > "$_zhtmp/guard.sh" || {
+  echo "❌ guard core extraction failed"; exit 1;
+}
+grep -q '^zharness_guard_revspec()' "$_zhtmp/guard.sh" || { echo "❌ guard core incomplete"; exit 1; }
+# shellcheck disable=SC1090
+source "$_zhtmp/guard.sh"
+
+failed=0
+while read -r local_ref local_sha remote_ref _ <&3; do
+  [ -n "$local_sha" ] && [ "$local_sha" != "$zero" ] || continue
+  case "$remote_ref" in refs/heads/*) ;; *) continue ;; esac
+  revspec=$(ZHARNESS_BASE_REF="${ZHARNESS_DEFAULT_BRANCH:-origin/master}" \
+    ZHARNESS_HEAD_SHA="$local_sha" zharness_guard_revspec pr) || { failed=1; continue; }
+  gbase=$(printf '%s' "$revspec" | cut -f1)
+  ghead=$(printf '%s' "$revspec" | cut -f2)
+  plans=$(zharness_guard_plan_paths "$gbase" "$ghead")
+  [ -n "$plans" ] || continue
+  # Proofs execute in this worktree, so the range must end at what is checked out.
+  if [ "$local_sha" != "$head_sha" ]; then
+    echo "❌ pre-push plan guard: $local_ref carries plan changes but is not the checked-out HEAD."
+    echo "   Proofs run in this worktree; check out $local_ref and push again."
+    failed=1
+    continue
+  fi
+  if git status --porcelain --untracked-files=no | grep -q .; then
+    echo "ℹ️  note: uncommitted changes; proofs run against the worktree, CI runs against the commit."
+  fi
+  echo "🔍 Plan guards on $gbase..$ghead:"
+  printf '%s\n' "$plans"
+  zhuards_guard_plans "$plans" "$gbase" "$ghead" "$_zhtmp" || failed=1
+  while IFS= read -r f; do
+    case "$f" in docs/plans/completed/*) ;; *) continue ;; esac
+    git show "$ghead:$f" > "$_zhtmp/completed.md"
+    zharness_guard_completed_plan_phases_done "$f" "$_zhtmp/completed.md" || failed=1
+  done <<< "$plans"
+done 3<<< "$refs"
+
+if [ "$failed" -gt 0 ]; then
+  echo ""
+  echo "❌ Plan guards rejected this push (CI's hook-guard would fail the same range)."
+  echo "Fix the failing proof, or append a superseding Validation entry, then push again."
+  exit 1
+fi
+exit 0
+HOOK_EOF
+
+  install_hook_file "$new" "$hook_file" "$force"
 }
 
 function create_commit_msg_hook() {
@@ -607,6 +686,7 @@ function main() {
   echo ""
 
   create_pre_commit_hook "$force" || exit 1
+  create_pre_push_hook "$force" || exit 1
   create_commit_msg_hook "$force"
 
   echo ""
@@ -614,6 +694,7 @@ function main() {
   echo ""
   echo "Hooks installed:"
   echo "  - pre-commit: plan guards (R2/R3) + changed-skill validation"
+  echo "  - pre-push: plan guards over the branch range (same range as CI)"
   echo "  - commit-msg: Validates commit message format"
 }
 
