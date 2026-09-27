@@ -124,6 +124,11 @@ jobs:
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  /tmp/actionlint.tar.gz" | sha256sum -c -
           tar -xzf /tmp/actionlint.tar.gz -C "$HOME/.local/bin" actionlint
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      # Retained proofs may re-run the AGENTS.md size gate, which builds for
+      # musl; provide the same target the size-gate job installs.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
       - name: Run guards against the pushed range's plan changes
         env:
           ZHARNESS_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
