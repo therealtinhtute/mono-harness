@@ -30,11 +30,11 @@ Resolve from a leading subcommand, else from the request shape.
 | Mode | Activate when | Difference from the default loop |
 |---|---|---|
 | `diagnose` (default) | Error, crash, test failure, "not working", "why" | Steps 1–4, report only |
-| `fix` | "fix it", "sửa đi" | Full loop, steps 1–7 |
-| `bisect` | "used to work", "broke after update", a known-good commit or version | Step 1 becomes a bisect harness, see Bisect below |
-| `regression` | Same issue after a fix, or a "good" screenshot/version/file to compare against | The reference is the oracle, see Regression below |
-| `sweep` | After a root-cause fix, or "anywhere else like this?", "còn chỗ nào giống vậy không" | Step 6 only, on a named pattern |
-| `triage` | Issue/PR queue, "look at #42", "what needs my attention", label/close/brief an issue | Load `references/triage.md` |
+| `fix` | "fix it", "sửa đi" | Full loop, steps 1–7; steps 5–7 in `references/fix.md` |
+| `bisect` | "used to work", "broke after update", a known-good commit or version | Step 1 becomes a bisect harness; read `references/bisect-regression.md` now |
+| `regression` | Same issue after a fix, or a "good" screenshot/version/file to compare against | The reference is the oracle; read `references/bisect-regression.md` now |
+| `sweep` | After a root-cause fix, or "anywhere else like this?", "còn chỗ nào giống vậy không" | Step 6 only, on a named pattern, from `references/fix.md` |
+| `triage` | Issue/PR queue, "look at #42", "what needs my attention", label/close/brief an issue | Read `references/triage.md` now and follow it instead of steps 2–7; its bug check reuses step 1 |
 
 ## The Loop
 
@@ -74,35 +74,9 @@ A hypothesis with no prediction is a vibe; sharpen or discard it. A hypothesis t
 
 For a symptom that has recurred or smells like runtime state (caches, queues, generated output, PATH, locale, timeouts, entry points), read only `## Gotchas` in `references/failure-patterns.md`, then list its headings (`grep -n '^## '`) and read only the section matching the symptom, before adding a second fix. Domain traps: `references/ime-unicode.md` (IME, cursor drift, emoji), `references/rendering-debug.md` (PDF, print, fonts).
 
-### 5. Fix with a regression guard
+### 5–7. Fix, sweep, clean up
 
-Write the regression test **before** the fix, at a **correct seam**: one where the test reproduces the real bug pattern as it occurs at the call site. If the only seam is too shallow to reproduce it, that is a finding: report that the architecture prevents locking this bug down, instead of adding false confidence.
-
-1. Turn the minimised repro into a failing test at that seam; run it and watch it go red.
-2. Apply the fix within the authorized scope; watch it go green.
-3. Re-run the step 1 loop against the original, un-minimised scenario.
-
-Test rules: expected values come from an independent source (a known-good literal, the spec, the reference), never recomputed the way the code does. A negative assertion ("output must not contain X") needs a paired positive case proving the assertion can fail. Red-green is **run**, not assumed; for red on unfixed code use a temporary worktree, never a stash or revert of the shared tree.
-
-### 6. Sweep the blast radius
-
-The same shape often hides in N other places. Extract the pattern signature (function, regex, API call, selector, missing lock, skipped validation, input boundary) and search it across the repo, excluding generated, build, and vendored paths; for class-of-bug patterns search the surrounding shape, not only the literal. For every match write one of: same bug / safe (why) / unsure (ask). Unrelated bugs the sweep surfaces are listed, not fixed, unless the user agrees.
-
-### 7. Clean up
-
-- The step 1 loop no longer reproduces; the regression test passes (or the missing seam is documented).
-- `grep` for your `[DEBUG-` prefix returns nothing; throwaway harnesses are deleted or clearly marked.
-- The hypothesis that proved correct goes into the commit/PR message, including why the bug recurred if it did.
-
-## Bisect
-
-- Protect the worktree first: `git status --short --branch -uall`. Any modified, staged, or untracked file means bisect runs in a temporary detached worktree, removed afterwards.
-- If last-good is only a few releases back, read `git diff <good>..HEAD -- <suspect path>` first; bisect only when the diff is too large or the culprit is not obvious.
-- Bisect with a non-interactive pass/fail command defined up front (`git bisect run <loop>`). Read the culprit diff down to the line, then `git bisect reset`.
-
-## Regression
-
-Treat the reference (last-good commit, old build, fixture, screenshot, described expected state) as the oracle, not decoration. Define the pass/fail check against it before editing, then name the exact current-vs-reference delta. Do not generalize a broken render, race, or state path into "style polish".
+`fix`: read `references/fix.md` now and run steps 5–7. `sweep`: read it and run step 6 only. `diagnose` stops here and reports.
 
 ## Rationalization Smells
 

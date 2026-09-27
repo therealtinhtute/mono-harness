@@ -59,7 +59,7 @@ lane: high-risk
     - T3 sync docs: the playbook count and companion list in `docs/ARCHITECTURE.md`, `docs/README.md`, and the `embedded.rs` doc comment; one `CHANGELOG.md` Unreleased entry noting the new managed files — output: docs name 12 playbooks — check: `sh -c '! grep -q "eight playbooks" docs/ARCHITECTURE.md && bash scripts/verify-doc-links.sh'` — stop_if: none
   - phase check: `bash -c 'comm -23 <(git show 2befb37:cli/src/embedded.rs | grep -oE "^ +\"[^\"]+\",\$" | sed "s/^ *//" | sort -u) <(grep -oE "^ +\"[^\"]+\",\$" cli/src/embedded.rs | sed "s/^ *//" | sort -u) | (! grep .)' && bash scripts/verify-doc-links.sh && bash scripts/test-guards.sh && cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cargo build --release --target x86_64-unknown-linux-musl && test "$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)" -le 1850000`
 - phase_slug: `split-hunt-modes`
-  status: planned
+  status: in-progress
   - goal: R8 | depends_on: slim-always-on-and-git
   - surfaces: `skills/workflow/hunt/SKILL.md`, `skills/workflow/hunt/references/{fix,bisect-regression}.md`, `skills/workflow/README.md` (hunt row), `CHANGELOG.md` | avoided: other `hunt` references, `cli/`, `docs/playbooks/`
   - escalate_when: the `fix` path would load more than it does today, or a Hard Rule only makes sense next to steps 5–7
@@ -94,6 +94,10 @@ lane: high-risk
 - 2026-09-27T13:45:19Z — split-check-brainstorm/T1 — decision — gate request 2: `check.md` step 5 drops "run as the two axes below" and "on the same two axes when it reviews a diff" because the axes now live in `check-review.md`, whose mandatory pointer carries that meaning; the axis bullets were un-nested one level when they became a top-level list. Both are intended, previously unlogged NG3 exceptions
 - 2026-09-27T13:45:19Z — split-check-brainstorm/T1 — decision — gate request 3: the T1 done entry's 11,357 B predates the check-validation loader edit; the gate path measured 11,365 B at 42fa7a5 and 11,412 B after this remediation (+6.7% vs 10,700, inside ±15%)
 - 2026-09-27T13:45:19Z — split-check-brainstorm — done — gate requests 1, 4, 5 fixed: grill step 4 as above; `check-review.md` and `check-validation.md` contracts inherit the check forbidden list; `check-durable.md` header names "Preconditions step 2, then Steps 4 and 8–11" (raw numbering kept); `brainstorm.md` 3,158 B; preservation exit 0, parity cmp clean, doc-links OK, test-guards 47 passed, fmt/clippy clean, cargo test passed; surfaces: cli/docs/embedded/playbooks/{brainstorm,brainstorm-grill,brainstorm-lock,check-durable}.md and docs/playbooks copies, cli/src/embedded.rs
+- 2026-09-27T13:56:24Z — split-hunt-modes — start — waves 1–2 (T1–T2) from 23b14aa
+- 2026-09-27T13:57:23Z — split-hunt-modes/T1 — done — T1 check exit 0; steps 5–7 moved byte for byte to `references/fix.md` (diff empty); SKILL step 4 ends with a mandatory pointer (`fix` reads 5–7, `sweep` step 6, `diagnose` stops); fix and sweep mode rows name the file; surfaces: skills/workflow/hunt/SKILL.md, skills/workflow/hunt/references/fix.md
+- 2026-09-27T13:57:23Z — split-hunt-modes/T2 — decision — T2 stop_if check: `triage.md` step 3 reuses `hunt` step 1; steps 1–4 stay in SKILL.md, so triage keeps step 1 and "without the loop" means it follows `triage.md` instead of steps 2–7 and loads neither new reference
+- 2026-09-27T13:57:23Z — split-hunt-modes/T2 — done — T2 check exit 0: `hunt/SKILL.md` 8,978 B (was 11,284 at phase start, 11,414 at 2befb37); Bisect and Regression moved byte for byte to `references/bisect-regression.md` (diff empty) with pointers in both mode rows; `skills/workflow/README.md` hunt row and CHANGELOG updated; phase check exit 0 (validate-skill, doc-links); surfaces: skills/workflow/hunt/SKILL.md, skills/workflow/hunt/references/bisect-regression.md, skills/workflow/README.md, CHANGELOG.md
 
 ## Validation
 - 2026-09-27T12:23:05Z — phase `slim-always-on-and-git` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -132,8 +136,8 @@ lane: high-risk
   - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
-- active_phase: split-check-brainstorm
-- lifecycle_status: checked
+- active_phase: split-hunt-modes
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: gate requests on slim-always-on-and-git (1–6) and split-check-brainstorm (1–5) addressed after their gates (Log above); the final independent `check full` reviews the post-gate diffs
-- exact_next_action: work full phase split-hunt-modes
+- exact_next_action: independent judge runs check gate on final phase split-hunt-modes

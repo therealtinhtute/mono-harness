@@ -81,6 +81,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   update` delivers the four new files as managed playbooks; every pinned
   contract phrase moved byte for byte.
 
+- Workflow token slim, phase 3 (audit R8): `hunt` loads by mode. Steps 5–7
+  move to `references/fix.md` (read by `fix`, and by `sweep` for step 6);
+  Bisect and Regression move to `references/bisect-regression.md`;
+  `triage` follows `references/triage.md` instead of steps 2–7.
+  `diagnose` now reads only steps 1–4.
+
 ## [v0.24.0] — 2026-09-22
 
 ### Changed
