@@ -110,6 +110,6 @@ authorizes that file separately.
 ### 3. [S3] Tool economy — full `docs/ARCHITECTURE.md` read four times
 - evidence: digest "repeated identical calls: Read x4"
 - judgement: the agent needed one section, not a check
-- smallest fix: section pointer in `AGENTS.md` Project Structure
+- smallest fix: section pointer in `AGENTS.md` Layout and Pipeline
 - fix mode: experiment
 </example>

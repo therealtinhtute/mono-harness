@@ -11,7 +11,7 @@
 
 Git operations with conventional commits: staging, committing, pushing, pull requests, and merges. `git` owns no harness entity — a missing, stale, or broken harness never blocks it; Git operations remain non-mutating to harness state.
 
-Loaded by `SKILL.md` for `pr` and `merge` only; `cm`/`cp` steps, commit output, error handling, and anti-patterns live in `SKILL.md`.
+Loaded by `SKILL.md` for `pr` and `merge` only; `cm`/`cp` steps, commit output, error handling, anti-patterns, and exit condition live in `SKILL.md`.
 
 ### `pr`: Create pull request
 
@@ -65,6 +65,5 @@ Merge from `origin/{FROM_BRANCH}`, never the local branch — this ensures only 
 
 ## Exit Conditions
 
-- `cm`/`cp`: changes staged, security-scanned, committed (single or split by group); `cp` additionally pushed.
 - `pr`: remote branch pushed, PR created from the remote diff with a conventional title and summary/test-plan body.
 - `merge`: target branch fetched and merged from the remote source branch with `--no-ff`, conflicts resolved or reported, result pushed.

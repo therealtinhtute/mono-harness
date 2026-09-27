@@ -6,7 +6,7 @@ lane: high-risk
 
 ## Goal
 - outcome: every recommendation R1–R9 of `docs/audit/workflow-token-slim-audit.md` is applied, so each common path loads only the material its branch uses, with no rule, guard, proof requirement, or judge requirement removed.
-- success_signal: every byte budget below holds (`wc -c`, tokens ≈ bytes ÷ 4), every phrase the playbook contract test pinned at `2befb37` is still pinned, and the full gate set in `AGENTS.md` passes.
+- success_signal: every byte budget below holds within the ±15% tolerance in `risks:` (`wc -c`, tokens ≈ bytes ÷ 4), every phrase the playbook contract test pinned at `2befb37` is still pinned, and the full gate set in `AGENTS.md` passes.
 - actors: agents running the workflow skills in this repo and in consumer repos (via `npx skills add` and `zharness update`); the repo owner reviewing the PRs.
 - authority: `docs/audit/workflow-token-slim-audit.md` (merged in `2befb37`); owner decisions on 2026-09-27: all of R1–R9 in three phases, lane `high-risk`, `model:` pins are a non-goal, work branches from `master` after the audit merged.
 - requirements:
@@ -80,6 +80,10 @@ lane: high-risk
 - 2026-09-27T12:18:29Z — slim-always-on-and-git/T4 — done — T4 check exit 0; surfaces: skills/workflow/hunt/SKILL.md
 - 2026-09-27T12:18:29Z — slim-always-on-and-git/T5 — done — T5 check exit 0; `think/SKILL.md` 8,931 B, decide path was 12,974; Core section moved byte for byte; `lens <name>` row and `lenses.md` header point core lenses at SKILL.md; surfaces: skills/workflow/think/SKILL.md, skills/workflow/think/references/lenses.md
 - 2026-09-27T12:18:29Z — slim-always-on-and-git/T6 — done — T6 check exit 0; 9 SKILL files drop `metadata.version` (git promotes it to `version:`), 6 thin triggers drop "No binary runs the lifecycle.", `Sources:` → `NOTICE.md` for hunt/think; versions bumped git 1.3.0, hunt 1.1.0, think 1.1.0; CHANGELOG Unreleased Changed entry; phase check (doc-links, fmt, clippy, cargo test 51 passed) green
+- 2026-09-27T12:35:35Z — slim-always-on-and-git — decision — owner said "go ahead" (2026-09-27) to the remediation of check requests 1, 2, 5, 6, to accepting the T4 pointer (request 4), and to naming the ±15% tolerance in `success_signal:` (request 3, Goal refined in place; no requirement changed)
+- 2026-09-27T12:35:35Z — slim-always-on-and-git/T1 — decision — request 1: the `<security>` block was not a no-op (earlier T1 decision was wrong); restored byte for byte, and request 6 moves the `cm`/`cp` exit line back into SKILL.md; `git/SKILL.md` now 6,330 B vs 6,000 (+5.5%, inside ±15%)
+- 2026-09-27T12:35:35Z — slim-always-on-and-git — decision — request 5 edits `docs/README.md` and `docs/workflow-harness/migration.md`, outside the phase surfaces, to fix pointers this phase made stale; `skills/workflow/retro/references/retro.md` example pointer renamed to Layout and Pipeline
+- 2026-09-27T12:35:35Z — slim-always-on-and-git — done — requests 1, 2, 5, 6 fixed: security block diff empty vs ea60f19; `think` step 5 reaches every Risk/Design/Evidence/Communication lens and keeps the one-line no-finding rule (SKILL 9,020 B); doc-links OK; validate-skill passes all 10; task checks T2, T4, T5, T6 exit 0, T1 and T3 exit 1 on budget only (inside ±15%); surfaces: skills/workflow/git/SKILL.md, skills/workflow/git/references/workflow.md, skills/workflow/think/SKILL.md, skills/workflow/retro/references/retro.md, docs/README.md, docs/workflow-harness/migration.md
 
 ## Validation
 - 2026-09-27T12:23:05Z — phase `slim-always-on-and-git` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -105,5 +109,5 @@ lane: high-risk
 - active_phase: slim-always-on-and-git
 - lifecycle_status: checked
 - blockers: none
-- open_items: check requests 1–6 in the 2026-09-27T12:23:05Z Validation entry (1 git <security> rule drop, 2 think step-5 lens reach, 3 success_signal vs ±15% tolerance, 4 T4 owner acceptance unrecorded, 5 stale references in retro.md, docs/README.md, and migration.md, 6 cm/cp exit line placement)
+- open_items: requests 1–6 addressed after the gate (Log above); the final independent `check full` reviews the post-gate diff
 - exact_next_action: work full phase split-check-brainstorm

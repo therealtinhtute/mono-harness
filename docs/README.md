@@ -27,7 +27,7 @@ Three classes, and the class determines who is allowed to edit the file.
 | Path | Class | Notes |
 |---|---|---|
 | `docs/WORKFLOW.md` | managed | stage router; names the one playbook to read |
-| `docs/playbooks/` | managed | 6 stage playbooks; edit `cli/docs/embedded/playbooks/` instead. `git` is absent by design — it owns no harness entity, so its procedure lives at `skills/workflow/git/references/workflow.md` |
+| `docs/playbooks/` | managed | 6 stage playbooks; edit `cli/docs/embedded/playbooks/` instead. `git` is absent by design — it owns no harness entity, so its procedure lives in the skill: the commit flow in `skills/workflow/git/SKILL.md`, `pr`/`merge` in `skills/workflow/git/references/workflow.md` |
 | `docs/README.md` | authored | this page |
 | `docs/ARCHITECTURE.md` | authored | how the system works |
 | `docs/decisions/` | authored | numbered ADRs, an index, and `templates/decision.md` to copy for the next one |
