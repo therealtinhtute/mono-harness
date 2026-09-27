@@ -30,10 +30,10 @@ Resolve from a leading subcommand, else from the request shape.
 | Mode | Activate when | Difference from the default loop |
 |---|---|---|
 | `diagnose` (default) | Error, crash, test failure, "not working", "why" | Steps 1–4, report only |
-| `fix` | "fix it", "sửa đi" | Full loop, steps 1–7; steps 5–7 in `references/fix.md` |
+| `fix` | "fix it", "sửa đi" | Full loop, steps 1–7 |
 | `bisect` | "used to work", "broke after update", a known-good commit or version | Step 1 becomes a bisect harness; read `references/bisect-regression.md` now |
 | `regression` | Same issue after a fix, or a "good" screenshot/version/file to compare against | The reference is the oracle; read `references/bisect-regression.md` now |
-| `sweep` | After a root-cause fix, or "anywhere else like this?", "còn chỗ nào giống vậy không" | Step 6 only, on a named pattern, from `references/fix.md` |
+| `sweep` | After a root-cause fix, or "anywhere else like this?", "còn chỗ nào giống vậy không" | Step 6 only, on a named pattern: read `references/fix.md` now |
 | `triage` | Issue/PR queue, "look at #42", "what needs my attention", label/close/brief an issue | Read `references/triage.md` now and follow it instead of steps 2–7; its bug check reuses step 1 |
 
 ## The Loop
@@ -76,7 +76,7 @@ For a symptom that has recurred or smells like runtime state (caches, queues, ge
 
 ### 5–7. Fix, sweep, clean up
 
-`fix`: read `references/fix.md` now and run steps 5–7. `sweep`: read it and run step 6 only. `diagnose` stops here and reports.
+`fix`, or `bisect`/`regression` with a fix authorization: read `references/fix.md` now and run steps 5–7. `sweep`: read it and run step 6 only. `diagnose` stops here and reports.
 
 ## Rationalization Smells
 
