@@ -16,6 +16,7 @@ Pure delta on SOUL (concise/verdict-first), Karpathy (minimal change), and Hard 
 - Batch independent calls in one block. Don't serialize what has no dependency.
 - Long foreground calls may auto-background; the result is injected as a follow-up when the job finishes. Never poll a backgrounded job (`sleep`/`ps`/`pgrep`/`top`/`tail -f`/`watch`) — do other work, or end your reply, and you will be woken with its output.
 - Subagents have overhead; for small tasks a subagent costs more than it saves — see the Agent tool's own guidance, don't spawn unless asked or context-isolation clearly wins.
+- The Bash tool shell may be zsh, not bash: run bash-isms (`mapfile`, word-split `for x in $LIST`) through `bash <<'EOF'` with `set -euo pipefail`, and abort any delete/trash loop whose target list is empty — an empty name turns `dir/$name` into `dir/`.
 
 ## 2. Check-in cadence
 
