@@ -167,6 +167,17 @@ npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g
 
 No skill runs during installation.
 
+To reinstall rules and skills from scratch, from this repository:
+
+```bash
+cp rules/*.md ~/.claude/rules/
+npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
+```
+
+`npx skills add` never removes a skill that was dropped from this repository.
+Trash each dropped skill by name from `~/.claude/skills/` and `~/.agents/skills/`
+before reinstalling.
+
 ## v0.16
 
 Protocol on the v0.15 three-verb binary: absorb at handoff close, at most
