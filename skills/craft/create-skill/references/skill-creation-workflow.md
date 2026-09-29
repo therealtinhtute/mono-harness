@@ -4,7 +4,7 @@
 
 ## Step 1: Understand with Concrete Examples
 
-Gather real usage patterns via `AskUserQuestion` tool:
+Gather real usage patterns via the agent's question tool (`AskUserQuestion` on Claude Code):
 - "What tasks should this skill handle?"
 - "Give examples of how it would be used?"
 - "What phrases should trigger this skill?"

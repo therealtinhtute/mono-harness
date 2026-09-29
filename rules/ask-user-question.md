@@ -1,18 +1,15 @@
 ---
 name: ask-user-question
-description: "Global rule: all questions must use AskUserQuestion tool"
+description: "Global rule: ask every question with the agent's own question tool"
 scope: global
 applies_to: all_skills
 ---
 
-# AskUserQuestion Enforcement — Global Rule
+# Question Tool — Global Rule
 
-**Hard rule:** all questions from the agent MUST use the `AskUserQuestion` tool.
+**Hard rule:** ask every question with the agent's own question tool: Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`.
 
-- Never ask questions in plain text prose, inline, or as placeholders
-- Max 4 questions per call
-- Recommended option labeled "(Recommended)" and placed first
+- Max 4 questions per call; recommended option first, labelled "(Recommended)"
+- Plain-text questions only when the agent has no such tool
 
-Applies to all skills, slash commands, sub-agents, and spawned contexts. No exceptions.
-
-Plaintext questions bypass the conversation flow and break audit trails — `AskUserQuestion` ensures structured, traceable interaction.
+Plaintext questions bypass the conversation flow and break audit trails — the question tool ensures structured, traceable interaction.

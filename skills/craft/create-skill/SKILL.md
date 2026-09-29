@@ -65,7 +65,7 @@ skill-name/
 ## Creation Workflow
 
 Follow `references/skill-creation-workflow.md`:
-1. Understand with concrete examples via AskUserQuestion
+1. Understand with concrete examples via the agent's question tool (`AskUserQuestion` on Claude Code)
 2. Research official docs and existing patterns
 3. Plan reusable contents: scripts, references, assets
 4. Initialize with `scripts/init_skill.py <name> --path <dir>`

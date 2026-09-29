@@ -67,6 +67,8 @@ When a question can only be settled by running something (does this state model 
 
 When the answer depends on decisions only the user can make, ask them as a **frontier**: every open decision whose prerequisites are already settled, numbered, each with your recommended answer. Wait for answers, recompute the frontier, repeat. A question that depends on another open question waits for a later round. For a full interview that locks a Goal, hand off to `brainstorm grill`.
 
+Ask with the agent's own question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`. Last-resort fallback, text:
+
 ```
 ❓ **Q1** — **<title>**: <question, options if any>
 ➡️ <recommended answer + one-line why>

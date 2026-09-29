@@ -13,7 +13,7 @@ Derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-- State assumptions before writing code. Ask via `AskUserQuestion` if uncertain.
+- State assumptions before writing code. Ask via the agent's question tool (`AskUserQuestion` on Claude Code) if uncertain.
 - Multiple interpretations? Present them — don't pick silently.
 - Simpler approach exists? Say so. Push back when warranted.
 

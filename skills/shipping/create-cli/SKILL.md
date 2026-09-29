@@ -55,7 +55,7 @@ If ambiguous, ask.
 
 ### Phase 1: Fast Clarify
 
-Ask these via `AskUserQuestion` (batch max 4, recommended option first):
+Ask these via the agent's question tool (`AskUserQuestion` on Claude Code) (batch max 4, recommended option first):
 
 1. **Command name** — what users type. Short, memorable, no hyphens if possible.
 2. **One-liner** — what it does in ≤10 words.

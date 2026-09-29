@@ -24,7 +24,7 @@ Prefix your first line with `🥷` inline. Be direct: result or blocker first. N
 - `pr [to-branch] [from-branch]` — create a pull request (defaults: the repository's resolved base branch, current branch)
 - `merge [to-branch] [from-branch]` — merge branches (defaults: the repository's resolved base branch, current branch)
 
-No argument: ask with `AskUserQuestion` (header "Git Operation", question "What would you like to do?", options `cm`, `cp`, `pr`, `merge`).
+No argument: ask with the agent's question tool (`AskUserQuestion` on Claude Code) (header "Git Operation", question "What would you like to do?", options `cm`, `cp`, `pr`, `merge`).
 
 ## Commit (`cm`, `cp`)
 
