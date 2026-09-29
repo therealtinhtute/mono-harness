@@ -385,6 +385,56 @@ zhuards_guard_plans() {                    # <path-list-space-separated> <base> 
   done
   return $rc
 }
+
+zharness_guard_staged_secrets() {          # <repo-root>
+  # SECRETS: reject staged value-shaped secrets and secret-bearing filenames.
+  # Reports file:line and the pattern name only; the matched value is never
+  # printed. *.example/*.sample/*.template files are fixtures by convention:
+  # exempt from the filename and url-credentials checks only (owner, 2026-09-29).
+  local root="$1" f line n ex d hits=""
+  # A git error (bad diff.* config, missing orderFile) must not skip the scan.
+  git -C "$root" diff --cached --name-only -z --diff-filter=ACMRT >/dev/null 2>&1 || {
+    echo "❌ SECRET GUARD REJECTED: git diff failed; staged content not scanned" >&2
+    return 1
+  }
+  local aws='AKIA[0-9A-Z]{16}'
+  local pkey='-----BEGIN ([A-Z]+ )*PRIVATE KEY-----'
+  local ucred='[a-z][a-z0-9+.-]*://[^/:@[:space:]]+:[^/@[:space:]]+@'
+  # -z names: no C-quoting of non-ASCII paths. --text: binary blobs are
+  # scanned too (NULs dropped). Headers end at the first @@, so an added line
+  # that itself starts with "++" is still content. Raw bytes only: no
+  # textconv/external diff, and context lines still advance the counter.
+  while IFS= read -r -d '' f; do
+    ex=0
+    case "$f" in *.example|*.sample|*.template) ex=1 ;; esac
+    [ "$ex" = 1 ] || case "${f##*/}" in
+      .env|.env.*|*.pem|*.key|*.p12) hits="$hits
+   $f  secret-bearing filename" ;;
+    esac
+    d=$(set -o pipefail; git -C "$root" --literal-pathspecs -c diff.interHunkContext=0 diff --cached -U0 --no-color \
+      --no-ext-diff --no-textconv --text -- "$f" | tr -d '\000') || { hits="$hits
+   $f  diff failed, not scanned"; continue; }
+    while IFS="$(printf '\t')" read -r n line; do
+      [ -n "$n" ] || continue
+      if [[ $line =~ $aws ]]; then hits="$hits
+   $f:$n  aws-access-key"
+      elif [[ $line =~ $pkey ]]; then hits="$hits
+   $f:$n  private-key"
+      elif [ "$ex" = 0 ] && [[ $line =~ $ucred ]]; then hits="$hits
+   $f:$n  url-credentials"
+      fi
+    done <<< "$(printf '%s\n' "$d" | awk '
+      /^@@/ { h = 1; s = $3; sub(/^\+/, "", s); sub(/,.*/, "", s); n = s + 0; next }
+      h && /^\+/ { print n "\t" substr($0, 2); n++; next }
+      h && /^ / { n++ }')"
+  done < <(git -C "$root" diff --cached --name-only -z --diff-filter=ACMRT 2>/dev/null)
+  if [ -n "$hits" ]; then
+    echo "❌ SECRET GUARD REJECTED: staged content looks like a secret$hits" >&2
+    echo "   Move it to an env var or untracked file, then git restore --staged <file>." >&2
+    return 1
+  fi
+  return 0
+}
 # ZGUARD-CORE-END
 
 function show_usage() {
@@ -463,6 +513,9 @@ if [ -n "$plans" ]; then
     git show ":$f" > "$tmpdir/completed.md"
     zharness_guard_completed_plan_phases_done "$f" "$tmpdir/completed.md" || guard_failed=1
   done <<< "$plans"
+fi
+if ! zharness_guard_staged_secrets "$ROOT"; then
+  guard_failed=1
 fi
 
 if [ "$guard_failed" -gt 0 ]; then

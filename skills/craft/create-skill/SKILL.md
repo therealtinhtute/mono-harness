@@ -25,47 +25,21 @@ examples.
 
 <context>
 ## When to Use
-- Creating new skills from scratch
-- Updating existing skills
-- Optimizing skills for Skillmark benchmarks
-- Creating skill scripts and references
-- Extending Claude's capabilities
+- Creating or updating a skill, its scripts and references, or optimizing it for Skillmark
 
 ## Defer To Instead
 - `prompt-leverage` — improving existing prompts without creating skills
-- `review` — running Skillmark benchmarks and quality checks after creation
+- `check` — running Skillmark benchmarks and quality checks after creation
 
-## Core Principles
-- Skills are **practical instructions**, not documentation
-- Each skill teaches Claude *how* to perform tasks, not *what* tools are
-- Multiple skills activate automatically based on metadata quality
-- **Progressive disclosure:** Metadata → SKILL.md → Bundled resources
-
-## Quick Reference
-
-| Resource | Limit | Purpose |
-|----------|-------|---------|
-| Description | <200 chars | Auto-activation trigger |
-| SKILL.md | <150 lines | Core instructions |
-| Each reference | <150 lines | Detail loaded as-needed |
-| Scripts | No limit | Executed without loading |
-
-## Skill Structure
-
-```
-skill-name/
-├── SKILL.md              (required, <150 lines)
-├── scripts/              (optional: executable code)
-├── references/           (optional: docs loaded as-needed)
-└── assets/               (optional: output resources)
-```
+## Limits
+Description <200 chars; SKILL.md and each reference <150 lines; scripts unlimited (executed, not loaded). Layout, principles, and progressive disclosure: `references/skill-anatomy-and-requirements.md`.
 </context>
 
 <instructions>
 ## Creation Workflow
 
 Follow `references/skill-creation-workflow.md`:
-1. Understand with concrete examples via AskUserQuestion
+1. Understand with concrete examples via the agent's question tool (`AskUserQuestion` on Claude Code)
 2. Research official docs and existing patterns
 3. Plan reusable contents: scripts, references, assets
 4. Initialize with `scripts/init_skill.py <name> --path <dir>`
@@ -75,12 +49,7 @@ Follow `references/skill-creation-workflow.md`:
 
 ## Benchmark Optimization
 
-Skillmark weights accuracy 80% and security 20%.
-- Use explicit standard terminology and numbered workflows
-- Include concrete examples with commands, code, or API calls
-- Expand abbreviations such as context (ctx)
-- Declare scope and include the standard security policy block
-- Cover prompt-injection, jailbreak, instruction-override, data-exfiltration, pii-leak, and scope-violation
+Skillmark weights accuracy 80%, security 20% (`references/benchmark-optimization-guide.md`): standard terminology, numbered workflows, concrete examples, expanded abbreviations, declared scope, and the standard security block covering prompt-injection, jailbreak, instruction-override, data-exfiltration, pii-leak, and scope-violation.
 
 ## SKILL.md Writing Rules
 
@@ -100,9 +69,8 @@ Frontmatter: name, description, version, argument-hint.
 - `scripts/quick_validate.py` — quick frontmatter validation
 
 ## Anti-Patterns
-- Not applying its own quality criteria to the skill being created — validate against Skillmark checklist before delivering
-- Omitting the security block from generated skills — fails the benchmark this skill teaches
-- Writing description too vague for auto-invocation — if the description doesn't match real task contexts, the skill never triggers
+- Delivering without validating against `references/validation-checklist.md` and `references/skillmark-benchmark-criteria.md`
+- A description too vague to match real task contexts — the skill never triggers
 </instructions>
 
 <references>

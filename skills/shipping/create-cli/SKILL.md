@@ -28,15 +28,13 @@ for the constraints, plan distribution, and hand off to implementation skills.
 
 <context>
 ## When to Use
-- Designing a new CLI tool from scratch (greenfield)
-- Retrofitting an existing script into a proper CLI (retrofit)
-- Planning CLI distribution and packaging strategy
-- Choosing between frameworks (Go/Rust/Node/Bash) for a CLI project
+- New CLI (greenfield), or an existing script formalized into a CLI (retrofit)
+- CLI framework choice (Go/Rust/Node/Bash), distribution, and packaging
 
 ## Defer To Instead
 - `think` — general architecture decisions not specific to CLIs
 - `work` — actual implementation after spec is approved
-- `review` — auditing CLI code quality and security
+- `check` — auditing CLI code quality and security
 </context>
 
 <instructions>
@@ -55,16 +53,12 @@ If ambiguous, ask.
 
 ### Phase 1: Fast Clarify
 
-Ask these via `AskUserQuestion` (batch max 4, recommended option first):
+Ask these via the agent's question tool (`AskUserQuestion` on Claude Code) (batch max 4, recommended option first):
 
 1. **Command name** — what users type. Short, memorable, no hyphens if possible.
 2. **One-liner** — what it does in ≤10 words.
 3. **User type** — developer, ops, end-user, or CI/automation.
-4. **Language/framework** — read `references/framework-matrix.md` to recommend based on:
-   - Distribution needs (single binary vs npm)
-   - Team expertise
-   - Performance requirements
-   - Ecosystem (existing deps)
+4. **Language/framework** — recommend from `references/framework-matrix.md` (distribution, team expertise, performance, existing deps).
 
 Then ask:
 5. **Input sources** — stdin, files, args, env, API?
@@ -74,52 +68,22 @@ Then ask:
 
 ### Phase 2: Design Spec
 
-Produce the spec using `references/spec-template.md`. Enforce these conventions:
+Fill `references/spec-template.md` and enforce every convention in `references/cli-guidelines.md` (standard flags, exit codes, stdout/stderr, `NO_COLOR`, config precedence, XDG). Also decide:
 
-#### Mandatory Conventions (from clig.dev)
-
-- `-h`/`--help` on every command and subcommand
-- `--version` on root command
-- `--json` for machine-readable output
-- `--no-input` disables all prompts (CI-safe)
-- `--quiet` suppresses non-essential output
-- `--verbose` / `--debug` for troubleshooting
-- `-f`/`--force` skips confirmations (dangerous ops only)
-- `-n`/`--dry-run` for destructive operations
-- Exit codes: 0 success, 1 general error, 2 usage error, 126 permission, 127 not found, 130 SIGINT
-- Errors to stderr, data to stdout
-- Respect `NO_COLOR` env var
-- Config precedence: flags > env > project config > user config > system config
-- XDG base directories for config/cache/data
-
-#### Design Checklist
-
-- [ ] Command tree (max 2 levels deep unless justified)
-- [ ] Every flag: long form, short form (if warranted), type, default, description
-- [ ] Subcommand semantics: noun-verb or verb-noun (pick one, be consistent)
-- [ ] Output format for each command (human vs JSON)
-- [ ] Error messages: pattern, codes, and recovery hints
-- [ ] Config file format and location
-- [ ] Shell completion story
-- [ ] Signal handling (SIGINT, SIGTERM)
-- [ ] Platform constraints (macOS, Linux, Windows?)
+- Command tree at most 2 levels deep unless justified; one subcommand order (noun-verb or verb-noun), used consistently
+- Every flag: long form, short form if warranted, type, default, description
+- `-f`/`--force` skips confirmations on dangerous operations only
+- Per command: human vs JSON output; error pattern, codes, recovery hints
+- Config file format and location, shell completions, SIGINT/SIGTERM handling, target platforms
 
 ### Phase 3: Implementation Roadmap
 
 After spec approval, produce:
 
-1. **Framework choice** with rationale (reference `framework-matrix.md`)
+1. **Framework choice** with rationale (`framework-matrix.md`)
 2. **Project structure** — directories and key files
-3. **Ordered task list** — each task is one PR-sized unit:
-   - Task 1: Scaffold project, arg parsing, `--help`/`--version`
-   - Task 2: Core command implementation (one per subcommand)
-   - Task 3: Config loading (if applicable)
-   - Task 4: Output formatting (human + JSON)
-   - Task 5: Error handling and exit codes
-   - Task 6: Shell completions
-   - Task 7: Tests (unit + integration)
-   - Task 8: Distribution (see `references/shipping-checklist.md`)
-4. **Shipping plan** — how it gets to users (reference `shipping-checklist.md`)
+3. **Ordered task list**, one PR-sized unit each: scaffold + arg parsing + `--help`/`--version`; one task per subcommand; config loading; human + JSON output; errors and exit codes; completions; unit + integration tests; distribution
+4. **Shipping plan** — how it reaches users (`shipping-checklist.md`)
 
 ---
 
@@ -127,18 +91,11 @@ After spec approval, produce:
 
 ### Phase 1: Extract Current Interface
 
-1. Read the existing script/code
-2. Map current behavior:
-   - What arguments does it accept?
-   - What env vars does it read?
-   - What does it output (format, destination)?
-   - What exit codes does it use?
-   - Does it read config files?
-3. Document the **as-is interface** in spec format
+Read the existing script/code and document its **as-is interface** in spec format: arguments, env vars read, output format and destination, exit codes, config files.
 
 ### Phase 2: Gap Analysis
 
-Compare as-is against clig.dev conventions. Produce a table:
+Compare as-is against `cli-guidelines.md`:
 
 | Convention | Current | Target | Breaking? |
 |---|---|---|---|
@@ -150,17 +107,11 @@ Flag breaking changes explicitly. Ask user which breaks are acceptable.
 
 ### Phase 3: Redesign Spec
 
-Produce the target spec (same format as greenfield Phase 2), noting:
-- What stays the same (backwards-compatible)
-- What changes (with migration notes)
-- What's new
+Produce the target spec (greenfield Phase 2 format), marking what stays (backwards-compatible), what changes (with migration notes), and what is new.
 
 ### Phase 4: Migration Roadmap
 
-Like greenfield Phase 3, but ordered to minimize breakage:
-1. Non-breaking additions first (new flags, help text)
-2. Deprecation warnings for things that will change
-3. Breaking changes last (with version bump)
+Like greenfield Phase 3, ordered to minimize breakage: non-breaking additions (new flags, help text) → deprecation warnings → breaking changes with a version bump.
 
 ---
 

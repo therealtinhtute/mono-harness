@@ -159,9 +159,13 @@ removes managed files only; consumer-owned bytes are never deleted.
 
 ## Optional skills
 
-Skills are not part of `zharness install`. They live in this source repository:
+Skills are not part of `zharness install`. They live in this source repository,
+the stable release of the skills; the former `orkit-tui` incubator is archived
+and no longer syncs here. The repository is private, so installing over SSH
+needs local SSH keys with access to it:
 
 ```bash
+npx skills add git@github.com:therealtinhtute/mono-harness.git --list   # list without installing
 npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
 ```
 

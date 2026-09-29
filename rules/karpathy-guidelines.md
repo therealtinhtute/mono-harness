@@ -1,29 +1,28 @@
 ---
 name: karpathy-guidelines
-description: "Global rule: apply Karpathy's 4 behavioral guidelines plus output and close-out discipline every session when writing, reviewing, or refactoring code"
+description: "Global rule: Karpathy's coding guidelines plus output and close-out discipline"
 scope: global
 applies_to: all_sessions
 ---
 
 # Karpathy Guidelines — Global Rule
 
-Derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls. Apply every session. Bias toward caution; use judgment for trivial tasks.
+From [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls. Bias toward caution.
 
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-- State assumptions before writing code. Ask via `AskUserQuestion` if uncertain.
+- State assumptions before coding: inline for minor ambiguity, then proceed; when truly uncertain, ask via the agent's question tool.
 - Multiple interpretations? Present them — don't pick silently.
-- Simpler approach exists? Say so. Push back when warranted.
+- Simpler approach, or a flawed one? Say so in one sentence first.
 
 ## 2. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
 
 - No unrequested features, abstractions, configurability, or error handling for impossible cases.
-- If you write 200 lines and it could be 50, rewrite it.
-- Test: would a senior engineer call this overcomplicated?
+- 200 lines that could be 50? Rewrite it.
 
 ## 3. Surgical Changes
 
@@ -38,28 +37,18 @@ Derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015
 
 **Define success criteria. Loop until verified.**
 
-Transform tasks into verifiable goals before starting:
+Turn tasks into verifiable goals first:
 - "Add validation" → write tests for invalid inputs, make them pass
 - "Fix the bug" → write a test reproducing it, make it pass
 - "Refactor X" → ensure tests pass before and after
 
-For multi-step tasks, state plan inline: `1. [step] → verify: [check]`.
+For risky or multi-step tasks, state the plan inline: `1. [step] → verify: [check]`. Small tasks: act directly, then verify.
 
 ## 5. Output and Close-out
 
-Repo discipline, not from Karpathy.
-
-- Code, commands, diffs, and concrete decisions over prose; prose only for decisions, risks, blockers, or non-obvious rationale.
-- No basics, generic closers, or filler.
-- Done is production-ready: error handling, types, and edge cases the task can hit.
-- No placeholders or TODOs unless requested; comment only non-obvious logic.
+- Code, commands, diffs, and concrete decisions over prose; prose only for decisions, risks, blockers, or non-obvious rationale; no basics, generic closers, or filler.
+- Done is production-ready: error handling, types, and edge cases the task can hit. No placeholders or TODOs unless requested; comment only non-obvious logic.
 - Flag security, data-loss, or correctness risk in one line.
-- If the approach is flawed, say so in one sentence before proceeding.
-- For minor ambiguity, state the assumption inline and proceed.
-- For small tasks, act directly and verify the result.
-- Before non-trivial edits, explore the relevant files, patterns, and tests; in an unfamiliar codebase also read its `AGENTS.md`/`CLAUDE.md`, README, and test commands. Search with `rg`.
-- Implement in focused increments; state a short plan only when it helps coordination or the change is risky.
-- Verify smallest-first, broadening with blast radius.
+- Before non-trivial edits, read the relevant files, patterns, and tests (in an unfamiliar codebase also `AGENTS.md`/`CLAUDE.md`, README, test commands). Search with `rg`.
+- Implement in focused increments; verify smallest-first, widening with blast radius.
 - Close out with what changed, what verification ran, and remaining risk.
-
-If you catch yourself writing code before stating assumptions, adding unrequested features, or starting without success criteria — stop and correct course.

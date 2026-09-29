@@ -25,18 +25,11 @@ discipline. Never speculate beyond observed tool output.
 
 <context>
 ## Scope
-Handles: GitHub code research via gh CLI, evidence-first citations, selective file
-caching in .zharness/cache/github/, reporting findings inline (saved to docs/research/ only when a plan cites them)
-
 Does NOT handle: Local codebase research (use Explore agent or grep), git operations (use git
 skill), model failover, subagent spawning, workspace isolation in /tmp
 
 ## When to Use
-- Investigating external GitHub repositories without cloning
-- Searching for symbols, patterns, or examples across GitHub
-- Finding where something is defined in a specific repo
-- Gathering evidence from GitHub code for decisions
-- Researching API usage patterns in open source
+- Evidence from external GitHub code without cloning: symbol definitions, patterns, API usage examples
 
 ## Defer To Instead
 - `git` — git operations, commits, PRs, branches
@@ -54,8 +47,7 @@ If either check fails, stop and report the constraint.
 
 ## Core Strategy
 
-Goal: smallest useful evidence set with exact citations. Over-researching delays
-decisions as much as under-researching.
+Goal: smallest useful evidence set with exact citations.
 
 1. **Search first** — use gh search before fetching files
 2. **Cache selectively** — only files needed to prove your answer
@@ -70,27 +62,13 @@ decisions as much as under-researching.
 - Path/metadata request? → Use search/tree output first
 
 ### 2. Search GitHub
-Use patterns from `references/gh-patterns.md`:
-- Code search with filters (--repo, --owner, --limit)
-- Tree API for structure mapping
-- Contents API for directory listings
+Use the command templates in `references/gh-patterns.md`: code search with `--repo`/`--owner`/`--limit`, tree API for structure, contents API for listings; find symbol, explore structure, find examples, compare implementations.
 
 ### 3. Cache Files
-Only cache files you need to cite:
-```bash
-REPO='owner/repo'
-REF='main'  # or resolve with: gh repo view "$REPO" --json defaultBranchRef --jq '.defaultBranchRef.name'
-FILE='path/to/file.ts'
-
-mkdir -p ".zharness/cache/github/$REPO/$(dirname "$FILE")"
-gh api "repos/$REPO/contents/$FILE?ref=$REF" --jq .content | tr -d '\n' | base64 --decode > ".zharness/cache/github/$REPO/$FILE"
-```
+Cache only files you need to cite, into `.zharness/cache/github/{owner}/{repo}/`, with the contents-API recipe in `references/gh-patterns.md`.
 
 ### 4. Read and Cite
-Use Read tool on cached files:
-- Get line-numbered context with `nl -ba` or `rg -n`
-- Cite as: `.zharness/cache/github/owner/repo/path:lineStart-lineEnd`
-- Keep snippets short (5-15 lines)
+Read cached files with line numbers. Cite as `.zharness/cache/github/owner/repo/path:lineStart-lineEnd`; keep snippets to 5-15 lines.
 
 ### 5. Write Findings
 Report findings inline. Save to `docs/research/{topic}.md` only when a plan will cite them, with frontmatter:
@@ -108,27 +86,16 @@ Follow output format from `references/output-format.md`.
 
 ## Citation Rules (CRITICAL)
 
-Load full rules from `references/citation-rules.md`. Key points:
+Full rules and examples: `references/citation-rules.md`.
 
-- **Code claims**: Must cite cached file with line range
-  - ✅ `.zharness/cache/github/cli/cli/pkg/cmd/root.go:42-56`
-  - ❌ "I found it in root.go" (no line range)
-  - ❌ Citing `gh search code` textMatches (not proof)
-
-- **Path claims**: Cite command output or `owner/repo:path`
-  - ✅ `cli/cli:pkg/cmd/root.go` (from tree/search output)
-  - ✅ `.zharness/cache/github/cli/cli/pkg/cmd/root.go` (if cached)
-
-- **Never speculate**: If you didn't observe it in tool output, don't present it as fact
-
-- **Partial evidence**: State what is confirmed and what remains uncertain
+- **Code claims** cite a cached file with a line range; `gh search code` textMatches are not proof
+- **Path claims** cite command output or `owner/repo:path`
+- **Never speculate**: not observed in tool output → not a fact; nothing found → say "not found"
+- **Partial evidence**: state what is confirmed and what remains uncertain
 
 ## Cache Management
 
-- Files cached in `.zharness/cache/github/{owner}/{repo}/`
-- Cache persists across sessions for faster re-queries
-- Clean with: `trash .zharness/cache/github/` (or specific repos)
-- No automatic cleanup — user manages cache
+The cache persists across sessions with no automatic cleanup; the user clears it with `trash .zharness/cache/github/` (or a single repo).
 
 ## Scope Limits
 
@@ -137,13 +104,9 @@ Load full rules from `references/citation-rules.md`. Key points:
 - If scope too broad, ask user to narrow before searching
 - Private repos: if 404/403, report access constraint clearly
 
-## Common Patterns
-See `references/gh-patterns.md` for command templates: find symbol, explore structure, find examples, compare implementations.
-
 ## Anti-Patterns
-- Fabricating search results when `gh` returns nothing — hallucinated evidence is worse than no evidence; say "not found"
-- Not verifying the repo exists before deep-diving — wrong codebase, right confidence; run `gh repo view` first
-- Citing file paths without confirming they exist at HEAD — stale references from cached or outdated results
+- Deep-diving before `gh repo view` confirms the repo exists
+- Citing paths not confirmed at HEAD — cached or outdated results go stale
 </instructions>
 
 <references>

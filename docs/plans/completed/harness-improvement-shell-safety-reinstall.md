@@ -30,7 +30,7 @@ Bash tool guarantees bash, and the README block if a CLI verb takes over.
 
 ## Fresh rerun
 - different session: no
-- Decision: pending fresh rerun
-- comparison:
+- Decision: closed without fresh rerun (owner, 2026-09-29; merged in #111)
+- comparison: not run; improvement unproven
 
 Do not claim the harness improved while Decision is `pending fresh rerun`.

@@ -24,7 +24,7 @@ Prefix your first line with `🥷` inline. Be direct: result or blocker first. N
 - `pr [to-branch] [from-branch]` — create a pull request (defaults: the repository's resolved base branch, current branch)
 - `merge [to-branch] [from-branch]` — merge branches (defaults: the repository's resolved base branch, current branch)
 
-No argument: ask with `AskUserQuestion` (header "Git Operation", question "What would you like to do?", options `cm`, `cp`, `pr`, `merge`).
+No argument: ask with the agent's question tool (`AskUserQuestion` on Claude Code) (header "Git Operation", question "What would you like to do?", options `cm`, `cp`, `pr`, `merge`).
 
 ## Commit (`cm`, `cp`)
 
@@ -42,13 +42,13 @@ Leave anything you did not mean to commit unstaged; if `git status --porcelain` 
 
 ### Step 2: Security check
 
-Scan staged changes for secrets before committing:
+A repo with this harness's pre-commit hook blocks staged secrets itself. Elsewhere, scan the staged files; the `cut` keeps output to `file:line`, never the value:
 
 ```bash
-git diff --cached | grep -iE "(AKIA|api[_-]?key|token|password|secret|credential|private[_-]?key|mongodb://|postgres://|mysql://|redis://|-----BEGIN)"
+git diff --cached --name-only -z | xargs -0 -r git grep --cached -nE "AKIA[0-9A-Z]{16}|-----BEGIN ([A-Z]+ )*PRIVATE KEY|://[^/:@ ]+:[^/@ ]+@|(api[_-]?key|token|password|secret)[\"']?[[:space:]]*[:=]" -- | cut -d: -f1-2
 ```
 
-Also warn on staged files matching `.env`/`.env.*` (except `.env.example`), `*.key`, `*.pem`, `*.p12`, `credentials.json`, `secrets.json`, `config/private.*`. **If anything matches: STOP, show the matching lines (`git diff --cached | grep -B2 -A2 <pattern>`), suggest adding to `.gitignore` or moving to environment variables, and offer to unstage (`git reset HEAD <file>`). Do not commit.**
+Also flag staged `.env`/`.env.*` (except `*.example`), `*.key`, `*.pem`, `*.p12`, `credentials.json`, `secrets.json`. **Any hit: STOP, report `file:line` only, suggest env vars or `.gitignore`, offer `git restore --staged <file>`. Do not commit.**
 
 ### Step 3: Split decision
 

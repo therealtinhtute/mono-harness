@@ -29,6 +29,21 @@ repository to the behavior it had before the file existed.
 
 ## Incidents
 
+### 2026-09-29 — staged-secret guard missed secrets hidden by git's diff rendering
+
+- class: `BAD_OUTPUT`
+- rationale: the guard scanned `git diff --cached` output as if it were file content. Four
+  `REQUEST_CHANGES` gate rounds each reproduced a bypass in that assumption: `+++`-prefixed
+  content lines skipped as headers, C-quoted non-ASCII paths, binary blobs not rendered, textconv
+  and ext-diff rewriting content, context lines not advancing the line counter, type changes
+  (`T`) excluded by the diff filter, and pathspec magic in a filename. The tools were right; the
+  produced guard was wrong, so `BAD_OUTPUT` fits.
+- surface: `scripts/install-git-hooks.sh`, `zharness_guard_staged_secrets` in ZGUARD-CORE.
+- source: `846f1bb`, `scripts/test-guards.sh`, the `SECRETS` fixture block — one fixture per
+  reproduced bypass.
+- coverage: covered. `bash scripts/test-guards.sh` (CI job `hook-guard`) rejects each bypass:
+  `plus.txt:2`, `é.txt`, `blob.bin`, `ctx.txt:7`, `link:1`, `:(literal)magic.cfg`.
+
 ### 2026-09-15 — routing resolved a durable gate with two active plans
 
 - class: `MISSING_CONTEXT`

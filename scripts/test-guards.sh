@@ -768,6 +768,108 @@ else
 fi
 rm -rf "$ftmp" "$ftmp2"
 
+# SECRETS: staged value-shaped secrets and secret-bearing filenames are
+# rejected by file:line and pattern name; the value itself is never printed.
+# The key is assembled at runtime so this file never holds a matching literal.
+stmp=$(mktemp -d)
+git -C "$stmp" init -q
+key="AKIA""IOSFODNN7EXAMPLE"
+printf 'aws_key = %s\n' "$key" > "$stmp/app.cfg"
+printf 'Pass the token in a header.\n' > "$stmp/doc.md"
+cred="u:pw"
+printf 'DB=postgres://%s@localhost/db\n' "$cred" > "$stmp/.env.example"
+git -C "$stmp" add app.cfg doc.md .env.example
+out=$(zharness_guard_staged_secrets "$stmp" 2>&1); rc=$?
+[ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q 'app.cfg:1' &&
+	ok "SECRETS staged AWS key rejected by file:line" ||
+	bad "SECRETS expected rejection naming app.cfg:1, got rc=$rc: $out"
+printf '%s' "$out" | grep -q "$key" &&
+	bad "SECRETS output leaked the key value" ||
+	ok "SECRETS output does not contain the key value"
+printf '%s' "$out" | grep -qE 'doc\.md|\.env\.example' &&
+	bad "SECRETS false positive on doc prose or an .example file" ||
+	ok "SECRETS prose mentioning token and .example files pass"
+git -C "$stmp" rm -q --cached app.cfg
+zharness_guard_staged_secrets "$stmp" >/dev/null 2>&1 &&
+	ok "SECRETS clean index accepted" ||
+	bad "SECRETS clean index rejected"
+printf 'X=1\n' > "$stmp/.env"
+git -C "$stmp" add .env
+zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q '\.env' &&
+	ok "SECRETS staged .env filename rejected" ||
+	bad "SECRETS staged .env not rejected"
+git -C "$stmp" rm -q --cached .env
+printf '++x\n+++ %s\n' "$key" > "$stmp/plus.txt"
+printf 'k=%s\n' "$key" > "$stmp/é.txt"
+printf 'bin\000k=%s\n' "$key" > "$stmp/blob.bin"
+git -C "$stmp" add plus.txt é.txt blob.bin
+out=$(zharness_guard_staged_secrets "$stmp" 2>&1)
+printf '%s' "$out" | grep -q 'plus.txt:2' &&
+	ok "SECRETS added line starting ++ scanned with correct line number" ||
+	bad "SECRETS ++ line missed or misnumbered: $out"
+printf '%s' "$out" | grep -q 'é.txt:1' &&
+	ok "SECRETS non-ASCII path scanned" ||
+	bad "SECRETS non-ASCII path missed: $out"
+printf '%s' "$out" | grep -q 'blob.bin:1' &&
+	ok "SECRETS binary blob scanned" ||
+	bad "SECRETS binary blob missed: $out"
+git -C "$stmp" rm -q --cached plus.txt é.txt blob.bin
+printf 'k=%s\n' "$key" > "$stmp/cfg.example"
+git -C "$stmp" add cfg.example
+zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'cfg.example:1' &&
+	ok "SECRETS .example still rejects an AWS key" ||
+	bad "SECRETS .example exemption let an AWS key through"
+git -C "$stmp" rm -q --cached cfg.example
+printf 'k=%s\n' "$key" > "$stmp/err.cfg"
+git -C "$stmp" add err.cfg
+git -C "$stmp" config diff.algorithm nosuch
+zharness_guard_staged_secrets "$stmp" >/dev/null 2>&1 &&
+	bad "SECRETS invalid diff.algorithm made the guard fail open" ||
+	ok "SECRETS git error (invalid diff.algorithm) fails closed"
+git -C "$stmp" config --unset diff.algorithm
+git -C "$stmp" config diff.orderFile "$stmp/nosuch-order"
+zharness_guard_staged_secrets "$stmp" >/dev/null 2>&1 &&
+	bad "SECRETS missing diff.orderFile made the guard fail open" ||
+	ok "SECRETS git error (missing diff.orderFile) fails closed"
+git -C "$stmp" config --unset diff.orderFile
+git -C "$stmp" rm -q --cached err.cfg
+printf '1\n2\n3\n4\n5\n6\n7\n' > "$stmp/ctx.txt"
+git -C "$stmp" add ctx.txt
+git -C "$stmp" -c user.name=t -c user.email=t@t commit -qm ctx
+printf '1\nX\n3\n4\n5\n6\nk=%s\n' "$key" > "$stmp/ctx.txt"
+git -C "$stmp" add ctx.txt
+printf '*.txt diff=hide\n' > "$stmp/.git/info/attributes"
+git -C "$stmp" config diff.interHunkContext 10
+git -C "$stmp" config diff.hide.textconv 'sed s/AKIA/XXXX/'
+zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'ctx.txt:7' &&
+	ok "SECRETS ignores textconv and interHunkContext; line number exact" ||
+	bad "SECRETS textconv/interHunkContext hid or misnumbered the key"
+git -C "$stmp" reset -q ctx.txt; rm -f "$stmp/.git/info/attributes"
+ln -s ctx.txt "$stmp/link"
+git -C "$stmp" add link
+git -C "$stmp" -c user.name=t -c user.email=t@t commit -qm link
+rm "$stmp/link"; printf 'k=%s\n' "$key" > "$stmp/link"
+git -C "$stmp" add link
+zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'link:1' &&
+	ok "SECRETS symlink replaced by a file (type change) scanned" ||
+	bad "SECRETS type change bypassed the scan"
+git -C "$stmp" reset -q link
+printf 'k=%s\n' "$key" > "$stmp/:(literal)magic.cfg"
+git -C "$stmp" add -- ":(literal):(literal)magic.cfg"
+zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'magic.cfg:1' &&
+	ok "SECRETS filename with pathspec magic scanned literally" ||
+	bad "SECRETS pathspec-magic filename bypassed the scan"
+printf 'a\n' > "$stmp/old.txt"
+git -C "$stmp" add old.txt
+git -C "$stmp" -c user.name=t -c user.email=t@t commit -qm base
+git -C "$stmp" mv old.txt new.txt
+printf 'k=%s\n' "$key" >> "$stmp/new.txt"
+git -C "$stmp" add new.txt
+zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'new.txt:2' &&
+	ok "SECRETS renamed file scanned at its new path" ||
+	bad "SECRETS renamed file missed"
+rm -rf "$stmp"
+
 rm -rf "$tmp" "$GUARD"
 echo
 echo "guards: $pass passed, $fail failed"
