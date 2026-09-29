@@ -446,11 +446,12 @@ if grep -q "You should\|You must\|You can" "$SKILL_FILE"; then
 fi
 
 # Every skill named in a "Defer to:" line or a "Defer To Instead" section must
-# exist under skills/<category>/<name>/.
+# exist under skills/<category>/<name>/; a compound target (`brainstorm grill`)
+# is checked by its first word.
 SKILLS_ROOT="$(cd "$(dirname "$SKILL_FILE")/../.." && pwd)"
 missing_refs=""
 for ref in $(awk '/^Defer to:/{print; next} /^## /{on=/Defer To Instead/; next} on && /^- `/' "$SKILL_FILE" |
-  grep -oE '`[a-z][a-z0-9-]*`' | tr -d '`' | sort -u); do
+  grep -oE '`[a-z][a-z0-9-]*[ `]' | tr -d '` ' | sort -u); do
   ls -d "$SKILLS_ROOT"/*/"$ref" >/dev/null 2>&1 || missing_refs="$missing_refs $ref"
 done
 if [ -n "$missing_refs" ]; then
