@@ -3,7 +3,7 @@ id: 01M1PROMPTDIET7Q2WZ4
 type: plan
 intake_id: 01M1PROMPTDIETINTK7Q2WZ4
 lane: high-risk
-status: active
+status: completed
 created: 2026-09-29
 updated: 2026-09-29
 ---
@@ -46,7 +46,7 @@ updated: 2026-09-29
 - recovery: `git revert` the single commit; hook block reverts independently of skill edits.
 - seams: `scripts/validate-skill.sh`, `scripts/test-guards.sh`, `scripts/verify-doc-links.sh`, `codex exec -s read-only` diff-review (owner-approved 2026-09-29).
 - phase_slug: `p1-sensors`
-  status: checked
+  status: done
   - goal: R1, R2 | depends_on: none
   - surfaces: skills/craft/create-skill, skills/shipping/{create-cli,turbo-mono-platform}, skills/workflow/git, scripts/validate-skill.sh, scripts/install-git-hooks.sh (ZGUARD-CORE), scripts/test-guards.sh | avoided: cli/, rules/
   - escalate_when: the secret regex needs an allowlist mechanism, or the hook fixture cannot run without network
@@ -55,7 +55,7 @@ updated: 2026-09-29
     - T2 add secret scan to ZGUARD-CORE + fixtures (AKIA key blocked, value absent from output; doc line with "token" passes); shrink git Step 2 — output: guard blocks and redacts — check: `bash scripts/test-guards.sh` — stop_if: any existing fixture regresses
   - phase check: `bash scripts/test-guards.sh && bash scripts/verify-doc-links.sh`
 - phase_slug: `p2-always-loaded`
-  status: checked
+  status: done
   - goal: R3, R4 | depends_on: p1-sensors
   - surfaces: AGENTS.md, README.md, rules/karpathy-guidelines.md, ~/.claude/rules/ | avoided: skills/
   - escalate_when: a removed AGENTS.md line is referenced by a playbook or script
@@ -64,7 +64,7 @@ updated: 2026-09-29
     - T4 dedupe karpathy rule; owner reads diff; reinstall all rules — output: ≤360 words, installed = repo — check: `wc -w rules/karpathy-guidelines.md && for f in rules/*.md; do diff -q "$f" ~/.claude/rules/$(basename "$f"); done` — stop_if: owner rejects diff
   - phase check: `bash scripts/verify-doc-links.sh`
 - phase_slug: `p3-skill-trims`
-  status: executing
+  status: done
   - goal: R5, R6 | depends_on: p2-always-loaded
   - surfaces: skills/craft/{create-skill,librarian,prompt-leverage}, skills/shipping/create-cli, skills/workflow/{think,hunt} (SKILL.md and references/) | avoided: rules/, scripts/, cli/
   - escalate_when: Codex review flags a dropped constraint the owner wants kept but no reference fits it
@@ -75,10 +75,10 @@ updated: 2026-09-29
 
 ## Current State and Next Action
 - active_phase: p3-skill-trims
-- lifecycle_status: executing
+- lifecycle_status: completed
 - blockers: none
 - open_items: none
-- exact_next_action: finish T9 think and T10 hunt Codex reviews, commit each trimmed skill, then gate p3
+- exact_next_action: none; PR only on owner request
 
 ## Log
 - 2026-09-29 plan written; previous active plan closed to completed/.
@@ -99,6 +99,9 @@ updated: 2026-09-29
 - 2026-09-29T09:16:43Z — p2-always-loaded/T4 — done — rules/karpathy-guidelines.md 456 → 357 words: §5 lines that restated §1/§4 merged into them, closing restatement and senior-engineer test dropped. Owner approved the diff; rules/*.md copied to ~/.claude/rules/, `diff -q` clean for all.
 - 2026-09-29T09:45:25Z — p2-always-loaded — decision — independent gate round 1 REQUEST_CHANGES: README lacked the removed `--list` command, orkit no-sync note, and SSH-key prerequisite; karpathy lost "prose only for decisions, risks, blockers, or non-obvious rationale". Fixed: README §Optional skills gains all three; clause restored, offset by dropping the intro "use judgment on trivial tasks" (§4 "Small tasks") and the `AskUserQuestion` parenthetical (rules/ask-user-question.md). 357 words; rules reinstalled.
 - 2026-09-29T09:45:25Z — p3-skill-trims — start — T5–T10 trimmed in parallel with the p2 gate; per-skill Codex reviews: T5 DROPPED `--force` dangerous-ops-only (restored), T6 CLEAN, T7 CLEAN, T8 DROPPED Skillmark pre-delivery validation (restored).
+- 2026-09-29T09:55:43Z — p3-skill-trims/T9,T10 — decision — Codex diff-review rounds: r1 DROPPED 12 items (hunt: load pointer, probe contents, list-before-testing, "log everything and grep", heading listing, "Probably the same issue", "plain"; think: Done-when fields, commercial judgment, entity delta, "slow down", regressions→hunt), r2 DROPPED 3, r3 DROPPED 3; all restored and offset by rewording. r4 CLEAN; its prompt narrowed "weakened" to "materially, such that behavior changes".
+- 2026-09-29T09:55:43Z — p3-skill-trims — done — committed a86c4c8 create-cli, 8d5cd7f prompt-leverage, 515bfe8 librarian, f96b3e9 create-skill, b7adec5 think, 6217e41 hunt; per-commit scan hit only prose ("nothing secret").
+- 2026-09-29T09:55:43Z — p3-skill-trims — decision — independent gate (Codex) APPROVED on abe501c..HEAD; nonblocking: validate-skill.sh writes a report file, so it cannot run in a read-only sandbox.
 
 ## Validation
 - 2026-09-29T08:13:37Z — phase `p1-sensors` — verdict: APPROVED — mode: gate
@@ -120,5 +123,17 @@ updated: 2026-09-29
   - rollback_point: ba6434b
   - requests: none; round 1 REQUEST_CHANGES fixed (README relocation incomplete, dropped prose clause)
   - residual: installed-rule parity is local to this host
+  - judge: independent
+  - judge_model: codex-cli 0.158.0 (default model)
+- 2026-09-29T09:55:43Z — phase `p3-skill-trims` — verdict: APPROVED — mode: gate
+  - `for f in skills/*/*/SKILL.md; do bash scripts/validate-skill.sh "$f" >/dev/null 2>&1 || exit 1; done` — 0 failures
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - `test "$(wc -w < skills/workflow/hunt/SKILL.md)" -le 1122` — 1122 words (1403, −20%)
+  - `test "$(wc -w < skills/workflow/think/SKILL.md)" -le 1155` — 1155 words (1444, −20%)
+  - scope: on target — six SKILL.md files, one commit each; no references/ edits needed
+  - requirements: R5 met (create-cli −22%, prompt-leverage −21%, librarian −20%, create-skill −23%) | R6 met (think −20%, hunt −20%)
+  - rollback_point: abe501c
+  - requests: none; per-skill Codex reviews found dropped items in T5, T8, T9, T10, all restored before commit
+  - residual: owner has not read the six trim diffs; each commit reverts alone
   - judge: independent
   - judge_model: codex-cli 0.158.0 (default model)
