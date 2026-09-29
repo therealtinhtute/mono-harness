@@ -36,7 +36,7 @@ for the constraints, plan distribution, and hand off to implementation skills.
 ## Defer To Instead
 - `think` — general architecture decisions not specific to CLIs
 - `work` — actual implementation after spec is approved
-- `review` — auditing CLI code quality and security
+- `check` — auditing CLI code quality and security
 </context>
 
 <instructions>

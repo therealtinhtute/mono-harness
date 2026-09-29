@@ -33,7 +33,7 @@ examples.
 
 ## Defer To Instead
 - `prompt-leverage` — improving existing prompts without creating skills
-- `review` — running Skillmark benchmarks and quality checks after creation
+- `check` — running Skillmark benchmarks and quality checks after creation
 
 ## Core Principles
 - Skills are **practical instructions**, not documentation

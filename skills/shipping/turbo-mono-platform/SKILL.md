@@ -41,7 +41,7 @@ files, run Package Analyzer before scaffolding.
 - Any question about this specific stack
 
 ## Defer To Instead
-- `review` — auditing TypeScript code quality and running tests and type checks
+- `check` — auditing TypeScript code quality and running tests and type checks
 - `brainstorm` — comparing monorepo vs polyrepo architecture
 
 ## Companion Skills

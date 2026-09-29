@@ -445,9 +445,16 @@ if grep -q "You should\|You must\|You can" "$SKILL_FILE"; then
   anti_patterns_found=true
 fi
 
-# Check for non-existent skill references
-if grep -qE '`(scout|planner|docs-manager|docs-seeker)`' "$SKILL_FILE"; then
-  echo "  ❌ References non-existent skills (scout, planner, docs-manager, docs-seeker)"
+# Every skill named in a "Defer to:" line or a "Defer To Instead" section must
+# exist under skills/<category>/<name>/.
+SKILLS_ROOT="$(cd "$(dirname "$SKILL_FILE")/../.." && pwd)"
+missing_refs=""
+for ref in $(awk '/^Defer to:/{print; next} /^## /{on=/Defer To Instead/; next} on && /^- `/' "$SKILL_FILE" |
+  grep -oE '`[a-z][a-z0-9-]*`' | tr -d '`' | sort -u); do
+  ls -d "$SKILLS_ROOT"/*/"$ref" >/dev/null 2>&1 || missing_refs="$missing_refs $ref"
+done
+if [ -n "$missing_refs" ]; then
+  echo "  ❌ Defers to non-existent skill(s):$missing_refs"
   inc ERRORS
   anti_patterns_found=true
 fi
