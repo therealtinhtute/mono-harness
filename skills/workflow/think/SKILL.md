@@ -9,65 +9,65 @@ compatibility: Designed for Claude Code
 
 # Think: Reason Before You Build
 
-Prefix your first line with `🥷` inline. Verdict first, then the reasoning that would change it.
+Prefix your first line with `🥷` inline. Verdict first, then the evidence that would flip it.
 
-Give opinions directly. Take a position and name the evidence that would flip it. No "that's interesting", "there are many ways", "you might consider".
+No "that's interesting", "there are many ways", "you might consider".
 
 ## Outcome Contract
 
 - Outcome: a rough question becomes one defensible recommendation whose weakest assumption is named.
-- Done when: the goal, constraints, chosen direction, the rejected alternative and why, the most fragile assumption, and the next concrete step are stated; nothing load-bearing is silently assumed.
-- Evidence: current repo state, project docs and ADRs under `docs/decisions/`, live config values, primary-source docs, and explicit user preferences. Memory is a lead to re-verify, never evidence.
-- Writes: **none.** `think` edits no code and creates no plan or report. A result worth keeping goes to `brainstorm lock`; an approved build goes to `to-plan` or `work`.
+- Done when: the goal, constraints, chosen direction, the rejected alternative and why, the most fragile assumption, and the next step are stated; nothing load-bearing is silently assumed.
+- Evidence: repo state, docs and ADRs under `docs/decisions/`, live config values, primary-source docs, and explicit user preferences. Memory is a lead to re-verify, never evidence.
+- Writes: **none** — no code, plan, or report. Keep a result via `brainstorm lock`; an approved build goes to `to-plan` or `work`.
 
 ## Modes
 
-Resolve from a leading subcommand, else from the request shape.
+Resolve from a leading subcommand, else the request.
 
 | Mode | Activate when | Do |
 |---|---|---|
-| `decide` (default) | "how should I", "which approach", architecture or design choice | The Process below |
-| `evaluate` | "is it worth it", "should we keep/remove X", "có nên làm không", commercial or pivot judgment | Load `references/mode-evaluation.md`: one Kill/Keep/Pivot verdict |
-| `triage` | A bundle of 3+ independent asks, requests, or screenshots not yet implemented | Load `references/mode-triage.md`: per-item bucket table |
-| `twice` | The shape of an interface, module, or data model is the question | Load `references/design-it-twice.md`: 3+ radically different designs, compared |
-| `lens <name>` | The user names a pattern ("pre-mortem this", "second-order effects") | Core lens: Core Lenses below; else load `references/lenses.md`. Run that lens only |
+| `decide` (default) | "how should I", "which approach", design choice | The Process below |
+| `evaluate` | "is it worth it", "keep/remove X", "có nên làm không", commercial or pivot judgment | `references/mode-evaluation.md`: one Kill/Keep/Pivot verdict |
+| `triage` | 3+ independent unbuilt asks or screenshots | `references/mode-triage.md`: per-item bucket table |
+| `twice` | Interface, module, or data-model shape | `references/design-it-twice.md`: 3+ radically different designs |
+| `lens <name>` | A named pattern ("pre-mortem this") | That lens only: Core Lenses below, else `references/lenses.md` |
 
-An error, crash, failing test, or "why is this broken" is not a judgment: say in one line it belongs to `hunt`, then route. Fuzzy intent that needs the user interviewed until a Goal is concrete belongs to `brainstorm grill`.
+An error, crash, failing test, or "why is this broken" → one line: it belongs to `hunt`; route there. Fuzzy intent → `brainstorm grill`.
 
 ## Process (`decide`)
 
-1. **Frame.** Restate the decision in one sentence and what "good" means (success signal, constraints, who pays the cost). If two sources conflict or two readings have different cost, name the conflict in one sentence and ask which wins. Do not silently pick.
-2. **Ground before opining.** Read `AGENTS.md`/`CLAUDE.md` and only the rule or ADR matching the problem. Open the real config file for any default, env var, or setting the answer depends on; never quote a default from memory. Separate facts from decisions: find facts yourself (repo, docs, a sub-agent for wide searches); put only decisions to the user.
-3. **Official and proven first.** Check framework built-ins and ecosystem standards against live primary docs; an existing official solution is the default unless you can say why it falls short here. For a hard problem, or one already tuned several times, read how 2–3 mature projects solve it and name what you take from each.
-4. **Generate real alternatives.** Always include the minimal (brute-force) option in one line. Add alternatives only when genuinely different, not variations of one idea. When the interface shape is the crux, switch to `twice`.
-5. **Run the lenses.** Pick 3–5 that fit the problem; the Core Lenses below almost always apply. Load `references/lenses.md` for any Risk, Design, Evidence, or Communication lens: e.g. **attack angles** for external dependencies, scale, or data migration; **deletion test** and **depth/seam** for module design; **entity delta** when the plan adds settings, flags, commands, or services. Each lens produces a sentence of finding, not a heading of ceremony; a lens that finds nothing gets one line.
-6. **Deform or discard.** If a lens finds a hole, change the design to survive it. If it shatters the approach, drop it and say why. Never present a plan that failed a lens without disclosing the failure.
-7. **Recommend.** One direction, with effort, risk, and what existing code it builds on. Mention one alternative only if the call is genuinely close (>40% the user would prefer it).
+1. **Frame.** The decision in one sentence and what "good" means (success signal, constraints, who pays the cost). Sources conflict, or two readings cost differently → name the conflict and ask which wins; never silently pick.
+2. **Ground before opining.** Read `AGENTS.md`/`CLAUDE.md` and only the matching rule or ADR. Open the real config for any default, env var, or setting the answer depends on; never quote one from memory. Separate facts from decisions: find facts yourself (repo, docs, sub-agents for wide searches); put only decisions to the user.
+3. **Official and proven first.** Check built-ins and ecosystem standards in live primary docs; the official solution wins unless you can say why it falls short. For a hard or repeatedly-tuned problem, study 2–3 mature projects and name what you take from each.
+4. **Generate real alternatives.** Genuinely different, not variations, beside the brute-force option (simplicity-gate). Interface shape is the crux → switch to `twice`.
+5. **Run the lenses.** Pick 3–5 that fit; the Core Lenses almost always apply; load `references/lenses.md` for others (e.g. **attack angles** for external dependencies, scale, data migration; **deletion test**, **depth/seam** for module design; **entity delta** when the plan adds settings, flags, commands, or services). One sentence per lens finding; nothing found → one line.
+6. **Deform or discard.** A lens finds a hole → change the design to survive it; it shatters the approach → drop it and say why. Never hide a failed lens.
+7. **Recommend.** One direction: effort, risk, and the existing code it builds on. Name one alternative only if the call is close (>40% the user would prefer it).
 
-When a question can only be settled by running something (does this state model feel right? what should this look like?), recommend a throwaway prototype that answers exactly that question; building it needs the user's go-ahead because `think` writes nothing.
+A question only running something can settle (does this state model feel right?) → recommend a throwaway prototype answering exactly that; building it needs the user's go-ahead.
 
 ### Core Lenses
 
 **premise-collapse** — Which single assumption, if false, makes this plan wrong?
-- Output: "This assumes X. If X fails, Y happens." If X is load-bearing and fragile, deform the design to survive its failure.
+- Output: "This assumes X. If X fails, Y happens." Always name it; fragile X → deform the design to survive it.
 
 **pre-mortem** — It is six months later and this failed. What is the most likely story?
-- Output: the top 1–2 failure stories and the design change that prevents each. Inversion variant: "how would we guarantee failure?", then avoid that.
+- Output: top 1–2 failure stories and the design change preventing each. Inversion variant: "how would we guarantee failure?", then avoid that.
 
 **reversibility** — One-way door or two-way door?
-- Output: the rollback path and its cost (data, public API, users' muscle memory). Two-way door → decide fast with less evidence. One-way door → slow down, demand evidence, prefer a reversible first step.
+- Output: the rollback path and its cost (data, public API, muscle memory). Two-way → decide fast on less evidence. One-way → slow down, demand evidence, prefer a reversible first step.
 
 **simplicity-gate** — Does the chosen plan beat the brute-force version?
 - Minimal path: the one-line brute-force option; the plan must beat it on risk, rollback, or latency, not elegance.
 - Defensive layers: every try/catch, retry, fallback, or flag maps to one named failure mode; delete layers that only "might" fail.
 - Surface delta: list new commands, env vars, flags, services; prefer +0.
-- Compensating complexity: if most of the plan is workaround machinery around a misbehaving dependency, the premise is wrong; name a route change.
+- Compensating complexity: workaround machinery bigger than the feature means the premise is wrong; name a route change.
 
 ## Grill-lite
 
-When the answer depends on decisions only the user can make, ask them as a **frontier**: every open decision whose prerequisites are already settled, numbered, each with your recommended answer. Wait for answers, recompute the frontier, repeat. A question that depends on another open question waits for a later round. For a full interview that locks a Goal, hand off to `brainstorm grill`.
+Decisions only the user can make go out as a **frontier**: every open decision whose prerequisites are settled, numbered, each with your recommended answer. Wait, recompute, repeat; a question depending on another open one waits a round.
 
-Ask with the agent's own question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`. Last-resort fallback, text:
+Ask with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended first, labelled `(Recommended)`. No tool → text:
 
 ```
 ❓ **Q1** — **<title>**: <question, options if any>
@@ -77,21 +77,16 @@ Ask with the agent's own question tool (Claude Code `AskUserQuestion`, Codex `re
 ## Hard Rules
 
 - **No placeholders.** "To be decided", "details later", "similar to step N" mean the thinking is unfinished.
-- **Name the load-bearing assumption.** "This assumes X. If X fails, Y happens." If X is fragile, deform the design.
-- **Zero-setup default.** Anything that makes every user install or configure something (hook, MCP server, config key, new runtime, new language) must first say why a built-in or a fixed default cannot do the job.
-- **Workaround bigger than the feature means the premise is wrong.** Name a route change instead of more machinery.
-- **Phases must stand alone.** After phase N ships, the system works even if N+1 never lands; "Phase 0: investigate" means the investigation belongs in this thinking, not in the plan.
-- **Plain re-pitch on confusion.** If the user says "wait, what?", restate from context in short plain sentences using the project's own terms, not more detail.
+- **Zero-setup default.** Anything every user must install or configure (hook, MCP server, config key, new runtime or language) first says why a built-in or fixed default cannot do the job. A second language or runtime in a single-stack project needs explicit approval.
+- **Phases stand alone.** After phase N ships, the system works even if N+1 never lands; "Phase 0: investigate" belongs in this thinking, not the plan.
+- **Plain re-pitch on confusion.** "Wait, what?" → restate in short plain sentences in the project's terms, not more detail.
 
 ## Gotchas
 
-| What happened | Rule |
-|---|---|
-| Rejected design restarted from scratch | Ask what specifically failed; re-enter with narrowed constraints |
-| "Missing feature" already existed | Search for the existing affordance by concept before calling anything a gap |
-| Complaint turned into a rework that removed the product's differentiator | Check docs for a deliberate choice first; if deliberate, the verdict is Keep |
-| Picked a regional or locale-specific API variant blindly | List regional differences before recommending an integration |
-| A second language or runtime slipped into a single-stack project | Never without explicit approval |
+- Design rejected → ask what specifically failed; re-enter with narrowed constraints, never from scratch.
+- Before calling anything a missing feature, search for the existing affordance by concept.
+- A rework that would remove the product's differentiator → check docs for a deliberate choice; deliberate → Keep.
+- List regional or locale API differences before recommending an integration.
 
 ## Output
 
@@ -107,4 +102,4 @@ Next:           [the one concrete step: brainstorm lock / to-plan / work bounded
 
 `evaluate` and `triage` use their reference's format instead. Keep prose short; the block is the answer.
 
-Defer to: `brainstorm` to grill intent or lock the result into a plan; `to-plan` once a plan is locked; `hunt` for any error or regression; `check` to review built code.
+Defer to: `brainstorm` (grill, lock), `to-plan` (locked plan), `hunt` (errors, regressions), `check` (built code).
