@@ -55,7 +55,7 @@ updated: 2026-09-29
     - T2 add secret scan to ZGUARD-CORE + fixtures (AKIA key blocked, value absent from output; doc line with "token" passes); shrink git Step 2 — output: guard blocks and redacts — check: `bash scripts/test-guards.sh` — stop_if: any existing fixture regresses
   - phase check: `bash scripts/test-guards.sh && bash scripts/verify-doc-links.sh`
 - phase_slug: `p2-always-loaded`
-  status: planned
+  status: checked
   - goal: R3, R4 | depends_on: p1-sensors
   - surfaces: AGENTS.md, README.md, rules/karpathy-guidelines.md, ~/.claude/rules/ | avoided: skills/
   - escalate_when: a removed AGENTS.md line is referenced by a playbook or script
@@ -64,7 +64,7 @@ updated: 2026-09-29
     - T4 dedupe karpathy rule; owner reads diff; reinstall all rules — output: ≤360 words, installed = repo — check: `wc -w rules/karpathy-guidelines.md && for f in rules/*.md; do diff -q "$f" ~/.claude/rules/$(basename "$f"); done` — stop_if: owner rejects diff
   - phase check: `bash scripts/verify-doc-links.sh`
 - phase_slug: `p3-skill-trims`
-  status: planned
+  status: executing
   - goal: R5, R6 | depends_on: p2-always-loaded
   - surfaces: skills/craft/{create-skill,librarian,prompt-leverage}, skills/shipping/create-cli, skills/workflow/{think,hunt} (SKILL.md and references/) | avoided: rules/, scripts/, cli/
   - escalate_when: Codex review flags a dropped constraint the owner wants kept but no reference fits it
@@ -74,11 +74,11 @@ updated: 2026-09-29
   - phase check: `for f in skills/*/*/SKILL.md; do bash scripts/validate-skill.sh "$f" || echo FAIL "$f"; done; bash scripts/verify-doc-links.sh`
 
 ## Current State and Next Action
-- active_phase: p1-sensors
-- lifecycle_status: checked
+- active_phase: p3-skill-trims
+- lifecycle_status: executing
 - blockers: none
-- open_items: failure-ledger row for the 5 gate rounds needs a committed SHA to cite; append after the p1 commit.
-- exact_next_action: commit p1 (git), then work full phase p2-always-loaded
+- open_items: none
+- exact_next_action: finish T9 think and T10 hunt Codex reviews, commit each trimmed skill, then gate p3
 
 ## Log
 - 2026-09-29 plan written; previous active plan closed to completed/.
@@ -93,6 +93,12 @@ updated: 2026-09-29
 - 2026-09-29T08:10:43Z — p1-sensors — decision — re-gate round 3 REQUEST_CHANGES: type changes (T) skipped. Fixed (--diff-filter=ACMRT) + symlink→file fixture; `bash scripts/test-guards.sh` 65 passed, 0 failed.
 - 2026-09-29T08:12:01Z — p1-sensors — decision — re-gate round 4 REQUEST_CHANGES: pathspec magic in a staged filename bypassed the scan. Fixed (--literal-pathspecs) + fixture; `bash scripts/test-guards.sh` 66 passed, 0 failed.
 - 2026-09-29T08:13:37Z — p1-sensors — decision — failures.md ledger rows deferred: its source rule requires an immutable commit SHA, and nothing is committed yet.
+- 2026-09-29T08:56:21Z — p1-sensors — done — committed 3f1cf9e, 846f1bb, ba6434b; url-credential fixture now built at runtime (the new guard rejected its own literal). Ledger row appended to docs/evals/failures.md citing 846f1bb.
+- 2026-09-29T08:56:21Z — p2-always-loaded — start — T3, T4.
+- 2026-09-29T09:16:43Z — p2-always-loaded/T3 — done — AGENTS.md 87 → 70 lines: dropped Development Commands (README §Optional skills has the install commands), the orkit and SSH notes; folded Prompt Engineering into Architecture Notes; merged two-line gate comments. `wc -l AGENTS.md` 70, `bash scripts/verify-doc-links.sh` OK.
+- 2026-09-29T09:16:43Z — p2-always-loaded/T4 — done — rules/karpathy-guidelines.md 456 → 357 words: §5 lines that restated §1/§4 merged into them, closing restatement and senior-engineer test dropped. Owner approved the diff; rules/*.md copied to ~/.claude/rules/, `diff -q` clean for all.
+- 2026-09-29T09:45:25Z — p2-always-loaded — decision — independent gate round 1 REQUEST_CHANGES: README lacked the removed `--list` command, orkit no-sync note, and SSH-key prerequisite; karpathy lost "prose only for decisions, risks, blockers, or non-obvious rationale". Fixed: README §Optional skills gains all three; clause restored, offset by dropping the intro "use judgment on trivial tasks" (§4 "Small tasks") and the `AskUserQuestion` parenthetical (rules/ask-user-question.md). 357 words; rules reinstalled.
+- 2026-09-29T09:45:25Z — p3-skill-trims — start — T5–T10 trimmed in parallel with the p2 gate; per-skill Codex reviews: T5 DROPPED `--force` dangerous-ops-only (restored), T6 CLEAN, T7 CLEAN, T8 DROPPED Skillmark pre-delivery validation (restored).
 
 ## Validation
 - 2026-09-29T08:13:37Z — phase `p1-sensors` — verdict: APPROVED — mode: gate
@@ -103,5 +109,16 @@ updated: 2026-09-29
   - rollback_point: 8eae489
   - requests: none; rounds 1–4 REQUEST_CHANGES fixed (++ lines, quoted paths, binary, suffix exemption, textconv, context numbering, type change, pathspec magic)
   - residual: Bash 3.2 runtime unverified (host has bash 5.2 only)
+  - judge: independent
+  - judge_model: codex-cli 0.158.0 (default model)
+- 2026-09-29T09:45:25Z — phase `p2-always-loaded` — verdict: APPROVED — mode: gate
+  - `test "$(wc -l < AGENTS.md)" -le 70` — 70 lines
+  - `test "$(wc -w < rules/karpathy-guidelines.md)" -le 360` — 357 words
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - scope: on target — AGENTS.md, README.md §Optional skills, rules/karpathy-guidelines.md, installed ~/.claude/rules/
+  - requirements: R3 met (AGENTS.md 87 → 70 lines, removed text relocated to README) | R4 met (456 → 357 words; owner read the diff; installed rules match repo)
+  - rollback_point: ba6434b
+  - requests: none; round 1 REQUEST_CHANGES fixed (README relocation incomplete, dropped prose clause)
+  - residual: installed-rule parity is local to this host
   - judge: independent
   - judge_model: codex-cli 0.158.0 (default model)
