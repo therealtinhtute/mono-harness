@@ -24,11 +24,7 @@ task complexity and risk level.
 
 <context>
 ## When to Use
-- Improving existing prompts
-- Building reusable prompting frameworks
-- Wrapping requests with better structure
-- Adding clearer tool rules
-- Creating hooks that upgrade prompts before execution
+- Improving a prompt, extracting a reusable template, or specifying a hook that upgrades prompts before execution
 
 ## Defer To Instead
 - `create-skill` — creating new skills from scratch
@@ -49,22 +45,8 @@ task complexity and risk level.
 
 - Preserve the user's objective, constraints, and tone unless they conflict.
 - Prefer adding missing structure over rewriting everything stylistically.
-- Add context requirements only when they improve correctness.
-- Add tool rules only when tool use materially affects correctness.
-- Add verification and completion criteria for non-trivial tasks.
+- Add a block (`Objective`, `Context`, `Work Style`, `Tool Rules`, `Output Contract`, `Verification`, `Done Criteria` — defined in `references/framework.md`) only when it improves correctness; verification and done criteria only for non-trivial tasks.
 - Keep prompts compact enough to be practical in repeated use.
-
-## Framework Blocks
-
-Use these blocks selectively:
-
-- `Objective`: state the task and what success looks like.
-- `Context`: list sources, files, constraints, and unknowns.
-- `Work Style`: set depth, breadth, care, and first-principles expectations.
-- `Tool Rules`: state when tools, browsing, or file inspection are required.
-- `Output Contract`: define structure, formatting, and level of detail.
-- `Verification`: require checks for correctness, edge cases, and better alternatives.
-- `Done Criteria`: define when the agent should stop.
 
 ## Output Modes
 
@@ -89,15 +71,7 @@ Use `scripts/augment_prompt.py` when a deterministic first-pass rewrite is helpf
 
 ## Quality Bar
 
-Before finalizing, check the upgraded prompt:
-
-- still matches the original intent
-- does not add unnecessary ceremony
-- includes the right verification level for the task
-- gives the agent a clear definition of done
-- sounds materially more executable than the original, not merely more verbose
-
-If the prompt is already strong, say so and make only minimal edits.
+Before finalizing, check the upgraded prompt against the Upgrade Rubric in `references/framework.md`: it must be materially more executable than the original, not merely more verbose. If the prompt is already strong, say so and make only minimal edits.
 
 ---
 
@@ -126,11 +100,6 @@ Include:
 - Changes made (diff or list)
 - Framework blocks applied
 - Usage instructions
-
-## Anti-Patterns
-- Over-specifying a simple prompt with unnecessary framework blocks — ceremony without value; match structure to task complexity
-- Changing the user's intent while "improving" structure — the upgraded prompt must still do the same job
-- Adding verification blocks to trivial tasks — busywork that trains the user to ignore gates
 </instructions>
 
 <references>
