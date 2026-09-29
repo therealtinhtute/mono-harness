@@ -820,6 +820,19 @@ zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'cfg.example:1' &&
 	ok "SECRETS .example still rejects an AWS key" ||
 	bad "SECRETS .example exemption let an AWS key through"
 git -C "$stmp" rm -q --cached cfg.example
+printf 'k=%s\n' "$key" > "$stmp/err.cfg"
+git -C "$stmp" add err.cfg
+git -C "$stmp" config diff.algorithm nosuch
+zharness_guard_staged_secrets "$stmp" >/dev/null 2>&1 &&
+	bad "SECRETS invalid diff.algorithm made the guard fail open" ||
+	ok "SECRETS git error (invalid diff.algorithm) fails closed"
+git -C "$stmp" config --unset diff.algorithm
+git -C "$stmp" config diff.orderFile "$stmp/nosuch-order"
+zharness_guard_staged_secrets "$stmp" >/dev/null 2>&1 &&
+	bad "SECRETS missing diff.orderFile made the guard fail open" ||
+	ok "SECRETS git error (missing diff.orderFile) fails closed"
+git -C "$stmp" config --unset diff.orderFile
+git -C "$stmp" rm -q --cached err.cfg
 printf '1\n2\n3\n4\n5\n6\n7\n' > "$stmp/ctx.txt"
 git -C "$stmp" add ctx.txt
 git -C "$stmp" -c user.name=t -c user.email=t@t commit -qm ctx

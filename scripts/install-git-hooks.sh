@@ -391,7 +391,12 @@ zharness_guard_staged_secrets() {          # <repo-root>
   # Reports file:line and the pattern name only; the matched value is never
   # printed. *.example/*.sample/*.template files are fixtures by convention:
   # exempt from the filename and url-credentials checks only (owner, 2026-09-29).
-  local root="$1" f line n ex hits=""
+  local root="$1" f line n ex d hits=""
+  # A git error (bad diff.* config, missing orderFile) must not skip the scan.
+  git -C "$root" diff --cached --name-only -z --diff-filter=ACMRT >/dev/null 2>&1 || {
+    echo "❌ SECRET GUARD REJECTED: git diff failed; staged content not scanned" >&2
+    return 1
+  }
   local aws='AKIA[0-9A-Z]{16}'
   local pkey='-----BEGIN ([A-Z]+ )*PRIVATE KEY-----'
   local ucred='[a-z][a-z0-9+.-]*://[^/:@[:space:]]+:[^/@[:space:]]+@'
@@ -406,6 +411,9 @@ zharness_guard_staged_secrets() {          # <repo-root>
       .env|.env.*|*.pem|*.key|*.p12) hits="$hits
    $f  secret-bearing filename" ;;
     esac
+    d=$(set -o pipefail; git -C "$root" --literal-pathspecs -c diff.interHunkContext=0 diff --cached -U0 --no-color \
+      --no-ext-diff --no-textconv --text -- "$f" | tr -d '\000') || { hits="$hits
+   $f  diff failed, not scanned"; continue; }
     while IFS="$(printf '\t')" read -r n line; do
       [ -n "$n" ] || continue
       if [[ $line =~ $aws ]]; then hits="$hits
@@ -415,8 +423,7 @@ zharness_guard_staged_secrets() {          # <repo-root>
       elif [ "$ex" = 0 ] && [[ $line =~ $ucred ]]; then hits="$hits
    $f:$n  url-credentials"
       fi
-    done <<< "$(git -C "$root" --literal-pathspecs -c diff.interHunkContext=0 diff --cached -U0 --no-color \
-      --no-ext-diff --no-textconv --text -- "$f" | tr -d '\000' | awk '
+    done <<< "$(printf '%s\n' "$d" | awk '
       /^@@/ { h = 1; s = $3; sub(/^\+/, "", s); sub(/,.*/, "", s); n = s + 0; next }
       h && /^\+/ { print n "\t" substr($0, 2); n++; next }
       h && /^ / { n++ }')"
