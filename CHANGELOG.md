@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.26.0] — 2026-09-29
+
+### Added
+
+- Pre-commit hook: the ZGUARD-CORE secret guard rejects staged AWS access
+  keys, private keys, URL credentials, and secret-bearing filenames (`.env`,
+  `*.pem`, `*.key`, `*.p12`). It prints `file:line` and the pattern name,
+  never the value, and rejects the commit when `git diff` itself fails.
+  `*.example`/`*.sample`/`*.template` files are exempt from the filename and
+  URL-credential checks only.
+- Pre-push hook: re-runs the plan guards over
+  `merge-base(origin/master)..HEAD`, the same range CI's `hook-guard` job
+  validates.
+- `validate-skill.sh`: fails a skill whose `Defer to:` line or `Defer To
+  Instead` section names a skill absent from `skills/*/*/`; a compound target
+  (`brainstorm grill`) is checked by its first word.
+- `rules/execution-discipline.md`: run bash-isms through `bash` when the tool
+  shell is zsh, and abort a delete loop whose target list is empty.
+
+### Changed
+
+- Skills ask with the agent's own question tool (Claude Code
+  `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp
+  `ask`); numbered plain-text questions are the fallback. Covers
+  `rules/ask-user-question.md`, `think`, and the `brainstorm grill` playbook.
+- `create-cli`, `prompt-leverage`, `librarian`, and `create-skill` point at
+  their `references/` instead of repeating them; `think` and `hunt` state
+  each rule once. Each body is 20–23% fewer words.
+- `AGENTS.md` is 70 lines; install commands and the SSH-key prerequisite are
+  in README §Optional skills. `rules/karpathy-guidelines.md` states each
+  instruction once (357 words).
+
+### Fixed
+
+- `create-skill`, `create-cli`, and `turbo-mono-platform` defer to `check`
+  instead of the nonexistent `review` skill.
+
 ## [v0.25.0] — 2026-09-27
 
 ### Added
