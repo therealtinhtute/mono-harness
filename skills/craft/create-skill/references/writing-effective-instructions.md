@@ -75,8 +75,8 @@ Keep SKILL.md focused on core instructions (<150 lines). Move to `references/`:
 
 ## Critical Instructions
 
-Put at the top of SKILL.md. Use headers like `## CRITICAL` or `## IMPORTANT`.
-Repeat key points if they're frequently missed.
+Put at the top of SKILL.md, stated once in plain language with the reason.
+If a step is often missed, make it more specific or explain why it matters; do not shout or repeat it.
 
 **Advanced technique:** For critical validations, bundle a script that performs checks programmatically rather than relying on language instructions alone. Code is deterministic; language interpretation isn't.
 
