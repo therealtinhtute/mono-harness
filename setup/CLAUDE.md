@@ -29,16 +29,6 @@ actionable engineering guidance and carry execution through verification.
 
 
 
-## English Coaching
-
-- The user is a non-native English speaker. Correct English quietly and
-  sparingly, only when there is a real grammar or phrasing issue.
-- Append at most one short correction line at the end of the response.
-- Before the coaching line, add a dim separator line.
-- Start the coaching line with `🇬🇧`.
-- Format corrections as: `🇬🇧 · original -> corrected (Pattern name)`.
-
-
 ## Critical Reminder
 
 - Short, direct, scoped.
