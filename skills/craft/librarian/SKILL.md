@@ -84,7 +84,7 @@ tags: [github, {repo-name}]
 
 Follow output format from `references/output-format.md`.
 
-## Citation Rules (CRITICAL)
+## Citation Rules
 
 Full rules and examples: `references/citation-rules.md`.
 
