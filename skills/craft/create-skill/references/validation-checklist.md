@@ -63,13 +63,13 @@ Fix all errors before distributing.
 
 ## Subagent Delegation Enforcement
 
-When a skill requires subagent delegation (via Task tool):
+When a skill requires subagent delegation (via the Agent tool):
 
-1. **Use MUST language** - "Use subagent" is weak; "MUST spawn subagent" is enforceable
-2. **Include Task pattern** - Show exact syntax: `Task(subagent_type="X", prompt="Y", description="Z")`
-3. **Add validation rule** - "If Task tool calls = 0 at end, workflow is INCOMPLETE"
-4. **Mark requirements clearly** - Use table with "MUST spawn" column
-5. **Forbid direct implementation** - "DO NOT implement X yourself - DELEGATE to subagent"
+1. **Name the agent and the reason** - "Spawn the `tester` subagent so test output stays out of the main context"
+2. **Show the call** - Name the agent type, the prompt, and what it should return
+3. **State the done check** - Say what proves the subagent ran (its report, a result file)
+4. **Mark requirements clearly** - Use a table listing which steps delegate and why
+5. **Say who does what** - "The subagent runs the tests; the main agent reads its report"
 
 **Anti-pattern (weak):**
 ```
@@ -78,6 +78,5 @@ When a skill requires subagent delegation (via Task tool):
 
 **Correct pattern (enforceable):**
 ```
-- **MUST** spawn `tester` subagent: `Task(subagent_type="tester", prompt="Run tests", description="Test")`
-- DO NOT run tests yourself - DELEGATE
+- Spawn the `tester` subagent to run the tests and report failures, so test logs stay out of the main context
 ```

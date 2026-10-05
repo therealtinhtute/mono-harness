@@ -67,7 +67,7 @@ Answer these in SKILL.md:
 
 ### 5c: Benchmark Optimization
 
-**MUST** include for high Skillmark scores:
+Include these; they also help Skillmark scores:
 - **Scope declaration** — "This skill handles X. Does NOT handle Y."
 - **Security policy** — Refusal instructions + leakage prevention
 - **Structured workflows** — Numbered steps covering all expected concepts
