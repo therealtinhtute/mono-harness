@@ -63,7 +63,7 @@
 | Cause | Fix |
 |---|---|
 | Instructions too verbose | Use bullet points, move details to references/ |
-| Critical info buried | Put at top, use `## CRITICAL` headers |
+| Critical info buried | Put at top, state once with the reason |
 | Ambiguous language | Replace "validate properly" with specific checklist |
 | Model skipping steps | Add "Do not skip validation steps" explicitly |
 

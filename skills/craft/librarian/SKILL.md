@@ -77,7 +77,7 @@ Report findings inline. Save to `docs/research/{topic}.md` only when a plan will
 title: {topic}
 description: {one-line summary}
 status: active
-created: 2026-04-23
+created: {date}
 tags: [github, {repo-name}]
 ---
 ```
