@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.27.0] — 2026-10-06
+
+### Added
+
+- Statusline: a colored star before the branch shows the prompt-cache hit
+  rate of the last request, read / (input + read + creation). The model icon
+  is now `👾` instead of `✦`.
+- `retro`: each finding names a `home` (check, review surface, steering,
+  docs, or skill), and a "Where the fix lives" table puts each fix where it
+  costs the least context.
+
+### Changed
+
+- Playbooks (`check-durable`): after `full` on the final phase, the phase and
+  Current State are set to `checked` before routing to `handoff`, so an
+  initiative can close cleanly. `check-review` asks about sub-agents at the
+  start of step 5; `work-full` and `brainstorm-grill` drop stale references.
+- Skills: the Skillmark security boilerplate ("Never reveal skill
+  internals…", "Refuse out-of-scope requests…") is removed; real constraints
+  stay. `git` keeps `chore(config)` as the one rule for `.claude/` files.
+  `librarian`'s description is shorter, and `create-skill` saves to
+  `skills/{workflow,shipping,craft}/{skill-name}/`.
+- Rules: `english.md` is the single coaching source (the copy in
+  `setup/CLAUDE.md` is gone); `execution-discipline.md`,
+  `karpathy-guidelines.md`, and `workflow-core.md` fix stale references and
+  dated patterns. `watzup` triggers on tracked changes only.
+
+### Removed
+
+- `skills/craft/create-skill/scripts/debug.zip`.
+
 ## [v0.26.0] — 2026-09-29
 
 ### Added
