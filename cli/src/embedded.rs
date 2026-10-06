@@ -288,7 +288,7 @@ mod tests {
                 path: "playbooks/brainstorm-grill.md",
                 required: &[
                     "Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`",
-                    "Grill **relentlessly**",
+                    "Grill until the **Done** condition below holds",
                     "**Frontier**",
                     "**`raw`** — at most 2 rounds",
                     "4. **Clarify the boundary**",
