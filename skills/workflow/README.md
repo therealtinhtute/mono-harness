@@ -7,7 +7,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, han
 - **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
 - **skills** — the 10 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
-- **cli** — `zharness`, the Go binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.
+- **cli** — `zharness`, the Rust binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.
 
 ## Lifecycle
 
@@ -49,7 +49,7 @@ Every one of the 6 spine skills follows this shape, ≤30 rendered lines includi
 ```markdown
 ---
 name: {skill-name}
-description: {unchanged from before this initiative — skills.sh discovery/trigger UX is Claude-facing content, stays here}
+description: {what the skill does and when to use it — skills.sh discovery and triggering read this line}
 ---
 
 {Resolve the invocation mode when the stage has one, then} follow `docs/playbooks/{stage}.md` — it holds this stage's operating logic. Read `docs/WORKFLOW.md` first if the routing is unclear. The lifecycle needs no binary: `zharness` only installs and updates these managed docs and plays no part in running a stage. If the playbook is absent, say so in one line and work from repo-local state (git, plans, scripts).

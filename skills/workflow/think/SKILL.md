@@ -11,8 +11,6 @@ compatibility: Designed for Claude Code
 
 Prefix your first line with `🥷` inline. Verdict first, then the evidence that would flip it.
 
-No "that's interesting", "there are many ways", "you might consider".
-
 ## Outcome Contract
 
 - Outcome: a rough question becomes one defensible recommendation whose weakest assumption is named.
