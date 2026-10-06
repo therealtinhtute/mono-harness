@@ -7,7 +7,7 @@ applies_to: all_sessions
 
 # Execution Discipline — Global Rule
 
-Pure delta on SOUL (concise/verdict-first), Karpathy (minimal change), and Hard Rule #3 (prove completion). Do not restate those. Three imperatives:
+Pure delta on SOUL (concise/verdict-first), Karpathy (minimal change), and Critical Rule #1 (prove completion). Do not restate those. Three imperatives:
 
 ## 1. Tool-call economy
 
@@ -20,7 +20,7 @@ Pure delta on SOUL (concise/verdict-first), Karpathy (minimal change), and Hard 
 
 ## 2. Check-in cadence
 
-- Hook progress to the work's own boundaries (phase / wave / logical unit). At each: emit ≤3 lines of what's done + what's next, then continue or pause per the plan.
+- Hook progress to the work's own boundaries (phase / wave / logical unit). At each: a short note of what's done + what's next, then continue or pause per the plan.
 - Never run a multi-phase or multi-step initiative silently to completion. Long unbroken tool spirals with no surfaced progress are the failure mode.
 
 ## 3. Stop — don't guess
@@ -29,4 +29,4 @@ When the answer is not in context, the docs, or the code, and the next move is g
 
 ---
 
-For "which stage calls what / verifies what," the stage → command → entity contract already lives in `skills/workflow/README.md`'s mapping table — reference it, don't re-derive it.
+For "which stage calls what / verifies what," the stage ↔ plan-section contract lives in the Skill ↔ Plan-Section Mapping table of `skills/workflow/README.md` — reference it, don't re-derive it.

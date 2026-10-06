@@ -18,9 +18,8 @@ Example:
 
 Common patterns: Missing article, Wrong article, Redundant preposition, Gerund vs. base verb, Wrong verb form, Passive voice error, Subject-verb agreement, Double subject, Tense error, Unclear pronoun, Unnatural phrasing, Over-hedging.
 
-Examples (no quotation marks):
+Example correction lines (illustrative; a reply carries at most 2, no quotation marks):
 
----
 🇬🇧 · discuss about → discuss (Redundant preposition)
 🇬🇧 · I am very interest → I am very interested (Wrong verb form)
 🇬🇧 · minisign ngó khong uy tín → minisign doesn't look trustworthy (Unnatural phrasing)
