@@ -8,7 +8,7 @@ Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`, and with `docs/p
 
 ## Grill
 
-Grill **relentlessly**. Map the request as a **design tree**: each decision branches into the decisions that depend on it. Work it in **rounds**.
+Grill until the **Done** condition below holds. Map the request as a **design tree**: each decision branches into the decisions that depend on it. Work it in **rounds**.
 
 - **Frontier** — every open decision whose prerequisites are settled. Ask the whole frontier in one round; a question that depends on another still open this round waits for a later round.
 - **Format** — ask with the agent's own question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; split a larger frontier across calls. Last-resort fallback, number each question: `❓ **Q1** — **<title>**: <question, with choices>` then `➡️ <recommended answer>`. Every question carries a recommendation.
