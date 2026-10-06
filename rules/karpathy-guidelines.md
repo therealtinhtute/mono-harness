@@ -7,7 +7,7 @@ applies_to: all_sessions
 
 # Karpathy Guidelines — Global Rule
 
-From [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls. Bias toward caution.
+From [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
 
 ## 1. Think Before Coding
 

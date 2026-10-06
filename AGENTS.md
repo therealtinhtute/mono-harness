@@ -14,7 +14,8 @@ Plans are committed markdown (`docs/plans/active/{slug}.md`); pre-commit guards 
 
 ## Gate Commands
 
-`check` runs these before any commit. They sit at two different levels of the
+`check` runs these at a phase gate or before a PR; a plain commit needs only the
+pre-commit hook. They sit at two different levels of the
 ladder in `docs/patterns/encoding-invariants.md` — declare the level, do not
 assert enforcement the repository does not have.
 
