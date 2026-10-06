@@ -414,7 +414,7 @@ dependencies = [
 
 [[package]]
 name = "zharness"
-version = "0.23.1"
+version = "0.26.0"
 dependencies = [
  "clap",
  "include_dir",
