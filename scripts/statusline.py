@@ -176,6 +176,19 @@ def main():
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         pass
 
+    # Prompt-cache hit rate of the last request: read / (input + read + creation)
+    cache_hit = None
+    cache_cold = False
+    try:
+        cu = (data.get("context_window", {}) or {}).get("current_usage") or {}
+        c_read = int(cu.get("cache_read_input_tokens", 0) or 0)
+        c_total = int(cu.get("input_tokens", 0) or 0) + c_read + int(cu.get("cache_creation_input_tokens", 0) or 0)
+        if c_total > 0:
+            cache_hit = c_read * 100 // c_total
+            cache_cold = c_read == 0
+    except (ValueError, TypeError, AttributeError):
+        pass
+
     spinner = r"\|/-"[int(now) % 4]
 
     # Assemble parts
@@ -209,6 +222,17 @@ def main():
     if hook_fresh:
         elapsed = f" {_hm(session_elapsed)}" if session_elapsed > 60 else ""
         parts.append(f"{DIM}[{spinner}] {tool_count} tools{elapsed}{RESET}")
+
+    if cache_hit is not None:
+        if cache_cold:
+            c = DIM
+        elif cache_hit >= 90:
+            c = "\033[92m"
+        elif cache_hit >= 70:
+            c = "\033[93m"
+        else:
+            c = "\033[91m"
+        parts.append(f"{c}★ {cache_hit}%{RESET}")
 
     if branch:
         parts.append(f"{CYAN}⌥ {branch}{RESET}")
