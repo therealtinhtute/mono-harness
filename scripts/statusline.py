@@ -195,7 +195,7 @@ def main():
     SEP = "  "
     parts = []
 
-    parts.append(f"{WHITE}✦ {model}{RESET}")
+    parts.append(f"{WHITE}👾 {model}{RESET}")
 
     if five:
         c = _color(session_pct)

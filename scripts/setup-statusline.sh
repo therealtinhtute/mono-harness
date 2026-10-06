@@ -17,7 +17,7 @@ fi
 # Write the statusline script
 cat > "$DEST" << 'STATUSLINE_EOF'
 #!/bin/sh
-# slim.sh — model-first layout: ✦ model  effort  ▰▱ N%  ϟ tpm  ⌥ branch
+# slim.sh — model-first layout: 👾 model  effort  ▰▱ N%  ϟ tpm  ⌥ branch
 
 TPM_STATE_PREFIX="claude-code-statusline-tpm"
 TPM_WINDOW_MS=300000
@@ -99,7 +99,7 @@ if [ -n "$cwd" ]; then
 fi
 
 # Output
-printf "\033[38;5;208m✦ %s${reset}" "$model"
+printf "\033[38;5;208m👾 %s${reset}" "$model"
 [ -n "$effort" ] && printf "${sep}\033[35m%s${reset}" "$effort"
 printf "${sep}${ctx_color}%s %s%%${reset}" "$bar" "$used"
 if [ "$tpm" -gt 0 ]; then
