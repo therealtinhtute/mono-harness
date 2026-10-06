@@ -53,6 +53,22 @@ Scan all seven before ranking; a category earns a finding only with evidence.
 
 Steering signals: a user prompt that corrects or redirects, and a structured answer that rejects the `(Recommended)` option, each mark a place where the agent's default was wrong — trace it to a category above.
 
+### Where the fix lives
+
+The implementing agent carries the most context pressure (exploration, code,
+debugging); the reviewer gets a diff. Put each fix where it costs least context:
+
+| Home | Holds | Loaded |
+|---|---|---|
+| Check (lint, test, hook, CI) | mechanical rules | never; it runs |
+| Review surface (review playbook, judge, `CODING_STANDARDS.md`) | judgement rules | at review only |
+| `AGENTS.md` / `CLAUDE.md` | navigation pointers only | every session |
+| Docs | reference material, reached by a pointer; extend an existing doc before writing a new one | on demand |
+| Skill | a description that should trigger, or a user-invoked command | description every session |
+
+A review surface past ~1,000 lines splits into docs behind pointers. A fix that
+adds a coding rule to steering read by the implementer is the wrong home.
+
 ## 4. Rank by severity
 
 | Severity | Meaning |
@@ -70,6 +86,7 @@ Break ties by recurrence: a friction that will hit every future session outranks
 - evidence: {digest line / turn N / file:line}
 - mechanical | judgement: {which, and why}
 - smallest fix: {change} at {file or tool}
+- home: {check | review surface | steering | docs | skill}
 - fix mode: guard | experiment | human
 ```
 
@@ -77,6 +94,9 @@ Mark one finding `Next` — highest severity, then highest recurrence. End with
 one question: fix `Next` now, in the mode named? Stop until the user answers.
 
 ## 6. Fix the approved finding
+
+Before writing any steering, review rule, doc, or skill text, read
+`docs/prompt-engineering-principles.md` when the repo has it.
 
 Pick the mode from the finding, not from preference:
 
@@ -103,6 +123,7 @@ authorizes that file separately.
 - evidence: digest shows 0 `cargo test` calls; turn 14 says "all tests pass"
 - mechanical: a pre-commit guard can require a fresh proof line
 - smallest fix: extend the existing proof guard in `scripts/install-git-hooks.sh`
+- home: check
 - fix mode: guard
 </example>
 
@@ -111,5 +132,6 @@ authorizes that file separately.
 - evidence: digest "repeated identical calls: Read x4"
 - judgement: the agent needed one section, not a check
 - smallest fix: section pointer in `AGENTS.md` Layout and Pipeline
+- home: steering
 - fix mode: experiment
 </example>
