@@ -28,7 +28,7 @@ The third row is the load-bearing one. Generated context earns its keep exactly 
 
 A second result from the same paper is narrower and more surprising: *"context files, even developer-provided ones, are not effective at providing a repository overview."* Measured by steps-until-the-agent-touches-a-file-in-the-gold-patch, context files did not speed up file discovery on either benchmark.
 
-**Implication for this repository.** A consumer repository that has run `zharness init` has a populated `docs/`. Generating a wiki on top of it lands in the degraded regime, not the +2.7% one. This is the strongest single argument against building a generator into the CLI, and it is why `docs/plans/completed/docs-architecture.md` NG5 (no AST-derived documentation) survives contact with outside evidence rather than resting on taste.
+**Implication for this repository.** A consumer repository that has run `zharness init` has a populated `docs/`. Generating a wiki on top of it lands in the degraded regime, not the +2.7% one. This is the strongest single argument against building a generator into the CLI, and it is why `git show 3bab3c0:docs/plans/completed/docs-architecture.md` NG5 (no AST-derived documentation) survives contact with outside evidence rather than resting on taste.
 
 ## F2 — On-demand retrieval saves cost, not correctness
 
@@ -40,7 +40,7 @@ A second result from the same paper is narrower and more surprising: *"context f
 
 The authors' own summary of the failure mode: real tasks fail on implementation skill, not on missing repository knowledge a context file could supply. Across both agents the real context file never converted a near-miss into a pass.
 
-**Implication.** Two corrections to claims made earlier in this initiative's discussion. First, token-reduction figures quoted for wiki tooling are cost-side savings, not capability gains — they should never be presented as "the agent does better." Second, the one thing that measurably changed agent behavior was a *gotcha* (this suite is slow), which is exactly the principle `docs/audit/consumer-adoption-audit.md` D4 states — "spend the budget on gotchas, not on what the filesystem shows" — now with an external number attached.
+**Implication.** Two corrections to claims made earlier in this initiative's discussion. First, token-reduction figures quoted for wiki tooling are cost-side savings, not capability gains — they should never be presented as "the agent does better." Second, the one thing that measurably changed agent behavior was a *gotcha* (this suite is slow), which is exactly the principle `git show 3bab3c0:docs/audit/consumer-adoption-audit.md` D4 states — "spend the budget on gotchas, not on what the filesystem shows" — now with an external number attached.
 
 ## F3 — Documentation's measurable value is rationale, not code shape
 

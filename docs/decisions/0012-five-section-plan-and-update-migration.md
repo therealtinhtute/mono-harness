@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. 2026-09-19. Authority: R8–R13 of `docs/plans/completed/zharness-slim.md`.
+Accepted. 2026-09-19. Authority: R8–R13 of `git show 3bab3c0:docs/plans/completed/zharness-slim.md`.
 
 The implementation citations below were repointed from the Go sources to the Rust port in the v0.24 cutover; the decisions and their rationale are unchanged, and symbol names in the decision text are the Go ones as decided.
 
@@ -75,7 +75,7 @@ Rejected:
 
 ## Authority
 
-- `docs/plans/completed/zharness-slim.md` — R8–R13; owner approval 2026-09-19;
+- `git show 3bab3c0:docs/plans/completed/zharness-slim.md` — R8–R13; owner approval 2026-09-19;
   the `migrate.go` transitional-code decision in `### Decisions`.
 - `scripts/install-git-hooks.sh` — the guard core this format must satisfy.
 - `docs/decisions/0011-update-without-three-way-merge.md` — the `update` shape

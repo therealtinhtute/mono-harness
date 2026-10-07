@@ -3,7 +3,7 @@
 ## Status
 
 Accepted. 2026-09-08. Authority for the externally observable behavior changes
-in `docs/plans/completed/audit-integrity-remediation.md` (F01, F04, F05, F06, F07).
+in `git show 3bab3c0:docs/plans/completed/audit-integrity-remediation.md` (F01, F04, F05, F06, F07).
 Narrows the "consumer bytes are never destroyed" claim in
 `cli/src/installer/uninstall.rs` from an assertion into an enforced rule.
 The stash transaction is superseded by [ADR 0011](0011-update-without-three-way-merge.md);
@@ -116,7 +116,7 @@ deleted, and the ambiguity is reported.
 
 ## Authority
 
-- `docs/audit/2026-09-07-integrity-review.md` — F01, F04, F05, F06, F07, and the
+- `git show 3bab3c0:docs/audit/2026-09-07-integrity-review.md` — F01, F04, F05, F06, F07, and the
   remediation sequence that puts consumer content and recovery first.
 - `README.md` — *Safe to adopt and to leave*: install/update/uninstall manage
   only the doc set, merging rather than clobbering the files a project owns.

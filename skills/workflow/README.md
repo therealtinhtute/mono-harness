@@ -4,7 +4,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, han
 
 ## 4-Layer Model
 
-- **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in `docs/plans/completed/harness-markdown-truth.md` and the root CHANGELOG.
+- **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in the root CHANGELOG and git history (`git show 3bab3c0:docs/plans/completed/` for the pre-prune plans).
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
 - **skills** — the 10 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
 - **cli** — `zharness`, the Rust binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.

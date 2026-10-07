@@ -15,4 +15,4 @@ The `<!-- zharness:pin <sha> -->` declaration at the top of `docs/ARCHITECTURE.m
 ## Source
 
 - `git show 4fc8481:cli/internal/application/audit.go` (pre-deletion source)
-- `docs/plans/completed/consumer-doc-drift-gate.md` (design record)
+- `git show 3bab3c0:docs/plans/completed/consumer-doc-drift-gate.md` (design record)

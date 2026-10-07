@@ -132,7 +132,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Workflow token slim, phase 1 (`docs/audit/workflow-token-slim-audit.md`
+- Workflow token slim, phase 1 (`git show 3bab3c0:docs/audit/workflow-token-slim-audit.md`
   R1, R4–R7, R9): `git` carries the commit flow in `SKILL.md` and reads
   `references/workflow.md` only for `pr`/`merge`; `AGENTS.md` drops the
   directory tree and pipeline prose for a pointer to
@@ -285,7 +285,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   review `check` reads 9718 instead of 15597. Run `zharness update` in consumer
   repositories to pick up the split.
 - The 6 spine playbooks, `WORKFLOW.md`, and their `SKILL.md` triggers are
-  trimmed per `docs/audit/playbook-token-audit.md` with no change in behavior.
+  trimmed per `git show 3bab3c0:docs/audit/playbook-token-audit.md` with no change in behavior.
 
 ### Fixed
 
@@ -319,7 +319,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [v0.20.0] — 2026-09-08
 
 Remediates the 2026-09-07 third-party integrity review
-(`docs/audit/2026-09-07-integrity-review.md`). Its eight findings collapse into
+(`git show 3bab3c0:docs/audit/2026-09-07-integrity-review.md`). Its eight findings collapse into
 three root causes, each fixed as a mechanism rather than as a patch: ownership
 inferred from filesystem state, stash restore written as a loop rather than a
 transaction, and revision selection made ad hoc at each guard call site. See
@@ -444,7 +444,7 @@ ADR 0008 and ADR 0009.
 
 ### Added
 
-- `docs/audit/wave-session-ab-protocol.md`: paired worktree A/B for
+- `git show 3bab3c0:docs/audit/wave-session-ab-protocol.md`: paired worktree A/B for
   same-session vs wave-boundary restart. Does not change `work.md` step 11.
 
 ## [v0.16.2] — 2026-08-30

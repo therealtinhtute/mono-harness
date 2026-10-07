@@ -3,7 +3,7 @@
 ## Status
 
 Accepted. 2026-09-08. Authority for F02, F03, and F08 in
-`docs/plans/completed/audit-integrity-remediation.md`. Extends guard-v3 coverage;
+`git show 3bab3c0:docs/plans/completed/audit-integrity-remediation.md`. Extends guard-v3 coverage;
 it does not change any verdict semantics.
 
 ## Context
@@ -84,13 +84,13 @@ guard job. A guard cannot select a base it did not fetch.
 
 ## Authority
 
-- `docs/audit/2026-09-07-integrity-review.md` — F02, F03, F08, and the finding
+- `git show 3bab3c0:docs/audit/2026-09-07-integrity-review.md` — F02, F03, F08, and the finding
   that most guard defects live between the policy, syntax, and execution layers
   rather than inside any one of them.
 - `README.md` — *Invariants enforced, not assumed*.
 - `scripts/install-git-hooks.sh` — the `ZGUARD-CORE` block is the authoritative
   guard implementation; `scripts/test-guards.sh` extracts it verbatim, so the
   change lives inside the BEGIN/END markers.
-- `docs/plans/completed/macos-guard-portability.md` — R2, establishing that
+- `git show 3bab3c0:docs/plans/completed/macos-guard-portability.md` — R2, establishing that
   guard changes belong inside ZGUARD-CORE so the code under test is the code
   that runs.

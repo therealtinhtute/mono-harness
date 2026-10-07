@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Recorded as NG3 of `docs/plans/completed/durable-memory.md` and left standing after `docs/plans/completed/retrieval-router.md` shipped ranking on top of it.
+Superseded by [0006](0006-v015-authority.md) — historical record, not a current runbook. The `zharness memory` CLI surface and the `memories` index it describes were deleted in v0.15; `docs/memory/` remains an authored markdown surface with no index. Accepted and recorded as NG3 of the `durable-memory` initiative, left standing after `retrieval-router` shipped ranking on top of it (`git show 3bab3c0:docs/plans/completed/durable-memory.md`, `git show 3bab3c0:docs/plans/completed/retrieval-router.md`).
 
 ## Context
 
@@ -27,6 +27,6 @@ Wiring it in is cheap to do later and expensive to undo. Leaving it out is the r
 
 ## Authority
 
-- `docs/plans/completed/durable-memory.md` — NG3 (no mandatory playbook step), NG2 (CLI-only surface), NG4 (no merge with personal memory), R4 (rebuildable from committed markdown).
-- `docs/plans/completed/retrieval-router.md` — added ranking without adding a playbook step.
+- `git show 3bab3c0:docs/plans/completed/durable-memory.md` — NG3 (no mandatory playbook step), NG2 (CLI-only surface), NG4 (no merge with personal memory), R4 (rebuildable from committed markdown).
+- `git show 3bab3c0:docs/plans/completed/retrieval-router.md` — added ranking without adding a playbook step.
 - `cli/internal/infrastructure/migrations.go:235` — the `memories` table, mirroring `plan_index`.

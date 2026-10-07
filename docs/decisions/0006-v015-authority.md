@@ -30,6 +30,6 @@ Rejected: resurrecting `harness.db`, `preflight`, `zharness validate`, or `Resol
 
 - `docs/ARCHITECTURE.md` — v0.15 slim: three verbs, markdown is the record, hook guards.
 - `cli/docs/CONTRACT.md` — command surface and where the guarantees live.
-- `docs/plans/completed/zharness-v015-slim.md` — the deletion.
-- `docs/audit/harness-engineering-gap-audit.md` — H1/H2/H4, 2026-08-30.
-- Owner lock `docs/plans/completed/playbook-truth-and-guards.md` R3.
+- `git show 3bab3c0:docs/plans/completed/zharness-v015-slim.md` — the deletion.
+- `git show 3bab3c0:docs/audit/harness-engineering-gap-audit.md` — H1/H2/H4, 2026-08-30.
+- Owner lock `git show 3bab3c0:docs/plans/completed/playbook-truth-and-guards.md` R3.

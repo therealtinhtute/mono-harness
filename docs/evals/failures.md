@@ -53,7 +53,7 @@ repository to the behavior it had before the file existed.
   the playbook supplied, not in the tools used or the output produced, so `MISSING_CONTEXT` fits
   and `BAD_OUTPUT` does not — the output was a faithful execution of an under-specified rule.
 - surface: `docs/playbooks/check.md`, the `auto` preflight.
-- source: `90f5b84`, `docs/audit/deepseek-harness-token-audit.md` §4 S1, routing smoke
+- source: `90f5b84`, `git show 90f5b84:docs/audit/deepseek-harness-token-audit.md` §4 S1, routing smoke
   observations table, row "Two active plans, one matching initiative" — *"Initial wording failed:
   agent filtered by initiative and proceeded."*
 - coverage: covered. `docs/playbooks/check.md` (Preconditions and Modes, step 2) now requires exactly one active plan in
@@ -73,13 +73,13 @@ repository to the behavior it had before the file existed.
   by the state the code could see.
 - surface: `cli/internal/installer/` — uninstall and the `.gitignore` / `docs/WORKFLOW.md` paths
   that shared the root cause (F01, F06, F07).
-- source: `b4c1ef0`, `docs/audit/2026-09-07-integrity-review.md` §F01 — *"Consumer prose can be
+- source: `b4c1ef0`, `git show b4c1ef0:docs/audit/2026-09-07-integrity-review.md` §F01 — *"Consumer prose can be
   deleted with an installer-created AGENTS.md"*; remediation success signals at `2013158`,
   `audit-integrity-remediation.md` (then under `docs/plans/active/`) S1/S2/S3.
 - coverage: covered. `docs/decisions/0008-recorded-ownership-and-transactional-recovery.md` is the
   authority; ownership is recorded once in `.zharness/base/ownership.tsv` and never re-derived,
   with `unknown` meaning keep. Contract tests S1, S2 and S3 of
-  `docs/plans/completed/audit-integrity-remediation.md` are the standing guard, re-run clean at
+  `git show 3bab3c0:docs/plans/completed/audit-integrity-remediation.md` are the standing guard, re-run clean at
   `2013158`.
 
 ### 2026-09-07 — incomplete stash recovery reported success and removed the remaining evidence
@@ -90,7 +90,7 @@ repository to the behavior it had before the file existed.
   would have shown otherwise. The distinguishing feature from the row above is that here the code
   had the information — it knew the inventory was short — and emitted the wrong result anyway.
 - surface: `cli/internal/installer/`, stash capture and restore.
-- source: `b4c1ef0`, `docs/audit/2026-09-07-integrity-review.md` §F05 — *"Incomplete stash
+- source: `b4c1ef0`, `git show b4c1ef0:docs/audit/2026-09-07-integrity-review.md` §F05 — *"Incomplete stash
   recovery returns success and removes remaining evidence"*; remediation success signal at
   `2013158`, `audit-integrity-remediation.md` (then under `docs/plans/active/`) S5.
 - coverage: covered. Stash format v2 plus inventory validation; S5 requires `update --abort` with
