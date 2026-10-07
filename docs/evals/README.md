@@ -4,15 +4,15 @@ Maintainer-owned behavioral evaluation surfaces. The routing suite — the case 
 `docs/evals/routing.md`, the run log in `docs/evals/runs.md`, and retained artifacts under
 `docs/evals/evidence/` — is opt-in: no playbook, guard, CI job, or installer reads it, and the
 protocol below runs only when a maintainer explicitly requests a comparison for a routing
-instruction change. `docs/evals/failures.md` is a separate surface with conditional automatic
-consumers: `docs/playbooks/check.md` steps 4 and 10 read and append it whenever it exists.
+instruction change. `docs/evals/failures.md` is a separate surface: when it exists, it is read by durable gate/full
+and appended only on a durable `REQUEST_CHANGES` (`docs/playbooks/check.md` steps 4 and 10).
 
 | Path | Role |
 |---|---|
 | `docs/evals/routing.md` | frozen case set (R01–R10 regression, H01–H04 holdout), plus the fixture template, invocation, and scoring rules every trial uses |
 | `docs/evals/runs.md` | run log; one row per case per trial |
 | `docs/evals/evidence/` | retained generators, fixtures, traces, snapshots, and scorers |
-| `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; conditional consumers `docs/playbooks/check.md` steps 4 and 10 |
+| `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; read by durable gate/full, appended on durable `REQUEST_CHANGES` (`docs/playbooks/check.md` steps 4/10) |
 
 ## Contract
 

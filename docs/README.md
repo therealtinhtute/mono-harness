@@ -36,7 +36,7 @@ Three classes, and the class determines who is allowed to edit the file.
 | `docs/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
-| `docs/evals/` | authored | manual routing eval suite (case set, run log, retained evidence) plus the optional failure ledger; owned by the maintainer, invoked only on request |
+| `docs/evals/` | authored | routing eval suite (case set, run log, retained evidence) invoked only on request, plus the optional failure ledger; maintainer-owned |
 | `docs/research/` | authored | external-literature evidence that requirements cite as authority; describes the outside world, not this repository |
 | `docs/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
 | `docs/patterns/` | authored | how to encode an accepted rule as a native guard |
