@@ -1,24 +1,37 @@
 # Evals — manual routing evaluation
 
-Maintainer-owned, opt-in behavioral evaluation for routing instruction changes. Nothing in this
-directory is consumed automatically: no playbook, guard, CI job, or installer reads it. The
+Maintainer-owned behavioral evaluation surfaces. The routing suite — the case set in
+`docs/evals/routing.md`, the run log in `docs/evals/runs.md`, and retained artifacts under
+`docs/evals/evidence/` — is opt-in: no playbook, guard, CI job, or installer reads it, and the
 protocol below runs only when a maintainer explicitly requests a comparison for a routing
-instruction change.
+instruction change. `docs/evals/failures.md` is a separate surface with conditional automatic
+consumers: `docs/playbooks/check.md` steps 4 and 10 read and append it whenever it exists.
 
 | Path | Role |
 |---|---|
 | `docs/evals/routing.md` | frozen case set (R01–R10 regression, H01–H04 holdout), plus the fixture template, invocation, and scoring rules every trial uses |
 | `docs/evals/runs.md` | run log; one row per case per trial |
 | `docs/evals/evidence/` | retained generators, fixtures, traces, snapshots, and scorers |
-| `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; its consumers are `docs/playbooks/check.md` steps 4 and 10, not this protocol |
+| `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; conditional consumers `docs/playbooks/check.md` steps 4 and 10 |
 
 ## Contract
 
-The rules below are carried verbatim from the initiative record that owned this protocol,
-`git show 3bab3c0:docs/plans/completed/harness-eval-loop.md` — requirements R4/R5, the exposure
-clause of manual-protocol step 3, step 9, and the run-log header paragraph. Steps 1–8 of that
-protocol describe work already recorded in `docs/evals/runs.md` run-001 or restated in
-`docs/evals/routing.md`; the full historical text remains in git history at that pin.
+The standing rules of the manual protocol live in this file. They are carried verbatim from the
+initiative record that owned the protocol,
+`git show 3bab3c0:docs/plans/completed/harness-eval-loop.md`. Disposition of its nine protocol
+steps, one by one:
+
+| Step | Disposition |
+|---|---|
+| 1 Freeze definitions | Executed — all 14 cases are frozen as case-set v1 in `docs/evals/routing.md`. Its case-content rule is carried below; the new-version-on-edit rule is restated there. |
+| 2 Build isolated fixtures | Restated in `docs/evals/routing.md` (Fixture template, plan-set tokens); artifacts are captured outside the disposable fixture per step 4. |
+| 3 Separate context | Restated in `docs/evals/routing.md` (Invocation: fresh session per trial, request and fixture only, exclusion list); its exposure clause is carried under Trigger and independence. |
+| 4 Retain evidence | Carried verbatim below. |
+| 5 Score actions | Restated in `docs/evals/routing.md` (Scoring) and encoded per case in `expect_pass`/`expect_fail`. |
+| 6 Handle interruptions | Verdict semantics restated in `docs/evals/routing.md` (Scoring); its completeness and no-cherry-picking tail is carried below. |
+| 7 Measure the baseline | Executed — run-001 in `docs/evals/runs.md`. Its baseline-definition sentence is carried below for re-baselines after drift; the `historical-report` import was a one-time action. |
+| 8 Compare the historical control | Executed — run-001's `reproduced` R07 control (`0dfb5b2^` vs `0dfb5b2`), a one-time comparison with no standing rule left behind. |
+| 9 Review future comparisons | Carried verbatim below. |
 
 ### Trigger and independence
 
@@ -36,6 +49,23 @@ Do not expose prospective holdout contents or detailed failures to tuning author
 occurs, retain that case as regression evidence and author a replacement under a new ID before
 the next prospective comparison. Record the exposure without rewriting its original split. This
 is procedural separation, not a security sandbox claim.
+
+### Cases, trials, and evidence
+
+Every case includes complete input bytes, request, expected reads/checks/writes, allowed
+changes, and provenance. Mark reconstructed historical fixtures as reconstructions.
+
+One completed trial per case establishes a smoke baseline on the tested SHA, not automatically
+“v0.21.0.”
+
+Use `docs/evals/evidence/<run-id>/` for redacted ordered tool traces, initial/final snapshots
+including untracked files, and scoring. Record hashes and repo-relative paths in `runs.md`; a
+machine-local transcript pointer alone is insufficient. Remove credentials and unrelated host
+data while preserving scoring events. Store historical fixture contents as `.txt` so they are
+not treated as live Markdown cross-references.
+
+Missing sessions/artifacts block completion as `BLOCKED_CONTEXT` with a failure class; do not
+cherry-pick attempts.
 
 ### Reviewing a comparison
 

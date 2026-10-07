@@ -12,6 +12,7 @@ Start here. Every document in this repository is reachable from this page, and e
 | Adopt the harness on an existing project | [`docs/workflow-harness/migration.md`](workflow-harness/migration.md) |
 | Write or edit a skill or a rule | [`docs/prompt-engineering-principles.md`](prompt-engineering-principles.md) |
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
+| Compare a routing instruction change against the eval suite | [`docs/evals/README.md`](evals/README.md) |
 | See what is being built right now | the one plan under [`docs/plans/active/`](plans/active) — empty means nothing is in flight |
 | See what was built before | [`docs/decisions/`](decisions/) for durable decisions; completed-plan run logs were pruned and live in git history (`git show 3bab3c0:docs/plans/completed/` lists the pre-prune tree) |
 | Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md) |
@@ -35,6 +36,7 @@ Three classes, and the class determines who is allowed to edit the file.
 | `docs/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
+| `docs/evals/` | authored | manual routing eval suite (case set, run log, retained evidence) plus the optional failure ledger; owned by the maintainer, invoked only on request |
 | `docs/research/` | authored | external-literature evidence that requirements cite as authority; describes the outside world, not this repository |
 | `docs/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
 | `docs/patterns/` | authored | how to encode an accepted rule as a native guard |
