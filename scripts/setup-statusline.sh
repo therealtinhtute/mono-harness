@@ -17,7 +17,7 @@ fi
 # Write the statusline script
 cat > "$DEST" << 'STATUSLINE_EOF'
 #!/bin/sh
-# slim.sh — model-first layout: 👾 model  effort  ▰▱ N%  ϟ tpm  ⌥ branch
+# slim.sh — model-first layout: 👾 model  effort  ▰▱ N%  ϟ tpm  ★ cache%  ⌥ branch
 
 TPM_STATE_PREFIX="claude-code-statusline-tpm"
 TPM_WINDOW_MS=300000
@@ -35,11 +35,15 @@ eval "$(echo "$input" | jq -r '
   "effort=\(.effort.level // "" | @sh)",
   "total_in=\(.context_window.total_input_tokens // 0 | floor | @sh)",
   "total_out=\(.context_window.total_output_tokens // 0 | floor | @sh)",
-  "duration_ms=\(.cost.total_duration_ms // 0 | floor | @sh)"
+  "duration_ms=\(.cost.total_duration_ms // 0 | floor | @sh)",
+  "c_in=\(.context_window.current_usage.input_tokens // 0 | floor | @sh)",
+  "c_read=\(.context_window.current_usage.cache_read_input_tokens // 0 | floor | @sh)",
+  "c_create=\(.context_window.current_usage.cache_creation_input_tokens // 0 | floor | @sh)"
 ')"
 
 used=${used:-0}; model=${model:-unknown}; effort=${effort:-}
 total_in=${total_in:-0}; total_out=${total_out:-0}; duration_ms=${duration_ms:-0}
+c_in=${c_in:-0}; c_read=${c_read:-0}; c_create=${c_create:-0}
 
 safe_id=$(printf '%s' "$session_id" | tr -dc 'a-zA-Z0-9_-')
 total_tokens=$((total_in + total_out))
@@ -111,6 +115,17 @@ if [ "$tpm" -gt 0 ]; then
     tpm_display="$tpm"
   fi
   printf "${sep}\033[93mϟ${reset} ${dim}%s tpm${reset}" "$tpm_display"
+fi
+# Prompt-cache hit rate of the last request: read / (input + read + creation)
+c_total=$((c_in + c_read + c_create))
+if [ "$c_total" -gt 0 ]; then
+  cache_hit=$((c_read * 100 / c_total))
+  if [ "$c_read" -eq 0 ]; then cache_color="$dim"
+  elif [ "$cache_hit" -ge 90 ]; then cache_color="\033[92m"
+  elif [ "$cache_hit" -ge 70 ]; then cache_color="\033[93m"
+  else cache_color="\033[91m"
+  fi
+  printf "${sep}${cache_color}★ %s%%${reset}" "$cache_hit"
 fi
 [ -n "$branch" ] && printf "${sep}\033[36m⌥ %s${reset}" "$branch"
 printf "\n"
