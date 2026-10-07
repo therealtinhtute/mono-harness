@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented by commit `7a4195f`, phase `p0-single-active-plan` of `docs/plans/completed/harness-markdown-truth.md`.
+Superseded by [0006](0006-v015-authority.md) — historical record, not a current runbook. The `ResolveActivePlan` resolver it ratifies was deleted in v0.15; the at-most-one-active-plan invariant is now dual-encoded in playbook guidance and `zharness_guard_at_most_one_active_plan` in ZGUARD-CORE. Accepted and implemented by commit `7a4195f`, phase `p0-single-active-plan` (`git show 3bab3c0:docs/plans/completed/harness-markdown-truth.md`).
 
 ## Context
 
@@ -32,5 +32,5 @@ Two active plans block work entirely until the owner runs `plan complete` or `pl
 ## Authority
 
 - `cli/internal/application/plan_resolve.go:73` — `ResolveActivePlan` and its doc comment naming D1.
-- `docs/audit/consumer-adoption-audit.md` — D1, the original finding.
-- `docs/plans/completed/harness-markdown-truth.md` — R1 through R7 and R13.
+- `git show 3bab3c0:docs/audit/consumer-adoption-audit.md` — D1, the original finding.
+- `git show 3bab3c0:docs/plans/completed/harness-markdown-truth.md` — R1 through R7 and R13.

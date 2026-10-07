@@ -1,7 +1,7 @@
 # Routing Eval Run Log
 
 One row per case per trial for the manual protocol in
-`docs/plans/completed/harness-eval-loop.md`. Case definitions are frozen in `docs/evals/routing.md`;
+`git show 3bab3c0:docs/plans/completed/harness-eval-loop.md`. Case definitions are frozen in `docs/evals/routing.md`;
 artifacts are under `docs/evals/evidence/`.
 
 Nothing reads this file automatically. It is evidence, consulted only when a maintainer requests a
@@ -41,7 +41,7 @@ comparison for a routing instruction change.
   - the host repository's own hooks/CI: `not-applicable` to trial outcomes; no trial ran in it.
 - identities:
   - regression case author (R01-R10): this session, reconstructing
-    `docs/audit/deepseek-harness-token-audit.md` §4 S1. Not independent of the eval design.
+    `git show 3bab3c0:docs/audit/deepseek-harness-token-audit.md` §4 S1. Not independent of the eval design.
   - holdout case author (H01-H04): isolated session `b5aa99dc-124e-4869-968c-05048b3926f1`,
     `claude-opus-5`. Given the playbooks, the fixture shape, and four category names only.
   - executor: this session, via the retained runner
@@ -61,7 +61,7 @@ comparison for a routing instruction change.
 - decision: **baseline**. This run establishes the first completed observation for all 14 frozen
   cases plus a `reproduced` historical control. It is explicitly *not* `no-detected-regression`
   (there is no prior comparable run) and *not* `improvement` (no instruction change was tested).
-  Two holdout failures are part of the baseline, as `docs/audit/2026-09-16-better-harness-eval-audit.md`
+  Two holdout failures are part of the baseline, as `git show 3bab3c0:docs/audit/2026-09-16-better-harness-eval-audit.md`
   F2 allows.
 
 ### Pre-baseline pilot (not a baseline observation)

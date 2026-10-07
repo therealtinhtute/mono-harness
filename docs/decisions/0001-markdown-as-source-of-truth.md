@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented by the `harness-markdown-truth` initiative (`docs/plans/completed/harness-markdown-truth.md`), phases P2 and P3.
+Superseded by [0006](0006-v015-authority.md) — historical record, not a current runbook. The derived-index system it ratifies (`harness.db`, `db rebuild`, changesets) was deleted in v0.15; live authority is `docs/ARCHITECTURE.md` plus `cli/docs/CONTRACT.md`. Accepted and implemented by the `harness-markdown-truth` initiative, phases P2 and P3 (`git show 3bab3c0:docs/plans/completed/harness-markdown-truth.md`).
 
 ## Context
 
@@ -29,6 +29,6 @@ Markdown is authoritative. `harness.db` is a derived index over it.
 
 ## Authority
 
-- `docs/plans/completed/harness-markdown-truth.md` — R8 (markdown-first dual writes), R9 (`plan_index` shape), R10 (rebuild from committed content, changeset retirement).
+- `git show 3bab3c0:docs/plans/completed/harness-markdown-truth.md` — R8 (markdown-first dual writes), R9 (`plan_index` shape), R10 (rebuild from committed content, changeset retirement).
 - `cli/internal/infrastructure/migrations.go:216` — `plan_index` table, following `managed_docs` at line 129.
-- `docs/plans/completed/durable-memory.md` — R4 extends the same rule to the `memories` index.
+- `git show 3bab3c0:docs/plans/completed/durable-memory.md` — R4 extends the same rule to the `memories` index.

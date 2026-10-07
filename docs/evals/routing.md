@@ -1,7 +1,7 @@
 # Routing Eval Set — manual behavioral cases
 
 Frozen case definitions for the manual evaluation contract in
-`docs/plans/completed/harness-eval-loop.md`. This file is the case set; `docs/evals/runs.md` is the
+`git show 3bab3c0:docs/plans/completed/harness-eval-loop.md`. This file is the case set; `docs/evals/runs.md` is the
 run log; `docs/evals/evidence/` holds retained artifacts.
 
 Creating this file adds no automatic gate. No playbook, guard, or CI job reads it. It is consumed
@@ -23,7 +23,7 @@ definition is corrected only under a new version.
 ## Split semantics
 
 `regression` cases reconstruct the ten smoke scenarios reported in
-`docs/audit/deepseek-harness-token-audit.md` §4 S1 (2026-09-15, Codex CLI 0.154.0, configured model
+`git show 3bab3c0:docs/audit/deepseek-harness-token-audit.md` §4 S1 (2026-09-15, Codex CLI 0.154.0, configured model
 `gpt-6-astra`). Those fixtures were not retained; the definitions here are **reconstructions** from
 the audit's prose, built against a different runtime and model. They are regression evidence and
 guidance for future optimization. They **cannot** serve as unseen holdout evidence for the routing

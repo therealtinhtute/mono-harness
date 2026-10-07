@@ -8,12 +8,15 @@ An ADR here is a record, not a proposal. It is written after the decision has la
 
 | # | Decision | Status |
 |---|---|---|
-| [0001](0001-markdown-as-source-of-truth.md) | Markdown is the source of truth; `harness.db` is a derived, rebuildable index | Accepted |
-| [0002](0002-single-active-plan-resolver.md) | One resolver owns the "at most one active plan" invariant, returning a Stop contract | Accepted |
-| [0003](0003-durable-memory-not-wired-into-playbooks.md) | Durable memory ships as an opt-in CLI surface, unwired from the spine playbooks | Accepted |
+| [0001](0001-markdown-as-source-of-truth.md) | Markdown is the source of truth; `harness.db` is a derived, rebuildable index | Superseded by [0006](0006-v015-authority.md) |
+| [0002](0002-single-active-plan-resolver.md) | One resolver owns the "at most one active plan" invariant, returning a Stop contract | Superseded by [0006](0006-v015-authority.md) |
+| [0003](0003-durable-memory-not-wired-into-playbooks.md) | Durable memory ships as an opt-in CLI surface, unwired from the spine playbooks | Superseded by [0006](0006-v015-authority.md) |
 | [0004](0004-docs-directory-deletion-655c6ac.md) | Recovery position after commit `655c6ac` deleted `docs/` | Accepted |
-| [0005](0005-authored-documentation-boundary.md) | Audit guards authored-document presence, not authored-document truth | Accepted |
+| [0005](0005-authored-documentation-boundary.md) | Audit guards authored-document presence, not authored-document truth | Superseded by [0006](0006-v015-authority.md) |
 | [0006](0006-v015-authority.md) | v0.15 deleted the derived index; live authority is ARCHITECTURE + CONTRACT | Accepted |
+| [0007](0007-fresh-overwrite-for-playbooks-and-workflow.md) | Playbooks and WORKFLOW.md fresh-overwrite; three-way merge narrows to PROJECT.md and the AGENTS.md block | Accepted |
+| [0008](0008-recorded-ownership-and-transactional-recovery.md) | Ownership is recorded, not inferred; stash restore is a transaction | Accepted |
+| [0009](0009-guard-revision-selection-is-centralized.md) | One revision selector for every guard; completed plans are validated like active ones | Accepted |
 | [0010](0010-local-failure-ledger.md) | A local failure ledger is maintainer-owned and optional for consumers | Accepted |
 | [0011](0011-update-without-three-way-merge.md) | `update` drops three-way merge: hash-guarded AGENTS block, write-once PROJECT.md | Accepted |
 | [0012](0012-five-section-plan-and-update-migration.md) | Plans have five sections; `update` migrates one nine-section active plan, Validation bytes unchanged | Accepted |

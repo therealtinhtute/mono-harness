@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented in phase `authored-docs-guard` of the `consumer-doc-drift-gate` initiative on 2026-08-21.
+Superseded by [0006](0006-v015-authority.md) — historical record, not a current runbook. The `zharness audit` guard it ratifies was deleted in v0.15; the presence-over-truth boundary survives in `docs/README.md`'s ownership classes and `scripts/verify-doc-links.sh`. Accepted and implemented in phase `authored-docs-guard` of the `consumer-doc-drift-gate` initiative on 2026-08-21 (`git show 3bab3c0:docs/plans/completed/consumer-doc-drift-gate.md`).
 
 ## Context
 

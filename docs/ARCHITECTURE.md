@@ -53,7 +53,7 @@ The binary carries two embedded filesystems (`cli/docs/embedded/`): the managed 
 | `docs/plans/active/*.md` | authoritative — the one active initiative; append-only `## Log` / `## Validation` |
 | `docs/PROJECT.md` | authoritative — identity, answered at the brainstorm lock |
 | `docs/memory/*.md` | memory as files; agents grep directly (`docs/memory/{id}.md`) |
-| `docs/decisions/`, `docs/research/`, `docs/audit/` | authoritative records |
+| `docs/decisions/`, `docs/research/` | authoritative records |
 | `docs/playbooks/`, `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/` instead |
 | `.zharness/` | installer bookkeeping (base manifest + blobs) and `cache/` per-machine scratch; gitignored |
 

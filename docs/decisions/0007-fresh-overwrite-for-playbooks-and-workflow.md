@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. 2026-09-03. Narrows R9 of `docs/plans/completed/zharness-v015-slim.md` for two of the four managed-file classes; R9 stays accurate for `docs/PROJECT.md` and the `AGENTS.md` marked block.
+Accepted. 2026-09-03. Narrows R9 of `git show 3bab3c0:docs/plans/completed/zharness-v015-slim.md` for two of the four managed-file classes; R9 stays accurate for `docs/PROJECT.md` and the `AGENTS.md` marked block.
 The three-way-merge half is superseded by [ADR 0011](0011-update-without-three-way-merge.md).
 
 The implementation citations below were repointed from the Go sources to the Rust port in the v0.24 cutover; the decisions and their rationale are unchanged, and symbol names in the decision text are the Go ones as decided.
@@ -33,5 +33,5 @@ Rejected: applying fresh-overwrite to the whole managed set (would silently eras
 
 - `cli/src/installer/mod.rs` — the `Target.Merge` field and its two call sites.
 - `cli/src/installer/update.rs` — the fresh-overwrite branch and the `classify()` label fix.
-- `docs/plans/completed/zharness-v015-slim.md` — R9 (original three-way-merge decision), R18 (no fabricated ancestor).
+- `git show 3bab3c0:docs/plans/completed/zharness-v015-slim.md` — R9 (original three-way-merge decision), R18 (no fabricated ancestor).
 - Owner's call, this session, 2026-09-03: scope confirmed as playbooks + WORKFLOW.md only, default behavior (no flag), no equality check before overwrite.

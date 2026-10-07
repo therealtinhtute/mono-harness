@@ -84,7 +84,8 @@ while IFS= read -r file; do
     [ -n "$claim" ] || continue
 
     # v0.15 removed surfaces: immutable audit/history records still cite files
-    # deleted by docs(plans): zharness-v015-slim p2-delete-cli. The removal is
+    # deleted by the zharness-v015-slim p2-delete-cli phase (plan pruned from
+    # docs/plans/completed/; see `git show 3bab3c0:docs/plans/completed/zharness-v015-slim.md`). The removal is
     # archived in the root CHANGELOG v0.15 section. Known-removed claims pass
     # existence checks but are counted, never silently dropped.
     case "$claim" in
