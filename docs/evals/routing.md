@@ -1,8 +1,8 @@
 # Routing Eval Set — manual behavioral cases
 
-Frozen case definitions for the manual evaluation contract in
-`git show 3bab3c0:docs/plans/completed/harness-eval-loop.md`. This file is the case set; `docs/evals/runs.md` is the
-run log; `docs/evals/evidence/` holds retained artifacts.
+Frozen case definitions for the manual evaluation contract in `docs/evals/README.md`. This file
+is the case set; `docs/evals/runs.md` is the run log; `docs/evals/evidence/` holds retained
+artifacts.
 
 Creating this file adds no automatic gate. No playbook, guard, or CI job reads it. It is consumed
 only when a maintainer explicitly requests a comparison for a routing instruction change.
