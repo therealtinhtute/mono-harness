@@ -10,6 +10,8 @@ compatibility: Designed for Claude Code
 
 Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.
 
+Ask every question to the user with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; plain text only when the agent has no such tool.
+
 Resolve the mode from a leading subcommand (`explore`, `grill`, `raw`, `lock`, `refine`) or else from the request shape, then follow `docs/playbooks/brainstorm.md` (this stage's operating logic); read `docs/WORKFLOW.md` first IF routing is unclear. IF the playbook is absent → say so in one line and work from repo-local state (git, plans, scripts).
 
 Argument: `[subcommand] [idea, @file refs, plan path, or trade-off question]`; the rest is passed as-is.

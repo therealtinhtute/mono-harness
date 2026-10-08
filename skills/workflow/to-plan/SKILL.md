@@ -9,6 +9,8 @@ compatibility: Designed for Claude Code
 
 Prefix your first line with `🥷` inline. Be direct: executable steps, not planning prose. No filler.
 
+Ask every question to the user with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; plain text only when the agent has no such tool.
+
 Resolve the mode, then follow `docs/playbooks/to-plan.md` (this stage's operating logic); read `docs/WORKFLOW.md` first IF routing is unclear. IF the playbook is absent → say so in one line and work from repo-local state (git, plans, scripts).
 
 Arguments: `[mode:full|phase] [phase-name?]` (default: `full`), passed as-is.
