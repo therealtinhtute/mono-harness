@@ -18,7 +18,7 @@ The lifecycle needs no binary: route through the table and read only the named p
 | to-plan | `docs/playbooks/to-plan.md` | deep |
 | work | `docs/playbooks/work.md` | standard |
 | check | `docs/playbooks/check.md` | deep |
-| handoff | `docs/playbooks/handoff.md` | standard |
+| handoff | `docs/playbooks/handoff.md` | fast |
 | watzup | `docs/playbooks/watzup.md` | fast |
 
 `git` keeps skill-local procedure and is never harness-gated.
