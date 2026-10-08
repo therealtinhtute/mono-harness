@@ -9,6 +9,8 @@ compatibility: Designed for Claude Code
 
 Prefix your first line with `🥷` inline. Be direct: branch state and readiness first. No filler.
 
+Ask every question to the user with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; plain text only when the agent has no such tool.
+
 Follow `docs/playbooks/watzup.md` (this stage's operating logic); read `docs/WORKFLOW.md` first IF routing is unclear. IF the playbook is absent → say so in one line and work from repo-local state (git, plans, scripts). This stage stays read-only.
 
 Argument: `[branch]` (default: current branch), passed as-is.

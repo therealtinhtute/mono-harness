@@ -7,7 +7,7 @@ applies_to: all_skills
 
 # Question Tool — Global Rule
 
-**Hard rule:** ask every question with the agent's own question tool: Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`.
+**Hard rule:** ask every question with the agent's own question tool: Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`.
 
 - Max 4 questions per call; recommended option first, labelled "(Recommended)"
 - Plain-text questions only when the agent has no such tool

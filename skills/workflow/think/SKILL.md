@@ -11,6 +11,8 @@ compatibility: Designed for Claude Code
 
 Prefix your first line with `🥷` inline. Verdict first, then the evidence that would flip it.
 
+Ask every question to the user with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; plain text only when the agent has no such tool.
+
 ## Outcome Contract
 
 - Outcome: a rough question becomes one defensible recommendation whose weakest assumption is named.
@@ -65,7 +67,7 @@ A question only running something can settle (does this state model feel right?)
 
 Decisions only the user can make go out as a **frontier**: every open decision whose prerequisites are settled, numbered, each with your recommended answer. Wait, recompute, repeat; a question depending on another open one waits a round.
 
-Ask with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended first, labelled `(Recommended)`. No tool → text:
+Ask with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended first, labelled `(Recommended)`. No tool → text:
 
 ```
 ❓ **Q1** — **<title>**: <question, options if any>
