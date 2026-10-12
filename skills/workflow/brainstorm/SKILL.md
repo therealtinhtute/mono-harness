@@ -8,7 +8,7 @@ argument-hint: "[explore|grill|raw|lock|refine] [idea, @file refs, plan path, or
 compatibility: Designed for Claude Code
 ---
 
-Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.
+Prefix your first line with `🥷`. recommendation first, key trade-off next.
 
 Ask the user only through the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): ≤4 per call, recommended option first and labelled `(Recommended)`; plain text only without one.
 

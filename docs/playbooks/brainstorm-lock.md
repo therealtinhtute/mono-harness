@@ -47,4 +47,4 @@ Each later section belongs to its stage. `## Log` is the sole task execution-sta
 7. **Lock** — confirm no non-empty plan exists under `docs/plans/active/`; IF one exists → stop and name it. Write the skeleton with the lane and `## Goal` filled.
 8. **Refine** — edit only `## Goal` (lane changes need approval); update `docs/PROJECT.md` IF what the project is or how it is verified changed.
 9. **Self-review** — no `<...>` left; requirements numbered, falsifiable, each with `acceptance:`; `success_signal:` checkable; Goal parts agree.
-10. **Review gate** — show the plan path and a decision summary; wait for approval before `to-plan`, unless the user already asked to proceed and nothing destructive, outward-facing, or undecided remains.
+10. **Review gate** — show the plan path, the answered `docs/PROJECT.md`, and a decision summary; wait for approval before `to-plan`, unless the user already asked to proceed, scope is bounded, and nothing destructive, outward-facing, or undecided remains.

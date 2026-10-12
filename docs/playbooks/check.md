@@ -5,12 +5,12 @@ Durable `gate` runs automated checks and records the verdict in `## Validation`;
 ## Preconditions and Modes
 
 1. Preserve invocation intent:
-   - `auto` (default) — a direct change → resolve to `bounded` without reading any plan; a named durable initiative → `gate`, and invalid initiative state never falls back to `bounded`. Ambiguous → ask. `auto` never resolves to `full`.
+   - `auto` (default) — a direct change → resolve to `bounded` without reading any plan; a named durable initiative → `gate`, and invalid initiative state never falls back to `bounded`. Ambiguous → ask. `auto` never resolves to `full`, and an active plan's mere existence never selects `gate`.
    - `gate`, `full` (never run by `work`), `bounded` (aliases: `simple`, `review`).
 2. Durable → read `docs/playbooks/check-durable.md` now.
 3. After the preflight succeeds, print the resolved mode before running checks or writing state: `mode: {resolved} ({reason})`. A failed preflight reports its blocker instead.
 
-**Zero-write rule:** `bounded` is always response-only and never appends to Validation. Invocation intent wins.
+**Zero-write rule:** `bounded` is always response-only and never appends to Validation. Invocation intent wins: an active plan never upgrades `bounded`.
 
 ## Steps
 
@@ -20,7 +20,7 @@ Durable `gate` runs automated checks and records the verdict in `## Validation`;
 4. **Plan alignment** (gate/full) — `check-durable.md` step 4.
 5. **Manual review** — `gate` does not perform that complete manual review. `full`, or `bounded` on a diff: read `docs/playbooks/check-review.md` now.
 6. **Proof classes** — `tiny`: output; `normal`: + unit; `high-risk`: + integration, manual review. Name gaps.
-7. **Verdict** — critical issue or plan contradiction → `REQUEST_CHANGES`; major findings → `APPROVE_WITH_REQUESTS`; else `APPROVED`. Declare the judge (`same-session` IF you authored the diff, else `independent`) and the model. A `same-session` approval names one aspect not independently verified. `full` and `high-risk` require `judge: independent`.
+7. **Verdict** — critical issue or plan contradiction → `REQUEST_CHANGES`; major findings → at least `APPROVE_WITH_REQUESTS`; else `APPROVED`. Declare the judge (`same-session` IF you authored the diff, else `independent`) and the model. A `same-session` approval names one aspect not independently verified. `full` and `high-risk` require `judge: independent`.
 8. **Evidence and plan state** (gate/full) — `check-durable.md` steps 8–11.
 
 ## Output Format
