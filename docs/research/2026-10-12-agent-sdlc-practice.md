@@ -4,7 +4,7 @@ Read-only research, 2026-10-12, weighted to sources from Aug-Oct 2026 and the
 current model generation (Claude Opus 5.5, released 2026-09-22; Claude 5 family;
 GPT-5.6). It answers two questions: what current agent harnesses do that this
 workflow lacks, and what it carries that current models no longer need. It feeds
-`docs/plans/active/playbook-slim.md` and builds on the byte audit in
+`docs/plans/completed/playbook-slim.md` and builds on the byte audit in
 https://github.com/therealtinhtute/mono-harness/pull/130.
 
 **Verdict:** the workflow already has the shape the field converged on in 2026.
