@@ -50,7 +50,7 @@ For `normal`, write the phase too and route straight to `work`:
   - phase check: `<each requirement's acceptance command>`
 ```
 
-with `exact_next_action: work full phase main`. Each later section belongs to its stage. `## Log` is the sole task execution-status source. Once `to-plan` defines phases and tasks, those definitions are immutable: a refine never alters them or resets history.
+with `exact_next_action: work full phase main`. Each later section belongs to its stage. `## Log` is the sole task execution-status source. Once lock (normal) or `to-plan` (high-risk) defines phases and tasks, those definitions are immutable: a refine never alters them or resets history.
 
 ## Steps
 
