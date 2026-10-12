@@ -1,21 +1,19 @@
 # Playbook: brainstorm (grill loop)
 
-Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`, and with `docs/playbooks/brainstorm-lock.md` for `lock` and `refine`.
+Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`, and with `brainstorm-lock.md` for `lock`/`refine`.
 
 ## Steps
 
-4. **Clarify the boundary** — run the Grill loop below over whatever is missing (the whole Goal in `grill`; only the gaps in `lock`/`refine`). Require a concrete outcome, a measurable `success_signal:`, the affected actors, constraints, accepted requirements each with an `acceptance:` check, and non-goals. Stop rather than invent an unresolved product decision.
+4. **Clarify the boundary** — grill whatever is missing (the whole Goal in `grill`; gaps only in `lock`/`refine`). Stop rather than invent an unresolved product decision.
 
 ## Grill
 
-Grill until the **Done** condition below holds. Map the request as a **design tree**: each decision branches into the decisions that depend on it. Work it in **rounds**.
+Grill until the **Done** condition below holds. Map decisions as a tree and work in rounds.
 
-- **Frontier** — every open decision whose prerequisites are settled. Ask the whole frontier in one round; a question that depends on another still open this round waits for a later round.
-- **Format** — ask with the agent's own question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; split a larger frontier across calls. Last-resort fallback, number each question: `❓ **Q1** — **<title>**: <question, with choices>` then `➡️ <recommended answer>`. Every question carries a recommendation.
-- **Recompute** — after each round, settle what was answered and recompute the frontier; an answer that contradicts a settled decision reopens that branch.
-- **Facts vs decisions** — facts are yours: read the repo, docs, and `docs/memory/`, or dispatch a sub-agent, and ask the rest of the frontier while it runs. Decisions are the user's: put each one to them and wait.
-- **Stress-test** — pin each fuzzy or overloaded term to one canonical term (reuse `docs/PROJECT.md` vocabulary); probe boundaries with concrete edge-case scenarios; when the user's statement and the code disagree, put the contradiction to them as a question.
-- **Absent owner** — a decision only someone else can make stays open as `open_question: <question> | owner: <who>`; keep grilling the other branches. An open question that blocks a requirement blocks the lock (step 4's stop rule).
-- **Done** — the frontier is empty and `to-plan` could plan from the Goal without asking a single question: `outcome`, a checkable `success_signal`, `actors`, `authority`, each requirement with `acceptance:`, and `non-goals` are all concrete. Then summarize the settled tree, list any `open_question:`, mark as `adr candidate` each decision that is hard to reverse, surprising without context, and the result of a real trade-off, and ask: lock (or refine) now?
-- **Grill on a plan** — read the plan first. Goal gaps → offer `refine`. Gaps inside `to-plan`'s phases are findings for the user, since phase definitions are immutable once planned.
-- **`raw`** — at most 2 rounds, then stop and print three lists: decided, assumed, open. No lock offer.
+- **Frontier** — every open decision whose prerequisites are settled; ask it all in one round (question tool, ≤4 per call, recommended option first). Recompute after each answer; a contradiction reopens its branch.
+- **Facts vs decisions** — find facts yourself (repo, docs, `docs/memory/`, or a sub-agent briefed per `work-full.md` step 4); put decisions to the user.
+- **Stress-test** — one canonical term per concept (reuse `docs/PROJECT.md`); probe edge cases; raise code-vs-statement contradictions as questions.
+- **Absent owner** — `open_question: <question> | owner: <who>`; it blocks the lock only if it blocks a requirement.
+- **Done** — `to-plan` could plan without asking: concrete `outcome`, checkable `success_signal`, `actors`, `authority`, requirements each with `acceptance:`, `non-goals`. Summarize the tree, list open questions, mark hard-to-reverse trade-offs `adr candidate`, and ask: lock (or refine) now?
+- **Grill on a plan** — Goal gaps → offer `refine`; gaps in planned phases are findings (phases are immutable).
+- **`raw`** — at most 2 rounds, then print decided / assumed / open. No lock offer.

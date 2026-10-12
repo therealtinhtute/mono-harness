@@ -2,7 +2,7 @@
 
 Durable `gate` runs automated checks and records the verdict in `## Validation`; `work` runs it after every phase. `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review, once, on the final phase.
 
-## Modes
+## Preconditions and Modes
 
 1. Preserve invocation intent:
    - `auto` (default) — a direct change → resolve to `bounded` without reading any plan; a named durable initiative → `gate`, and invalid initiative state never falls back to `bounded`. Ambiguous → ask. `auto` never resolves to `full`.
