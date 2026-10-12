@@ -28,7 +28,7 @@ lane: high-risk
   - No existing `required:` phrase is removed; new phrases are added.
 - recovery: each phase is its own commit range; revert it to restore the slim playbooks.
 - phase_slug: `p1-adr`
-  status: in-progress
+  status: checked
   - goal: R1 | depends_on: none
   - surfaces: `docs/decisions/0014-outcome-spec-normal-plans.md`, `docs/decisions/0012-*.md` (one link line), `docs/decisions/README.md` | avoided: playbooks, `cli/`
   - escalate_when: the ADR would need to change a guard-parsed field
@@ -62,10 +62,19 @@ lane: high-risk
 - 2026-10-12T23:35Z — p1-adr/T1 — done — `bash scripts/verify-doc-links.sh` 0 findings; ADR 0014 added, linked from ADR 0012 Status and the index
 
 ## Validation
+- 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - `test -f docs/decisions/0014-outcome-spec-normal-plans.md` — exit 0
+  - scope: on target — ADR 0014, ADR 0012 Status line, index rows
+  - requirements: R1 met (0014 exists; 0012:5 links it; 0014 keeps task-list plans valid, no migration; five headings present)
+  - rollback_point: 4a74a34
+  - requests: 1. 0014:9 attributes the task list/to-plan to 0012:31, which says only "one flat phase" (non-blocking); 2. 0014:28 cites :289, heading match is at :290 (non-blocking)
+  - judge: independent
+  - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
-- active_phase: p1-adr
-- lifecycle_status: in-progress
+- active_phase: p2-playbooks
+- lifecycle_status: checked
 - blockers: none
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: independent gate of p1-adr
+- exact_next_action: work full phase p2-playbooks
