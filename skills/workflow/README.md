@@ -15,7 +15,7 @@ The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, han
 A raw idea, notes, or files enter through `brainstorm`. It classifies the request into a risk lane (tiny / normal / high-risk) persisted in the plan's frontmatter `lane:` field and locks the result into one evolving plan at `docs/plans/active/{slug}.md`, owning that plan's Goal section. A tiny request creates no plan and goes straight to `work bounded`. The lane lives nowhere else — no separate store exists.
 
 ### Story/Plan — `to-plan`
-Once the plan is locked, `to-plan` writes its Phases and Verification (approach and risks, then phases, tasks, checks; waves only on the high-risk lane) into that same file — no separate roadmap or per-phase context/plan files.
+On the high-risk lane, `to-plan` writes the locked plan's Phases and Verification (approach and risks, then phases, waves, tasks, checks) into that same file. A normal plan skips it: `brainstorm lock` writes one phase `main` whose check is the Goal's acceptance commands (ADR 0014).
 
 ### Trace — `work`
 `work` executes the active phase wave-by-wave, verifying every task, and appends execution state to the plan's append-only Log section.

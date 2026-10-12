@@ -36,7 +36,7 @@ lane: high-risk
     - T1 write ADR 0014 and link it from ADR 0012 and the index — output: ADR — check: `bash scripts/verify-doc-links.sh` — stop_if: authority unclear
   - phase check: `bash scripts/verify-doc-links.sh`
 - phase_slug: `p2-playbooks`
-  status: planned
+  status: in-progress
   - goal: R2, R3, R4, R5 | depends_on: p1-adr
   - surfaces: `cli/src/embedded.rs` (contract arrays only), `brainstorm.md`, `brainstorm-lock.md`, `to-plan.md`, `work-full.md` (+ `docs/playbooks/` copies), `cli/docs/embedded/WORKFLOW.md` + `docs/WORKFLOW.md`, `skills/workflow/{to-plan,brainstorm}/SKILL.md` | avoided: guard, installer, check/handoff playbooks
   - escalate_when: a change needs an existing pinned phrase removed or a guard edit
@@ -60,6 +60,11 @@ lane: high-risk
 ## Log
 - 2026-10-12T23:35Z — p1-adr — start — baseline `bash scripts/verify-doc-links.sh` clean
 - 2026-10-12T23:35Z — p1-adr/T1 — done — `bash scripts/verify-doc-links.sh` 0 findings; ADR 0014 added, linked from ADR 0012 Status and the index
+- 2026-10-12T23:36Z — p2-playbooks — start — baseline `cd cli && cargo test` green
+- 2026-10-12T23:38Z — p2-playbooks/T2 — done — `cd cli && cargo test --lib embedded` red first: missing "`normal`: Goal + one phase `main`, no `to-plan`"; 5 new contract phrases added
+- 2026-10-12T23:38Z — p2-playbooks/T3 — done — `cd cli && cargo test` green (49+2); brainstorm, brainstorm-lock (normal phase block), to-plan (high-risk only), work-full (no-task phase), work, WORKFLOW, 3 shims (versions bumped)
+- 2026-10-12T23:38Z — p2-playbooks/T4 — done — `cd cli && cargo test --test projection_parity` pass
+- 2026-10-12T23:38Z — p2-playbooks — decision — also edited skills/workflow/README.md (outside listed surfaces) so the spine description matches ADR 0014; lane names un-backticked in shim Defer lines because validate-skill.sh reads backticks there as skill names
 
 ## Validation
 - 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -74,7 +79,7 @@ lane: high-risk
 
 ## Current State and Next Action
 - active_phase: p2-playbooks
-- lifecycle_status: checked
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: work full phase p2-playbooks
+- exact_next_action: independent gate of p2-playbooks

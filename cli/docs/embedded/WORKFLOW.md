@@ -13,7 +13,7 @@ Read only the stage's playbook and the companion it routes to. `zharness` (insta
 | Stage | Playbook | Model tier |
 |---|---|---|
 | brainstorm | `docs/playbooks/brainstorm.md` | deep |
-| to-plan | `docs/playbooks/to-plan.md` | deep |
+| to-plan (high-risk only) | `docs/playbooks/to-plan.md` | deep |
 | work | `docs/playbooks/work.md` | standard |
 | check | `docs/playbooks/check.md` | deep |
 | handoff | `docs/playbooks/handoff.md` | fast |

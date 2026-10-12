@@ -1,6 +1,6 @@
 # Playbook: brainstorm
 
-Owns only the plan's `## Goal` at `docs/plans/active/{slug}.md`; phases belong to `to-plan`, code to `work`.
+Owns only the plan's `## Goal` at `docs/plans/active/{slug}.md`; a `high-risk` plan's phases belong to `to-plan`, code to `work`.
 
 ## Modes
 
@@ -25,8 +25,10 @@ Pick from risk, not size; record it as frontmatter `lane:`.
 | Lane | When | Plan |
 |---|---|---|
 | `tiny` | Known files, direct check, nothing hard to reverse | None |
-| `normal` | One reviewable change, known verification | One phase, flat tasks |
-| `high-risk` | Data migration, public contract, security, dependent steps | Phases and waves; every gate needs an independent judge |
+| `normal` | One reviewable change, known verification | Goal + one phase (lock writes it) |
+| `high-risk` | Data migration, public contract, security, dependent steps | Phases and waves via `to-plan`; every gate needs an independent judge |
+
+`normal`: Goal + one phase `main`, no `to-plan`.
 
 ## Steps
 
