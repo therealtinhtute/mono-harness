@@ -1,43 +1,23 @@
 # Playbook: work (full mode)
 
-Loaded by `docs/playbooks/work.md` once the resolved mode is `full`. Preconditions, Memory, and Exit Conditions stay there.
+Loaded by `docs/playbooks/work.md` for `full`.
 
 ## Owned Plan Sections
 
-- the selected phase's lifecycle `status:` line in `## Phases and Verification`
-- `## Log` — append-only, one line per entry: `- <UTC> — <phase>[/<task>] — <kind> — <text>`, where kind is `start|done|blocked|decision`. A `done` line names the exact check and its result plus changed surfaces, and for a behavior task the test that went red first; a `blocked` line names the blocker and `failure_class`; a `decision` line states a deviation, trade-off, or wrong assumption with its rationale.
-- `## Current State and Next Action` — active phase, lifecycle status, blockers, open items, one exact next action
+- the selected phase's `status:` line
+- `## Log` — append-only: `- <UTC> — <phase>[/<task>] — <kind> — <text>`, kind `start|done|blocked|decision`. `done` names the check, its result, changed surfaces, and for a behavior task the test that went red first; `blocked` names the blocker and `failure_class`; `decision` states a deviation or trade-off and why.
+- `## Current State and Next Action` — active phase, lifecycle status, blockers, open items, one exact next action.
 
-Preserve everything else: Goal, approach, phase/task definitions, prior Log entries, validation evidence. Do not add or update task-definition `status` fields. `## Log` is the sole task execution-status source. Timestamps come from `date -u`, never estimated.
+Preserve everything else. Do not add or update task-definition `status` fields. `## Log` is the sole task execution-status source. Timestamps come from `date -u`.
 
 ## Full-Mode Execution
 
-1. **Load state** — slice `docs/plans/active/{slug}.md` by section, never whole-file: `bash scripts/plan-slice.sh docs/plans/active/{slug}.md "{heading}"` IF the script exists; else (consumer default — `zharness install` ships no scripts):
-
-   ```sh
-   awk '/^## {heading}$/{on=1;next} on&&/^## /{exit} on' docs/plans/active/{slug}.md
-   ```
-
-   Read the target phase block under `## Phases and Verification` and the tail of `## Log`. Select the requested phase, else the first non-done phase whose dependencies are done. Stop IF Current State and the phase block disagree on status (reconcile first), or IF no non-empty active plan exists (recommend `brainstorm lock`).
-2. **Check boundaries** — compare the requested diff and working tree against the phase's touched/avoided surfaces. Work already outside authority → stop `BLOCKED_CONTRACT_DRIFT`; a task without a check → stop `BLOCKED_VERIFICATION`.
-3. **Start the run** — set that phase's plan status to `in-progress`, set Current State to the same phase/status, and append a `start` Log entry. Never continue while statuses disagree.
-4. **Execute tasks** — in plan order (waves in order when the plan has them); parallelize only tasks the plan marks independent; read every target before editing; stay inside approved surfaces. A task that changes behavior runs **red → green**:
-   - **Red** — write one test at the task's planned seam and run it; it must fail, for the reason the task names.
-   - **Green** — write the least code that passes it; later tasks get no speculative code.
-   - Tests assert behavior through the seam's public interface. A test the task needs at an unplanned seam is a plan gap → `decision` Log entry and ask.
-   - Refactoring beyond what the task needs belongs to `check`'s review, outside this loop.
-   A task that changes no behavior (docs, config, a wide mechanical refactor) skips red and runs its check.
-   **Delegating a task to a sub-agent:** brief it with pointers, not copies — the plan path, the phase slug and task id, the files to read, and any exploration notes path. Never paste plan sections or file contents it can read itself. Exploration that several tasks share may run once first, in a sub-agent that writes its notes to a scratch file outside the repository (never a second plan markdown in the tree); later briefs point at that file.
-5. **Verify each task** — run its exact command. One targeted fix after a failure; a second failure is `BLOCKED_VERIFICATION` → append its `blocked` entry, naming the failed command as the gap, *before* any further edit.
-6. **Log** — append a `done` entry per verified task; batching a wave's `done` entries into one edit is fine. A `blocked` entry is written immediately, together with any `done` entries still held. Every `blocked` entry includes `failure_class: MISSING_CONTEXT|WRONG_TOOL|BAD_OUTPUT|REPEATED_LOOP|UNSAFE_ACTION|LOST_DECISION|UNKNOWN`. Append a `decision` entry only IF execution finds a plan gap, valid trade-off, deviation, or wrong assumption; never rewrite an earlier entry.
-7. **Refresh Current State** — active phase, `lifecycle_status: in-progress`, blockers, open items, exact next action. The plan stays `status: active` until final closure.
-8. **Gate the phase** — re-read the phase entry; require `in-progress` in both the status line and Current State. After all tasks, run `check.md`'s durable `gate` steps on the phase diff **yourself, in this same session**, except on a `high-risk` lane, where an independent judge (a separate agent) runs them. Outside `high-risk`, never hand the gate to another model or agent: prompt cache is per model, so a switch re-reads the phase cold. The complete review runs once, on the final phase, as a `handoff.md` precondition. `check.md` sets a cleanly gated non-final phase `checked`. On the initiative's final phase, keep the phase and Current State `in-progress`; on a clean verdict set the next action to an independent `check full`: `check`'s preflight rejects a `checked` phase. Never mark a phase `done`; closing `handoff` owns that transition.
-
-## Status Routing
-
-| Result | Log kind | Action |
-|---|---|---|
-| Implemented and verified | `done` | Continue |
-| Verified with a surfaced concern | `done` + `decision` | Continue only with acceptance |
-| Required information is absent | `blocked` (`MISSING_CONTEXT`) | Stop and obtain context |
-| Cannot finish inside authority or proof boundary | `blocked` | Stop with `BLOCKED_CONTEXT`, `BLOCKED_SCOPE`, `BLOCKED_VERIFICATION`, or `BLOCKED_CONTRACT_DRIFT` |
+1. **Load state** — slice `docs/plans/active/{slug}.md` by section: `bash scripts/plan-slice.sh <plan> "{heading}"` IF it exists, else `awk '/^## {heading}$/{on=1;next} on&&/^## /{exit} on' <plan>`. Read the phase block and the `## Log` tail. Pick the requested phase, else the first non-done phase whose dependencies are done. Stop IF Current State and the phase disagree, or no plan exists (→ `brainstorm lock`).
+2. **Check boundaries** — work already outside the phase surfaces → stop `BLOCKED_CONTRACT_DRIFT`; a task without a check → `BLOCKED_VERIFICATION`.
+3. **Start** — set that phase's plan status to `in-progress`, mirror it in Current State, append `start`. Baseline: run the existing test command once; a failure that predates your work is a `blocked` entry, not yours to absorb.
+4. **Execute tasks** — in plan order; parallel only where the plan marks tasks independent, each parallel writer in its own worktree or branch. Read before editing; stay inside the surfaces. A behavior change runs **red → green**: one failing test at the planned seam (failing for the named reason), then the least code that passes; an unplanned seam is a plan gap → `decision` and ask. Never delete, skip, or weaken a test to get green. No-behavior tasks (docs, config, mechanical refactor) just run their check.
+   **Sub-agent brief:** pointers, not copies — (1) plan path + phase/task id and files to read, (2) output path, (3) the check that proves it, (4) a time budget and stop rule, (5) write scope. Shared exploration runs once into a scratch file outside the repo.
+5. **Verify each task** — run its exact command; one targeted fix; a second failure → `blocked` (`BLOCKED_VERIFICATION`) before any further edit.
+6. **Log** — a `done` per verified task (a wave may batch). A `blocked` entry is written immediately, with any held `done` entries, and carries `failure_class: MISSING_CONTEXT|WRONG_TOOL|BAD_OUTPUT|REPEATED_LOOP|UNSAFE_ACTION|LOST_DECISION|UNKNOWN`. Never rewrite an entry.
+7. **Refresh Current State** — `lifecycle_status: in-progress`, blockers, open items, next action.
+8. **Gate the phase** — with both statuses `in-progress`, run `check.md`'s durable `gate` on the phase diff yourself, in this session (`high-risk`: an independent agent runs it). A clean non-final gate leaves the phase `checked`. On the final phase keep `in-progress` and set the next action to an independent `check full`. Never mark a phase `done`; closing `handoff` does.

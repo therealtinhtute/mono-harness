@@ -35,6 +35,8 @@ lane: normal
 ## Log
 - 2026-10-12T15:36Z — slim — start — owner chose option A (slim, keep lanes); T1 check playbooks first
 - 2026-10-12T15:37Z — slim/T1 — done — `cd cli && cargo test` pass (49+2); check path 14,472 → 9,415 B; gate path 11,451 → 7,059 B (target 6,500 missed: pinned phrases ~1.6 KB); surfaces: 4 check playbooks + copies
+- 2026-10-12T15:39Z — slim/T2 — done — `cd cli && cargo test` pass; all 12 playbooks 44,793 → 25231 B; R2 lines in work-full steps 3-4, check-review/brainstorm-grill point to the brief; cited headings kept
+- 2026-10-12T15:39Z — slim — decision — gate path lands at 7.1 KB, not 6.5: the pinned phrases in check.md/check-durable set the floor; accepted rather than edit contract tests
 
 ## Validation
 
@@ -43,4 +45,4 @@ lane: normal
 - lifecycle_status: in-progress
 - blockers: none
 - open_items: none
-- exact_next_action: work slim (T2)
+- exact_next_action: work slim (T3)
