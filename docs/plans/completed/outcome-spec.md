@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 lane: high-risk
 ---
 # Outcome-spec for normal plans
@@ -28,7 +28,7 @@ lane: high-risk
   - No existing `required:` phrase is removed; new phrases are added.
 - recovery: each phase is its own commit range; revert it to restore the slim playbooks.
 - phase_slug: `p1-adr`
-  status: checked
+  status: done
   - goal: R1 | depends_on: none
   - surfaces: `docs/decisions/0014-outcome-spec-normal-plans.md`, `docs/decisions/0012-*.md` (one link line), `docs/decisions/README.md` | avoided: playbooks, `cli/`
   - escalate_when: the ADR would need to change a guard-parsed field
@@ -36,7 +36,7 @@ lane: high-risk
     - T1 write ADR 0014 and link it from ADR 0012 and the index — output: ADR — check: `bash scripts/verify-doc-links.sh` — stop_if: authority unclear
   - phase check: `bash scripts/verify-doc-links.sh`
 - phase_slug: `p2-playbooks`
-  status: checked
+  status: done
   - goal: R2, R3, R4, R5 | depends_on: p1-adr
   - surfaces: `cli/src/embedded.rs` (contract arrays only), `brainstorm.md`, `brainstorm-lock.md`, `to-plan.md`, `work-full.md` (+ `docs/playbooks/` copies), `cli/docs/embedded/WORKFLOW.md` + `docs/WORKFLOW.md`, `skills/workflow/{to-plan,brainstorm}/SKILL.md` | avoided: guard, installer, check/handoff playbooks
   - escalate_when: a change needs an existing pinned phrase removed or a guard edit
@@ -47,7 +47,7 @@ lane: high-risk
     - T4 copy to `docs/` — check: `cd cli && cargo test --test projection_parity`
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
 - phase_slug: `p3-dry-run`
-  status: checked
+  status: done
   - goal: R4, R5, success_signal | depends_on: p2-playbooks
   - surfaces: a throwaway worktree and branch (never pushed) | avoided: everything else
   - escalate_when: the hook rejects a normal-lane step the playbooks prescribe
@@ -58,20 +58,12 @@ lane: high-risk
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cd .. && bash scripts/test-guards.sh && bash scripts/verify-doc-links.sh`
 
 ## Log
-- 2026-10-12T23:35Z — p1-adr — start — baseline `bash scripts/verify-doc-links.sh` clean
-- 2026-10-12T23:35Z — p1-adr/T1 — done — `bash scripts/verify-doc-links.sh` 0 findings; ADR 0014 added, linked from ADR 0012 Status and the index
-- 2026-10-12T23:36Z — p2-playbooks — start — baseline `cd cli && cargo test` green
-- 2026-10-12T23:38Z — p2-playbooks/T2 — done — `cd cli && cargo test --lib embedded` red first: missing "`normal`: Goal + one phase `main`, no `to-plan`"; 5 new contract phrases added
-- 2026-10-12T23:38Z — p2-playbooks/T3 — done — `cd cli && cargo test` green (49+2); brainstorm, brainstorm-lock (normal phase block), to-plan (high-risk only), work-full (no-task phase), work, WORKFLOW, 3 shims (versions bumped)
-- 2026-10-12T23:38Z — p2-playbooks/T4 — done — `cd cli && cargo test --test projection_parity` pass
 - 2026-10-12T23:38Z — p2-playbooks — decision — also edited skills/workflow/README.md (outside listed surfaces) so the spine description matches ADR 0014; lane names un-backticked in shim Defer lines because validate-skill.sh reads backticks there as skill names
 - 2026-10-12T23:39Z — p2-playbooks — decision — judge transcript reformatted to the guard format (it used `verdict: pass`); requests 1-2 fixed right after the gate (lock-written phase immutable; grill Done names lock for normal); request 3: `bash scripts/validate-skill.sh` passed on to-plan, brainstorm, work; final check full covers these edits
-- 2026-10-12T23:39Z — p3-dry-run — start — baseline `cd cli && cargo test` green
-- 2026-10-12T23:40Z — p3-dry-run/T5 — done — normal dry run (throwaway worktree, never pushed): lock with auto phase `main` → work (`done` per R1) → check full (proof re-executed) → handoff close → git mv, every commit passed the hook; no to-plan, no task list
-- 2026-10-12T23:40Z — p3-dry-run/T6 — done — high-risk regression: lock → to-plan → work → check full committed; same-session judge rejected (R3 JUDGE GUARD)
-- 2026-10-12T23:40Z — p3-dry-run/T7 — done — normal cycle reads 30,596 B (lock + work + same-session gate + independent full + handoff), 23,114 B without the separate gate; target 18 KB missed: the 18 KB estimate left out the cold check-full read, which every initiative close requires
 - 2026-10-12T23:40Z — p3-dry-run — decision — success_signal byte target missed; asking the owner whether a single-phase plan may skip the same-session gate and go straight to the independent check full (would land at 23.1 KB)
 - 2026-10-12T23:41Z — p3-dry-run — decision — owner chose: a single-phase plan skips the same-session gate and goes straight to the independent check full; work-full step 8, check.md intro and ADR 0014 decision 4 updated (outside p3's listed surfaces, on owner authority); normal cycle now 23,114 B; success_signal byte target (18 KB) stays missed and is put to the final check
+- 2026-10-12T23:44Z — p3-dry-run — decision — owner accepted the byte result (normal cycle 23,114 B vs 18 KB target); request 2 (skeleton lane note) left as is, the normal block follows it
+- 2026-10-12T23:44Z — p3-dry-run — decision — absorb: adr docs/decisions/0014-outcome-spec-normal-plans.md
 
 ## Validation
 - 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -104,8 +96,8 @@ lane: high-risk
   - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
-- active_phase: p3-dry-run
-- lifecycle_status: checked
+- active_phase: none
+- lifecycle_status: completed
 - blockers: none
-- open_items: owner accept of the 23.1 KB byte result (request 1); request 2 wording
-- exact_next_action: owner accepts request 1, then closing `handoff`
+- open_items: none
+- exact_next_action: none (initiative completed)
