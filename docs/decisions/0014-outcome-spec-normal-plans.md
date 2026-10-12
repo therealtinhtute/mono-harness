@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. 2026-10-12. Authority: the owner's answers of 2026-10-12 recorded in `docs/plans/active/outcome-spec.md` (`## Goal`). Amends decision 2 of [0012](0012-five-section-plan-and-update-migration.md).
+Accepted. 2026-10-12. Authority: the owner's answers of 2026-10-12 recorded in `docs/plans/completed/outcome-spec.md` (`## Goal`). Amends decision 2 of [0012](0012-five-section-plan-and-update-migration.md).
 
 ## Context
 
