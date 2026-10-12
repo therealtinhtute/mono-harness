@@ -24,3 +24,5 @@ docs/plans/completed/zharness-v015-slim.md       # cited in ADR 0006 Context (th
 docs/audit/2026-09-07-integrity-review.md        # cited in ADR 0008 Context (the F-findings source); pruned in the historical-docs cleanup — resolve via `git show 3bab3c0:docs/audit/2026-09-07-integrity-review.md`
 docs/plans/completed/macos-guard-portability.md  # cited in ADR 0009 Consequences; pruned in the historical-docs cleanup — resolve via `git show 3bab3c0:docs/plans/completed/macos-guard-portability.md`
 docs/audit/sdlc-gap-analysis.md                  # quoted inside ADR 0010 Context (a claimignore phrase); pruned in the historical-docs cleanup — resolve via `git show 3bab3c0:docs/audit/sdlc-gap-analysis.md`
+
+rules/_all/brief.md  # path in the external therealtinhtute/quaqua repo, cited by docs/research/2026-10-12-lead-peer-contract.md; not a file in this repo
