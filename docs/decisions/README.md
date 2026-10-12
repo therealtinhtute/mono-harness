@@ -19,8 +19,9 @@ An ADR here is a record, not a proposal. It is written after the decision has la
 | [0009](0009-guard-revision-selection-is-centralized.md) | One revision selector for every guard; completed plans are validated like active ones | Accepted |
 | [0010](0010-local-failure-ledger.md) | A local failure ledger is maintainer-owned and optional for consumers | Accepted |
 | [0011](0011-update-without-three-way-merge.md) | `update` drops three-way merge: hash-guarded AGENTS block, write-once PROJECT.md | Accepted |
-| [0012](0012-five-section-plan-and-update-migration.md) | Plans have five sections; `update` migrates one nine-section active plan, Validation bytes unchanged | Accepted |
+| [0012](0012-five-section-plan-and-update-migration.md) | Plans have five sections; `update` migrates one nine-section active plan, Validation bytes unchanged | Accepted; decision 2 amended by [0014](0014-outcome-spec-normal-plans.md) |
 | [0013](0013-installer-follows-directory-symlinks.md) | The installer follows symlinks at directory components; deferred to its own initiative | Accepted |
+| [0014](0014-outcome-spec-normal-plans.md) | A normal plan is its Goal plus one phase that lock writes; `to-plan` is high-risk only | Accepted |
 
 ## Writing a new one
 
