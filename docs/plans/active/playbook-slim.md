@@ -22,7 +22,7 @@ lane: normal
 - risks: a cut changes behavior → the dry run (T4) is the check; stop and restore that commit if a stage diverges.
 - seams: `cli/src/embedded.rs` contract tests; `cli/tests/projection_parity.rs`; `scripts/validate-skill.sh`.
 - phase_slug: `slim`
-  status: in-progress
+  status: checked
   - goal: R1, R2, R3 | depends_on: none
   - surfaces: `cli/docs/embedded/` + `docs/` copies, the 6 stage shims | avoided: `cli/src/`, other skills
   - escalate_when: a target needs a pinned phrase or a guard rule removed
@@ -64,10 +64,20 @@ lane: normal
   - requests: 1. check-durable preflight stop/never-change-status; 2. check-durable Current State vs Validation tail; 3. check-durable enforcement honesty; 4. check.md plan-existence/bounded-upgrade/at-least; 5. check-validation compaction wording; 6. work-full gate handoff, re-read, status routing, statuses-disagree; 7. to-plan wave independence, traceability, Log coherence; 8. handoff never-copy/never-delete/hook-must-pass/absorb forms, brainstorm-lock PROJECT.md + bounded scope; 9. baseline stop rule; 10. shim sizes; 11. success_signal miss; 12. WORKFLOW escalate_when (minor)
   - judge: independent
   - judge_model: claude-opus-5-5
+- 2026-10-12T16:30Z — phase `slim` — verdict: APPROVE_WITH_REQUESTS — mode: full
+  - `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test` — fmt clean, clippy clean, 49 + 2 passed
+  - `bash scripts/test-guards.sh` — guards: 68 passed, 0 failed
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - scope: on target — 0b85d39 touches 8 playbooks + copies, 3 shims, plan; parity holds
+  - requirements: R1 met (44,793 → 26,443 B; dropped rules restored) | R2 met (work-full steps 3, 4, 8) | R3 partial (3 shims 31-45 B over 1,000 B, owner decision pending) | success_signal partial (high-risk cycle ~31.9 KB vs 30 KB, owner decision pending)
+  - rollback_point: c8a8429
+  - requests: 1. shims over 1,000 B (owner); 2. high-risk cycle over 30 KB (owner); 3. WORKFLOW no longer carries escalate_when (owner); 4. work-full.md:21 conflates MISSING_CONTEXT and BLOCKED_CONTEXT; 5. shims line 12 lowercase after the 🥷 prefix
+  - judge: independent
+  - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
 - active_phase: slim
-- lifecycle_status: in-progress
+- lifecycle_status: checked
 - blockers: none
-- open_items: owner to accept or reject the size misses (shims 31-45 B over; high-risk cycle ~31.9 KB vs 30 KB)
-- exact_next_action: re-run independent `check full` on the fixes, then closing `handoff`
+- open_items: owner accept/reject of requests 1-3; wording fixes 4-5
+- exact_next_action: owner decision on requests 1-3, then closing `handoff`
