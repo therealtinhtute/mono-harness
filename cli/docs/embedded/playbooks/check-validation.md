@@ -1,6 +1,6 @@
 # Playbook: check (Validation evidence)
 
-Loaded by `docs/playbooks/check-durable.md` step 8 in durable `gate`/`full` mode, including `work`'s phase gate. `bounded` never loads it.
+Loaded by `docs/playbooks/check-durable.md` step 8.
 
 ## Validation Entry Format
 
@@ -16,15 +16,15 @@ Loaded by `docs/playbooks/check-durable.md` step 8 in durable `gate`/`full` mode
   - judge_model: <model identifier>
 ```
 
-Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, verdict, requirement coverage, rollback point, judge declaration, reviewing model identifier, and proof gaps. Two positions are load-bearing, so the commit-time guard can find them:
+Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output, plus every field above. Two positions are load-bearing, so the commit-time guard can find them:
 
-- The first line carries the anchored token `verdict: <VERDICT>`. A verdict on a sub-bullet, or without the `verdict:` anchor, is skipped in silence: no rejection, no re-execution.
-- Each proof command is a nested sub-bullet, indented at least two spaces, whose text begins with the bare command in single backticks: no label before the opening backtick, no double backticks, no backtick inside the command (it truncates there and re-executes a broken fragment; use a character class or a shell-free equivalent). Trailing annotation after the closing backtick is safe; keep it to at most 3 lines of output.
+- The first line carries the anchored token `verdict: <VERDICT>`. Anywhere else it is silently skipped.
+- Each proof is a sub-bullet indented two or more spaces that starts with the bare command in single backticks: no label before it, no double backticks, no backtick inside the command.
 
-Validation is append-only from an entry's first commit; never replace committed failed evidence or verdicts. The one exception is closing compaction in `handoff.md`, which keeps the last entry per phase byte-identical. An uncommitted entry may still be reshaped into the guard-visible form (the guard hashes only committed entries).
+Validation is append-only from an entry's first commit; never replace committed evidence. Only closing compaction in `handoff.md` may drop entries. An uncommitted entry may still be reshaped.
 
-**Proof re-execution contract** — each proof re-runs from the repository root under `sh -c` with no prior `cd`, activated virtualenv, or session function/alias; wrap bash-only syntax such as process substitution in `bash -c '…'`. Exported environment variables are inherited, so a proof must depend on neither their presence nor their absence. Bounded to 300 s IF `timeout` or `gtimeout` is on PATH, else unbounded. Carry any working directory or interpreter inline (`cd cli && cargo test`). Never test for a binary's presence or an OS version: re-execution happens on a bare checkout.
+**Proof re-execution contract** — each proof re-runs from the repository root under `sh -c` on a bare checkout: no prior `cd`, virtualenv, or alias (carry them inline: `cd cli && cargo test`; bash-only syntax → `bash -c '…'`). It must not depend on environment variables, binary presence, or OS version. Timeout 300 s when `timeout`/`gtimeout` exists.
 
 ## What the Guards Cannot Check
 
-Name any that applies in `proof_gaps:`: `judge: independent` is testimony, not proof; an unparsed (misspelled, buried, or unanchored) verdict is ignored, not rejected, so guard silence can mean "unparsed"; a range guard compares endpoints, so an entry added and removed inside one push is out of scope; a `requirements:` line is testimony, and the proof it cites re-runs only when it is also a proof sub-bullet.
+Name any that applies in `proof_gaps:`: `judge: independent` is testimony; an unparsed verdict is ignored, not rejected; an entry added and removed inside one push is unseen; a `requirements:` line is testimony, and the proof it cites re-runs only as a proof sub-bullet.

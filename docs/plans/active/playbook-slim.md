@@ -22,7 +22,7 @@ lane: normal
 - risks: a cut changes behavior → the dry run (T4) is the check; stop and restore that commit if a stage diverges.
 - seams: `cli/src/embedded.rs` contract tests; `cli/tests/projection_parity.rs`; `scripts/validate-skill.sh`.
 - phase_slug: `slim`
-  status: planned
+  status: in-progress
   - goal: R1, R2, R3 | depends_on: none
   - surfaces: `cli/docs/embedded/` + `docs/` copies, the 6 stage shims | avoided: `cli/src/`, other skills
   - escalate_when: a target needs a pinned phrase or a guard rule removed
@@ -33,12 +33,14 @@ lane: normal
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cd .. && bash scripts/test-guards.sh && bash scripts/verify-doc-links.sh`
 
 ## Log
+- 2026-10-12T15:36Z — slim — start — owner chose option A (slim, keep lanes); T1 check playbooks first
+- 2026-10-12T15:37Z — slim/T1 — done — `cd cli && cargo test` pass (49+2); check path 14,472 → 9,415 B; gate path 11,451 → 7,059 B (target 6,500 missed: pinned phrases ~1.6 KB); surfaces: 4 check playbooks + copies
 
 ## Validation
 
 ## Current State and Next Action
 - active_phase: slim
-- lifecycle_status: planned
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: none
-- exact_next_action: work slim (T1)
+- exact_next_action: work slim (T2)
