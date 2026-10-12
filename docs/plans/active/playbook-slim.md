@@ -40,6 +40,7 @@ lane: normal
 - 2026-10-12T15:41Z — slim/T3 — done — `bash scripts/validate-skill.sh` pass on 6 shims; `cd cli && cargo test` pass; WORKFLOW 2,187 → 1,315 B; AGENTS block 1,110 → ~800 B (root AGENTS.md block synced); shims 870-1,066 B (3 over 1,000 by ≤66 B: frontmatter); restored pinned phrase "no parallel control-plane state" after 2 installer tests failed
 - 2026-10-12T15:41Z — slim — decision — `bash scripts/test-guards.sh` crashes on a shallow clone (`ftmp2` unbound in the FLOOR skip branch), also on master; passes 68/68 with full history; pre-existing, left out of scope
 - 2026-10-12T15:42Z — slim/T4 — done — dry run in a throwaway worktree (scratch branch deleted, never pushed): lock → to-plan → work → check full → handoff close → git mv, each committed through the hook; proof re-executed; same-session judge on high-risk rejected (R3 JUDGE GUARD). Playbook bytes per lane: tiny 7,852 → 4,104; normal 39,803 → 22,286; high-risk 1 phase 53,275 → 30,724 (target 30,000 missed by 724 B)
+- 2026-10-12T15:56Z — slim — decision — independent check full returned REQUEST_CHANGES; restored the rules in requests 1-8 (~1.2 KB), baseline now logs a pre-existing failure as a `decision` instead of blocking (9), shims trimmed 20-30 B; requests 10-12 left for the owner: 3 shims stay 31-45 B over 1,000 B (frontmatter description), high-risk cycle ~31.9 KB, WORKFLOW keeps escalate_when only in work.md
 
 ## Validation
 - 2026-10-12T15:42Z — phase `slim` — verdict: APPROVE_WITH_REQUESTS — mode: gate
@@ -53,10 +54,20 @@ lane: normal
   - not_independently_verified: agent behavior on the slim text (dry run checked guards and formats, not a fresh agent's choices)
   - judge: same-session
   - judge_model: claude-opus-5-5
+- 2026-10-12T16:05Z — phase `slim` — verdict: REQUEST_CHANGES — mode: full
+  - `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test` — fmt clean, clippy clean, 49 + 2 passed
+  - `bash scripts/test-guards.sh` — guards: 68 passed, 0 failed
+  - `bash scripts/verify-doc-links.sh` — doc links OK (0 findings)
+  - scope: on target — playbooks + copies, WORKFLOW, AGENTS block, 6 shims, plan, research note
+  - requirements: R1 partial (cuts removed behavior rules, requests 1-8) | R2 met with deviation (baseline adds a stop rule, request 9) | R3 not met (3 shims over 1,000 B) | success_signal not met (high-risk cycle 30,724 B)
+  - rollback_point: c8a8429
+  - requests: 1. check-durable preflight stop/never-change-status; 2. check-durable Current State vs Validation tail; 3. check-durable enforcement honesty; 4. check.md plan-existence/bounded-upgrade/at-least; 5. check-validation compaction wording; 6. work-full gate handoff, re-read, status routing, statuses-disagree; 7. to-plan wave independence, traceability, Log coherence; 8. handoff never-copy/never-delete/hook-must-pass/absorb forms, brainstorm-lock PROJECT.md + bounded scope; 9. baseline stop rule; 10. shim sizes; 11. success_signal miss; 12. WORKFLOW escalate_when (minor)
+  - judge: independent
+  - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
 - active_phase: slim
 - lifecycle_status: in-progress
 - blockers: none
-- open_items: gate requests 1-3 (accepted as is unless the owner objects)
-- exact_next_action: independent `check full` (a fresh agent), then closing `handoff`
+- open_items: owner to accept or reject the size misses (shims 31-45 B over; high-risk cycle ~31.9 KB vs 30 KB)
+- exact_next_action: re-run independent `check full` on the fixes, then closing `handoff`

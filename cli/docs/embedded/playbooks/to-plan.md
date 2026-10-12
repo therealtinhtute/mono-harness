@@ -30,8 +30,8 @@ After a phase/task definition is written, it is immutable; work/check/handoff ma
 1. **Read the Goal** — requirements, non-goals, lane, and the validation expectations (`success_signal:`, each `acceptance:`).
 2. **Approach** — the smallest viable path, the rejected alternative, risks and recovery.
 3. **Phases** — split only for dependency, risk, or independent verification; each phase leaves the system usable.
-4. **Tasks** — vertical tracer bullets (one thin path through every touched layer, one context window each); prefactor first; a wide mechanical refactor is its own task.
+4. **Tasks** — every task traces to a requirement; planning never adds product behavior. Same wave only for tasks that can proceed independently. Vertical tracer bullets (one thin path through every touched layer, one context window each); prefactor first; a wide mechanical refactor is its own task.
 5. **Seams** — prefer existing interfaces; confirm a new seam with the user.
 6. **Checks** — every task gets a command at a seam; a missing check is a planning blocker.
 7. **Write** — replace `approach: not-planned`; set `exact_next_action: work full phase {first-slug}`.
-8. **Verify** — unique slugs, acyclic dependencies, no second plan file; every requirement appears in some phase `goal:` and every `acceptance:` maps to a check.
+8. **Verify** — unique slugs, acyclic dependencies, statuses coherent with `## Log`, no second plan file; every requirement appears in some phase `goal:` and every `acceptance:` maps to a check.

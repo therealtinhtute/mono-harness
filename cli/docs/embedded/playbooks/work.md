@@ -15,6 +15,6 @@ IF the mode is `full` → read `docs/playbooks/work-full.md` now and follow it.
 
 ## Memory
 
-Write `docs/memory/{id}.md` only for a fact correction (set the old file's `superseded_by`), a durable lesson, or a lasting owner preference. Never store secret values.
+Write `docs/memory/{id}.md` only for a fact correction (set the old file's `superseded_by`), a durable lesson, or a lasting owner preference. Never store secret values; record only that a secret exists, its scope, and where to fetch it.
 
 escalate_when: ask the owner and stop — locked schema or requirements would change; the same verification command failed twice; a product rule conflicts.
