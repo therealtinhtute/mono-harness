@@ -71,6 +71,7 @@ lane: high-risk
 - 2026-10-12T23:40Z — p3-dry-run/T6 — done — high-risk regression: lock → to-plan → work → check full committed; same-session judge rejected (R3 JUDGE GUARD)
 - 2026-10-12T23:40Z — p3-dry-run/T7 — done — normal cycle reads 30,596 B (lock + work + same-session gate + independent full + handoff), 23,114 B without the separate gate; target 18 KB missed: the 18 KB estimate left out the cold check-full read, which every initiative close requires
 - 2026-10-12T23:40Z — p3-dry-run — decision — success_signal byte target missed; asking the owner whether a single-phase plan may skip the same-session gate and go straight to the independent check full (would land at 23.1 KB)
+- 2026-10-12T23:41Z — p3-dry-run — decision — owner chose: a single-phase plan skips the same-session gate and goes straight to the independent check full; work-full step 8, check.md intro and ADR 0014 decision 4 updated (outside p3's listed surfaces, on owner authority); normal cycle now 23,114 B; success_signal byte target (18 KB) stays missed and is put to the final check
 
 ## Validation
 - 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -96,6 +97,6 @@ lane: high-risk
 ## Current State and Next Action
 - active_phase: p3-dry-run
 - lifecycle_status: in-progress
-- blockers: owner decision on the byte miss (accept 30.6 KB, or skip the duplicate gate for single-phase plans → 23.1 KB)
+- blockers: none
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: owner decision, then independent check full
+- exact_next_action: independent check full of the initiative
