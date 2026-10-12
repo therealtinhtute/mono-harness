@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-version: "5.0.0"
+version: "5.1.0"
 model: opus
 description: "Explore trade-offs, grill fuzzy intent or a plan, and lock the Goal into `docs/plans/active/{slug}.md`. Use for ideation, architecture decisions, grill/interview requests, and RFC/PRD-to-spec work."
 license: MIT
@@ -10,10 +10,8 @@ compatibility: Designed for Claude Code
 
 Prefix your first line with `🥷` inline. Be direct: recommendation first, key trade-off next. No filler.
 
-Ask every question to the user with the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): at most 4 per call, recommended option first, labelled `(Recommended)`; plain text only when the agent has no such tool.
+Ask the user only through the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): ≤4 per call, recommended option first and labelled `(Recommended)`; plain text only without one.
 
-Resolve the mode from a leading subcommand (`explore`, `grill`, `raw`, `lock`, `refine`) or else from the request shape, then follow `docs/playbooks/brainstorm.md` (this stage's operating logic); read `docs/WORKFLOW.md` first IF routing is unclear. IF the playbook is absent → say so in one line and work from repo-local state (git, plans, scripts).
-
-Argument: `[subcommand] [idea, @file refs, plan path, or trade-off question]`; the rest is passed as-is.
+Resolve the mode, then follow `docs/playbooks/brainstorm.md` (`docs/WORKFLOW.md` IF routing is unclear; IF the playbook is absent, say so and work from git and the plan).
 
 Defer to: `to-plan` after an approved lock; `check` for quality gates after implementation.

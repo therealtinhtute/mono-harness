@@ -37,6 +37,8 @@ lane: normal
 - 2026-10-12T15:37Z — slim/T1 — done — `cd cli && cargo test` pass (49+2); check path 14,472 → 9,415 B; gate path 11,451 → 7,059 B (target 6,500 missed: pinned phrases ~1.6 KB); surfaces: 4 check playbooks + copies
 - 2026-10-12T15:39Z — slim/T2 — done — `cd cli && cargo test` pass; all 12 playbooks 44,793 → 25231 B; R2 lines in work-full steps 3-4, check-review/brainstorm-grill point to the brief; cited headings kept
 - 2026-10-12T15:39Z — slim — decision — gate path lands at 7.1 KB, not 6.5: the pinned phrases in check.md/check-durable set the floor; accepted rather than edit contract tests
+- 2026-10-12T15:41Z — slim/T3 — done — `bash scripts/validate-skill.sh` pass on 6 shims; `cd cli && cargo test` pass; WORKFLOW 2,187 → 1,315 B; AGENTS block 1,110 → ~800 B (root AGENTS.md block synced); shims 870-1,066 B (3 over 1,000 by ≤66 B: frontmatter); restored pinned phrase "no parallel control-plane state" after 2 installer tests failed
+- 2026-10-12T15:41Z — slim — decision — `bash scripts/test-guards.sh` crashes on a shallow clone (`ftmp2` unbound in the FLOOR skip branch), also on master; passes 68/68 with full history; pre-existing, left out of scope
 
 ## Validation
 
@@ -45,4 +47,4 @@ lane: normal
 - lifecycle_status: in-progress
 - blockers: none
 - open_items: none
-- exact_next_action: work slim (T3)
+- exact_next_action: work slim (T4 dry run)
