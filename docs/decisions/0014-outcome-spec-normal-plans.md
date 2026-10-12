@@ -13,7 +13,8 @@ ADR 0012 decision 2 made a `normal` plan "one flat phase" (`docs/decisions/0012-
 1. **A normal plan is the Goal plus one phase `main`.** `brainstorm lock` writes it: `goal:` names every requirement, and `phase check:` runs the Goal's acceptance commands. No task list.
 2. **`to-plan` is for `high-risk` only.** For a `normal` plan it stops and routes to `work`. A normal cycle is lock → work → check → handoff.
 3. **`work` without tasks works each requirement in turn**; each `done` Log entry names the requirement and its acceptance check.
-4. **Nothing else changes.** The five sections, the guard-parsed headings and fields, check preflight, handoff, `tiny`, and `high-risk` (phases, waves, independent judge) stay as ADR 0012 set them. Plans that already carry a task list stay valid; `update` migrates nothing.
+4. **A single-phase plan skips the same-session gate.** Its only phase is also its final phase, which needs an independent `check full` before closing `handoff`; running the gate first would review the same diff twice. `work` sets the next action to `check full` directly. Added by the owner on 2026-10-12 after the dry run measured a normal cycle at 30.6 KB (23.1 KB without the duplicate gate).
+5. **Nothing else changes.** The five sections, the guard-parsed headings and fields, check preflight, handoff, `tiny`, and `high-risk` (phases, waves, independent judge) stay as ADR 0012 set them. Plans that already carry a task list stay valid; `update` migrates nothing.
 
 Rejected: a phaseless normal plan, because check preflight, handoff and the guard's completed-plan check all select a phase, so each would need a new path; merging `normal` into `high-risk`, because it makes ordinary work heavier.
 

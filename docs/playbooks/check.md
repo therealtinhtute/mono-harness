@@ -1,6 +1,6 @@
 # Playbook: check
 
-Durable `gate` runs automated checks and records the verdict in `## Validation`; `work` runs it after every phase. `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review, once, on the final phase.
+Durable `gate` runs automated checks and records the verdict in `## Validation`; `work` runs it after every phase except a single-phase plan's, which goes straight to `full`. `full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review, once, on the final phase.
 
 ## Preconditions and Modes
 
