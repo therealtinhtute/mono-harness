@@ -67,6 +67,10 @@ lane: high-risk
 - 2026-10-12T23:38Z — p2-playbooks — decision — also edited skills/workflow/README.md (outside listed surfaces) so the spine description matches ADR 0014; lane names un-backticked in shim Defer lines because validate-skill.sh reads backticks there as skill names
 - 2026-10-12T23:39Z — p2-playbooks — decision — judge transcript reformatted to the guard format (it used `verdict: pass`); requests 1-2 fixed right after the gate (lock-written phase immutable; grill Done names lock for normal); request 3: `bash scripts/validate-skill.sh` passed on to-plan, brainstorm, work; final check full covers these edits
 - 2026-10-12T23:39Z — p3-dry-run — start — baseline `cd cli && cargo test` green
+- 2026-10-12T23:40Z — p3-dry-run/T5 — done — normal dry run (throwaway worktree, never pushed): lock with auto phase `main` → work (`done` per R1) → check full (proof re-executed) → handoff close → git mv, every commit passed the hook; no to-plan, no task list
+- 2026-10-12T23:40Z — p3-dry-run/T6 — done — high-risk regression: lock → to-plan → work → check full committed; same-session judge rejected (R3 JUDGE GUARD)
+- 2026-10-12T23:40Z — p3-dry-run/T7 — done — normal cycle reads 30,596 B (lock + work + same-session gate + independent full + handoff), 23,114 B without the separate gate; target 18 KB missed: the 18 KB estimate left out the cold check-full read, which every initiative close requires
+- 2026-10-12T23:40Z — p3-dry-run — decision — success_signal byte target missed; asking the owner whether a single-phase plan may skip the same-session gate and go straight to the independent check full (would land at 23.1 KB)
 
 ## Validation
 - 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -92,6 +96,6 @@ lane: high-risk
 ## Current State and Next Action
 - active_phase: p3-dry-run
 - lifecycle_status: in-progress
-- blockers: none
+- blockers: owner decision on the byte miss (accept 30.6 KB, or skip the duplicate gate for single-phase plans → 23.1 KB)
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: work full phase p3-dry-run
+- exact_next_action: owner decision, then independent check full
