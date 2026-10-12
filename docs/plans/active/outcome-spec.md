@@ -47,7 +47,7 @@ lane: high-risk
     - T4 copy to `docs/` — check: `cd cli && cargo test --test projection_parity`
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
 - phase_slug: `p3-dry-run`
-  status: planned
+  status: in-progress
   - goal: R4, R5, success_signal | depends_on: p2-playbooks
   - surfaces: a throwaway worktree and branch (never pushed) | avoided: everything else
   - escalate_when: the hook rejects a normal-lane step the playbooks prescribe
@@ -66,6 +66,7 @@ lane: high-risk
 - 2026-10-12T23:38Z — p2-playbooks/T4 — done — `cd cli && cargo test --test projection_parity` pass
 - 2026-10-12T23:38Z — p2-playbooks — decision — also edited skills/workflow/README.md (outside listed surfaces) so the spine description matches ADR 0014; lane names un-backticked in shim Defer lines because validate-skill.sh reads backticks there as skill names
 - 2026-10-12T23:39Z — p2-playbooks — decision — judge transcript reformatted to the guard format (it used `verdict: pass`); requests 1-2 fixed right after the gate (lock-written phase immutable; grill Done names lock for normal); request 3: `bash scripts/validate-skill.sh` passed on to-plan, brainstorm, work; final check full covers these edits
+- 2026-10-12T23:39Z — p3-dry-run — start — baseline `cd cli && cargo test` green
 
 ## Validation
 - 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -90,7 +91,7 @@ lane: high-risk
 
 ## Current State and Next Action
 - active_phase: p3-dry-run
-- lifecycle_status: checked
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
 - exact_next_action: work full phase p3-dry-run
