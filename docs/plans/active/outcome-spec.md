@@ -36,7 +36,7 @@ lane: high-risk
     - T1 write ADR 0014 and link it from ADR 0012 and the index — output: ADR — check: `bash scripts/verify-doc-links.sh` — stop_if: authority unclear
   - phase check: `bash scripts/verify-doc-links.sh`
 - phase_slug: `p2-playbooks`
-  status: in-progress
+  status: checked
   - goal: R2, R3, R4, R5 | depends_on: p1-adr
   - surfaces: `cli/src/embedded.rs` (contract arrays only), `brainstorm.md`, `brainstorm-lock.md`, `to-plan.md`, `work-full.md` (+ `docs/playbooks/` copies), `cli/docs/embedded/WORKFLOW.md` + `docs/WORKFLOW.md`, `skills/workflow/{to-plan,brainstorm}/SKILL.md` | avoided: guard, installer, check/handoff playbooks
   - escalate_when: a change needs an existing pinned phrase removed or a guard edit
@@ -65,6 +65,7 @@ lane: high-risk
 - 2026-10-12T23:38Z — p2-playbooks/T3 — done — `cd cli && cargo test` green (49+2); brainstorm, brainstorm-lock (normal phase block), to-plan (high-risk only), work-full (no-task phase), work, WORKFLOW, 3 shims (versions bumped)
 - 2026-10-12T23:38Z — p2-playbooks/T4 — done — `cd cli && cargo test --test projection_parity` pass
 - 2026-10-12T23:38Z — p2-playbooks — decision — also edited skills/workflow/README.md (outside listed surfaces) so the spine description matches ADR 0014; lane names un-backticked in shim Defer lines because validate-skill.sh reads backticks there as skill names
+- 2026-10-12T23:39Z — p2-playbooks — decision — judge transcript reformatted to the guard format (it used `verdict: pass`); requests 1-2 fixed right after the gate (lock-written phase immutable; grill Done names lock for normal); request 3: `bash scripts/validate-skill.sh` passed on to-plan, brainstorm, work; final check full covers these edits
 
 ## Validation
 - 2026-10-12T23:36Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -76,10 +77,20 @@ lane: high-risk
   - requests: 1. 0014:9 attributes the task list/to-plan to 0012:31, which says only "one flat phase" (non-blocking); 2. 0014:28 cites :289, heading match is at :290 (non-blocking)
   - judge: independent
   - judge_model: claude-opus-5-5
+- 2026-10-12T23:39Z — phase `p2-playbooks` — verdict: APPROVE_WITH_REQUESTS — mode: gate
+  - `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test` — 49 + 2 passed
+  - `bash scripts/verify-doc-links.sh` — 0 findings
+  - `diff -r docs/playbooks cli/docs/embedded/playbooks` — identical
+  - scope: on target — embedded.rs adds 6 lines only; WORKFLOW copies identical
+  - requirements: R2 met (brainstorm-lock normal block; phrases pinned) | R3 met (brainstorm.md, to-plan.md, WORKFLOW, shims agree) | R4 partial (→ p3-dry-run) | R5 partial (→ p3-dry-run)
+  - rollback_point: 6b897e6
+  - requests: 1. brainstorm-lock.md:53 immutability names only to-plan, not the lock-written `main` phase; 2. brainstorm-grill.md:17 Done criterion names only to-plan; 3. record validate-skill.sh evidence for R3
+  - judge: independent
+  - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
-- active_phase: p2-playbooks
-- lifecycle_status: in-progress
+- active_phase: p3-dry-run
+- lifecycle_status: checked
 - blockers: none
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: independent gate of p2-playbooks
+- exact_next_action: work full phase p3-dry-run
