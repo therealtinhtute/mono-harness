@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-version: "5.1.0"
+version: "5.1.1"
 model: opus
 description: "Explore trade-offs, grill fuzzy intent or a plan, and lock the Goal into `docs/plans/active/{slug}.md`. Use for ideation, architecture decisions, grill/interview requests, and RFC/PRD-to-spec work."
 license: MIT
@@ -14,4 +14,4 @@ Ask the user only through the agent's question tool (Claude Code `AskUserQuestio
 
 Resolve the mode, then follow `docs/playbooks/brainstorm.md` (`docs/WORKFLOW.md` IF routing is unclear; IF the playbook is absent, say so and work from git and the plan).
 
-Defer to: `to-plan` after an approved lock; `check` for quality gates after implementation.
+Defer to: `to-plan` after an approved high-risk lock, `work` after a normal one; `check` for quality gates after implementation.

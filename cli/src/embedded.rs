@@ -247,6 +247,7 @@ mod tests {
                     "## Goal",
                     "explore creates no plans, reports, changesets, or markdown artifacts",
                     "`tiny` → stop and route to `work bounded`",
+                    "`normal`: Goal + one phase `main`, no `to-plan`",
                 ],
                 forbidden: &[
                     "story_id",
@@ -273,6 +274,8 @@ mod tests {
                     "- actors:",
                     "| acceptance: <how it is verified> |",
                     "those definitions are immutable",
+                    "phase_slug: `main`",
+                    "exact_next_action: work full phase main",
                     "`## Log` is the sole task execution-status source",
                 ],
                 forbidden: &[
@@ -315,6 +318,8 @@ mod tests {
                     "docs/plans/active/{slug}.md",
                     "After a phase/task definition is written, it is immutable",
                     "work/check/handoff may change only that phase's lifecycle status in this file",
+                    "`to-plan` runs only for `high-risk`",
+                    "a `normal` plan → stop and route to `work full phase main`",
                     "Do not add task status fields",
                     "never write parallel task/phase state anywhere else",
                     "`## Log` is the sole task execution-status source",
@@ -341,6 +346,7 @@ mod tests {
                     "set that phase's plan status to `in-progress`",
                     "`start|done|blocked|decision`",
                     "A `blocked` entry is written immediately",
+                    "A phase with no task list: work each requirement in turn",
                     "Do not add or update task-definition `status` fields",
                     "`## Log` is the sole task execution-status source",
                 ],

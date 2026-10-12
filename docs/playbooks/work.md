@@ -3,7 +3,7 @@
 ## Preconditions and Modes
 
 1. Resolve mode:
-   - `auto` (default) — `full` IF the request names or continues a durable initiative; else `bounded` unless rejected below; else route to `brainstorm` and `to-plan`. An active plan's existence never selects `full`.
+   - `auto` (default) — `full` IF the request names or continues a durable initiative; else `bounded` unless rejected below; else route to `brainstorm`. An active plan's existence never selects `full`.
    - `full [phase {slug}]` — execute the next phase of the one non-empty plan under `docs/plans/active/`; IF several → list them and stop.
    - `bounded` (alias: `simple`) — a direct change with a known verification path. Reject IF scope is unclear, crosses an unfamiliar subsystem, exceeds five files or ~100 changed lines, or needs phases.
 2. Before reading any plan, print the resolved mode as your first output line: `mode: {resolved} ({reason})`.

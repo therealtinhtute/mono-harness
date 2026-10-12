@@ -38,7 +38,19 @@ lane: normal
 - exact_next_action: to-plan
 ```
 
-Each later section belongs to its stage. `## Log` is the sole task execution-status source. Once `to-plan` defines phases and tasks, those definitions are immutable: a refine never alters them or resets history.
+For `normal`, write the phase too and route straight to `work`:
+
+```markdown
+## Phases and Verification
+- approach: <one line: chosen path; rejected alternative>
+- phase_slug: `main`
+  status: planned
+  - goal: R1, R2 | depends_on: none
+  - surfaces: <touched> | avoided: <untouched>
+  - phase check: `<each requirement's acceptance command>`
+```
+
+with `exact_next_action: work full phase main`. Each later section belongs to its stage. `## Log` is the sole task execution-status source. Once `to-plan` defines phases and tasks, those definitions are immutable: a refine never alters them or resets history.
 
 ## Steps
 
@@ -47,4 +59,4 @@ Each later section belongs to its stage. `## Log` is the sole task execution-sta
 7. **Lock** — confirm no non-empty plan exists under `docs/plans/active/`; IF one exists → stop and name it. Write the skeleton with the lane and `## Goal` filled.
 8. **Refine** — edit only `## Goal` (lane changes need approval); update `docs/PROJECT.md` IF what the project is or how it is verified changed.
 9. **Self-review** — no `<...>` left; requirements numbered, falsifiable, each with `acceptance:`; `success_signal:` checkable; Goal parts agree.
-10. **Review gate** — show the plan path, the answered `docs/PROJECT.md`, and a decision summary; wait for approval before `to-plan`, unless the user already asked to proceed, scope is bounded, and nothing destructive, outward-facing, or undecided remains.
+10. **Review gate** — show the plan path, the answered `docs/PROJECT.md`, and a decision summary; wait for approval before the next stage, unless the user already asked to proceed, scope is bounded, and nothing destructive, outward-facing, or undecided remains.
