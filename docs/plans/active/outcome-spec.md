@@ -28,7 +28,7 @@ lane: high-risk
   - No existing `required:` phrase is removed; new phrases are added.
 - recovery: each phase is its own commit range; revert it to restore the slim playbooks.
 - phase_slug: `p1-adr`
-  status: planned
+  status: in-progress
   - goal: R1 | depends_on: none
   - surfaces: `docs/decisions/0014-outcome-spec-normal-plans.md`, `docs/decisions/0012-*.md` (one link line), `docs/decisions/README.md` | avoided: playbooks, `cli/`
   - escalate_when: the ADR would need to change a guard-parsed field
@@ -58,12 +58,14 @@ lane: high-risk
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cd .. && bash scripts/test-guards.sh && bash scripts/verify-doc-links.sh`
 
 ## Log
+- 2026-10-12T23:35Z — p1-adr — start — baseline `bash scripts/verify-doc-links.sh` clean
+- 2026-10-12T23:35Z — p1-adr/T1 — done — `bash scripts/verify-doc-links.sh` 0 findings; ADR 0014 added, linked from ADR 0012 Status and the index
 
 ## Validation
 
 ## Current State and Next Action
 - active_phase: p1-adr
-- lifecycle_status: planned
+- lifecycle_status: in-progress
 - blockers: none
 - open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: work full phase p1-adr
+- exact_next_action: independent gate of p1-adr

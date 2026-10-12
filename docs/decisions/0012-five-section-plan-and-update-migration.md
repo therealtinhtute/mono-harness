@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. 2026-09-19. Authority: R8–R13 of `git show 3bab3c0:docs/plans/completed/zharness-slim.md`.
+Accepted. 2026-09-19. Decision 2 amended by [0014](0014-outcome-spec-normal-plans.md). Authority: R8–R13 of `git show 3bab3c0:docs/plans/completed/zharness-slim.md`.
 
 The implementation citations below were repointed from the Go sources to the Rust port in the v0.24 cutover; the decisions and their rationale are unchanged, and symbol names in the decision text are the Go ones as decided.
 
