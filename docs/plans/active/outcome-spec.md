@@ -47,7 +47,7 @@ lane: high-risk
     - T4 copy to `docs/` — check: `cd cli && cargo test --test projection_parity`
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test`
 - phase_slug: `p3-dry-run`
-  status: in-progress
+  status: checked
   - goal: R4, R5, success_signal | depends_on: p2-playbooks
   - surfaces: a throwaway worktree and branch (never pushed) | avoided: everything else
   - escalate_when: the hook rejects a normal-lane step the playbooks prescribe
@@ -93,10 +93,19 @@ lane: high-risk
   - requests: 1. brainstorm-lock.md:53 immutability names only to-plan, not the lock-written `main` phase; 2. brainstorm-grill.md:17 Done criterion names only to-plan; 3. record validate-skill.sh evidence for R3
   - judge: independent
   - judge_model: claude-opus-5-5
+- 2026-10-12T23:42Z — phase `p3-dry-run` — verdict: APPROVE_WITH_REQUESTS — mode: full
+  - `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test` — 49 + 2 passed
+  - `bash scripts/verify-doc-links.sh` — 0 findings
+  - scope: on target — judge also ran bash scripts/test-guards.sh (68/68; not a proof bullet: it cannot run inside the commit hook); out-of-surface edits recorded as owner-authorized Log decisions; NG1 holds; copies byte-identical
+  - requirements: R1 met | R2 met | R3 met | R4 met (dry-run Log has `done` per requirement) | R5 met (high-risk dry run committed; tiny unchanged) | success_signal partial (flow passes the hook; byte target 23,114 B vs 18 KB; gate step removed on owner authority)
+  - rollback_point: 4a74a34
+  - requests: 1. owner to accept or amend the success_signal byte target; 2. brainstorm-lock skeleton block shows `exact_next_action: to-plan` without a lane note (minor)
+  - judge: independent
+  - judge_model: claude-opus-5-5
 
 ## Current State and Next Action
 - active_phase: p3-dry-run
-- lifecycle_status: in-progress
+- lifecycle_status: checked
 - blockers: none
-- open_items: commit 4a74a34 (slim close) rides this branch and lands with this work
-- exact_next_action: independent check full of the initiative
+- open_items: owner accept of the 23.1 KB byte result (request 1); request 2 wording
+- exact_next_action: owner accepts request 1, then closing `handoff`
