@@ -4,6 +4,7 @@
 
 Accepted. 2026-09-03. Narrows R9 of `git show 3bab3c0:docs/plans/completed/zharness-v015-slim.md` for two of the four managed-file classes; R9 stays accurate for `docs/PROJECT.md` and the `AGENTS.md` marked block.
 The three-way-merge half is superseded by [ADR 0011](0011-update-without-three-way-merge.md).
+The playbook distribution half is amended by [ADR 0015](0015-skill-owned-procedures-and-safe-retirement.md), an accepted migration decision with implementation pending. Its conservative retirement replaces fresh-overwrite only for retired playbooks; WORKFLOW overwrite remains. The historical implementation below describes the pre-migration distribution.
 
 The implementation citations below were repointed from the Go sources to the Rust port in the v0.24 cutover; the decisions and their rationale are unchanged, and symbol names in the decision text are the Go ones as decided.
 

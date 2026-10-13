@@ -8,9 +8,9 @@ This is the personal mono-harness repository for `therealtinhtute`: a `skills.sh
 
 ## Layout and Pipeline
 
-Skills live in `skills/{workflow,shipping,craft}/<name>/`; the `zharness` crate in `cli/`; global rules in `rules/`; protocol, playbooks, ADRs, and plans in `docs/`. The workflow chain and its stage contracts: `skills/workflow/README.md`.
+Skills live in `skills/{workflow,shipping,craft}/<name>/`; the `zharness` crate in `cli/`; global rules in `rules/`; protocol, ADRs, and plans in `docs/`; workflow procedures in each owning skill's `references/`. The workflow chain and its stage contracts: `skills/workflow/README.md`.
 
-Plans are committed markdown (`docs/plans/active/{slug}.md`); pre-commit guards (`scripts/install-git-hooks.sh`) enforce proof re-execution, an independent judge on high-risk and `full` checks, and at most one active plan. Editing a playbook: change `cli/docs/embedded/playbooks/<stage>.md`, then copy the same bytes to `docs/playbooks/<stage>.md` — `cd cli && cargo test --test projection_parity` fails if the two drift.
+Plans are committed markdown (`docs/plans/active/{slug}.md`); pre-commit guards (`scripts/install-git-hooks.sh`) enforce proof re-execution, an independent judge on high-risk and `full` checks, and at most one active plan. Edit procedures in `skills/workflow/<stage>/references/`. For the managed router, change `cli/docs/embedded/WORKFLOW.md` and copy the same bytes to `docs/WORKFLOW.md`; `cd cli && cargo test --test projection_parity` checks this mirror.
 
 ## Gate Commands
 

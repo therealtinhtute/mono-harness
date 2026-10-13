@@ -8,8 +8,8 @@ Start here. Every document in this repository is reachable from this page, and e
 |---|---|
 | Understand how the harness works | [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Know why something is built the way it is | [`docs/decisions/README.md`](decisions/README.md) |
-| Run a workflow stage | [`docs/WORKFLOW.md`](WORKFLOW.md), then the one playbook it names |
-| Adopt the harness on an existing project | [`docs/workflow-harness/migration.md`](workflow-harness/migration.md) |
+| Run a workflow stage | [`docs/WORKFLOW.md`](WORKFLOW.md), then the installed skill it names |
+| Adopt the harness on an existing project | [`docs/workflow-harness/skill-procedure-migration.md`](workflow-harness/skill-procedure-migration.md) (current skill migration); [legacy adoption history](workflow-harness/migration.md) |
 | Write or edit a skill or a rule | [`docs/prompt-engineering-principles.md`](prompt-engineering-principles.md) |
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
 | Compare a routing instruction change against the eval suite | [`docs/evals/README.md`](evals/README.md) |
@@ -21,18 +21,17 @@ Start here. Every document in this repository is reachable from this page, and e
 
 Three classes, and the class determines who is allowed to edit the file.
 
-- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/`. Edit the embedded source and cut a release. `docs/WORKFLOW.md` and the stage playbooks are pure mirrors: the updater always overwrites them with upstream bytes, discarding any local edit with no conflict. `docs/PROJECT.md` is written only when absent and then belongs to the project; the updater never overwrites it (ADR 0011).
+- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/`. Edit the embedded source and cut a release. `docs/WORKFLOW.md` is a pure mirror: the updater always overwrites it with upstream bytes, discarding any local edit with no conflict. `docs/PROJECT.md` is written only when absent and then belongs to the project; the updater never overwrites it (ADR 0011).
 - **authored** — written by hand, never embedded, never regenerated. The consumer owns the content; repository scripts (not a binary verdict) watch whether any authored markdown remains, and semantic correctness belongs to the author or external tooling.
 - **scaffold-once** — written by the managed-set installer only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
 
 | Path | Class | Notes |
 |---|---|---|
-| `docs/WORKFLOW.md` | managed | stage router; names the one playbook to read |
-| `docs/playbooks/` | managed | 6 stage playbooks and their 6 companions; edit `cli/docs/embedded/playbooks/` instead. `git` is absent by design — it owns no harness entity, so its procedure lives in the skill: the commit flow in `skills/workflow/git/SKILL.md`, `pr`/`merge` in `skills/workflow/git/references/workflow.md` |
+| `docs/WORKFLOW.md` | managed | stage router; names the installed skill to resolve |
 | `docs/README.md` | authored | this page |
 | `docs/ARCHITECTURE.md` | authored | how the system works |
 | `docs/decisions/` | authored | numbered ADRs, an index, and `templates/decision.md` to copy for the next one |
-| `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the stage playbooks; nothing generates these files |
+| `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the skill procedures; nothing generates these files |
 | `docs/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
@@ -50,7 +49,7 @@ An existing path under `docs/` that is missing from this table is a defect in th
 | Path | What it is |
 |---|---|
 | `cli/docs/` | the CLI's contract reference — authored; `cli/docs/embedded/` holds the installer's managed doc set |
-| `skills/` | the installable agent skills; each has its own `SKILL.md` |
+| `skills/` | independently installable agent skills; each has its own `SKILL.md`; the six workflow skills own the twelve canonical procedure references |
 | `rules/` | source for the global rules installed into `~/.claude/rules/` |
 | (legacy) a per-machine derived index | removed from the architecture in v0.15 — archive: v0.15 section of CHANGELOG.md |
 | `.zharness/cache/` | per-machine scratch — skill caches and local reports; gitignored with `/.zharness/` |

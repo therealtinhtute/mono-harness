@@ -1,6 +1,6 @@
 //! `update`: refresh the managed set (ADR 0011).
 //!
-//! Playbooks and WORKFLOW.md are overwritten, `docs/PROJECT.md` is written
+//! WORKFLOW.md is overwritten, `docs/PROJECT.md` is written
 //! only when absent, and the AGENTS block is replaced between its markers
 //! unless it was edited by hand since the last write. A single active plan in
 //! the older 9-section format is migrated. Every refusal is decided before the
@@ -83,6 +83,8 @@ pub fn run_update(o: UpdateOptions, out: &mut String) -> Result<(), String> {
         }
     };
 
+    let mut own = super::retirement::load_ownership(root, &base_files)?;
+    super::retirement::retire(root, &o.version, &mut base_files, &mut own, out)?;
     let mut planned: Vec<(String, String)> = Vec::new();
     for t in &targets {
         let up = src_bytes(t)?;
@@ -249,17 +251,16 @@ mod tests {
         );
     }
 
-    /// Playbooks and WORKFLOW.md are pure upstream mirrors: update always
+    /// WORKFLOW.md is a pure upstream mirror: update always
     /// overwrites them with upstream bytes, ignoring any local edit and never
     /// producing a conflict.
     #[test]
-    fn update_fresh_overwrite_playbooks_and_workflow_ignore_local_edits() {
+    fn update_fresh_overwrite_workflow_and_preserve_retired_local_edits() {
         let _env = IsolatedEnv::new();
         let repo = temp_repo();
         let root = repo.path();
         install_ok(root);
         let upstream_wf = read_file(root, WORKFLOW_TARGET);
-        let upstream_play = read_file(root, "docs/playbooks/work.md");
 
         write_file(
             root,
@@ -277,8 +278,8 @@ mod tests {
         update_ok(root);
         assert_eq!(
             read_file(root, "docs/playbooks/work.md"),
-            upstream_play,
-            "playbook local edit should be silently discarded"
+            "hand-edited playbook\n",
+            "retired procedure must preserve local edits"
         );
     }
 

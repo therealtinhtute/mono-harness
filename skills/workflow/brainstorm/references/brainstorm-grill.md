@@ -1,6 +1,6 @@
 # Playbook: brainstorm (grill loop)
 
-Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`, and with `brainstorm-lock.md` for `lock`/`refine`.
+Loaded by [brainstorm.md](brainstorm.md) for `grill` and `raw`, and with `brainstorm-lock.md` for `lock`/`refine`.
 
 ## Steps
 

@@ -4,15 +4,15 @@ Observed harness failures in this repository, one row per incident, append-only.
 
 Authority: `docs/decisions/0010-local-failure-ledger.md`. This file is maintainer-owned and local.
 It is not synced, not scaffolded by `zharness install` or `update`, and not required by any
-playbook. Its two consumers are conditional on its existence: `docs/playbooks/check.md`
+playbook. Its two consumers are conditional on its existence: `skills/workflow/check/references/check-durable.md`
 (Review and Gate Steps, step 4) reads it and, for every class recorded two or more times, states whether the diff under
-review is clean of that class; `docs/playbooks/check.md` (Review and Gate Steps, step 10) appends one row per finding
+review is clean of that class; `skills/workflow/check/references/check-durable.md` (Review and Gate Steps, step 10) appends one row per finding
 when a durable `gate` or `full` returns `REQUEST_CHANGES`. Deleting this file returns the
 repository to the behavior it had before the file existed.
 
 ## Conventions
 
-- **class** — one of the seven tokens in `docs/playbooks/work-full.md` (Full-Mode Execution, step 7):
+- **class** — one of the seven tokens in `skills/workflow/work/references/work-full.md` (Full-Mode Execution, step 6):
   `MISSING_CONTEXT`, `WRONG_TOOL`, `BAD_OUTPUT`, `REPEATED_LOOP`, `UNSAFE_ACTION`,
   `LOST_DECISION`, `UNKNOWN`. No other token is admissible. A row that fits none of them is
   `UNKNOWN` with a stated rationale, never a new token — a private vocabulary would make the
@@ -26,6 +26,8 @@ repository to the behavior it had before the file existed.
   and is never softened into a promise of future work.
 - Rows are appended, never rewritten. A row whose finding is later covered gains a follow-up row
   rather than an edited `coverage` field.
+
+Historical incident paths below identify the instruction set at the recorded source revision; they are not current execution routes.
 
 ## Incidents
 
@@ -120,6 +122,22 @@ repository to the behavior it had before the file existed.
   edit. Closing this would touch `scripts/**`, which both the originating initiative and
   this initiative's R10 place under `surfaces_avoided`, so it is recorded
   here rather than fixed.
+
+### 2026-10-13 — original equality alone was mistaken for interrupted retirement
+
+- class: `BAD_OUTPUT`
+- rationale: independent migration check reproduced edited local bytes equal to the saved original but different from recorded projection; equality alone incorrectly authorized removing original recovery and ownership. The initial finding and REQUEST_CHANGES remain in the archived migration Validation.
+- surface: `cli/src/installer/retirement.rs`, restoration eligibility and retry cleanup.
+- source: `da9fed6a09e34d20f1e586577cf936d74905b7bb`, `docs/plans/completed/playbooks-to-skills.md`, Validation entry 2026-10-13T08:36:32Z; `cli/src/installer/retirement_tests.rs`, `m02_initial_original_equality_is_not_restoration_proof`.
+- coverage: covered by initial-equality update twice/uninstall regression plus invalid/stale intent, missing-base, later-edit and interrupted-restore tests. A valid recorded restoration intent is required; original equality alone never licenses cleanup.
+
+### 2026-10-13 — guard fixtures inherited the calling Git hook's repository environment
+
+- class: `BAD_OUTPUT`
+- rationale: ordinary guard runs passed, but pre-commit proof replay inherited Git-local environment. Fixture init/commits then changed the caller's HEAD/index/config instead of staying inside disposable repositories. Commit was rejected; no fixture history was pushed. Source hashes remained exact and metadata was recovered from recorded refs/reflogs.
+- surface: `scripts/test-guards.sh`, `gfix`, PP and staged-secret fixture setup.
+- source: `da9fed6a09e34d20f1e586577cf936d74905b7bb`, `scripts/test-guards.sh`, fixture repository setup; delivery reproduces during actual pre-commit replay of the archived migration's Validation proofs.
+- coverage: `uncovered`. This delivery forwards the existing real pre-commit/commit-msg/pre-push hooks through an invocation-scoped wrapper clearing `git rev-parse --local-env-vars`; all proofs still run. The tracked fixture runner still needs its own environment isolation and a nested-hook regression. No global or permanent hook configuration was changed.
 
 ## Candidates not yet seeded
 

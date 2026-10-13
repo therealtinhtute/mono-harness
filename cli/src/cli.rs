@@ -49,7 +49,7 @@ pub fn render_help() -> String {
 pub enum Command {
     /// Scaffold the managed doc set into this repository (idempotent; brownfield report is read-only)
     Install(InstallArgs),
-    /// Refresh playbooks, WORKFLOW.md and the AGENTS.md block; write docs/PROJECT.md only when absent
+    /// Refresh WORKFLOW.md and the AGENTS.md block; retire recorded legacy procedures; scaffold absent PROJECT.md
     Update(UpdateArgs),
     /// Remove the managed doc set only — consumer-owned bytes are never touched
     Uninstall(UninstallArgs),

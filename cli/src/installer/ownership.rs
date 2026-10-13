@@ -6,7 +6,7 @@
 //! second install cannot relabel bytes the first one generated, and uninstall
 //! never infers ownership from a stat call.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -24,11 +24,13 @@ pub const ORIGIN_UNKNOWN: &str = "unknown";
 pub const KIND_FILE: &str = "file";
 pub const KIND_GITIGNORE: &str = "gitignore";
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Ownership {
     /// `"kind\tkey"`, in stable output order.
     order: Vec<String>,
     origin: HashMap<String, String>,
+    raw: String,
+    loaded_origin: HashMap<String, String>,
 }
 
 fn own_key(kind: &str, key: &str) -> String {
@@ -46,6 +48,7 @@ impl Ownership {
             Ok(s) => s,
             Err(_) => return o,
         };
+        o.raw = raw.clone();
         for ln in raw.trim_end_matches('\n').split('\n') {
             let parts: Vec<&str> = ln.split('\t').collect();
             if parts.len() != 3 {
@@ -53,6 +56,7 @@ impl Ownership {
             }
             o.set(parts[0], parts[1], parts[2]);
         }
+        o.loaded_origin = o.origin.clone();
         o
     }
 
@@ -86,17 +90,53 @@ impl Ownership {
             .unwrap_or_else(|| ORIGIN_UNKNOWN.to_string())
     }
 
-    pub fn save(&self, root: &Path) -> Result<(), String> {
+    pub fn remove(&mut self, kind: &str, key: &str) {
+        let k = own_key(kind, key);
+        self.origin.remove(&k);
+        self.order.retain(|item| item != &k);
+    }
+
+    /// Preserve opaque/malformed rows and unrelated provenance verbatim.
+    /// Only a deliberately removed or updated parsed key is rewritten.
+    fn bytes(&self) -> Vec<u8> {
         let mut b = String::new();
-        for k in &self.order {
-            let parts: Vec<&str> = k.splitn(2, '\t').collect();
-            if parts.len() != 2 {
+        let mut seen = HashSet::new();
+        for line in self.raw.split_inclusive('\n') {
+            let parts: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
+            if parts.len() != 3 {
+                b.push_str(line);
                 continue;
             }
-            let origin = self.origin.get(k).cloned().unwrap_or_default();
-            b.push_str(&format!("{}\t{}\t{origin}\n", parts[0], parts[1]));
+            let k = own_key(parts[0], parts[1]);
+            seen.insert(k.clone());
+            if let Some(origin) = self.origin.get(&k) {
+                if self.loaded_origin.get(&k) == Some(origin) {
+                    b.push_str(line);
+                } else {
+                    b.push_str(&format!("{k}\t{origin}\n"));
+                }
+            }
         }
-        write_file_atomic(&root.join(OWNERSHIP_FILE), b.as_bytes())
+        for k in &self.order {
+            if seen.contains(k) {
+                continue;
+            }
+            if let Some(origin) = self.origin.get(k) {
+                if !b.is_empty() && !b.ends_with('\n') {
+                    b.push('\n');
+                }
+                b.push_str(&format!("{k}\t{origin}\n"));
+            }
+        }
+        b.into_bytes()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.bytes().is_empty()
+    }
+
+    pub fn save(&self, root: &Path) -> Result<(), String> {
+        write_file_atomic(&root.join(OWNERSHIP_FILE), &self.bytes())
     }
 
     /// Records, once, whether `dst` predates zharness. Existence on disk
@@ -147,6 +187,9 @@ impl Ownership {
     /// recorded as its own predecessor, not a real pre-install original.
     pub fn seed_legacy(&mut self, root: &Path, targets: &[Target], base: &HashMap<String, String>) {
         for t in targets {
+            if super::retirement::is_retired(&t.dst) && !base.contains_key(&t.dst) {
+                continue;
+            }
             self.seed_path(
                 root,
                 &t.dst,
@@ -213,7 +256,10 @@ pub fn load_ownership_for(
     base: &HashMap<String, String>,
 ) -> Ownership {
     let mut o = Ownership::load(root);
-    if o.order.is_empty() && !base.is_empty() {
+    if fs::symlink_metadata(root.join(OWNERSHIP_FILE))
+        .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
+        && !base.is_empty()
+    {
         o.seed_legacy(root, targets, base);
     }
     o

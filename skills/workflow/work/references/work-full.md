@@ -1,6 +1,6 @@
 # Playbook: work (full mode)
 
-Loaded by `docs/playbooks/work.md` for `full`.
+Loaded by [work.md](work.md) for `full`.
 
 ## Owned Plan Sections
 

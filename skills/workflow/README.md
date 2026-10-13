@@ -1,12 +1,12 @@
 # Workflow Harness — Concept
 
-The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, handoff`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to playbooks in the repository. This doc locks the mental model.
+The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, handoff`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to references inside their installed skill directories. This doc locks the mental model.
 
 ## 4-Layer Model
 
 - **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in the root CHANGELOG and git history (`git show 3bab3c0:docs/plans/completed/` for the pre-prune plans).
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 10 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route straight to `docs/playbooks/{stage}.md`. No binary sits between the skill and its playbook — `zharness` installs and updates the managed doc set and plays no part in running a stage.
+- **skills** — the 10 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route to their own `references/{stage}.md`. Companions resolve within that skill; cross-stage transitions use host metadata and repository data paths use the consumer root. No binary sits between the skill and its references — `zharness` installs and updates the managed doc set and plays no part in running a stage.
 - **cli** — `zharness`, the Rust binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.
 
 ## Lifecycle
@@ -34,9 +34,9 @@ The workflow chain covers plan → code → verify → commit/PR. Deployment, re
 
 ## No Version Gate
 
-There is no binary in the execution path, so there is nothing to version-gate. Every spine skill reads `docs/playbooks/{stage}.md` from the repository it is running in, and that playbook is committed — a fresh clone with no `zharness` installed executes the same lifecycle as a fully provisioned machine.
+There is no binary in the execution path, so there is nothing to version-gate. Each spine skill reads its independently installed references. The host must expose all six workflow skills; a fresh repository clone alone does not supply that dependency. Missing required skills/references stop workflow execution with a dependency report, without a retained-procedure fallback.
 
-The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold the managed docs, fresh-overwriting playbooks/WORKFLOW.md, replacing the hash-guarded AGENTS.md block, and writing PROJECT.md only when absent, which is a setup concern, not a per-stage one.
+The old `preflight` readiness call and its `MIN_ZHARNESS_VERSION` documentation gate were deleted in v0.15. What `zharness` still does — `install` / `update` / `uninstall` — is scaffold the managed docs, fresh-overwriting WORKFLOW.md and conservatively retiring recorded legacy procedures, replacing the hash-guarded AGENTS.md block, and writing PROJECT.md only when absent, which is a setup concern, not a per-stage one.
 
 ### Non-spine skills do not stop on a missing binary
 
@@ -52,7 +52,7 @@ name: {skill-name}
 description: {what the skill does and when to use it — skills.sh discovery and triggering read this line}
 ---
 
-{Resolve the invocation mode when the stage has one, then} follow `docs/playbooks/{stage}.md` — it holds this stage's operating logic. Read `docs/WORKFLOW.md` first if the routing is unclear. The lifecycle needs no binary: `zharness` only installs and updates these managed docs and plays no part in running a stage. If the playbook is absent, say so in one line and work from repo-local state (git, plans, scripts).
+{Resolve the invocation mode when the stage has one, then} follow [references/{stage}.md](references/{stage}.md) inside this installed skill. Read `docs/WORKFLOW.md` first if routing is unclear. Resolve cross-stage transitions through host skill metadata and repository data paths from the consumer root. Report a missing required skill or reference and stop; retained legacy procedures are not a fallback. `zharness` only manages repository docs and plays no part in running a stage.
 
 Defer to: {one line naming the skills this stage hands off to or resumes from}
 ```
@@ -61,11 +61,11 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 
 | Skill | Owns | Mechanism |
 | :--- | :--- | :--- |
-| `brainstorm` | Goal: outcome, success_signal, actors, requirements with `acceptance:`, non-goals (lane in frontmatter) | playbook + hand-edited markdown |
-| `to-plan` | Phases and Verification: approach, risks, tasks with `output:`/`check:`/`stop_if:`, `escalate_when:` on high-risk; every requirement traced to a check | playbook + hand-edited markdown |
-| `work` | Log (append-only) | playbook + hand-edited markdown |
-| `check` | Validation (append-only): proofs, `requirements:` coverage, `rollback_point:` | playbook + nested proof sub-bullets |
-| `handoff` | Current State and Next Action, phase closure | playbook + absorb line + `git mv` on completion |
+| `brainstorm` | Goal: outcome, success_signal, actors, requirements with `acceptance:`, non-goals (lane in frontmatter) | skill reference + hand-edited markdown |
+| `to-plan` | Phases and Verification: approach, risks, tasks with `output:`/`check:`/`stop_if:`, `escalate_when:` on high-risk; every requirement traced to a check | skill reference + hand-edited markdown |
+| `work` | Log (append-only) | skill reference + hand-edited markdown |
+| `check` | Validation (append-only): proofs, `requirements:` coverage, `rollback_point:` | skill reference + nested proof sub-bullets |
+| `handoff` | Current State and Next Action, phase closure | skill reference + absorb line + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |
 | `git` | no plan sections | enrichment optional, never blocking |
 | `retro` | no plan sections, except an experiment-mode `docs/plans/active/harness-improvement-{slug}.md` | non-spine; logic `skills/workflow/retro/references/retro.md`, digest `skills/workflow/retro/scripts/session-digest.py`, guard mode `skills/workflow/retro/references/encoding-invariants.md`, experiment mode `skills/workflow/retro/references/harness-improvement.md`; never blocking on a missing binary |
