@@ -233,6 +233,8 @@ After final approval and closing handoff archive this plan, the authorized follo
 
 - 2026-10-13T09:39:40Z — p4-dry-run — decision — absorb: adr docs/decisions/0015-skill-owned-procedures-and-safe-retirement.md; independent full APPROVED closes migration with all phases done. Preserve all Log/Validation under owner append-only override. Filesystem move only, no staging/commit. Retarget ADR plan citation and refresh its implementation-verification status; rerun affected doc links/diff. Native redacted evidence and source/consumer recovery remain recorded above. Deferred incident publication awaits an approved immutable source identity. Future draft remains unmoved/inactive until actual completion commit B is approved; no fabricated baseline.
 
+- 2026-10-13T09:58:59Z — p4-dry-run — decision — owner authorized commit/push/PR delivery. Actual accepted migration completion source is da9fed6a09e34d20f1e586577cf936d74905b7bb; this is the real future baseline B, not an inferred dirty HEAD. Deferred retirement incident now has its immutable citation. Initial pre-commit replay exposed inherited Git-local environment in guard fixtures, rejected commit and changed caller metadata; all 645 source hashes remained intact, recorded branch/master refs and metadata were recovered. Invocation-scoped forwarding of existing real hooks with Git-local variables cleared passed every proof and committed migration; no guard was disabled and no global/permanent hook setting changed. Fixture-runner isolation remains an explicit uncovered follow-up in failures.md. Future plan remains inactive during this delivery.
+
 ## Validation
 
 - 2026-10-13T07:29:09Z — phase `p1-adr` — verdict: APPROVED — mode: gate
@@ -323,6 +325,6 @@ After final approval and closing handoff archive this plan, the authorized follo
 
 - active_phase: none
 - lifecycle_status: completed
-- blockers: none
-- open_items: none
-- exact_next_action: owner approves the reviewed migration completion commit on codex/pr133-plan-revision, providing the actual source SHA required before future baseline B and draft activation
+- blockers: none for accepted migration
+- open_items: tracked guard-fixture environment isolation follow-up; lean SDLC implementation not started
+- exact_next_action: activate the future draft by moving it to docs/plans/active/lean-sdlc-workflow.md, record actual baseline B da9fed6a09e34d20f1e586577cf936d74905b7bb, and start work full phase f1-contract

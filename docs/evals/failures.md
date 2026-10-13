@@ -123,6 +123,22 @@ Historical incident paths below identify the instruction set at the recorded sou
   this initiative's R10 place under `surfaces_avoided`, so it is recorded
   here rather than fixed.
 
+### 2026-10-13 — original equality alone was mistaken for interrupted retirement
+
+- class: `BAD_OUTPUT`
+- rationale: independent migration check reproduced edited local bytes equal to the saved original but different from recorded projection; equality alone incorrectly authorized removing original recovery and ownership. The initial finding and REQUEST_CHANGES remain in the archived migration Validation.
+- surface: `cli/src/installer/retirement.rs`, restoration eligibility and retry cleanup.
+- source: `da9fed6a09e34d20f1e586577cf936d74905b7bb`, `docs/plans/completed/playbooks-to-skills.md`, Validation entry 2026-10-13T08:36:32Z; `cli/src/installer/retirement_tests.rs`, `m02_initial_original_equality_is_not_restoration_proof`.
+- coverage: covered by initial-equality update twice/uninstall regression plus invalid/stale intent, missing-base, later-edit and interrupted-restore tests. A valid recorded restoration intent is required; original equality alone never licenses cleanup.
+
+### 2026-10-13 — guard fixtures inherited the calling Git hook's repository environment
+
+- class: `BAD_OUTPUT`
+- rationale: ordinary guard runs passed, but pre-commit proof replay inherited Git-local environment. Fixture init/commits then changed the caller's HEAD/index/config instead of staying inside disposable repositories. Commit was rejected; no fixture history was pushed. Source hashes remained exact and metadata was recovered from recorded refs/reflogs.
+- surface: `scripts/test-guards.sh`, `gfix`, PP and staged-secret fixture setup.
+- source: `da9fed6a09e34d20f1e586577cf936d74905b7bb`, `scripts/test-guards.sh`, fixture repository setup; delivery reproduces during actual pre-commit replay of the archived migration's Validation proofs.
+- coverage: `uncovered`. This delivery forwards the existing real pre-commit/commit-msg/pre-push hooks through an invocation-scoped wrapper clearing `git rev-parse --local-env-vars`; all proofs still run. The tracked fixture runner still needs its own environment isolation and a nested-hook regression. No global or permanent hook configuration was changed.
+
 ## Candidates not yet seeded
 
 Observed and recorded elsewhere; not rows until a maintainer decides they belong here. Listed so
