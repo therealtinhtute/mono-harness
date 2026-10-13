@@ -1,14 +1,10 @@
 //! The canonical doc set bundled into the binary at compile time.
 //!
-//! The embedded set mirrors `cli/docs/embedded/embed.go` exactly:
-//! `AGENTS.md`, `WORKFLOW.md`, `playbooks/`, and — separately, as Go's second
-//! `embed.FS` — `templates/`. The Go sources that live in that directory
-//! (`embed.go`, `parity_test.go`) are deliberately not embedded: embedding the
-//! directory whole would ship them in the binary and put them in the manifest.
+//! Only the AGENTS entrypoint, WORKFLOW router and project template ship in
+//! the binary. Workflow procedures belong to independently installed skills.
 
 use include_dir::{include_dir, Dir};
 
-static PLAYBOOKS: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/docs/embedded/playbooks");
 static TEMPLATES: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/docs/embedded/templates");
 
 const AGENTS_MD: &[u8] = include_bytes!(concat!(
@@ -38,9 +34,7 @@ pub fn read_file(path: &str) -> Option<&'static [u8]> {
         "AGENTS.md" => Some(AGENTS_MD),
         "WORKFLOW.md" => Some(WORKFLOW_MD),
         _ => {
-            if let Some(rest) = path.strip_prefix("playbooks/") {
-                PLAYBOOKS.get_file(rest).map(|f| f.contents())
-            } else if let Some(rest) = path.strip_prefix("templates/") {
+            if let Some(rest) = path.strip_prefix("templates/") {
                 TEMPLATES.get_file(rest).map(|f| f.contents())
             } else {
                 None
@@ -49,28 +43,9 @@ pub fn read_file(path: &str) -> Option<&'static [u8]> {
     }
 }
 
-/// The canonical playbook file names (six stages plus the `work-full`,
-/// `check-durable`, `check-review`, `check-validation`, `brainstorm-grill`, and
-/// `brainstorm-lock` companions), sorted.
-pub fn playbook_names() -> Vec<String> {
-    let mut names: Vec<String> = PLAYBOOKS.files().map(|f| file_name(f.path())).collect();
-    names.sort();
-    names
-}
-
-/// How many playbook files are embedded.
-pub fn playbook_count() -> usize {
-    PLAYBOOKS.files().count()
-}
-
-/// Every embedded path in the managed set, sorted — the same list Go's
-/// `BuildManifest` walks out of `FS`. `templates/` is excluded: it is the
-/// separate embed, never walked into the manifest.
+/// Managed entrypoint and router paths, sorted. Templates are scaffold-only.
 pub fn managed_paths() -> Vec<String> {
     let mut paths = vec!["AGENTS.md".to_string(), "WORKFLOW.md".to_string()];
-    for name in playbook_names() {
-        paths.push(format!("playbooks/{name}"));
-    }
     paths.sort();
     paths
 }
@@ -121,8 +96,15 @@ mod tests {
     }
 
     #[test]
-    fn playbook_count_is_twelve() {
-        assert_eq!(playbook_count(), 12);
+    fn procedures_are_not_distributed_by_the_binary() {
+        assert_eq!(managed_paths(), ["AGENTS.md", "WORKFLOW.md"]);
+        assert!(read_file("playbooks/work.md").is_none());
+        assert!(!Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("docs/embedded/playbooks")
+            .exists());
+        assert!(!Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../docs/playbooks")
+            .exists());
     }
 
     #[test]
@@ -183,7 +165,7 @@ mod tests {
         forbidden: &'static [&'static str],
     }
 
-    /// Strings that must never reappear in any embedded playbook: the retired
+    /// Strings that must never reappear in any skill-owned procedure: the retired
     /// lifecycle verbs and the pre-v0.15 state-mirroring vocabulary.
     const RETIRED: &[&str] = &[
         ".kit/planning",
@@ -203,7 +185,7 @@ mod tests {
         "CHECK report",
         // v0.15 slim (R1/R6): every lifecycle verb is deleted from source, and
         // the playbooks are markdown-first with no index-sync block. These
-        // strings must never reappear in any embedded playbook.
+        // strings must never reappear in any skill-owned procedure.
         "zharness preflight",
         "zharness run create",
         "zharness trace add",
@@ -240,10 +222,10 @@ mod tests {
         let contracts = [
             PlaybookContract {
                 name: "brainstorm locks honest bootstrap state",
-                path: "playbooks/brainstorm.md",
+                path: "brainstorm/references/brainstorm.md",
                 required: &[
-                    "read `docs/playbooks/brainstorm-grill.md` now",
-                    "read `docs/playbooks/brainstorm-lock.md` and `docs/playbooks/brainstorm-grill.md` now",
+                    "read [brainstorm-grill.md](brainstorm-grill.md) now",
+                    "read [brainstorm-lock.md](brainstorm-lock.md) and [brainstorm-grill.md](brainstorm-grill.md) now",
                     "## Goal",
                     "explore creates no plans, reports, changesets, or markdown artifacts",
                     "`tiny` → stop and route to `work bounded`",
@@ -259,9 +241,9 @@ mod tests {
             },
             PlaybookContract {
                 name: "brainstorm-lock writes the plan skeleton",
-                path: "playbooks/brainstorm-lock.md",
+                path: "brainstorm/references/brainstorm-lock.md",
                 required: &[
-                    "Loaded by `docs/playbooks/brainstorm.md` for `lock` and `refine`",
+                    "Loaded by [brainstorm.md](brainstorm.md) for `lock` and `refine`",
                     "## Phases and Verification",
                     "## Log",
                     "## Validation",
@@ -288,9 +270,9 @@ mod tests {
             },
             PlaybookContract {
                 name: "brainstorm-grill grills in rounds",
-                path: "playbooks/brainstorm-grill.md",
+                path: "brainstorm/references/brainstorm-grill.md",
                 required: &[
-                    "Loaded by `docs/playbooks/brainstorm.md` for `grill` and `raw`",
+                    "Loaded by [brainstorm.md](brainstorm.md) for `grill` and `raw`",
                     "Grill until the **Done** condition below holds",
                     "**Frontier**",
                     "**`raw`** — at most 2 rounds",
@@ -306,7 +288,7 @@ mod tests {
             },
             PlaybookContract {
                 name: "to-plan defines phases as markdown truth",
-                path: "playbooks/to-plan.md",
+                path: "to-plan/references/to-plan.md",
                 required: &[
                     "## Phases and Verification",
                     "- approach:",
@@ -328,9 +310,9 @@ mod tests {
             },
             PlaybookContract {
                 name: "work routes full mode to its companion",
-                path: "playbooks/work.md",
+                path: "work/references/work.md",
                 required: &[
-                    "read `docs/playbooks/work-full.md` now",
+                    "read [work-full.md](work-full.md) now",
                     "print the resolved mode as your first output line",
                     "bounded/simple mode creates no plans, reports, changesets, or markdown artifacts",
                 ],
@@ -338,7 +320,7 @@ mod tests {
             },
             PlaybookContract {
                 name: "work appends durable markdown log entries",
-                path: "playbooks/work-full.md",
+                path: "work/references/work-full.md",
                 required: &[
                     "## Log",
                     "## Current State and Next Action",
@@ -354,7 +336,7 @@ mod tests {
             },
             PlaybookContract {
                 name: "check preserves review intent and records evidence",
-                path: "playbooks/check.md",
+                path: "check/references/check.md",
                 required: &[
                     "## Validation",
                     "Invocation intent wins",
@@ -371,8 +353,8 @@ mod tests {
                     "`full` includes the gate and adds the complete Security, Performance, Architecture, and Code Quality review",
                     "`gate` does not perform that complete manual review",
                     "depth: quick | standard | deep",
-                    "read `docs/playbooks/check-durable.md` now",
-                    "read `docs/playbooks/check-review.md` now",
+                    "read [check-durable.md](check-durable.md) now",
+                    "read [check-review.md](check-review.md) now",
                 ],
                 forbidden: &[
                     "## Progress",
@@ -386,10 +368,10 @@ mod tests {
             },
             PlaybookContract {
                 name: "check-durable owns preflight, plan state, and durable steps",
-                path: "playbooks/check-durable.md",
+                path: "check/references/check-durable.md",
                 required: &[
                     "## Validation",
-                    "Loaded by `docs/playbooks/check.md` step 2",
+                    "Loaded by [check.md](check.md) step 2",
                     "count every non-empty markdown plan under `docs/plans/active/` before matching the requested initiative",
                     "Require exactly one active plan in total",
                     "stop even when only one matches the request",
@@ -399,7 +381,7 @@ mod tests {
                     "stop before checks or writes",
                     "set the phase status and Current State lifecycle status to `checked`",
                     "keep the phase and Current State lifecycle status `in-progress`",
-                    "read `docs/playbooks/check-validation.md`",
+                    "read [check-validation.md](check-validation.md)",
                     "The repository's pre-commit hook is the sole proof guarantee",
                     "REQUEST_CHANGES entries may cite deliberately failing commands",
                     "`## Log` is the sole task execution-status source",
@@ -420,9 +402,9 @@ mod tests {
             },
             PlaybookContract {
                 name: "check-review keeps the two review axes apart",
-                path: "playbooks/check-review.md",
+                path: "check/references/check-review.md",
                 required: &[
-                    "Loaded by `docs/playbooks/check.md` step 5",
+                    "Loaded by [check.md](check.md) step 5",
                     "**Two axes, kept apart**",
                     "**Spec axis**",
                     "**Standards axis**",
@@ -440,7 +422,7 @@ mod tests {
             },
             PlaybookContract {
                 name: "check-validation defines guard-visible evidence",
-                path: "playbooks/check-validation.md",
+                path: "check/references/check-validation.md",
                 required: &[
                     "Every Validation entry must include timestamp, stable phase slug, exact command/result and concise output",
                     "so the commit-time guard can find them",
@@ -465,7 +447,7 @@ mod tests {
             },
             PlaybookContract {
                 name: "handoff closes phases before initiatives",
-                path: "playbooks/handoff.md",
+                path: "handoff/references/handoff.md",
                 required: &[
                     "## Current State and Next Action",
                     "Close every cleanly checked phase",
@@ -491,7 +473,7 @@ mod tests {
             },
             PlaybookContract {
                 name: "watzup recaps without writing",
-                path: "playbooks/watzup.md",
+                path: "watzup/references/watzup.md",
                 required: &[
                     "Select the active plan by name",
                     "exactly one non-empty file may exist under `docs/plans/active/*.md`",
@@ -506,9 +488,13 @@ mod tests {
         ];
 
         for c in &contracts {
-            let data =
-                read_file(c.path).unwrap_or_else(|| panic!("read_file({}): not embedded", c.path));
-            let content = String::from_utf8_lossy(data);
+            let data = fs::read_to_string(
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../skills/workflow")
+                    .join(c.path),
+            )
+            .unwrap_or_else(|e| panic!("skill reference {}: {e}", c.path));
+            let content = data;
             for phrase in c.required {
                 assert!(
                     content.contains(phrase),

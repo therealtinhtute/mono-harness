@@ -1,6 +1,6 @@
 # Playbook: brainstorm (lock and refine)
 
-Loaded by `docs/playbooks/brainstorm.md` for `lock` and `refine`, with `brainstorm-grill.md`.
+Loaded by [brainstorm.md](brainstorm.md) for `lock` and `refine`, with `brainstorm-grill.md`.
 
 ## Plan Skeleton
 

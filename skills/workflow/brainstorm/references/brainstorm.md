@@ -14,7 +14,7 @@ A leading subcommand sets the mode; else infer it (grill/interview/stress-test â
 | `lock` | Create the initiative | One new active plan |
 | `refine` | Change an active plan's scope | Same plan, Goal only |
 
-`grill`/`raw`: read `docs/playbooks/brainstorm-grill.md` now. `lock`/`refine`: read `docs/playbooks/brainstorm-lock.md` and `docs/playbooks/brainstorm-grill.md` now.
+`grill`/`raw`: read [brainstorm-grill.md](brainstorm-grill.md) now. `lock`/`refine`: read [brainstorm-lock.md](brainstorm-lock.md) and [brainstorm-grill.md](brainstorm-grill.md) now.
 
 **Zero-write rule:** explore creates no plans, reports, changesets, or markdown artifacts; neither do `raw` and an unapproved `grill`. Switch modes explicitly before writing.
 

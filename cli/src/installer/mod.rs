@@ -1,7 +1,7 @@
 //! The managed-set verbs: install, update, uninstall.
 //!
 //! This module owns exactly the managed doc set — `docs/WORKFLOW.md`,
-//! `docs/playbooks/*.md`, the marked AGENTS block, the `docs/PROJECT.md`
+//! the marked AGENTS block, the `docs/PROJECT.md`
 //! scaffold, `.zharness` bookkeeping and the `.gitignore` entries. Nothing
 //! else in a repository is created, modified, or deleted.
 
@@ -9,8 +9,12 @@ pub mod check;
 pub mod migrate;
 pub mod ownership;
 pub mod registry;
+mod retirement;
 pub mod uninstall;
 pub mod update;
+
+#[cfg(test)]
+mod retirement_tests;
 
 use std::collections::HashMap;
 use std::fs;
@@ -65,29 +69,20 @@ pub struct Target {
     pub once: bool,
 }
 
-/// The managed set in write order: WORKFLOW.md, the identity template, then
-/// every playbook sorted by name.
+/// The active managed set; retired procedures are recovery inventory only.
 pub fn all_targets() -> Vec<Target> {
-    let mut targets = vec![
+    vec![
         Target {
-            src: "WORKFLOW.md".to_string(),
-            dst: WORKFLOW_TARGET.to_string(),
+            src: "WORKFLOW.md".into(),
+            dst: WORKFLOW_TARGET.into(),
             once: false,
         },
         Target {
-            src: PROJECT_TEMPLATE.to_string(),
-            dst: PROJECT_TARGET.to_string(),
+            src: PROJECT_TEMPLATE.into(),
+            dst: PROJECT_TARGET.into(),
             once: true,
         },
-    ];
-    for name in embedded::playbook_names() {
-        targets.push(Target {
-            src: format!("playbooks/{name}"),
-            dst: format!("{PLAYBOOK_DIR_TGT}/{name}"),
-            once: false,
-        });
-    }
-    targets
+    ]
 }
 
 /// The upstream bytes for a target.
@@ -173,7 +168,18 @@ pub fn load_base(root: &Path) -> Result<HashMap<String, String>, String> {
 }
 
 pub fn save_base(root: &Path, ver: &str, files: &HashMap<String, String>) -> Result<(), String> {
+    save_base_preserving_blobs(root, ver, files)?;
     let _ = fs::remove_dir_all(root.join(LEGACY_UPSTREAM_DIR));
+    Ok(())
+}
+
+/// Retirement checkpoints must not purge the prior blob evidence before a
+/// disposition and its manifest write have succeeded.
+fn save_base_preserving_blobs(
+    root: &Path,
+    ver: &str,
+    files: &HashMap<String, String>,
+) -> Result<(), String> {
     let mut keys: Vec<&String> = files.keys().collect();
     keys.sort();
     let entries: Vec<ManifestEntry> = keys
@@ -466,16 +472,17 @@ pub fn install(root: &Path, version: &str, out: &mut String) -> Result<(), Strin
     // (ADR 0008); seeding runs only when `prev` proves a prior install. The
     // record is persisted before the first write so an interrupted install
     // cannot leave generated files on disk with no record of who made them.
-    let mut own = ownership::load_ownership_for(root, &targets, &prev);
+    let mut own = retirement::load_ownership(root, &prev)?;
     own.decide_all(root, &targets);
     own.save(root)?;
+    retirement::retire(root, version, &mut files, &mut own, out)?;
 
     for t in &targets {
         let up = src_bytes(t)?;
         ownership::capture_if_preexisting(root, &mut own, &t.dst)?;
         let dst_p = root.join(&t.dst);
         if !t.once {
-            // Pure upstream mirror (playbooks, WORKFLOW.md): always overwrite.
+            // Pure upstream mirror (WORKFLOW.md): always overwrite.
             write_file_atomic(&dst_p, &up)?;
             out.push_str(&format!("installed  {}\n", t.dst));
             files.insert(t.dst.clone(), sha(&up));
@@ -608,8 +615,6 @@ mod tests {
 
         for w in [
             WORKFLOW_TARGET,
-            "docs/playbooks/work.md",
-            "docs/playbooks/watzup.md",
             PROJECT_TARGET,
             AGENTS_TARGET,
             GITIGNORE_TARGET,
@@ -677,7 +682,7 @@ mod tests {
         assert_eq!(count, 1, "ignore entries duplicated on re-install");
     }
 
-    /// A fresh-overwrite target (playbook or WORKFLOW.md) that already exists
+    /// A fresh-overwrite target (WORKFLOW.md) that already exists
     /// with drifted content — e.g. hand-edited before zharness ever ran — is
     /// overwritten with upstream bytes unconditionally. Only the write-once
     /// docs/PROJECT.md is left as found.
@@ -704,10 +709,10 @@ mod tests {
             "pre-existing hand-edited WORKFLOW.md\n",
             "WORKFLOW.md drift left untouched; fresh-overwrite target must always install upstream bytes"
         );
-        assert_ne!(
+        assert_eq!(
             read_file(root, "docs/playbooks/work.md"),
             "pre-existing hand-edited playbook\n",
-            "playbook drift left untouched; fresh-overwrite target must always install upstream bytes"
+            "retired unknown consumer procedure must stay untouched"
         );
         assert!(
             !out.contains("drifted"),

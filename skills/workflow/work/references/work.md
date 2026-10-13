@@ -11,7 +11,7 @@
 
 **Zero-write rule:** bounded/simple mode creates no plans, reports, changesets, or markdown artifacts and never edits an active plan. Evidence: the diff plus captured proof in the response.
 
-IF the mode is `full` → read `docs/playbooks/work-full.md` now and follow it.
+IF the mode is `full` → read [work-full.md](work-full.md) now and follow it.
 
 ## Memory
 

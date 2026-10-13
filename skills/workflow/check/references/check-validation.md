@@ -1,6 +1,6 @@
 # Playbook: check (Validation evidence)
 
-Loaded by `docs/playbooks/check-durable.md` step 8.
+Loaded by [check-durable.md](check-durable.md) step 8.
 
 ## Validation Entry Format
 

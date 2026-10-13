@@ -10,24 +10,27 @@
 use std::fs;
 use std::path::Path;
 
-use super::ownership::{self, Ownership, KIND_FILE, ORIGIN_CREATED, ORIGIN_PREEXISTING};
+use super::ownership::{
+    self, Ownership, KIND_FILE, KIND_GITIGNORE, ORIGIN_CREATED, ORIGIN_PREEXISTING,
+};
 use super::{
-    agents_span, all_targets, load_base, read_original, registry, remove_dir_if_empty, sha,
-    write_file_atomic, AGENTS_CREATED_HEADER, AGENTS_TARGET, BASE_DIR, GITIGNORE_TARGET,
-    LEGACY_CONFLICTS_FILE, LEGACY_STASH_DIR, LEGACY_UPSTREAM_DIR, MANIFEST_FILE, ORIGINAL_DIR,
-    ZHRNESS_DIR,
+    agents_span, all_targets, load_base, registry, remove_dir_if_empty, sha, write_file_atomic,
+    AGENTS_CREATED_HEADER, AGENTS_TARGET, BASE_DIR, GITIGNORE_TARGET, LEGACY_CONFLICTS_FILE,
+    LEGACY_STASH_DIR, LEGACY_UPSTREAM_DIR, MANIFEST_FILE, ORIGINAL_DIR, ZHRNESS_DIR,
 };
 
 pub fn uninstall(root: &Path, out: &mut String) -> Result<(), String> {
     let targets = all_targets();
-    let base_files = load_base(root)?;
-    let own = ownership::load_ownership_for(root, &targets, &base_files);
+    let mut base_files = load_base(root)?;
+    let mut own = super::retirement::load_ownership(root, &base_files)?;
+    super::retirement::retire(root, "uninstall", &mut base_files, &mut own, out)?;
 
     let mut removed = 0usize;
     let mut kept: Vec<String> = Vec::new();
+    let mut resolved = Vec::new();
     for t in &targets {
         let base = base_files.get(&t.dst).map(String::as_str);
-        remove_managed_file(
+        let succeeded = remove_managed_file(
             root,
             &t.dst,
             base,
@@ -35,33 +38,85 @@ pub fn uninstall(root: &Path, out: &mut String) -> Result<(), String> {
             &mut removed,
             &mut kept,
             out,
-        );
+        )?;
+        if succeeded {
+            resolved.push(t.dst.clone());
+        }
     }
-    remove_agents_block(root, &own, &mut removed, &mut kept, out);
+    remove_agents_block(root, &own, &mut removed, &mut kept, out)?;
 
-    let gi_now = fs::read(root.join(GITIGNORE_TARGET)).unwrap_or_default();
+    let gi_now = match fs::read(root.join(GITIGNORE_TARGET)) {
+        Ok(b) => b,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        Err(e) => return Err(format!("read {GITIGNORE_TARGET}: {e}")),
+    };
     let cleaned = drop_lines(&gi_now, &own.owned_gitignore_lines());
     if cleaned != gi_now {
         let gi_origin = own.get(KIND_FILE, GITIGNORE_TARGET);
         if String::from_utf8_lossy(&cleaned).trim().is_empty() && gi_origin == ORIGIN_CREATED {
-            let _ = fs::remove_file(root.join(GITIGNORE_TARGET));
+            fs::remove_file(root.join(GITIGNORE_TARGET))
+                .map_err(|e| format!("remove {GITIGNORE_TARGET}: {e}"))?;
             out.push_str(&format!("removed   {GITIGNORE_TARGET}\n"));
             removed += 1;
         } else {
-            let _ = write_file_atomic(&root.join(GITIGNORE_TARGET), &cleaned);
+            write_file_atomic(&root.join(GITIGNORE_TARGET), &cleaned)?;
             out.push_str(&format!(
                 "restored  {GITIGNORE_TARGET} (zharness entries removed)\n"
             ));
         }
     }
 
+    // Retired and unrelated recovery is not installer garbage. Clear only
+    // resolved active keys/backups, then remove directories only when empty.
+    if !kept.iter().any(|line| line.starts_with(AGENTS_TARGET)) {
+        resolved.push(AGENTS_TARGET.to_owned());
+    }
+    resolved.push(GITIGNORE_TARGET.to_owned());
+    for rel in &resolved {
+        own.remove(KIND_FILE, rel);
+        for mapping in [super::safe_path(rel), super::legacy_safe_path(rel)] {
+            let p = root.join(ORIGINAL_DIR).join(format!("{mapping}.orig"));
+            if !super::retirement::symlink_parent(root, &p) {
+                match fs::remove_file(&p) {
+                    Ok(()) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(format!("remove original {}: {e}", p.display())),
+                }
+            }
+        }
+    }
+    for line in super::gitignore_wants() {
+        own.remove(KIND_GITIGNORE, line);
+    }
+    for t in &targets {
+        base_files.remove(&t.dst);
+    }
+    base_files.remove(AGENTS_TARGET);
+    if base_files.is_empty() {
+        match fs::remove_file(root.join(MANIFEST_FILE)) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(format!("remove manifest: {e}")),
+        }
+    } else {
+        super::save_base_preserving_blobs(root, "uninstall", &base_files)?;
+    }
+    if own.is_empty() {
+        match fs::remove_file(root.join(ownership::OWNERSHIP_FILE)) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(format!("remove ownership: {e}")),
+        }
+    } else {
+        own.save(root)?;
+    }
     let _ = fs::remove_dir_all(root.join(LEGACY_STASH_DIR));
     let _ = fs::remove_file(root.join(LEGACY_CONFLICTS_FILE));
-    let _ = fs::remove_file(root.join(MANIFEST_FILE));
-    let _ = fs::remove_file(root.join(ownership::OWNERSHIP_FILE));
     let _ = fs::remove_dir_all(root.join(LEGACY_UPSTREAM_DIR));
-    let _ = fs::remove_dir_all(root.join(ORIGINAL_DIR));
-    let _ = fs::remove_dir_all(root.join(BASE_DIR));
+    if !super::retirement::symlink_parent(root, &root.join(ORIGINAL_DIR).join("probe")) {
+        remove_dir_if_empty(&root.join(ORIGINAL_DIR));
+    }
+    remove_dir_if_empty(&root.join(BASE_DIR));
     remove_dir_if_empty(&root.join(ZHRNESS_DIR));
     registry::unregister(root, out);
 
@@ -119,20 +174,31 @@ fn remove_managed_file(
     removed: &mut usize,
     kept: &mut Vec<String>,
     out: &mut String,
-) {
+) -> Result<bool, String> {
     let dst_p = root.join(rel);
     let local = match fs::read(&dst_p) {
         Ok(b) => b,
-        Err(_) => return,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            if super::find_original(root, rel).is_none() {
+                return Ok(true);
+            }
+            out.push_str(&format!(
+                "KEPT      {rel} (missing file; original recovery retained)\n"
+            ));
+            kept.push(format!("{rel} — missing file; original recovery retained"));
+            return Ok(false);
+        }
+        Err(e) => return Err(format!("read {rel}: {e}")),
     };
-    let orig = read_original(root, rel);
+    let orig = super::find_original(root, rel)
+        .map(|path| fs::read(&path).map_err(|e| format!("read original {}: {e}", path.display())))
+        .transpose()?;
     let keep = |reason: &str, kept: &mut Vec<String>, out: &mut String| {
         out.push_str(&format!("KEPT      {rel} ({reason})\n"));
         kept.push(format!("{rel} — {reason}"));
+        false
     };
-    match base {
-        // No recorded base at all: the file cannot be compared to anything, so
-        // it is not "locally modified" — it is unattributable. Say that.
+    let resolved = match base {
         None => keep(
             "no recorded base; provenance unknown, delete manually if intended",
             kept,
@@ -140,18 +206,19 @@ fn remove_managed_file(
         ),
         Some(base) if sha(&local) == base => match (origin.as_str(), orig.as_ref()) {
             (ORIGIN_PREEXISTING, Some(o)) => {
-                // Through the atomic writer: a symlink planted at the managed
-                // path must be replaced, never followed.
-                let _ = write_file_atomic(&dst_p, o);
+                write_file_atomic(&dst_p, o)?;
+                if fs::read(&dst_p).map_err(|e| format!("verify restored {rel}: {e}"))? != *o {
+                    return Err(format!("verify restored {rel}: bytes differ"));
+                }
                 out.push_str(&format!("restored  {rel} (pre-install original)\n"));
+                true
             }
             (ORIGIN_CREATED, _) => {
-                let _ = fs::remove_file(&dst_p);
+                fs::remove_file(&dst_p).map_err(|e| format!("remove {rel}: {e}"))?;
                 out.push_str(&format!("removed   {rel}\n"));
                 *removed += 1;
+                true
             }
-            // preexisting with a lost original, or no recorded origin at all:
-            // unknown provenance is never resolved by deleting.
             _ => keep("provenance unknown; delete manually if intended", kept, out),
         },
         Some(_) => match &orig {
@@ -159,13 +226,15 @@ fn remove_managed_file(
                 out.push_str(&format!(
                     "restored  {rel} (already at pre-install original)\n"
                 ));
+                true
             }
             _ => keep("locally modified; delete manually if intended", kept, out),
         },
-    }
+    };
     if let Some(dir) = dst_p.parent() {
         remove_dir_if_empty(dir);
     }
+    Ok(resolved)
 }
 
 fn remove_agents_block(
@@ -174,15 +243,16 @@ fn remove_agents_block(
     removed: &mut usize,
     kept: &mut Vec<String>,
     out: &mut String,
-) {
+) -> Result<(), String> {
     let ap = root.join(AGENTS_TARGET);
     let raw = match fs::read(&ap) {
         Ok(b) => b,
-        Err(_) => return,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(format!("read {AGENTS_TARGET}: {e}")),
     };
     let content = String::from_utf8_lossy(&raw).into_owned();
     let Some((i, ej)) = agents_span(&content) else {
-        return;
+        return Ok(());
     };
     let mut end = ej;
     if end < content.len() && content.as_bytes()[end] == b'\n' {
@@ -198,20 +268,20 @@ fn remove_agents_block(
     let generated_only = origin == ORIGIN_CREATED && remainder == AGENTS_CREATED_HEADER;
 
     if remainder.is_empty() {
-        let _ = fs::remove_file(&ap);
+        fs::remove_file(&ap).map_err(|e| format!("remove {AGENTS_TARGET}: {e}"))?;
         out.push_str(&format!(
             "removed   {AGENTS_TARGET} (nothing outside the block)\n"
         ));
         *removed += 1;
     } else if generated_only {
-        let _ = fs::remove_file(&ap);
+        fs::remove_file(&ap).map_err(|e| format!("remove {AGENTS_TARGET}: {e}"))?;
         out.push_str(&format!(
             "removed   {AGENTS_TARGET} (created by install; only generated boilerplate outside the block)\n"
         ));
         *removed += 1;
     } else {
         let body = format!("{}\n", outside.trim_end_matches('\n'));
-        let _ = write_file_atomic(&ap, body.as_bytes());
+        write_file_atomic(&ap, body.as_bytes())?;
         out.push_str(&format!(
             "unmarked  {AGENTS_TARGET} (block removed, surrounding text preserved)\n"
         ));
@@ -222,6 +292,7 @@ fn remove_agents_block(
     if let Some(dir) = ap.parent() {
         remove_dir_if_empty(dir);
     }
+    Ok(())
 }
 
 #[cfg(test)]
