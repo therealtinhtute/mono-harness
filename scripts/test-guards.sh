@@ -755,6 +755,7 @@ zharness_guard_historical_floor_hashes "$ftmp/repo" docs/plans/active/p.md "$ftm
 	ok "FLOOR unresolvable floor appends nothing" ||
 	bad "FLOOR unresolvable floor appended $(wc -l < "$ftmp/hashes2") hash(es)"
 
+ftmp2=''   # set only when the range exists; the cleanup below must not trip set -u
 if git rev-parse --verify --quiet fe814b4a^{commit} >/dev/null 2>&1 &&
 	git rev-parse --verify --quiet 4cd86cf^{commit} >/dev/null 2>&1; then
 	ftmp2=$(mktemp -d)
