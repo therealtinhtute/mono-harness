@@ -1,14 +1,14 @@
 # Architecture
 
-<!-- zharness:pin 2d4bc5a2015113cd85c3134b04bffc18f94887d1 -->
+<!-- Historical architecture baseline: 2d4bc5a2015113cd85c3134b04bffc18f94887d1; the skill-owned migration below is an uncommitted candidate, not that revision. -->
 
-How the harness actually works as of v0.24 (a Rust binary with the three-verb surface from the v0.15 "slim" cut), and why it is shaped this way. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
+The Rust three-verb architecture with the ADR 0015 skill-owned migration candidate. Installer and consumer verification status lives in the active plan; this document makes no release claim. Decisions that are expensive to reverse have their own records under `docs/decisions/`; this document describes the running system.
 
 ## The one idea
 
 Committed markdown is the truth. The binary is a scaffolding tool, not a runtime.
 
-`zharness` owns exactly three verbs — install, update, uninstall — that manage a doc set inside a consumer git repository. The whole lifecycle (brainstorm → to-plan → work → check → handoff) runs from the committed markdown, repo scripts, and a pre-commit hook, with the binary absent from PATH. Delete the binary and every derived artifact, and the same lifecycle still executes, because the only irreplaceable bytes are the ones git is already tracking.
+`zharness` owns exactly three verbs — install, update, uninstall — that manage a doc set inside a consumer git repository. The whole lifecycle (brainstorm → to-plan → work → check → handoff) runs from independently installed skill references, committed repository data, repo scripts, and a pre-commit hook, with the binary absent from PATH. Delete the binary and every derived artifact, and the same lifecycle still executes, provided the host still exposes the six workflow skills and their references.
 
 ## The three verbs
 
@@ -17,15 +17,15 @@ cli/src/main.rs                  one Rust binary (clap), three verbs
         |
         v
 install                          scaffolds the managed set, records a base, reports brownfield read-only
-update                           fresh-overwrites playbooks/WORKFLOW.md and the AGENTS.md block (hash-guarded); writes PROJECT.md only when absent; --check reports drift read-only
-uninstall                        removes the managed set; consumer bytes are never destroyed
+update                           refreshes WORKFLOW and the AGENTS block (hash-guarded); safely retires recorded legacy procedures; scaffolds absent PROJECT; --check is read-only
+uninstall                        removes proven managed copies, restores proven originals, and retains edited/unknown bytes and unresolved recovery
 ```
 
-`all_targets` (`cli/src/installer/mod.rs`) is the managed set: `docs/WORKFLOW.md`, `docs/PROJECT.md` (scaffolded from the identity template), and the twelve playbooks (six stages plus six companions: `work-full`, `check-durable`, `check-review`, `check-validation`, `brainstorm-grill`, and `brainstorm-lock`). `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
+`all_targets` (`cli/src/installer/mod.rs`) is the managed set: `docs/WORKFLOW.md` and `docs/PROJECT.md` (scaffolded from the identity template). A separate fixed legacy inventory supports retirement and recovery without embedding the old procedures. `AGENTS.md` is handled separately and surgically — only the marked `ZHARNESS` block inside it is swapped; consumer prose around it is untouched.
 
 State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries (the bytes zharness last wrote) and the ownership ledger `ownership.tsv`. Update refuses before any write when the on-disk AGENTS block no longer matches its recorded hash, printing the diff; `--force` replaces it (`cli/src/installer/update.rs`, ADR 0011). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
 
-The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`docs/playbooks/brainstorm-lock.md` step 6).
+The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`skills/workflow/brainstorm/references/brainstorm-lock.md` step 6).
 
 ## The fail-closed guards
 
@@ -44,7 +44,7 @@ Tool allow/deny is the host runtime’s job, not zharness: READ files by default
 
 ## Embedded doc set and projection
 
-The binary carries two embedded filesystems (`cli/docs/embedded/`): the managed set (`AGENTS.md`, `WORKFLOW.md`, `playbooks/`) and, separately, `templates/` — emitted on demand, never projected. `docs/playbooks/*.md` is a byte-identical projection of the embedded source: edit `cli/docs/embedded/`, never the projection.
+The binary carries `AGENTS.md`, `WORKFLOW.md` and the PROJECT template from `cli/docs/embedded/`. Only `docs/WORKFLOW.md` is a byte-identical projection checked by projection parity. The twelve procedures live in the six owning `skills/workflow/<stage>/references/` directories and are installed independently; `zharness` neither embeds nor installs them. WORKFLOW resolves the selected skill through host metadata, companions from that installed skill and data from the consumer root. Missing dependencies stop execution rather than invoking retained old procedures.
 
 ## Markdown-only lifecycle state
 
@@ -54,8 +54,9 @@ The binary carries two embedded filesystems (`cli/docs/embedded/`): the managed 
 | `docs/PROJECT.md` | authoritative — identity, answered at the brainstorm lock |
 | `docs/memory/*.md` | memory as files; agents grep directly (`docs/memory/{id}.md`) |
 | `docs/decisions/`, `docs/research/` | authoritative records |
-| `docs/playbooks/`, `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/` instead |
-| `.zharness/` | installer bookkeeping (base manifest + blobs) and `cache/` per-machine scratch; gitignored |
+| `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/WORKFLOW.md` instead |
+| `skills/workflow/<stage>/references/` | authored procedure source; independently installed into the host |
+| `.zharness/` | installer bookkeeping (active base manifest, ownership ledger, original payloads and interrupted-restoration intent) and `cache/` per-machine scratch; gitignored |
 
 Task execution status lives only in append-only `## Log`; task definitions carry no status fields. Bookkeeping is hand-appended — the binary writes no plan rows.
 

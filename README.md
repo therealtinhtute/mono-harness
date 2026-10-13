@@ -17,7 +17,7 @@ Copy the block into the consumer repository chat when you want the agent to
 install, refresh, or work with zharness.
 
 ```text
-Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. If the repo is already initialized, playbooks are outdated, or zharness install reports drifted files, run zharness update to refresh the latest playbooks (fresh-overwrite; PROJECT.md is never overwritten, and an edited AGENTS.md block makes update refuse with a diff). Plans live only in docs/plans/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.
+Work in this git repository. Read https://github.com/therealtinhtute/mono-harness/blob/master/README.md and, once they exist, this repo's AGENTS.md and docs/WORKFLOW.md. If zharness is not on PATH or outdated, install/upgrade it with scripts/install-zharness.sh. If this repo has no docs/WORKFLOW.md, run zharness install. Before upgrading, independently install the six workflow skills (brainstorm, to-plan, work, check, handoff, watzup) using the skills instructions below. If a required skill or reference is missing, report the dependency and stop workflow execution. If the repo is initialized or zharness install reports drifted files, run zharness update to refresh WORKFLOW and conservatively retire recorded legacy procedures (edited/unknown files and recovery data are retained; PROJECT.md is never overwritten, and an edited AGENTS.md block makes update refuse with a diff). Plans live only in docs/plans/ — multi-session or complex work uses exactly one file at docs/plans/active/{slug}.md, moved to docs/plans/completed/ upon verified handoff. Small changes need no plan. zharness only manages the doc set (install/update/uninstall) — it does not run the lifecycle. Missing AGENTS.md: zharness install, do not invent the file. Claude Code reads CLAUDE.md, not AGENTS.md; if CLAUDE.md is missing, the consumer writes a thin file containing the line @AGENTS.md.
 ```
 
 ## What it solves
@@ -52,10 +52,11 @@ and bounded work.
 - **Invariants enforced, not assumed.** Where a rule can be checked it is
   checked — the pre-commit and CI plan guards fail on violation rather than
   letting a broken state travel silently. What they cannot check, they say so
-  in `docs/playbooks/check.md` instead of implying coverage.
+  in `skills/workflow/check/references/check-durable.md` instead of implying coverage.
 - **Portable across agents.** The spine skills are thin triggers; the
-  operating logic sits in playbooks the CLI scaffolds into the repository.
-  Any agent that reads a file and runs a CLI follows the same protocol.
+  operating logic sits in independently installed skill references.
+  Skill-capable hosts resolve each stage through their skill metadata; the CLI
+  installs the repository router, not the procedures.
 - **Diagnostics that name the next action.** A finding states the violating
   item, the rule it breaks, its authority, and what to do — never a bare
   validation failure.
@@ -109,7 +110,7 @@ A typo does not need a plan. A migration spanning sessions does.
 The managed set is:
 
 - a compact `AGENTS.md` entrypoint (marked `ZHARNESS` block only);
-- `docs/WORKFLOW.md`, the six stage playbooks, and their six companions;
+- `docs/WORKFLOW.md`, the stage router;
 - a `docs/PROJECT.md` identity scaffold;
 - `.zharness/base/` for update tracking (a sha256 manifest and the ownership ledger).
 
@@ -145,8 +146,11 @@ zharness update --check [--all]
 zharness uninstall
 ```
 
-`docs/WORKFLOW.md` and the stage playbooks are pure upstream mirrors: update
-always overwrites them with the latest bytes. `docs/PROJECT.md` is written only
+`docs/WORKFLOW.md` is a pure upstream mirror: update always overwrites it
+with the latest bytes. Legacy procedures are retired only using recorded hashes
+and ownership. Matching installer-created copies are removed; matching copies
+with proven pre-install originals are restored. Edited or uncertain files and
+their recovery data are retained with notices. See the [migration guide](docs/workflow-harness/skill-procedure-migration.md). `docs/PROJECT.md` is written only
 when absent; after that it belongs to the project. The marked `AGENTS.md` block
 is replaced between its markers; if it was edited since zharness last wrote it,
 update prints the diff, writes nothing, and exits non-zero until you move the
@@ -157,7 +161,13 @@ with its `## Validation` bytes unchanged; any other heading set, or more than on
 active plan, is left alone with a `notice`. Uninstall
 removes managed files only; consumer-owned bytes are never deleted.
 
-## Optional skills
+## Workflow skills and optional extensions
+
+Install **brainstorm, to-plan, work, check, handoff and watzup** independently
+before upgrading to skill-owned procedures. Verify that the host exposes all six
+skills and can read their installed references. A missing dependency is unsupported
+for workflow execution; retained legacy files are not a fallback. Other skills
+are optional extensions.
 
 Skills are not part of `zharness install`. They live in this source repository,
 the stable release of the skills; the former `orkit-tui` incubator is archived
@@ -205,9 +215,9 @@ bash scripts/verify-doc-links.sh
 bash scripts/test-guards.sh
 ```
 
-This repository is the source of the binary, the embedded playbooks, and the
-skills. Edit playbooks in `cli/docs/embedded/playbooks/`, then copy to
-`docs/playbooks/`. Machine-wide Claude Code bootstrap is `setup/install.sh`;
+This repository is the source of the binary and skills. Edit workflow procedures
+in `skills/workflow/<stage>/references/`. Edit the managed router in
+`cli/docs/embedded/WORKFLOW.md`, then copy it to `docs/WORKFLOW.md`. Machine-wide Claude Code bootstrap is `setup/install.sh`;
 that is not how a consumer app repo receives zharness.
 
 ## Contributing and security

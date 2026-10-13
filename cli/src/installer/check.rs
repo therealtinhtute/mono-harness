@@ -137,7 +137,7 @@ mod tests {
     use std::path::Path;
 
     use super::super::registry::{canonical_root, registered};
-    use super::super::{all_targets, PLAYBOOK_DIR_TGT, WORKFLOW_TARGET};
+    use super::super::WORKFLOW_TARGET;
     use super::*;
     use crate::test_support::{
         install_ok, read_file, set_registry, temp_repo, tree_snapshot, write_file, IsolatedEnv,
@@ -150,13 +150,8 @@ mod tests {
         let root = repo.path();
         install_ok(root);
 
-        let stale = all_targets()
-            .into_iter()
-            .find(|t| t.dst.starts_with(PLAYBOOK_DIR_TGT))
-            .expect("the managed set has playbooks")
-            .dst;
-        write_file(root, &stale, "old playbook\n");
-        fs::remove_file(root.join(WORKFLOW_TARGET)).unwrap();
+        let stale = WORKFLOW_TARGET;
+        write_file(root, stale, "old workflow\n");
         write_file(
             root,
             AGENTS_TARGET,
@@ -172,7 +167,6 @@ mod tests {
         let joined = got.join("\n");
         for want in [
             format!("stale    {stale}"),
-            format!("missing  {WORKFLOW_TARGET}"),
             format!("stale    {AGENTS_TARGET} block"),
             format!("heading  {PROJECT_TARGET} lacks \"## Who is it for?\""),
         ] {
@@ -182,6 +176,10 @@ mod tests {
             !joined.contains("lacks \"## What is this project?\""),
             "present heading reported as missing:\n{joined}"
         );
+        fs::remove_file(root.join(WORKFLOW_TARGET)).unwrap();
+        assert!(check(root)
+            .unwrap()
+            .contains(&format!("missing  {WORKFLOW_TARGET}")));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-# zharness contract — v0.24
+# zharness contract — Rust CLI and skill-owned migration candidate
 
 ## What the binary is
 
@@ -15,9 +15,10 @@ The command list in this contract therefore mirrors exactly what
 
 The crate lives in `cli/` (`Cargo.toml`, `src/`, `tests/`). The managed doc
 set is embedded at compile time from `cli/docs/embedded/`: `AGENTS.md` and
-`WORKFLOW.md` through `include_bytes!`, `playbooks/` and `templates/`
-through `include_dir!`. `cli/tests/projection_parity.rs` is what keeps the
-embedded playbooks byte-identical to their projection under `docs/`.
+`WORKFLOW.md` through `include_bytes!`, and `templates/` through
+`include_dir!`. `cli/tests/projection_parity.rs` keeps the WORKFLOW router
+byte-identical to its projection under `docs/`. Procedures belong to the six
+independently installed workflow skills; the binary does not install skills.
 
 The version string is compile-time: `cli/src/cli.rs` reads `ZHARNESS_VERSION`
 through `option_env!` and falls back to `CARGO_PKG_VERSION`. The release
@@ -28,8 +29,8 @@ got from `-X main.version` at link time, by a different mechanism.
 
 | Verb | Behavior |
 |---|---|
-| `install` | Projects the managed doc set (WORKFLOW, playbooks, AGENTS block, PROJECT identity scaffold, ignore entries), records upstream hashes under `.zharness/base/`, and prints a deterministic read-only brownfield report. Idempotent; exits 0. |
-| `update` | Overwrites playbooks and `WORKFLOW.md`; writes `docs/PROJECT.md` only when absent; replaces the marked `AGENTS.md` block unless its sha256 differs from the one recorded in `.zharness/base/manifest.json`, in which case it prints the diff, writes nothing, and exits non-zero (`--force` replaces it). `--check [--all]` reports drift read-only and exits 1 on drift. Consumer files outside the managed set are never touched (ADR 0011). |
+| `install` | Projects the managed doc set (WORKFLOW, AGENTS block, PROJECT identity scaffold, ignore entries), records upstream hashes under `.zharness/base/`, and prints a deterministic read-only brownfield report. Idempotent; exits 0. |
+| `update` | Overwrites `WORKFLOW.md`; conservatively retires allowlisted legacy procedures using recorded hashes, ownership and saved originals (ADR 0015); writes `docs/PROJECT.md` only when absent; replaces the marked `AGENTS.md` block unless its sha256 differs from the one recorded in `.zharness/base/manifest.json`, in which case it prints the diff, writes nothing, and exits non-zero (`--force` replaces it). `--check [--all]` reports drift read-only and exits 1 on drift. Other consumer files are untouched; retained retired files stop being active targets (ADRs 0011/0015). |
 | `uninstall` | Removes managed files only. A file locally modified beyond both its base and upstream is left in place with a warning; consumer-owned bytes are never deleted (R12). |
 
 Shared flags: `--root <dir>` overrides the target repository (default: git toplevel of the working directory). The root command also registers `-v, --version`, which prints `zharness version <v>` and exits 0.
@@ -79,17 +80,31 @@ Repository scripts:
 ## What carries the state
 
 Git-committed markdown alone: plans under `docs/plans/{active,completed}/*.md`
-with append-only Progress, Decisions, and Validation sections; ADRs under
+with Goal, Phases and Verification, append-only Log and Validation, and
+Current State and Next Action sections; ADRs under
 `docs/decisions/`; session memory as plain files under `docs/memory/`
-(convention). The stage playbooks under `cli/docs/embedded/playbooks/` are
-the canonical procedures, projected to `docs/playbooks/`.
+(convention). The twelve canonical procedures live under
+`skills/workflow/<stage>/references/` and are independently installed into
+the host. Consumer data stays in the consumer repository. Retained legacy
+files are not a fallback for missing skills.
 
 The previous derived database was an index whose only consumer — the CLI
 lifecycle surface deleted above — is gone. What it was, why it was removed,
 and where consumers should pin: see the v0.15 section of the root
 `CHANGELOG.md`, the archive of record for this removal.
 
-## Breaking change
+## Migration candidate (not a release claim)
+
+ADR 0015 removes playbook distribution from the binary. Install the six workflow
+skills independently before upgrade. Matching installer-created legacy copies
+are removed; proven saved originals are restored. Edited, unknown or conflicting
+files retain their recovery records. Failure returns nonzero with retry evidence;
+missing base means keep, and corrupt base refuses before writes. The active base
+manifest, ownership ledger and original payloads have distinct roles.
+See the [migration guide](../../docs/workflow-harness/skill-procedure-migration.md)
+for snapshots, supported hosts and required consumer verification.
+
+## Historical breaking changes
 
 v0.24 is a breaking release for the CLI's implementation and release
 mechanics: help, usage and error text differs from cobra's, releases publish

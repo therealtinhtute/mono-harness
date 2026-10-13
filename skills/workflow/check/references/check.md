@@ -7,7 +7,7 @@ Durable `gate` runs automated checks and records the verdict in `## Validation`;
 1. Preserve invocation intent:
    - `auto` (default) — a direct change → resolve to `bounded` without reading any plan; a named durable initiative → `gate`, and invalid initiative state never falls back to `bounded`. Ambiguous → ask. `auto` never resolves to `full`, and an active plan's mere existence never selects `gate`.
    - `gate`, `full` (never run by `work`), `bounded` (aliases: `simple`, `review`).
-2. Durable → read `docs/playbooks/check-durable.md` now.
+2. Durable → read [check-durable.md](check-durable.md) now.
 3. After the preflight succeeds, print the resolved mode before running checks or writing state: `mode: {resolved} ({reason})`. A failed preflight reports its blocker instead.
 
 **Zero-write rule:** `bounded` is always response-only and never appends to Validation. Invocation intent wins: an active plan never upgrades `bounded`.
@@ -18,7 +18,7 @@ Durable `gate` runs automated checks and records the verdict in `## Validation`;
 2. **Classify** — depth by blast radius; scope on target, drift, or incomplete (a surface violation blocks a clean verdict).
 3. **Run the automated gate** — tests, types, lint, build, in repository order. IF `scripts/record-check.sh` exists → `bash scripts/record-check.sh -- "cmd1" "cmd2"`; else keep each exit code (never let a pipe hide it). Cite the raw commands.
 4. **Plan alignment** (gate/full) — `check-durable.md` step 4.
-5. **Manual review** — `gate` does not perform that complete manual review. `full`, or `bounded` on a diff: read `docs/playbooks/check-review.md` now.
+5. **Manual review** — `gate` does not perform that complete manual review. `full`, or `bounded` on a diff: read [check-review.md](check-review.md) now.
 6. **Proof classes** — `tiny`: output; `normal`: + unit; `high-risk`: + integration, manual review. Name gaps.
 7. **Verdict** — critical issue or plan contradiction → `REQUEST_CHANGES`; major findings → at least `APPROVE_WITH_REQUESTS`; else `APPROVED`. Declare the judge (`same-session` IF you authored the diff, else `independent`) and the model. A `same-session` approval names one aspect not independently verified. `full` and `high-risk` require `judge: independent`.
 8. **Evidence and plan state** (gate/full) — `check-durable.md` steps 8–11.

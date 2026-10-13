@@ -2,8 +2,7 @@
 
 > This is the `git` skill's own procedure, not a harness-projected playbook. It
 > is not part of the embedded doc set and `zharness install` never writes it.
-> Edit it here — `cli/docs/embedded/playbooks/` holds no `git` entry upstream
-> to change. A stale `git.md` under a repository's `docs/playbooks/` is a
+> Edit it here — the binary does not ship workflow procedures. A stale `git.md` under a repository's `docs/playbooks/` is a
 > leftover projection from before the deprojection; see
 > `docs/workflow-harness/migration.md`.
 

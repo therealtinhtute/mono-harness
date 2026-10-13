@@ -4,15 +4,15 @@ Observed harness failures in this repository, one row per incident, append-only.
 
 Authority: `docs/decisions/0010-local-failure-ledger.md`. This file is maintainer-owned and local.
 It is not synced, not scaffolded by `zharness install` or `update`, and not required by any
-playbook. Its two consumers are conditional on its existence: `docs/playbooks/check.md`
+playbook. Its two consumers are conditional on its existence: `skills/workflow/check/references/check-durable.md`
 (Review and Gate Steps, step 4) reads it and, for every class recorded two or more times, states whether the diff under
-review is clean of that class; `docs/playbooks/check.md` (Review and Gate Steps, step 10) appends one row per finding
+review is clean of that class; `skills/workflow/check/references/check-durable.md` (Review and Gate Steps, step 10) appends one row per finding
 when a durable `gate` or `full` returns `REQUEST_CHANGES`. Deleting this file returns the
 repository to the behavior it had before the file existed.
 
 ## Conventions
 
-- **class** — one of the seven tokens in `docs/playbooks/work-full.md` (Full-Mode Execution, step 7):
+- **class** — one of the seven tokens in `skills/workflow/work/references/work-full.md` (Full-Mode Execution, step 6):
   `MISSING_CONTEXT`, `WRONG_TOOL`, `BAD_OUTPUT`, `REPEATED_LOOP`, `UNSAFE_ACTION`,
   `LOST_DECISION`, `UNKNOWN`. No other token is admissible. A row that fits none of them is
   `UNKNOWN` with a stated rationale, never a new token — a private vocabulary would make the
@@ -26,6 +26,8 @@ repository to the behavior it had before the file existed.
   and is never softened into a promise of future work.
 - Rows are appended, never rewritten. A row whose finding is later covered gains a follow-up row
   rather than an edited `coverage` field.
+
+Historical incident paths below identify the instruction set at the recorded source revision; they are not current execution routes.
 
 ## Incidents
 

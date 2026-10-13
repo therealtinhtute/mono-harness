@@ -1,7 +1,7 @@
 //! zharness — installer/updater for the markdown-first workflow harness.
 //!
 //! The three managed-set verbs (install / update / uninstall) own exactly the
-//! managed doc set: `docs/WORKFLOW.md`, `docs/playbooks/*.md`, the marked
+//! managed doc set: `docs/WORKFLOW.md`, the marked
 //! AGENTS block, the `docs/PROJECT.md` scaffold, `.zharness` bookkeeping and
 //! the `.gitignore` entries. Nothing else in a repository is created,
 //! modified, or deleted.

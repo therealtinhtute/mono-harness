@@ -26,3 +26,12 @@ docs/plans/completed/macos-guard-portability.md  # cited in ADR 0009 Consequence
 docs/audit/sdlc-gap-analysis.md                  # quoted inside ADR 0010 Context (a claimignore phrase); pruned in the historical-docs cleanup — resolve via `git show 3bab3c0:docs/audit/sdlc-gap-analysis.md`
 
 rules/_all/brief.md  # path in the external therealtinhtute/quaqua repo, cited by docs/research/2026-10-12-lead-peer-contract.md; not a file in this repo
+
+# ADR 0015 removes projections. These exact citations are immutable history,
+# not live execution routes; resolve them at pre-migration 156bc96 or the incident SHA.
+docs/playbooks/work.md  # ADR 0002/0010 and eval incident/run history; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
+docs/playbooks/check.md  # ADR 0010 and eval incident/run history; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
+docs/playbooks/work-full.md  # ADR 0010 Context taxonomy record; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
+docs/playbooks/brainstorm.md  # ADR 0012 historical plan-shape record; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
+docs/playbooks/handoff.md  # ADR 0012 historical plan-shape record; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
+docs/playbooks/check-validation.md  # 2026-10-12 playbook audit evidence; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception

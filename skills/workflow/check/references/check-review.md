@@ -1,6 +1,6 @@
 # Playbook: check (manual review axes)
 
-Loaded by `docs/playbooks/check.md` step 5 for `full`, or `bounded` on a diff.
+Loaded by [check.md](check.md) step 5 for `full`, or `bounded` on a diff.
 
 - **Two axes, kept apart** — run them one after the other on `git diff <base>...HEAD`. Sub-agents only for `full` and only when asked (IF unspecified → ask once: single agent (Recommended) / two sub-agents), each briefed per `work-full.md` step 4 with its own axis's sources. They do not change the `judge:` declaration.
 - **Spec axis** — sources: the Goal's requirements and non-goals and the phase `goal:`. Report missing, partial, wrong, or unrequested behavior, citing the requirement ID.

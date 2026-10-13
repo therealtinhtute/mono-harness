@@ -48,5 +48,5 @@
 
 ## What are we working on right now?
 - plan: none active; last completed `git show 3bab3c0:docs/plans/completed/zharness-slim.md`
-- follow-up: `docs/playbooks/work-full.md` does not yet act on a task's `stop_if:`
+- follow-up: `skills/workflow/work/references/work-full.md` does not yet act on a task's `stop_if:`
   or a phase's `escalate_when:`.
