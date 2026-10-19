@@ -32,7 +32,8 @@
   "teammateMode": "in-process",
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
+    "command": "bash ~/.claude/statusline.sh",
+    "refreshInterval": 30
   },
   "hooks": {
     "PostCompact": [

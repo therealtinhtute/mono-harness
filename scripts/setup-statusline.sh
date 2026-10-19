@@ -33,25 +33,42 @@ eval "$(echo "$input" | jq -r '
   "used=\(.context_window.used_percentage // 0 | floor | @sh)",
   "model=\(.model.display_name // "unknown" | @sh)",
   "effort=\(.effort.level // "" | @sh)",
-  "total_in=\(.context_window.total_input_tokens // 0 | floor | @sh)",
-  "total_out=\(.context_window.total_output_tokens // 0 | floor | @sh)",
   "duration_ms=\(.cost.total_duration_ms // 0 | floor | @sh)",
-  "c_in=\(.context_window.current_usage.input_tokens // 0 | floor | @sh)",
-  "c_read=\(.context_window.current_usage.cache_read_input_tokens // 0 | floor | @sh)",
-  "c_create=\(.context_window.current_usage.cache_creation_input_tokens // 0 | floor | @sh)"
+  "api_ms=\(.cost.total_api_duration_ms // 0 | floor | @sh)",
+  "pc_obs=\(.prompt_cache.caching_observed // false | @sh)",
+  "pc_hit=\(.prompt_cache.hit_ratio | if . == null then "" else . * 100 | floor end | @sh)",
+  "pc_exp=\(.prompt_cache.expires_at | if . == null then "" else floor end | @sh)",
+  "pc_miss=\(.prompt_cache.misses // 0 | floor | @sh)",
+  "pc_miss_at=\(.prompt_cache.last_miss_at // 0 | floor | @sh)",
+  "pc_cause=\(.prompt_cache.last_miss_cause.causes[0]? // "" | @sh)"
 ')"
 
 used=${used:-0}; model=${model:-unknown}; effort=${effort:-}
-total_in=${total_in:-0}; total_out=${total_out:-0}; duration_ms=${duration_ms:-0}
-c_in=${c_in:-0}; c_read=${c_read:-0}; c_create=${c_create:-0}
+duration_ms=${duration_ms:-0}; api_ms=${api_ms:-0}
+pc_miss=${pc_miss:-0}
 
 safe_id=$(printf '%s' "$session_id" | tr -dc 'a-zA-Z0-9_-')
-total_tokens=$((total_in + total_out))
 
-# TPM calculation
+# TPM: session output tokens (main transcript, deduped by message.id) per API-minute.
+# total_*_tokens in the JSON are the current context size, not session totals.
+# Incremental: state file keeps "byte_offset out_sum last_msg_id".
 tpm=0
-if [ "$duration_ms" -gt 0 ]; then
-  tpm=$(( (total_tokens * 60000) / duration_ms ))
+if [ -n "$safe_id" ] && [ -f "$transcript_path" ] && [ "$api_ms" -gt 0 ]; then
+  tpm_file="/tmp/${TPM_STATE_PREFIX}-${safe_id}"
+  off=0; out_sum=0; last_id=""
+  [ -f "$tpm_file" ] && read -r off out_sum last_id < "$tpm_file"
+  size=$(stat -c %s "$transcript_path" 2>/dev/null || echo 0)
+  [ "$size" -lt "${off:-0}" ] && { off=0; out_sum=0; last_id=""; }
+  if [ "$size" -gt "$off" ]; then
+    # Only advance past a complete trailing line; a half-written line is re-read next run
+    last_byte=$(tail -c +"$size" "$transcript_path" | head -c 1 | od -An -tx1 | tr -d ' \n')
+    eval "$(tail -c +$((off + 1)) "$transcript_path" | head -c $((size - off)) \
+      | jq -R -r 'fromjson? | select(.type == "assistant" and (.isSidechain | not))
+                  | "\(.message.id) \(.message.usage.output_tokens // 0)"' \
+      | awk -v s="$out_sum" -v l="$last_id" '$1 != l { s += $2; l = $1 } END { printf "out_sum=%d last_id=%s\n", s, l }')"
+    [ "$last_byte" = "0a" ] && printf '%s %s %s\n' "$size" "$out_sum" "$last_id" > "$tpm_file"
+  fi
+  tpm=$(( out_sum * 60000 / api_ms ))
 fi
 
 # Session-scoped model cache
@@ -116,16 +133,35 @@ if [ "$tpm" -gt 0 ]; then
   fi
   printf "${sep}\033[93mϟ${reset} ${dim}%s tpm${reset}" "$tpm_display"
 fi
-# Prompt-cache hit rate of the last request: read / (input + read + creation)
-c_total=$((c_in + c_read + c_create))
-if [ "$c_total" -gt 0 ]; then
-  cache_hit=$((c_read * 100 / c_total))
-  if [ "$c_read" -eq 0 ]; then cache_color="$dim"
-  elif [ "$cache_hit" -ge 90 ]; then cache_color="\033[92m"
-  elif [ "$cache_hit" -ge 70 ]; then cache_color="\033[93m"
+# Session prompt cache (Claude Code's prompt_cache): hit%, TTL left, misses + last cause
+if [ "$pc_obs" = "true" ] && [ -n "$pc_hit" ]; then
+  if [ "$pc_hit" -ge 90 ]; then cache_color="\033[92m"
+  elif [ "$pc_hit" -ge 70 ]; then cache_color="\033[93m"
   else cache_color="\033[91m"
   fi
-  printf "${sep}${cache_color}★ %s%%${reset}" "$cache_hit"
+  printf "${sep}${cache_color}★ %s%%${reset}" "$pc_hit"
+  now=$(date +%s)
+  if [ -n "$pc_exp" ] && [ "$pc_exp" -gt "$now" ]; then
+    printf " ${dim}◷ %sm${reset}" "$(( (pc_exp - now + 59) / 60 ))"
+  else
+    printf " \033[94m❄ cold${reset}"
+  fi
+  if [ "$pc_miss" -gt 0 ]; then
+    # Label the last miss only while it's fresh (<10m); TTL expiry = idle (yellow), others red
+    miss_color="\033[91m"; label=""
+    if [ $((now - ${pc_miss_at:-0})) -lt 600 ]; then
+      case $pc_cause in
+        ttl_expired_*) label="idle"; miss_color="\033[93m" ;;
+        tools_changed) label="tools" ;;
+        system_prompt_changed) label="sys" ;;
+        likely_server_side) label="server" ;;
+        *) label=${pc_cause%_changed} ;;
+      esac
+    else
+      miss_color="$dim"
+    fi
+    printf " ${miss_color}✗%s%s${reset}" "$pc_miss" "${label:+ $label}"
+  fi
 fi
 [ -n "$branch" ] && printf "${sep}\033[36m⌥ %s${reset}" "$branch"
 printf "\n"
@@ -136,6 +172,6 @@ chmod +x "$DEST"
 echo "  Installed to ${DEST}"
 echo ""
 echo "Add this to your ~/.claude/settings.json:"
-echo '  "statusLine": { "type": "command", "command": "bash ~/.claude/statusline.sh" }'
+echo '  "statusLine": { "type": "command", "command": "bash ~/.claude/statusline.sh", "refreshInterval": 30 }'
 echo ""
 echo "Requires jq (brew install jq)."
