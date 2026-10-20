@@ -137,7 +137,7 @@ Historical incident paths below identify the instruction set at the recorded sou
 - rationale: ordinary guard runs passed, but pre-commit proof replay inherited Git-local environment. Fixture init/commits then changed the caller's HEAD/index/config instead of staying inside disposable repositories. Commit was rejected; no fixture history was pushed. Source hashes remained exact and metadata was recovered from recorded refs/reflogs.
 - surface: `scripts/test-guards.sh`, `gfix`, PP and staged-secret fixture setup.
 - source: `da9fed6a09e34d20f1e586577cf936d74905b7bb`, `scripts/test-guards.sh`, fixture repository setup; delivery reproduces during actual pre-commit replay of the archived migration's Validation proofs.
-- coverage: `uncovered`. This delivery forwards the existing real pre-commit/commit-msg/pre-push hooks through an invocation-scoped wrapper clearing `git rev-parse --local-env-vars`; all proofs still run. The tracked fixture runner still needs its own environment isolation and a nested-hook regression. No global or permanent hook configuration was changed.
+- coverage: covered by `scripts/test-guards.sh` unsetting `git rev-parse --local-env-vars` at startup, plus the `NEST` regression: the suite runs from a real pre-commit hook of a disposable repository under `commit -a` (absolute `GIT_INDEX_FILE`) and asserts that repository's HEAD, index and config are unchanged; with the unset removed the regression fails. The original delivery's invocation-scoped hook wrapper is no longer needed.
 
 ## Candidates not yet seeded
 
