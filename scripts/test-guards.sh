@@ -4,6 +4,10 @@
 # asserts observable guard behavior. Run: bash scripts/test-guards.sh
 set -u
 cd "$(dirname "$0")/.."
+# Run from inside a Git hook, the caller's GIT_DIR/GIT_INDEX_FILE/... would
+# steer every fixture's git command into the calling repository.
+# shellcheck disable=SC2046
+unset $(git rev-parse --local-env-vars)
 
 GUARD=$(mktemp)
 awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' \
@@ -870,6 +874,34 @@ zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'new.txt:2' &&
 	ok "SECRETS renamed file scanned at its new path" ||
 	bad "SECRETS renamed file missed"
 rm -rf "$stmp"
+
+# NEST: the suite run from a real pre-commit hook (as proof replay does) must
+# leave the calling repository's HEAD, index and config untouched. `commit -a`
+# hands the hook an absolute GIT_INDEX_FILE (a plain commit's is relative and
+# harmless). The nested run skips this block so it does not recurse.
+if [ -z "${ZHARNESS_GUARDS_NESTED:-}" ]; then
+	nest=$(mktemp -d)
+	gfix "$nest"
+	git -C "$nest" config user.email outer@test
+	git -C "$nest" config core.hooksPath "$nest/.git/hooks"
+	printf '#!/bin/sh\nZHARNESS_GUARDS_NESTED=1 bash "%s/scripts/test-guards.sh" > "%s/log" 2>&1\n' \
+		"$PWD" "$nest" > "$nest/.git/hooks/pre-commit"
+	chmod +x "$nest/.git/hooks/pre-commit"
+	nest_cfg=$(git -C "$nest" config --local --list)
+	printf 'x\n' > "$nest/a.txt"
+	git -C "$nest" add a.txt
+	if git -C "$nest" commit -qam outer >/dev/null 2>&1; then
+		[ "$(git -C "$nest" rev-list --count HEAD)" = 1 ] &&
+			[ "$(git -C "$nest" ls-files)" = a.txt ] &&
+			[ -z "$(git -C "$nest" status --porcelain -- . ':!log')" ] &&
+			[ "$(git -C "$nest" config --local --list)" = "$nest_cfg" ] &&
+			ok "NEST suite inside a pre-commit hook leaves the caller's repo untouched" ||
+			bad "NEST suite inside a pre-commit hook changed the caller's HEAD/index/config"
+	else
+		bad "NEST suite inside a pre-commit hook failed (log: $(tail -3 "$nest/log" 2>/dev/null))"
+	fi
+	rm -rf "$nest"
+fi
 
 rm -rf "$tmp" "$GUARD"
 echo
