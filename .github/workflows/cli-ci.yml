@@ -129,6 +129,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
+      # The playbooks-to-skills plan's retained size-gate proofs pin a local
+      # isolated RUSTUP_HOME; point that path at the runner's rustup home so
+      # they re-execute unchanged.
+      - name: Provide the retained proofs' RUSTUP_HOME
+        run: |
+          mkdir -p /tmp/mono-harness-migration-kya1gqcc
+          ln -s "$(rustup show home)" /tmp/mono-harness-migration-kya1gqcc/isolated-rustup
       - name: Run guards against the pushed range's plan changes
         env:
           ZHARNESS_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
