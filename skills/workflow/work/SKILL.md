@@ -1,6 +1,5 @@
 ---
 name: work
-model: sonnet
 version: "1.5.2"
 description: "Execution orchestrator after `brainstorm` (and `to-plan` for high-risk). Runs phases wave-by-wave from locked artifacts, verifies each task, and hands off to `check`, `git`, or `handoff`."
 license: MIT

@@ -10,16 +10,16 @@ Classify the request before mutation: read-only requests change nothing; change 
 
 Resolve the selected stage through the host's skill metadata. Read only its primary reference and the companions it routes to, relative to that installed skill. Resolve repository data paths from the consumer root. Install brainstorm, to-plan, work, check, handoff and watzup independently before upgrade. If a required skill or reference is unavailable, report the missing dependency and stop; retained legacy procedures are not a fallback. `zharness` neither detects nor installs skills and plays no part in running a stage.
 
-| Stage | Reference in the installed skill’s references/ directory | Model tier |
-|---|---|---|
-| brainstorm | `brainstorm.md` | deep |
-| to-plan (high-risk only) | `to-plan.md` | deep |
-| work | `work.md` | standard |
-| check | `check.md` | deep |
-| handoff | `handoff.md` | fast |
-| watzup | `watzup.md` | fast |
+| Stage | Reference in the installed skill’s references/ directory |
+|---|---|
+| brainstorm | `brainstorm.md` |
+| to-plan (high-risk only) | `to-plan.md` |
+| work | `work.md` |
+| check | `check.md` |
+| handoff | `handoff.md` |
+| watzup | `watzup.md` |
 
-`git` keeps its own procedure. Tiers on Claude Code: deep = opus, standard = sonnet, fast = haiku. Do not switch model mid-phase.
+`git` keeps its own procedure. None of the six stages above requires a named model; the host's current model runs it. Model use is a capability role: the lead decides and integrates; a researcher answers a narrow read-only question with explicit ownership; a reviewer or judge is independent of the author where the plan requires it. Any capable model may fill a role (for example, as of 2026-10-21, Claude Haiku 5.5 for narrow research). When work moves to another model or session, hand over a transfer brief: goal and scope, plan path and phase, source identity (HEAD SHA plus a hash of the tracked dirty diff and relevant untracked inputs), evidence pointers (files changed, last passing proof), open decisions, and the exact next action.
 
 ## Execution boundary
 

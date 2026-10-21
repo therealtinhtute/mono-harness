@@ -1,7 +1,6 @@
 ---
 name: to-plan
 version: "1.4.2"
-model: opus
 description: Generate the approach, phases, waves, and checks inside the locked `docs/plans/active/{slug}.md`. Use after `brainstorm` for a `high-risk` plan; a `normal` plan goes straight to `work`.
 argument-hint: "[mode:full|phase] [phase-name?]"
 compatibility: Designed for Claude Code

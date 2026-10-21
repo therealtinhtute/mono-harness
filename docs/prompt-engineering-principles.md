@@ -8,11 +8,9 @@ Complements: `skills/craft/create-skill/references/writing-effective-instruction
 
 Context = all tokens the LLM sees at inference (system prompt + tools + examples + history + data). Not just "the prompt."
 
-- LLMs have a finite **attention budget** — n² pairwise relationships degrade at scale (context rot)
+- LLMs have a finite **attention budget** — n² pairwise relationships, so recall degrades gradually as context grows (context rot; [Anthropic, Effective context engineering for AI agents, 2025-09-29](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents))
 - Guiding rule: find the **smallest set of high-signal tokens** that maximize desired outcome
-- Instruction budget: ~150-200 for frontier thinking models; ~50 already consumed by Claude Code harness
-- Degradation is **uniform** — adding instructions weakens ALL of them, not just the new ones
-- Smaller models degrade exponentially; frontier models degrade linearly
+- Each added instruction competes for attention; test whether a new line changes behavior before keeping it
 
 ## Formatting Syntax
 
@@ -40,17 +38,15 @@ Context = all tokens the LLM sees at inference (system prompt + tools + examples
 - ≤3 related items with causal dependency → **paragraph** (preserves logic chain)
 - Reasoning context + discrete rules → **paragraph first, then bullets**
 
-Token note: dash (`-`) = 1 token; numbered (`1.`) = 2+ tokens. Prefer dashes.
-
 ## Language Rule
 
 | Content | Language | Rationale |
 |---------|----------|-----------|
-| Instructions, rules, constraints | English | Highest compliance, lowest token cost |
+| Instructions, rules, constraints | English | Usually tokenizes compactly; keep one language per instruction set |
 | Few-shot example outputs | Target language | Model captures tone/style |
 | Data, documents | Original language | Don't translate — meaning loss |
 
-Vietnamese instructions cost ~50% more tokens for the same semantics due to tokenizer optimization for Latin script.
+Non-Latin-script instructions often tokenize into more tokens for the same meaning; measure with the target model's tokenizer before assuming a ratio.
 
 ## Few-Shot Patterns
 
@@ -79,7 +75,7 @@ Practice:
 
 ## Positive Framing
 
-Negative instructions ("don't hallucinate", "never do X") trigger the **Pink Elephant effect** — increases model focus on the banned behavior.
+Prefer stating the wanted behavior. A bare prohibition ("don't hallucinate", "never do X") names the unwanted behavior without saying what to do instead; keep a prohibition when it marks a hard boundary, and pair it with the positive action.
 
 | ❌ Negative | ✅ Positive |
 |---|---|
@@ -116,11 +112,13 @@ Summarize the attached article. Keep it to 3 bullet points...
 
 ## Cross-Model Awareness
 
+Observations as of 2026-10-21, not product policy; recheck against the vendor's current prompting guide when the model changes ([Claude prompt engineering overview](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview)).
+
 | Model type | Prompting style |
 |---|---|
 | Reasoning (o-series, extended thinking) | High-level goals. Trust the model. Don't say "think step-by-step" — it manages its own reasoning. |
 | Standard GPT / non-thinking | Explicit step-by-step. Define exact output. |
-| Latest Claude (Claude 5 family) | Calibrates length to complexity. Follows "be conservative" literally. Shorter by default. |
+| Claude 5 family (as of 2026-10-21) | Calibrates length to complexity. Follows "be conservative" literally. Shorter by default. (Local observation.) |
 
 ## The Iteration Rule
 

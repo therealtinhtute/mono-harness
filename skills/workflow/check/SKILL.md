@@ -2,7 +2,6 @@
 name: check
 version: "1.8.1"
 description: "Pre-commit and pre-merge gate. Runs tests, lint, build, then reviews security, performance, architecture, and code quality. Acts as the phase gate after `/work`."
-model: opus
 allowed-tools: "Read Grep Glob Bash"
 argument-hint: "[auto|gate|full|bounded]"
 tags: [check, review, quality, security, gate]
