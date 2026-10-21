@@ -1,7 +1,6 @@
 ---
 name: handoff
 version: "1.5.1"
-model: haiku
 description: "Prospective: persist current session state into the active plan's Current State section so the next session can resume without context loss."
 argument-hint: "[context]"
 compatibility: Designed for Claude Code

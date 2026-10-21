@@ -1,7 +1,6 @@
 ---
 name: brainstorm
 version: "5.1.2"
-model: opus
 description: "Explore trade-offs, grill fuzzy intent or a plan, and lock the Goal into `docs/plans/active/{slug}.md`. Use for ideation, architecture decisions, grill/interview requests, and RFC/PRD-to-spec work."
 license: MIT
 argument-hint: "[explore|grill|raw|lock|refine] [idea, @file refs, plan path, or trade-off question]"

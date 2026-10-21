@@ -20,7 +20,7 @@ A leading subcommand sets the mode; else infer it (grill/interview/stress-test â
 
 ## Lanes
 
-Pick from risk, not size; record it as frontmatter `lane:`.
+Pick from uncertainty, impact, dependency and recoverability, never from file or line counts; record it as frontmatter `lane:`.
 
 | Lane | When | Plan |
 |---|---|---|

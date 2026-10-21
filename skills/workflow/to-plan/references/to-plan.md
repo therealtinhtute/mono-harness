@@ -17,7 +17,7 @@ Add `constraints:` and `recovery:`, and waves per phase.
   - surfaces: <touched> | avoided: <untouched>
   - escalate_when: <condition that stops the phase and asks the owner>
   - wave 1:
-    - T1 <task> — output: <expected result> — check: `<command>` — stop_if: <condition>
+    - T1 <task> (owner: <agent or role>, writes <files> only) — output: <expected result> — check: `<command>` — stop_if: <condition>
   - phase check: `<command>`
 ```
 

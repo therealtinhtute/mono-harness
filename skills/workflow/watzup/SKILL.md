@@ -1,7 +1,6 @@
 ---
 name: watzup
 version: "4.3.1"
-model: haiku
 description: "Recap: read branch state, committed + uncommitted changes, handoff context, and artifact chain — then recommend the next action."
 argument-hint: "[branch]"
 compatibility: Designed for Claude Code

@@ -1,6 +1,6 @@
 # Playbook: handoff
 
-Persist resumable state in the active plan's `## Current State and Next Action`, close every cleanly checked phase, and at final closure compact the plan and move `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`.
+A handoff preserves session continuity; it does not imply business acceptance or deployment. Persist resumable state in the active plan's `## Current State and Next Action`, close every cleanly checked phase, and at final closure compact the plan and move `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`.
 
 ## Owned Plan State
 
