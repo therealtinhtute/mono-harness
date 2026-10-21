@@ -11,6 +11,7 @@ and appended only on a durable `REQUEST_CHANGES` (`skills/workflow/check/referen
 |---|---|
 | `docs/evals/routing.md` | frozen case set (R01–R10 regression, H01–H04 holdout), plus the fixture template, invocation, and scoring rules every trial uses |
 | `docs/evals/runs.md` | run log; one row per case per trial |
+| `docs/evals/lean-workflow.md` | lean-workflow B/C protocol: case set lean-v1 (D01–D04), predeclared predicates and metrics, evidence layout checked by `scripts/verify-lean-eval.sh` |
 | `docs/evals/evidence/` | retained generators, fixtures, traces, snapshots, and scorers |
 | `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; read by durable gate/full, appended on durable `REQUEST_CHANGES` (`skills/workflow/check/references/check-durable.md` steps 4/10) |
 

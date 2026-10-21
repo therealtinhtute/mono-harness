@@ -4,7 +4,7 @@ Architecture decisions that are already made, already implemented, and expensive
 
 An ADR here is a record, not a proposal. It is written after the decision has landed in code, and it states what was decided, why, what was rejected, and what it costs. Nothing in this directory is a plan — plans live in `docs/plans/`. ADRs are the absorb path for expensive-to-reverse decisions; a completed plan is a run log, not project knowledge.
 
-Exception: the owner explicitly requested ADR 0015 before migration implementation. Its status distinguishes the accepted decision from pending implementation; phase execution remains in the plan.
+Exception: the owner explicitly requested ADRs 0015 and 0016 before implementation. Its status distinguishes the accepted decision from pending implementation; phase execution remains in the plan.
 
 ## Index
 
@@ -25,6 +25,7 @@ Exception: the owner explicitly requested ADR 0015 before migration implementati
 | [0013](0013-installer-follows-directory-symlinks.md) | The installer follows symlinks at directory components; deferred to its own initiative | Accepted |
 | [0014](0014-outcome-spec-normal-plans.md) | A normal plan is its Goal plus one phase that lock writes; `to-plan` is high-risk only | Accepted |
 | [0015](0015-skill-owned-procedures-and-safe-retirement.md) | Skills own procedures; legacy retirement preserves consumer recovery | Accepted decision; candidate implemented, consumer verification pending |
+| [0016](0016-lean-workflow-method-latitude.md) | Revise prompt-level method constraints; keep product and authority boundaries | Accepted decision; candidate pending B/C evaluation |
 
 ## Writing a new one
 
