@@ -170,7 +170,7 @@ If the finite batch ends with no gain, inconclusive evidence or rejection, stop 
   - phase check: R, G, D, V and independent instruction review; freeze C source/hash before measured comparisons
 
 - phase_slug: `f3-evaluate`
-  status: planned
+  status: deferred
   - goal: R1, R2, R3, R4, R5, R6, R7 | depends_on: f2-candidate
   - surfaces: disposable fixtures/isolated host sessions, eval run records and redacted evidence | avoided: tuning against hidden expectations, global configuration and paid replay hooks
   - escalate_when: runtime/account/budget is unavailable, hidden exposure occurs, candidate violates authority, or required data is missing
@@ -183,7 +183,7 @@ If the finite batch ends with no gain, inconclusive evidence or rejection, stop 
   - phase check: R, G, D plus E and independent empirical verdict; no automatic completion on missing runtime or equal scores
 
 - phase_slug: `f4-delivery`
-  status: planned
+  status: in-progress
   - goal: R8, R1, R7 | depends_on: f3-evaluate
   - surfaces: live README/workflow docs, relevant hand-authored site pages, ADR consequences, eval summary, plan stage-owned sections | avoided: automatic release/global install/remote publishing
   - escalate_when: publication is requested without authority or docs claim untested model/host behavior
@@ -218,6 +218,9 @@ Read AGENTS, WORKFLOW, this plan and the named prerequisite completion record. C
 - 2026-10-21T07:26:00Z — f3-evaluate — decision — Owner declined paid controlled trials (Claude Code budget) and chose observational replay: score real session transcripts on the lean-v1 cost metrics (clarifications, redundant_checks, instr_bytes_read, elapsed_s) for sessions run under B versus C. Consequence: f3 can report only an observational, uncontrolled comparison; R2/R4/R6 behavior claims cannot reach a controlled `targeted gain`. `scripts/run-lean-trial.sh` (stub-tested, no paid run) and the project-level isolation amendment to `docs/evals/lean-workflow.md:16` are retained for a later controlled run. F6/F7 as written are superseded pending a revised task list.
 - 2026-10-21T07:38:29Z — f3-evaluate — decision — Owner approved installing C globally: the six core skills from `253d6f8` were copied to `~/.claude/skills/` (diff -r identical; old copies trashed). Sessions before this timestamp are B-era (master skills), after it C-era. Rollback: reinstall from master. Other skills (git, hunt, think, retro) stay on master.
 - 2026-10-21T08:10:00Z — f3-evaluate — decision — F6–F8 rewritten for observational replay; `scripts/lean-replay-score.sh` added. B-era baseline over 461 transcripts: n=65 core-skill sessions; medians clarifications 3, instr_bytes_read 0 (17/65 nonzero), redundant_checks 0 (3/65 nonzero), elapsed_s 7475, tokens_in 6.59M, tokens_out 42.4k, cost_usd 4.81; C-era n=0. Known limits: Skill-tool-injected SKILL.md bodies are not counted in instr_bytes_read (equal in both eras); elapsed_s includes owner idle time; clarifications counts every AskUserQuestion, so answerable-work questions need hand labels; tasks differ across sessions, so the comparison is uncontrolled; session e633b4db straddles the cutoff and is counted as B. C-era threshold of 20 sessions is a default, not owner-set.
+- 2026-10-21T08:30:00Z — f3-evaluate — decision — Owner chose to skip waiting for F7/F8 and proceed to f4-delivery, with the real C-era audit run later. f3 is `deferred`, not checked: no empirical B/C verdict exists. f4 docs must state C as unevaluated (B-era baseline only) and must not claim a performance gain; F10 cannot close the plan until the deferred F7/F8 audit records a verdict.
+- 2026-10-21T08:45:00Z — f4-delivery — F9 — done — Live surfaces reconciled with C: `site/docs/contributing.html` no longer lists `model` as SKILL.md frontmatter; `site/docs/workflow.html` bounded row states routing by uncertainty, impact, dependency and recoverability rather than size; `docs/evals/lean-workflow.md` gains "Status and re-evaluation" (C unevaluated, B-era replay baseline only, no gain claimed, controlled and replay re-evaluation recipe). README, skills/workflow/README.md and both WORKFLOW copies already matched C (grep for model names, file caps). Check: `bash scripts/verify-doc-links.sh` exit 0. Independent claim/source review not yet run (owed at F10).
+- 2026-10-21T09:10:00Z — f4-delivery — F10 — partial — Gates: R (cargo fmt/clippy/test) exit 0; S musl binary 815824 B ≤ 1850000; G `scripts/test-guards.sh` 69/0; D `scripts/verify-doc-links.sh` exit 0; `scripts/test-lean-eval.sh` all passed. Independent judge (separate agent, check full): PASS-with-deferred; no gain claim, no fabricated evidence. Its 3 fixes applied: ADR 0016 Consequences no longer says B is live (C installed, unevaluated, rollback = reinstall B); eval doc gains a rollback step; contributing.html drops nonexistent `triggers` frontmatter claims. R1/R5 met; R2/R3/R6/R8 met in text, behavior deferred to f3; R4/R7 deferred (no controlled trials; owner chose replay). Plan stays active: closing needs the deferred F7/F8 verdict.
 
 ## Validation
 
@@ -262,8 +265,8 @@ Read AGENTS, WORKFLOW, this plan and the named prerequisite completion record. C
 
 ## Current State and Next Action
 
-- active_phase: f3-evaluate
+- active_phase: f4-delivery
 - lifecycle_status: in-progress
 - blockers: none
 - open_items: f3 trace scoring must check repeated fix/re-run cycles relabelled as new hypotheses, redundant re-runs, companion-only loading, stale-done revalidation and combined-tree checks (f2 judge 04:05Z request 6); holdout archive shares the local disk (separate session, same host); judge independence is itself procedural (subagent of the same parent session); runtime model identity, source C hash and costs are execution evidence to capture by the specified protocol
-- exact_next_action: F7 — work normally under C until ≥20 C-era core-skill sessions exist, then run `bash scripts/lean-replay-score.sh` and hand-label the sample
+- exact_next_action: deferred F7/F8 audit once ≥20 C-era core-skill sessions exist (`bash scripts/lean-replay-score.sh`), then re-run F10 gates and an independent check full on the verdict, closing handoff, move plan to completed/

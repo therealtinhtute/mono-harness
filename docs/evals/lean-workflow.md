@@ -103,6 +103,12 @@ trials/<case>-<arm>-<n>/
 
 `bash scripts/verify-lean-eval.sh <run-dir>` checks completeness only: required keys, the exact case × arm × trial matrix, label/directory agreement, per-arm source and instruction hashes, per-case fixture hash, the case-set hash against the committed generator and oracle, pinned runtime/model/effort, request hash, `SHA256SUMS`, metric format, predicate format and isolation status. `bash scripts/test-lean-eval.sh` proves that it accepts one complete synthetic run and rejects 20 defective ones. It does not judge behavior; an independent reviewer scores predicates.
 
+## Status and re-evaluation
+
+As of 2026-10-21, C (`253d6f8`) is installed but unevaluated. The owner declined paid controlled trials, so no D01–D04 trial has run and no gain is claimed. The only evidence is an observational B-era baseline from `bash scripts/lean-replay-score.sh` (65 sessions that invoked a core skill). That scorer reads local Claude Code transcripts and splits them at the C install time. It does not count SKILL.md bodies injected by the Skill tool. Its `elapsed_s` includes idle time, and its `clarifications` counts every question. Tasks differ across sessions, so a B/C replay comparison is uncontrolled and can report only `no-detected-regression`, `observational improvement` or `inconclusive`.
+
+To re-evaluate after a model or instruction change, freeze the new candidate SHA and `instr_hash`, then either run the controlled trials above with `scripts/run-lean-trial.sh` (paid, owner-approved), or install the candidate, record the install time and replay transcripts with that time as the cutoff. To roll back, reinstall the six skills from B (`da9fed6`); see [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md#consequences).
+
 ## Holdouts
 
 Two prospective cases are authored and sealed by a separate isolated agent session, outside this worktree. Only the evaluator-owned inventory (case IDs, author session identity, exposure status, content hash) enters this repository. The tuning author never reads their contents. The R/H cases in [routing.md](routing.md) are historical regression only for this initiative.
