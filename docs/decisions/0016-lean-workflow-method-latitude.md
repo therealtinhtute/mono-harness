@@ -44,7 +44,7 @@ Rejected: adopting external workflows wholesale (duplicate state and runtime), r
 
 ## Consequences
 
-Method rules become unverified until the B/C comparison runs. Until then, B stays the live instruction set. Rollback to B reverts the candidate's semantic edits only. It does not undo the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration. A model change after acceptance needs a fresh baseline.
+Method rules become unverified until the B/C comparison runs. C (`253d6f8`) is installed but unevaluated; to roll back, reinstall the skills from B (`da9fed6`). Rollback to B reverts the candidate's semantic edits only. It does not undo the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration. A model change after acceptance needs a fresh baseline.
 
 ## Authority
 
