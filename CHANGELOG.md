@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Rules: `ask-user-question.md`, `execution-discipline.md`, and
+  `karpathy-guidelines.md` fold into a short "Working Style" section of
+  `setup/CLAUDE.md`; `english.md` is the only file left in `rules/`.
+  `setup/install.sh` retires the installed copies as backups.
+
+### Removed
+
+- `rules/workflow-core.md`: skill auto-triggers are no longer a global rule.
+
 ## [v0.27.0] — 2026-10-06
 
 ### Added

@@ -14,10 +14,10 @@ After install: edit `~/.claude/settings.json` → set `ANTHROPIC_AUTH_TOKEN`.
 
 | File | Installed to | Notes |
 | :--- | :--- | :--- |
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Global rules and workflow |
-| `hooks/` | `~/.claude/hooks/` | 5 hook scripts + 5 lib modules |
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Voice, hard rules, working style |
+| `hooks/` | `~/.claude/hooks/` | 2 hook scripts + 2 lib modules |
 | `settings.json` | `~/.claude/settings.json` | Template; only copied if file doesn't exist |
-| `../rules/*.md` | `~/.claude/rules/` | Karpathy, English coaching, AskUserQuestion |
+| `../rules/*.md` | `~/.claude/rules/` | English coaching; retires rules folded into `CLAUDE.md` |
 
 ## Prerequisites
 
@@ -29,9 +29,9 @@ After install: edit `~/.claude/settings.json` → set `ANTHROPIC_AUTH_TOKEN`.
 
 | Hook | Event | What it does |
 | :--- | :--- | :--- |
-| `question-validator.cjs` | PostToolUse | Detects prose questions, logs violations |
-| `privacy-guard.cjs` | PreToolUse | Blocks reads of sensitive files (`.env`, keys, etc.) |
-| `scout-block.cjs` | PreToolUse | Blocks heavy directories via `~/.claude/.orkitignore` |
+| `privacy-guard.cjs` | PreToolUse | Blocks reads of sensitive files (`.env`, keys, etc.); uses `lib/privacy-checker.cjs`, `lib/hook-logger.cjs` |
 | `post-compact-reminder.sh` | PostCompact | Re-injects Hard Rules after context compaction |
+| inline in `settings.json` | PreToolUse | Blocks `rm` in tool input; use `trash` |
+| inline in `settings.json` | Stop | Reminds to use AskUserQuestion when a reply ends with `?` |
 
 from therealTINHTUTE with love

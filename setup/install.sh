@@ -60,6 +60,13 @@ for f in "$REPO_DIR/rules/"*.md; do
   [ -f "$f" ] || continue
   sync_file "$f" "$CLAUDE_DIR/rules/$(basename "$f")"
 done
+# Rules folded into CLAUDE.md or dropped: retire installed copies as backups.
+for name in ask-user-question execution-discipline karpathy-guidelines workflow-core; do
+  dest="$CLAUDE_DIR/rules/$name.md"
+  [ -f "$dest" ] || continue
+  mv "$dest" "${dest}.backup.${TIMESTAMP}"
+  yellow "  ↩ retired: $dest"
+done
 green "✓ Rules installed ($(ls "$CLAUDE_DIR/rules/"*.md 2>/dev/null | wc -l | tr -d ' ') files)"
 
 # --- Step 4: Hooks ---
