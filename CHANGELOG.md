@@ -6,8 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.28.0] — 2026-10-21
+
+### Added
+
+- Statusline: `★` reads Claude Code's `prompt_cache` (session hit rate, TTL
+  countdown, labelled misses); `ϟ` tpm sums deduped output tokens per
+  API-minute; `refreshInterval` is 30 so the countdown ticks while idle.
+- Evals: lean-v1 protocol (ADR 0016), evidence verifier, trial runner, and
+  observational replay scorer (`scripts/lean-replay-score.sh`) with a B-era
+  baseline.
+
 ### Changed
 
+- `zharness`: workflow playbooks move out of the binary into each owning
+  skill's `references/` (ADR 0015). `update` retires the recorded legacy
+  playbook copies safely — edited or unknown files and recovery data are
+  kept — and `uninstall` keeps consumer originals for retired paths.
+- Workflow: normal plans are a Goal plus one `main` phase and skip `to-plan`
+  (ADR 0014); single-phase plans go straight to `check full`. Playbooks,
+  WORKFLOW, the AGENTS block, and stage shims are slimmed (playbooks
+  44,793 → 25,181 B).
+- Workflow (candidate C): routing by uncertainty, impact, dependency, and
+  recoverability; no-progress stop; scoped re-runs; stale-evidence and
+  combined-tree checks; capability roles replace `model:` frontmatter.
 - Rules: `ask-user-question.md`, `execution-discipline.md`, and
   `karpathy-guidelines.md` fold into a short "Working Style" section of
   `setup/CLAUDE.md`; `english.md` is the only file left in `rules/`.
