@@ -13,7 +13,7 @@ The evaluated agent never sees this file, the oracle, the plan, another arm's in
 
 The instruction distribution of an arm is `AGENTS.md`, `docs/WORKFLOW.md` and the six skills `brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`, taken at the arm's source SHA. `instr_hash` is `git ls-tree -r <sha> -- AGENTS.md docs/WORKFLOW.md skills/workflow/{brainstorm,to-plan,work,check,handoff,watzup} | sha256sum`.
 
-Pinned configuration: Claude Code with `claude-opus-5-5` and one fixed effort and settings set, recorded in `run.env`. Each trial gets a fresh temporary `HOME` and config directory that holds only that arm's six skills and settings. A trial whose trace cannot show that nothing from the operator's global configuration loaded is `blocked`, not scored.
+Pinned configuration: Claude Code with `claude-opus-5-5` and one fixed effort and settings set, recorded in `run.env`. Each trial runs in a fresh fixture whose project `.claude/skills/` holds only that arm's six skills, with `--setting-sources project,local --strict-mcp-config` (a temporary `CLAUDE_CONFIG_DIR` runs unauthenticated; see [routing.md](routing.md)); the runner is `scripts/run-lean-trial.sh`. A trial whose trace cannot show that nothing from the operator's global configuration loaded is `blocked`, not scored.
 
 ## Fixtures
 
