@@ -33,8 +33,8 @@ Coding agents often fail for ordinary engineering reasons:
   open.
 
 zharness provides a compact entrypoint, a navigable repository map, durable
-plans only when work needs them, and playbooks that stay reduced for read-only
-and bounded work.
+plans only when work needs them, and mono-mode playbooks that stay reduced for
+read-only and bounded work.
 
 ## Goals
 
@@ -46,8 +46,8 @@ and bounded work.
   history. There is no database — tracked markdown and git history are
   the only record.
 - **Process proportional to the work.** A read-only question and a
-  multi-session refactor should not cost the same ceremony. Reduced playbook
-  paths write no lifecycle rows; durable plans exist only for work that needs
+  multi-session refactor should not cost the same ceremony. Reduced paths
+  write no lifecycle rows; durable plans exist only for work that needs
   recovery context.
 - **Invariants enforced, not assumed.** Where a rule can be checked it is
   checked — the pre-commit and CI plan guards fail on violation rather than
@@ -83,27 +83,27 @@ and bounded work.
 
 ## Default workflow
 
-```text
-read-only request
-  -> inspect the smallest authoritative surface
-  -> answer with evidence
+Start a task with `/mono-mode <task>`. The router matches one playbook, copies
+its steps into a todo list, and calls the skill each step names.
 
-bounded change
-  -> inspect authority and affected behavior
-  -> implement the smallest coherent change
-  -> run relevant proof
+![mono-mode routes a task to one of five playbooks, each a chain of skills](assets/diagrams/workflow.png)
 
-multi-session or coordinated change
-  -> create docs/plans/active/<plan>.md
-  -> keep decisions, progress, recovery, and validation current
-  -> move the validated plan to docs/plans/completed/
+| Playbook | Steps |
+|---|---|
+| feature | brainstorm → to-plan (high-risk only) → work → check → git (on request) → handoff |
+| bug-fix | hunt → failing test → work (bounded) → check → git (on request) |
+| investigation | think or hunt; read-only, changes nothing |
+| session-pickup | watzup → reconcile → route to the next playbook |
+| retro | watzup → retro → save approved lessons |
 
-material product ambiguity
-  -> stop before mutation
-  -> present the concrete choice and consequences
-```
+A typo does not need a plan. A migration spanning sessions does: it gets one
+`docs/plans/active/<plan>.md`, moved to `docs/plans/completed/` after
+validation. When a request leaves a material product choice open, the agent
+stops before mutation and asks.
 
-A typo does not need a plan. A migration spanning sessions does.
+![zharness installs the doc set; skills are installed separately and read it](assets/diagrams/architecture.png)
+
+Diagram sources are tldraw files in [`assets/diagrams/`](assets/diagrams/).
 
 ## What gets installed
 
@@ -168,6 +168,13 @@ before upgrading to skill-owned procedures. Verify that the host exposes all six
 skills and can read their installed references. A missing dependency is unsupported
 for workflow execution; retained legacy files are not a fallback. Other skills
 are optional extensions.
+
+Skills live in five groups under `skills/`: `router` (mono-mode), `stages`
+(the six workflow skills plus retro), `reason` (think, hunt), `tools` (git,
+create-skill, librarian, prompt-leverage, write) and `extras` (create-cli,
+turbo-mono-platform). `retro`, `create-cli` and
+`turbo-mono-platform` are gated: they run only from a mono-mode playbook step or
+when the user names them.
 
 Skills are not part of `zharness install`. They live in this source repository,
 the stable release of the skills; the former `orkit-tui` incubator is archived
