@@ -117,11 +117,10 @@ Historical incident paths below identify the instruction set at the recorded sou
   record the verification and state the residue: *"What can still go stale is the wrapper's call
   sequence, which is baked in at install time. No guard or doc encodes 'reinstall hooks after
   editing the hook template'."*
-- coverage: `uncovered`. `scripts/test-guards.sh` exercises the extracted `ZGUARD-CORE` block, not
-  the installed wrapper around it, and no guard or document requires reinstalling after a template
-  edit. Closing this would touch `scripts/**`, which both the originating initiative and
-  this initiative's R10 place under `surfaces_avoided`, so it is recorded
-  here rather than fixed.
+- coverage: covered. The installed pre-commit wrapper compares itself with its heredoc template in
+  `scripts/install-git-hooks.sh` and rejects the commit with the `--force` re-install command when
+  they differ. `scripts/test-guards.sh` case `STALE` installs the hook, edits the installed copy and
+  expects that rejection.
 
 ### 2026-10-13 — original equality alone was mistaken for interrupted retirement
 

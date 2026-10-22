@@ -469,6 +469,14 @@ export ZHARNESS_HOOK_SOURCE
 ROOT="$(git rev-parse --show-toplevel)"
 export ROOT
 ZHARNESS_HOOK_SOURCE="$ROOT/scripts/install-git-hooks.sh"
+# The guard core is re-extracted on every run, but this wrapper is baked in at
+# install time. Compare it with its template so a wrapper edit cannot stay
+# inert in an old install (failures.md, 2026-09-16).
+if [ -f "$ZHARNESS_HOOK_SOURCE" ] && ! awk '/^function create_pre_commit_hook/{f=1} f&&/<< .HOOK_EOF.$/{on=1;next} on&&$0=="HOOK_EOF"{exit} on' "$ZHARNESS_HOOK_SOURCE" | cmp -s - "$0"; then
+  echo "❌ installed pre-commit hook is stale against scripts/install-git-hooks.sh"
+  echo "Re-install it: bash scripts/install-git-hooks.sh --force"
+  exit 1
+fi
 _zhtmp=$(mktemp -d)
 # Enforce from the staged installer bytes when the installer itself is part of
 # this commit; otherwise fall back to the worktree copy.

@@ -875,6 +875,48 @@ zharness_guard_staged_secrets "$stmp" 2>&1 | grep -q 'new.txt:2' &&
 	bad "SECRETS renamed file missed"
 rm -rf "$stmp"
 
+# STALE: the installed pre-commit wrapper compares itself with its template
+# (failures.md, 2026-09-16). An edited install must block with a re-install hint.
+st=$(mktemp -d)
+mkdir -p "$st/scripts"
+gfix "$st"
+git -C "$st" config core.hooksPath "$st/.git/hooks"
+cp scripts/install-git-hooks.sh "$st/scripts/"
+( cd "$st" && bash scripts/install-git-hooks.sh ) >/dev/null 2>&1
+printf 'x\n' > "$st/a.txt"
+( cd "$st" && git add -A && git commit -qm "chore: seed" ) >/dev/null 2>&1 &&
+	ok "STALE a current wrapper commits" ||
+	bad "STALE a current wrapper was rejected"
+printf '# local edit\n' >> "$st/.git/hooks/pre-commit"
+printf 'y\n' > "$st/a.txt"
+st_out=$( cd "$st" && git commit -qam "chore: edit" 2>&1 )
+st_rc=$?
+[ "$st_rc" -ne 0 ] && printf '%s' "$st_out" | grep -q "install-git-hooks.sh --force" &&
+	ok "STALE an edited wrapper is rejected with the re-install command" ||
+	bad "STALE an edited wrapper must be rejected (rc $st_rc)"
+rm -rf "$st"
+
+# TRIP: each validator has a committed bad fixture that must make it fail.
+tl=$(mktemp -d)
+mkdir -p "$tl/scripts" "$tl/docs" "$tl/cli" "$tl/skills" "$tl/rules" "$tl/setup"
+gfix "$tl"
+cp scripts/verify-doc-links.sh "$tl/scripts/"
+( cd "$tl" && bash scripts/verify-doc-links.sh ) >/dev/null 2>&1 &&
+	ok "TRIP verify-doc-links control tree is clean" ||
+	bad "TRIP verify-doc-links control tree must pass"
+cp scripts/fixtures/doc-links-bad.md "$tl/docs/"
+tl_out=$( cd "$tl" && bash scripts/verify-doc-links.sh 2>&1 )
+tl_rc=$?
+[ "$tl_rc" -eq 1 ] && printf '%s' "$tl_out" | grep -q "broken doc cross-reference" &&
+	ok "TRIP verify-doc-links fails on a broken link" ||
+	bad "TRIP verify-doc-links must fail on its bad fixture (rc $tl_rc)"
+rm -rf "$tl"
+vs_out=$(bash scripts/validate-skill.sh scripts/fixtures/bad-skill/SKILL.md 2>&1)
+vs_rc=$?
+[ "$vs_rc" -ne 0 ] && printf '%s' "$vs_out" | grep -q "they must match" &&
+	ok "TRIP validate-skill fails on a name/directory mismatch" ||
+	bad "TRIP validate-skill must fail on its bad fixture (rc $vs_rc)"
+
 # NEST: the suite run from a real pre-commit hook (as proof replay does) must
 # leave the calling repository's HEAD, index and config untouched. `commit -a`
 # hands the hook an absolute GIT_INDEX_FILE (a plain commit's is relative and
