@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.29.0] — 2026-10-22
+
+### Added
+
+- `mono-mode` router skill with feature, bug-fix, investigation, and
+  session-pickup playbooks; handback proof rule; stale-hook and validator
+  trip guards in `scripts/test-guards.sh`.
+- `work-bounded.md` companion: bounded mode split out of `work`.
+
+### Changed
+
+- Skills regrouped into `router/`, `stages/`, `reason/`, `tools/`, `extras/`;
+  `zharness` reference contracts follow the new paths.
+- Workflow: pstack principles inlined into stage skills; retro findings
+  applied (ref contract gate, handoff plan slicing, brainstorm reads its named
+  reference).
+- Setup `CLAUDE.md`: mandatory TinyFish web-access rule.
+
 ## [v0.28.0] — 2026-10-21
 
 ### Added
