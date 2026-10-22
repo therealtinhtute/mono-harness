@@ -19,5 +19,6 @@ The same shape often hides in N other places. Extract the pattern signature (fun
 ### 7. Clean up
 
 - The step 1 loop no longer reproduces; the regression test passes (or the missing seam is documented).
+- Code a discarded hypothesis motivated is reverted; only the change the surviving hypothesis justifies ships.
 - `grep` for your `[DEBUG-` prefix returns nothing; throwaway harnesses are deleted or clearly marked.
 - The hypothesis that proved correct goes into the commit/PR message, including why the bug recurred if it did.
