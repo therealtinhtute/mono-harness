@@ -1,6 +1,6 @@
 # Lean workflow B/C evaluation — public development protocol
 
-Case set `lean-v1`, preregistered 2026-10-21 before candidate tuning, under `docs/plans/active/lean-sdlc-workflow.md` and [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md). The general manual protocol in [README.md](README.md) still applies; this file adds the case set, the predicates, the metrics and the evidence layout. Do not change predicates, metrics or the decision rule after any C trial has run. A change needs a new case-set version and a fresh B baseline.
+Case set `lean-v1`, preregistered 2026-10-21 before candidate tuning, under `docs/plans/completed/lean-sdlc-workflow.md` and [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md). The general manual protocol in [README.md](README.md) still applies; this file adds the case set, the predicates, the metrics and the evidence layout. Do not change predicates, metrics or the decision rule after any C trial has run. A change needs a new case-set version and a fresh B baseline.
 
 The evaluated agent never sees this file, the oracle, the plan, another arm's instructions or prior trial reports.
 
@@ -107,7 +107,9 @@ trials/<case>-<arm>-<n>/
 
 As of 2026-10-21, C (`253d6f8`) is installed but unevaluated. The owner declined paid controlled trials, so no D01–D04 trial has run and no gain is claimed. The only evidence is an observational B-era baseline from `bash scripts/lean-replay-score.sh` (65 sessions that invoked a core skill). That scorer reads local Claude Code transcripts and splits them at the C install time. It does not count SKILL.md bodies injected by the Skill tool. Its `elapsed_s` includes idle time, and its `clarifications` counts every question. Tasks differ across sessions, so a B/C replay comparison is uncontrolled and can report only `no-detected-regression`, `observational improvement` or `inconclusive`.
 
-To re-evaluate after a model or instruction change, freeze the new candidate SHA and `instr_hash`, then either run the controlled trials above with `scripts/run-lean-trial.sh` (paid, owner-approved), or install the candidate, record the install time and replay transcripts with that time as the cutoff. To roll back, reinstall the six skills from B (`da9fed6`); see [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md#consequences).
+On 2026-10-22 the owner closed the evaluation phase without a verdict: R4 and R7 of the lean-workflow plan are unmet, and the C-era replay audit has no owning plan.
+
+To re-evaluate after a model or instruction change, freeze the new candidate SHA and `instr_hash`, then either run the controlled trials above with `scripts/run-lean-trial.sh` (paid, owner-approved), or install the candidate, record the install time and replay transcripts with that time as the cutoff. To roll back, move the six installed copies out of `~/.claude/skills/` with `trash`, then run `for s in brainstorm to-plan work check handoff watzup; do git archive da9fed6 skills/workflow/$s | tar -x --strip-components=2 -C ~/.claude/skills; done`; see [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md#consequences).
 
 ## Holdouts
 

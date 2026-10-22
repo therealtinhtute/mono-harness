@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted owner decision, 2026-10-13 and 2026-10-20 (`docs/plans/active/lean-sdlc-workflow.md`, Goal authority). Recorded before candidate implementation, following the [0015](0015-skill-owned-procedures-and-safe-retirement.md) precedent of an owner-required ADR-first initiative. Candidate edits under this decision are made in phase `f2-candidate`. The candidate is promoted only if the B/C comparison in the plan shows a targeted gain with no predicate regression; otherwise this ADR is superseded by a no-promotion record and B (`da9fed6`, tag `baseline/playbooks-to-skills-B`) stays live. Preserves [0014](0014-outcome-spec-normal-plans.md) and [0012](0012-five-section-plan-and-update-migration.md) unchanged.
+Accepted owner decision, 2026-10-13 and 2026-10-20 (`docs/plans/completed/lean-sdlc-workflow.md`, Goal authority). Recorded before candidate implementation, following the [0015](0015-skill-owned-procedures-and-safe-retirement.md) precedent of an owner-required ADR-first initiative. Candidate edits under this decision are made in phase `f2-candidate`. The candidate is promoted only if the B/C comparison in the plan shows a targeted gain with no predicate regression; otherwise this ADR is superseded by a no-promotion record and B (`da9fed6`, tag `baseline/playbooks-to-skills-B`) stays live. Preserves [0014](0014-outcome-spec-normal-plans.md) and [0012](0012-five-section-plan-and-update-migration.md) unchanged.
 
 ## Context
 
@@ -44,8 +44,8 @@ Rejected: adopting external workflows wholesale (duplicate state and runtime), r
 
 ## Consequences
 
-Method rules become unverified until the B/C comparison runs. C (`253d6f8`) is installed but unevaluated; to roll back, reinstall the skills from B (`da9fed6`). Rollback to B reverts the candidate's semantic edits only. It does not undo the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration. A model change after acceptance needs a fresh baseline.
+Method rules become unverified until the B/C comparison runs. C (`253d6f8`) is installed but unevaluated; to roll back, reinstall the six core skills from B (`da9fed6`) with the command in [lean-workflow.md](../evals/lean-workflow.md#status-and-re-evaluation). Rollback to B reverts the candidate's semantic edits only. It does not undo the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration. A model change after acceptance needs a fresh baseline.
 
 ## Authority
 
-Owner requests of 2026-10-13 and 2026-10-20 recorded in the Goal of `docs/plans/active/lean-sdlc-workflow.md`.
+Owner requests of 2026-10-13 and 2026-10-20 recorded in the Goal of `docs/plans/completed/lean-sdlc-workflow.md`.
