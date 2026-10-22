@@ -16,9 +16,12 @@ Ask the user only through the agent's question tool (Claude Code `AskUserQuestio
 | Error, crash, failing test, regression | [playbooks/bug-fix.md](playbooks/bug-fix.md) |
 | Question, review, diagnosis; nothing to change | [playbooks/investigation.md](playbooks/investigation.md) |
 | Resume, "where was I", an active plan exists | [playbooks/session-pickup.md](playbooks/session-pickup.md) |
+| Learn from recent sessions, retrospective | [playbooks/retro.md](playbooks/retro.md) |
 
 Read the matched playbook. Open a todo list whose first items are its steps copied verbatim, in order. A step you choose not to do stays in the list as `skip: <reason>`; never drop it silently. No playbook fits → say so and ask which one applies.
 
 Each step names a skill; that skill owns the procedure. Resolve it through the host's skill metadata. If a required skill is unavailable, report the missing dependency and stop.
+
+Gated skills — `retro`, `create-cli`, `turbo-mono-platform` — run only from a playbook step here or when the user names them. In `feature`, call `create-cli` for CLI design and `turbo-mono-platform` for that monorepo stack.
 
 Defer to: the skill each playbook step names; `git` only on the owner's explicit request.

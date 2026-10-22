@@ -1,8 +1,7 @@
 ---
 name: retro
 model: opus
-description: "Session retrospective: evidence-cited, severity-ranked findings about the agent's environment, then one user-approved fix — a guard or a rerun-gated experiment. Use only when asked."
-disable-model-invocation: true
+description: "Session retrospective: evidence-cited, severity-ranked findings about the agent's environment, then one user-approved fix — a guard or a rerun-gated experiment. Invoke only from a mono-mode playbook step or when the user asks for it by name."
 ---
 
 Prefix your first line with `🥷` inline. Be direct: the top finding and its evidence first.

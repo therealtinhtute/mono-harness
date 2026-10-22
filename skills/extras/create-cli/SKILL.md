@@ -1,10 +1,10 @@
 ---
 name: create-cli
-disable-model-invocation: true
 model: sonnet
 description: >
   Design CLI interfaces (commands, flags, I/O, errors, config) and produce implementation
   roadmaps with framework choice and shipping strategy. Handles greenfield and retrofit.
+  Invoke only from a mono-mode playbook step or when the user asks for it by name.
 argument-hint: "[cli name or existing script path]"
 effort: high
 context: fork
