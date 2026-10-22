@@ -9,7 +9,7 @@ The closing phase's `status:` line (only to `done`), `## Current State and Next 
 ## Steps
 
 1. **Repository state** — `git status --short --branch`, recent `git log`, diff stats.
-2. **Plan state** — Current State and the `## Log`/`## Validation` tails; stop on any status disagreement.
+2. **Plan state** — by section, never the whole file (slice as in `work-full.md` step 1): Current State and the `## Log`/`## Validation` tails; stop on any status disagreement.
 3. **Continuity facts** — done, in progress, blockers with unblock conditions, proof gaps.
 4. **Incomplete handoff** — update Current State: honest status, `blockers:`, `open_items:`, one exact next action. The plan stays active.
 5. Close every cleanly checked phase:
