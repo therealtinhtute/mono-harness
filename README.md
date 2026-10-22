@@ -171,7 +171,7 @@ are optional extensions.
 
 Skills live in five groups under `skills/`: `router` (mono-mode), `stages`
 (the six workflow skills plus retro), `reason` (think, hunt), `tools` (git,
-create-skill, librarian, prompt-leverage, write) and `extras` (create-cli,
+create-skill, librarian, prompt-leverage, tldraw-diagram, write) and `extras` (create-cli,
 turbo-mono-platform). `retro`, `create-cli` and
 `turbo-mono-platform` are gated: they run only from a mono-mode playbook step or
 when the user names them.
