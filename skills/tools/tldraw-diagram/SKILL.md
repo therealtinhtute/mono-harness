@@ -28,10 +28,10 @@ Output: one `.tldraw` source and one PNG per diagram, plus the PNG path in the r
 ## Workflow
 
 1. Pick a style from `styles/` (one file per style; default `styles/light-pill.md`) and read it. List the components and edges at topology level: 4–9 cards, 2–4 bands, short lines.
-2. Copy the closer of `assets/workflow.example.js` or `assets/architecture.example.js` to a scratch file and edit it. The body calls helpers from `scripts/lib.js`:
+2. Copy the closest of `assets/workflow.example.js` (bus + elbow), `assets/workflow-curve.example.js` (curved fan-out) or `assets/architecture.example.js` to a scratch file and edit it. The body calls helpers from `scripts/lib.js`:
    - `band(id, y, label, color, width)` — a layer rule with a dot and label
    - `card(id, x, y, w, h, pillTitle, color, lines[])` — a card with its pill tag
-   - `arrow(fromId, toId, color, {label, dash, bend})`
+   - `arrow(fromId, toId, color, {label, dash, bend, elbow, from, to})` — `elbow: true` routes at right angles; `from`/`to` pin anchors like `{x:.5, y:1}` (bottom center) so fan-outs share one bus and loops run along the margin
    - `return await finish(title, subtitle)` — draws, binds arrows, saves, returns `{n, lints}`
 3. Draw: `scripts/tl.sh draw <out>/<name>.tldraw <body.js>`. It creates the file when missing and clears the page on every run, so re-running is safe.
 4. Export a preview: `scripts/tl.sh png <out>/<name>.tldraw <scratch>/preview.png 1400`, then look at the image.
