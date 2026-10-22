@@ -37,7 +37,7 @@ itself a finding.
 
 ## 3. Scan these categories
 
-Scan all seven before ranking; a category earns a finding only with evidence.
+Scan all seven before ranking; a category earns a finding only with evidence. A count or metric cited as evidence names what else it could be measuring (errors, skipped work, noise) and why that is ruled out.
 
 
 - **Navigation** — the agent searched long or read wrong files first. Candidate fix: a pointer in the file the agent already reads.

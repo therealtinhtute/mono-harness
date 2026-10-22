@@ -44,7 +44,7 @@ An error, crash, failing test, or "why is this broken" → one line: it belongs 
 6. **Deform or discard.** A lens finds a hole → change the design to survive it; it shatters the approach → drop it and say why. Never hide a failed lens.
 7. **Recommend.** One direction: effort, risk, and the existing code it builds on. Name one alternative only if the call is close (>40% the user would prefer it).
 
-A question only running something can settle (does this state model feel right?) → recommend a throwaway prototype answering exactly that; building it needs the user's go-ahead.
+A question only running something can settle (does this state model feel right?) → recommend a throwaway prototype answering exactly that; building it needs the user's go-ahead. A reversible call inside the approved scope is decided and reported, not asked.
 
 ### Core Lenses
 
