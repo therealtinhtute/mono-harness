@@ -57,11 +57,12 @@
           <span class="terminal-title">zharness — architecture overview</span>
           <span class="badge">Rust</span>
         </div>
+        <p><img src="../assets/architecture.png" alt="zharness installs the doc set; skills are installed separately and read it" style="max-width:100%;height:auto;border-radius:8px" /></p>
         <pre><code><span class="tok-path">cli/src/main.rs</span>                  <span class="tok-cmt">one Rust binary (clap), three verbs</span>
         <span class="tok-prm">|</span>
         <span class="tok-prm">v</span>
 <span class="tok-cmd">install</span>                          <span class="tok-out">scaffolds the managed set, records a base, reports brownfield read-only</span>
-<span class="tok-cmd">update</span>                           <span class="tok-out">fresh-overwrites playbooks/WORKFLOW.md; hash-guarded AGENTS.md block replace; PROJECT.md only when absent</span>
+<span class="tok-cmd">update</span>                           <span class="tok-out">fresh-overwrites WORKFLOW.md; hash-guarded AGENTS.md block replace; PROJECT.md only when absent</span>
 <span class="tok-cmd">uninstall</span>                        <span class="tok-out">removes the managed set; consumer bytes are never destroyed</span></code></pre>
       </div>
 
@@ -95,7 +96,7 @@
       </div>
 
       <div class="prose reveal">
-        <p><code>all_targets</code> (<code>cli/src/installer/mod.rs</code>) is the managed set: <code>docs/WORKFLOW.md</code>, <code>docs/PROJECT.md</code> (scaffolded from identity template), and the eight playbooks (six stages plus the <code>work-full</code> and <code>check-validation</code> companions). <code>AGENTS.md</code> is handled separately and surgically &mdash; only the marked <code>ZHARNESS</code> block inside it is swapped; consumer prose around it is untouched.</p>
+        <p><code>all_targets</code> (<code>cli/src/installer/mod.rs</code>) is the managed set: <code>docs/WORKFLOW.md</code>, <code>docs/PROJECT.md</code> (scaffolded from identity template), with a fixed legacy inventory used only to retire old <code>docs/playbooks/</code> copies; stage procedures live in the installed skills, not the binary. <code>AGENTS.md</code> is handled separately and surgically &mdash; only the marked <code>ZHARNESS</code> block inside it is swapped; consumer prose around it is untouched.</p>
         <p>State lives in <code>.zharness/base/</code>: a <code>manifest.json</code> of <code>{path, sha256}</code> entries recording what zharness last wrote, and the ownership ledger <code>ownership.tsv</code>. There is no merge and no conflict state: every refusal check runs before the first write, so a refused update leaves every file as it was (ADR 0011).</p>
       </div>
 
@@ -136,14 +137,14 @@
       </div>
 
       <div class="prose reveal">
-        <p>CI workflows (<code>.github/workflows/cli-ci.yml</code>) re-run these checks on pushed commits, so bypassing local git hooks gains nothing. The hook reads staged bytes directly; there is no pass marker or hash that an authoring agent can forge. Handoff absorb is playbook protocol, not a hook: final close writes <code>absorb: none</code> or names an existing ADR/guard/memory.</p>
+        <p>CI workflows (<code>.github/workflows/cli-ci.yml</code>) re-run these checks on pushed commits, so bypassing local git hooks gains nothing. The hook reads staged bytes directly; there is no pass marker or hash that an authoring agent can forge. Handoff absorb is skill protocol, not a hook: final close writes <code>absorb: none</code> or names an existing ADR/guard/memory.</p>
       </div>
 
       <div class="prose reveal">
         <h2>Embedded Doc Set &amp; Projection<i>.</i></h2>
         <p>The <code>zharness</code> binary carries two embedded filesystems under <code>cli/docs/embedded/</code>:</p>
         <ul>
-          <li><strong>The Managed Set:</strong> <code>AGENTS.md</code>, <code>WORKFLOW.md</code>, and <code>playbooks/</code>. Projected into <code>docs/</code> upon install or update. <code>docs/playbooks/*.md</code> is a byte-identical projection of the embedded source: edit <code>cli/docs/embedded/</code>, never the projection.</li>
+          <li><strong>The Managed Set:</strong> <code>AGENTS.md</code> block, <code>WORKFLOW.md</code> and <code>PROJECT.md</code>. <code>docs/WORKFLOW.md</code> is a byte-identical projection of the embedded source: edit <code>cli/docs/embedded/</code>, never the projection. Stage procedures live in <code>skills/stages/&lt;stage&gt;/references/</code>.</li>
           <li><strong>Templates:</strong> <code>templates/</code> &mdash; emitted on demand (e.g. <code>PROJECT.md</code> identity template), never projected automatically.</li>
         </ul>
       </div>
@@ -183,7 +184,7 @@
         </div>
         <div class="spec-row">
           <div class="spec-idx">05</div>
-          <div class="spec-scene"><code>docs/playbooks/</code></div>
+          <div class="spec-scene"><code>skills/stages/*/references/</code></div>
           <div class="spec-cell"><span class="badge">Projected</span></div>
           <div class="spec-cell">Projected from <code>cli/docs/embedded/</code>; synchronized via <code>zharness update</code>.</div>
         </div>
@@ -203,7 +204,7 @@
       </div>
 
       <div class="pull-quote reveal">
-        Ready to see how the playbooks and workflow run?<br />
+        Ready to see how mono-mode and the workflow run?<br />
         <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
           <a class="button-primary" href="workflow.html">View Workflow</a>
           <a class="button-secondary" href="cli.html">Explore CLI Verbs</a>

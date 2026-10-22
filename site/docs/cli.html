@@ -85,13 +85,13 @@
         <div class="spec-row">
           <div class="spec-idx">01</div>
           <div class="spec-scene"><code>zharness install</code></div>
-          <div class="spec-cell">Scaffolds the managed doc set (<code>WORKFLOW.md</code>, <code>PROJECT.md</code>, playbooks, <code>AGENTS.md</code> block, ignore entry). Records a sha256 manifest in <code>.zharness/base/</code> and the repository in <code>~/.config/zharness/repos</code>. Idempotent.</div>
+          <div class="spec-cell">Scaffolds the managed doc set (<code>WORKFLOW.md</code>, <code>PROJECT.md</code>, <code>AGENTS.md</code> block, ignore entry). Records a sha256 manifest in <code>.zharness/base/</code> and the repository in <code>~/.config/zharness/repos</code>. Idempotent.</div>
           <div class="spec-cell"><code>0</code> success, <code>1</code> error</div>
         </div>
         <div class="spec-row">
           <div class="spec-idx">02</div>
           <div class="spec-scene"><code>zharness update</code></div>
-          <div class="spec-cell">Overwrites playbooks and <code>WORKFLOW.md</code>; writes <code>PROJECT.md</code> only when absent; replaces the <code>AGENTS.md</code> block between its markers, refusing with a diff if the block was edited since the last write. Every refusal runs before the first write. Migrates a single 9-section active plan to 5 sections, <code>## Validation</code> bytes unchanged.</div>
+          <div class="spec-cell">Overwrites <code>WORKFLOW.md</code>; retires recorded legacy <code>docs/playbooks/</code> copies by hash; writes <code>PROJECT.md</code> only when absent; replaces the <code>AGENTS.md</code> block between its markers, refusing with a diff if the block was edited since the last write. Every refusal runs before the first write. Migrates a single 9-section active plan to 5 sections, <code>## Validation</code> bytes unchanged.</div>
           <div class="spec-cell"><code>0</code> success, <code>1</code> error, refusal, or drift (<code>--check</code>)</div>
         </div>
         <div class="spec-row">
@@ -148,8 +148,6 @@
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">install</span>
 <span class="tok-out">installed  docs/WORKFLOW.md</span>
 <span class="tok-out">installed  docs/PROJECT.md</span>
-<span class="tok-out">installed  docs/playbooks/brainstorm.md</span>
-<span class="tok-out">…</span>
 <span class="tok-out">installed  AGENTS.md (created)</span>
 <span class="tok-out">updated    .gitignore (+.zharness/)</span>
 <span class="tok-out">exit: 0</span>
@@ -157,21 +155,20 @@
 <span class="tok-cmt"># 2. Report drift from this binary without writing</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span> <span class="tok-kw">--check</span>
 <span class="tok-out">drift    /path/to/repo</span>
-<span class="tok-out">  stale    docs/playbooks/work.md</span>
+<span class="tok-out">  stale    docs/WORKFLOW.md</span>
 <span class="tok-out">exit: 1</span>
 
 <span class="tok-cmt"># 3. Refresh the managed docs</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">update</span>
 <span class="tok-out">refreshed      docs/WORKFLOW.md</span>
-<span class="tok-out">refreshed      docs/playbooks/work.md</span>
 <span class="tok-out">…</span>
 <span class="tok-out">update complete.</span>
 <span class="tok-out">exit: 0</span>
 
 <span class="tok-cmt"># 4. Safe uninstallation</span>
 <span class="tok-prm">$</span><span class="tok-cmd">zharness</span> <span class="tok-kw">uninstall</span>
-<span class="tok-out">uninstall complete — 11 managed file(s) removed, 1 kept:</span>
-<span class="tok-out">  docs/playbooks/work.md — locally modified; delete manually if intended</span>
+<span class="tok-out">uninstall complete — 2 managed file(s) removed, 1 kept:</span>
+<span class="tok-out">  docs/PROJECT.md — locally modified; delete manually if intended</span>
 <span class="tok-out">exit: 0</span></code></pre>
       </div>
 
@@ -182,7 +179,7 @@
 
       <div class="safety-list reveal">
         <div class="safety-item"><span class="s-key">docs/plans/active/*.md</span><span class="s-val">Initiative plans containing requirements, phases, tasks, and append-only progress log.</span></div>
-        <div class="safety-item"><span class="s-key">docs/playbooks/*.md</span><span class="s-val">Canonical stage execution procedures, managed and synchronized via <code>zharness update</code>.</span></div>
+        <div class="safety-item"><span class="s-key">skills/stages/*/references/</span><span class="s-val">Stage execution procedures, installed with the skills; <code>zharness</code> does not ship them.</span></div>
         <div class="safety-item"><span class="s-key">docs/decisions/</span><span class="s-val">Immutable Architecture Decision Records (ADRs) numbered sequentially.</span></div>
         <div class="safety-item"><span class="s-key">docs/memory/</span><span class="s-val">Cross-session durable facts and preferences tracked in plain markdown.</span></div>
         <div class="safety-item"><span class="s-key">.zharness/base/</span><span class="s-val">sha256 manifest of what zharness last wrote; guards the <code>AGENTS.md</code> block and scopes uninstall.</span></div>

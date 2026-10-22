@@ -12,6 +12,8 @@ Committed markdown is the truth. The binary is a scaffolding tool, not a runtime
 
 ## The three verbs
 
+![zharness installs the doc set; skills are installed separately and read it](../assets/diagrams/architecture.png)
+
 ```
 cli/src/main.rs                  one Rust binary (clap), three verbs
         |

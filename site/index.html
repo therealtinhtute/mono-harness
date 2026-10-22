@@ -153,7 +153,7 @@
         <span class="path-num">i.</span>
         <span class="path-en">Committed Markdown</span>
         <div class="path-name">Git is the single source of truth</div>
-        <p class="path-desc">Plans, decisions, memories, and playbooks live in committed markdown files. No opaque binary databases, no task databases, and no parallel control plane.</p>
+        <p class="path-desc">Plans, decisions, and memories live in committed markdown files. No opaque binary databases, no task databases, and no parallel control plane.</p>
       </div>
       <div class="path-col">
         <span class="path-num">ii.</span>
@@ -171,7 +171,7 @@
 
     <div class="strip reveal">
       <div><b>14 Production Skills</b><span>Self-contained agent skills across workflow, development, and system tools.</span></div>
-      <div><b>Workflow Playbooks</b><span>Step-by-step playbooks for planning, execution, verification, and handoff.</span></div>
+      <div><b>mono-mode Playbooks</b><span>One router picks feature, bug-fix, investigation, session-pickup, or retro, then chains the stage skills.</span></div>
       <div><b>Wave-by-Wave Execution</b><span>Acyclic DAGs with isolated subagents and typed result artifacts.</span></div>
       <div><b>Zero Resident Daemons</b><span>Everything executes within standard Git and agent process boundaries.</span></div>
     </div>
@@ -238,8 +238,8 @@
     <h2 class="reveal">One lightweight binary.<br />One inspectable control plane<i>.</i></h2>
 
     <div class="cmd-list reveal">
-      <div class="cmd-row"><div class="c">zharness <span class="blue">install</span></div><div class="d">Scaffold the managed documentation set and playbooks into the current repository</div></div>
-      <div class="cmd-row"><div class="c">zharness <span class="blue">update</span></div><div class="d">Refresh playbooks and WORKFLOW.md; replace the AGENTS.md block (refusing if it was edited); never overwrite PROJECT.md or plans</div></div>
+      <div class="cmd-row"><div class="c">zharness <span class="blue">install</span></div><div class="d">Scaffold the managed documentation set into the current repository</div></div>
+      <div class="cmd-row"><div class="c">zharness <span class="blue">update</span></div><div class="d">Refresh WORKFLOW.md and retire legacy playbook copies; replace the AGENTS.md block (refusing if it was edited); never overwrite PROJECT.md or plans</div></div>
       <div class="cmd-row"><div class="c">zharness <span class="blue">uninstall</span></div><div class="d">Cleanly remove the managed doc set and restore clean repository state</div></div>
       <div class="cmd-row"><div class="c">npx skills add <span class="blue">therealtinhtute/mono-harness</span></div><div class="d">Mount all 14 mono-harness skills into your current AI agent workspace</div></div>
       <div class="cmd-row"><div class="c">bash <span class="blue">setup/install.sh</span></div><div class="d">Run the complete global Claude Code bootstrap (CLAUDE.md, rules, statusline, skills)</div></div>
