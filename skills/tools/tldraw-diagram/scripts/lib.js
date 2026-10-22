@@ -19,9 +19,9 @@ const finish=async(title,sub)=>{
   text('title',40,20,title,{size:'xl'}); text('sub',42,80,sub,{size:'s',color:'grey'});
   editor.createShapes(S);
   A.forEach((r,i)=>{const aid=id('arr'+i);
-    editor.createShape({id:aid,type:'arrow',x:0,y:0,props:{color:r.color,dash:r.dash||'draw',size:'m',bend:r.bend||0,font:'draw',richText:rt(r.label||''),start:{x:0,y:0},end:{x:1,y:1}}});
-    const bind=(t,s)=>({fromId:aid,toId:id(s),type:'arrow',props:{terminal:t,normalizedAnchor:{x:.5,y:.5},isExact:false,isPrecise:false}});
-    editor.createBindings([bind('start',r.a),bind('end',r.b)]);});
+    editor.createShape({id:aid,type:'arrow',x:0,y:0,props:{color:r.color,dash:r.dash||'draw',size:'m',bend:r.bend||0,kind:r.elbow?'elbow':'arc',font:'draw',richText:rt(r.label||''),start:{x:0,y:0},end:{x:1,y:1}}});
+    const bind=(t,s,p)=>({fromId:aid,toId:id(s),type:'arrow',props:{terminal:t,normalizedAnchor:p||{x:.5,y:.5},isExact:false,isPrecise:!!p}});
+    editor.createBindings([bind('start',r.a,r.from),bind('end',r.b,r.to)]);});
   editor.updateInstanceState({isGridMode:false}); editor.user.updateUserPreferences({colorScheme:'light'});
   editor.zoomToFit(); await helpers.saveDoc(); return {n:editor.getCurrentPageShapeIds().size, lints:helpers.getLints()};
 };
