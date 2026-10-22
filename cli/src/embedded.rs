@@ -309,12 +309,21 @@ mod tests {
                 forbidden: &["story_id", "## Approach and Risks", "## Progress"],
             },
             PlaybookContract {
-                name: "work routes full mode to its companion",
+                name: "work routes each mode to its companion",
                 path: "work/references/work.md",
                 required: &[
+                    "read [work-bounded.md](work-bounded.md) now",
                     "read [work-full.md](work-full.md) now",
                     "print the resolved mode as your first output line",
+                ],
+                forbidden: &["Zero-write rule"],
+            },
+            PlaybookContract {
+                name: "work bounded writes no durable artifacts",
+                path: "work/references/work-bounded.md",
+                required: &[
                     "bounded/simple mode creates no plans, reports, changesets, or markdown artifacts",
+                    "**red → green**",
                 ],
                 forbidden: &[],
             },

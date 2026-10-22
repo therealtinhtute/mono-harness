@@ -10,7 +10,7 @@ const STAGES: &[(&str, &[&str])] = &[
         &["brainstorm", "brainstorm-grill", "brainstorm-lock"],
     ),
     ("to-plan", &["to-plan"]),
-    ("work", &["work", "work-full"]),
+    ("work", &["work", "work-bounded", "work-full"]),
     (
         "check",
         &["check", "check-durable", "check-validation", "check-review"],
