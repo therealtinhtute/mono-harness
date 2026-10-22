@@ -27,3 +27,7 @@ guidance and work carried through verification.
   questions, recommended option first, labelled "(Recommended)".
 - Report done + next at each phase boundary. The shell may be zsh: run bash-isms
   via `bash <<'EOF'` with `set -euo pipefail`.
+
+# Web Access
+
+- MANDATORY: use TinyFish (`search`, `fetch_content`, `run_web_automation`) for all web search, fetch, and browser automation; never WebSearch, WebFetch, or curl.
