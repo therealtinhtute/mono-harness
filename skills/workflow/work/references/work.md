@@ -9,8 +9,7 @@
 2. Before reading any plan, print the resolved mode as your first output line: `mode: {resolved} ({reason})`.
 3. IF context was compacted since you read the plan → re-read it.
 
-**Zero-write rule:** bounded/simple mode creates no plans, reports, changesets, or markdown artifacts and never edits an active plan. Evidence: the diff plus captured proof in the response, with the delivery state stated as implemented or locally verified; commit and later states run only through `git` on the owner's explicit request.
-
+IF the mode is `bounded` → read [work-bounded.md](work-bounded.md) now and follow it.
 IF the mode is `full` → read [work-full.md](work-full.md) now and follow it.
 
 ## Memory
