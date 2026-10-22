@@ -1,0 +1,15 @@
+const W=1760;
+card('entry',780,150,300,80,'You','light-red',['/mono-mode <task>']);
+band('b1',290,'Router','blue',W);
+card('router',720,330,420,140,'mono-mode','blue',['Match one playbook','Copy its steps into a todo list','Call the skill each step names']);
+band('b2',540,'Playbooks','green',W);
+const P=[['feature','green',['brainstorm → to-plan','work → check','git → handoff']],['bugfix','orange',['hunt → failing test','work bounded','check → git']],['invest','violet',['think or hunt','read-only','changes nothing']],['pickup','light-blue',['watzup → reconcile','route to next','playbook']],['retro','yellow',['watzup → retro','save approved','lessons']]];
+const names={feature:'feature',bugfix:'bug-fix',invest:'investigation',pickup:'session-pickup',retro:'retro'};
+P.forEach(([n,c,l],i)=>{card(n,230+i*300,590,275,150,names[n],c,l);arrow('router',n,c);});
+band('b3',810,'Repository','orange',W);
+card('repo',650,860,580,120,'Evidence','light-red',['docs/plans/active → completed','Proofs re-run by pre-commit + CI']);
+arrow('entry','router','black');
+arrow('feature','repo','green',{label:'plan + log'});
+arrow('bugfix','repo','orange',{label:'test'});
+arrow('pickup','router','light-blue',{dash:'dashed',bend:90,label:'route'});
+return await finish('mono-harness workflow','One router, five playbooks; skills do the work.');
