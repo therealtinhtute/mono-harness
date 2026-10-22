@@ -11,7 +11,7 @@ The evaluated agent never sees this file, the oracle, the plan, another arm's in
 | B | `da9fed6a09e34d20f1e586577cf936d74905b7bb` (tag `baseline/playbooks-to-skills-B`) |
 | C | Candidate commit frozen at the end of f2; never a moving ref |
 
-The instruction distribution of an arm is `AGENTS.md`, `docs/WORKFLOW.md` and the six skills `brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`, taken at the arm's source SHA. `instr_hash` is `git ls-tree -r <sha> -- AGENTS.md docs/WORKFLOW.md skills/workflow/{brainstorm,to-plan,work,check,handoff,watzup} | sha256sum`.
+The instruction distribution of an arm is `AGENTS.md`, `docs/WORKFLOW.md` and the six skills `brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`, taken at the arm's source SHA. `instr_hash` is `git ls-tree -r <sha> -- AGENTS.md docs/WORKFLOW.md skills/stages/{brainstorm,to-plan,work,check,handoff,watzup} | sha256sum`.
 
 Pinned configuration: Claude Code with `claude-opus-5-5` and one fixed effort and settings set, recorded in `run.env`. Each trial runs in a fresh fixture whose project `.claude/skills/` holds only that arm's six skills, with `--setting-sources project,local --strict-mcp-config` (a temporary `CLAUDE_CONFIG_DIR` runs unauthenticated; see [routing.md](routing.md)); the runner is `scripts/run-lean-trial.sh`. A trial whose trace cannot show that nothing from the operator's global configuration loaded is `blocked`, not scored.
 
@@ -109,7 +109,7 @@ As of 2026-10-21, C (`253d6f8`) is installed but unevaluated. The owner declined
 
 On 2026-10-22 the owner closed the evaluation phase without a verdict: R4 and R7 of the lean-workflow plan are unmet, and the C-era replay audit has no owning plan.
 
-To re-evaluate after a model or instruction change, freeze the new candidate SHA and `instr_hash`, then either run the controlled trials above with `scripts/run-lean-trial.sh` (paid, owner-approved), or install the candidate, record the install time and replay transcripts with that time as the cutoff. To roll back, move the six installed copies out of `~/.claude/skills/` with `trash`, then run `for s in brainstorm to-plan work check handoff watzup; do git archive da9fed6 skills/workflow/$s | tar -x --strip-components=2 -C ~/.claude/skills; done`; see [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md#consequences).
+To re-evaluate after a model or instruction change, freeze the new candidate SHA and `instr_hash`, then either run the controlled trials above with `scripts/run-lean-trial.sh` (paid, owner-approved), or install the candidate, record the install time and replay transcripts with that time as the cutoff. To roll back, move the six installed copies out of `~/.claude/skills/` with `trash`, then run `for s in brainstorm to-plan work check handoff watzup; do git archive da9fed6 skills/stages/$s | tar -x --strip-components=2 -C ~/.claude/skills; done`; see [ADR 0016](../decisions/0016-lean-workflow-method-latitude.md#consequences).
 
 ## Holdouts
 

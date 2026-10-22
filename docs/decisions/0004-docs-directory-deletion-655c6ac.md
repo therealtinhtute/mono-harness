@@ -40,13 +40,13 @@ Both were corrected on restore rather than restored verbatim. `migration.md` in 
 
 Eight further files were deleted and are cited by nothing: the three under docs/audit/cost-model/, docs/plans/completed/eval-layer.md, docs/plans/completed/sdlc-token-optimization.md, docs/workflow-harness/gap-matrix.md, and two more pilot-evidence logs from 2026-07-19. They are left deleted without further comment.
 
-Citations to the 8 cited files are handled in two places. Three of them are cited from text that lives in `cli/docs/embedded/playbooks/`, so the citation cannot be removed without a binary change and a release — those are marked in `.claimignore`, each entry naming `655c6ac` and deferring removal to phase `p2-consumer-scaffold`. The rest are cited from `skills/workflow/README.md`, which is authored and freely editable, and are retargeted at this ADR.
+Citations to the 8 cited files are handled in two places. Three of them are cited from text that lives in `cli/docs/embedded/playbooks/`, so the citation cannot be removed without a binary change and a release — those are marked in `.claimignore`, each entry naming `655c6ac` and deferring removal to phase `p2-consumer-scaffold`. The rest are cited from `skills/stages/README.md`, which is authored and freely editable, and are retargeted at this ADR.
 
 ## Consequences
 
 - Nothing is lost. Every one of the 26 files remains retrievable with `git checkout 655c6ac^ -- <path>`.
 - `.claimignore` gains three entries that are honest markers of deferred work, not silencers of real breakage. They must be removed when `p2-consumer-scaffold` edits the embedded playbooks.
-- `.claimignore` matches by substring across the whole repository, so the entry for the ceremony audit also hides that same citation in `skills/workflow/README.md`. The retarget there is still required by hand and is verified by a direct grep rather than by the link gate.
+- `.claimignore` matches by substring across the whole repository, so the entry for the ceremony audit also hides that same citation in `skills/stages/README.md`. The retarget there is still required by hand and is verified by a direct grep rather than by the link gate.
 - The underlying gap is unfixed: a deletion made through the GitHub web UI still bypasses every local gate. This ADR records the incident; it does not prevent the next one.
 
 ## Authority

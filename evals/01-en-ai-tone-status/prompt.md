@@ -4,7 +4,7 @@ timeout_seconds: 180
 allowed_tools: [Skill, Read, Glob]
 model: sonnet
 runs: 3
-plugins: [../../skills/craft/write]
+plugins: [../../skills/tools/write]
 ---
 Rewrite this status update for our engineering Slack channel so it doesn't sound like a bot wrote it:
 

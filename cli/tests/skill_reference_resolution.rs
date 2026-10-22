@@ -20,7 +20,7 @@ const STAGES: &[(&str, &[&str])] = &[
 ];
 
 fn install_fixture(root: &Path) -> HashMap<String, PathBuf> {
-    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../skills/workflow");
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("../skills/stages");
     let mut metadata = HashMap::new();
     for (i, (stage, refs)) in STAGES.iter().enumerate() {
         // Deliberately unrelated parents: ../other-skill routing must not work.

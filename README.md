@@ -52,7 +52,7 @@ and bounded work.
 - **Invariants enforced, not assumed.** Where a rule can be checked it is
   checked — the pre-commit and CI plan guards fail on violation rather than
   letting a broken state travel silently. What they cannot check, they say so
-  in `skills/workflow/check/references/check-durable.md` instead of implying coverage.
+  in `skills/stages/check/references/check-durable.md` instead of implying coverage.
 - **Portable across agents.** The spine skills are thin triggers; the
   operating logic sits in independently installed skill references.
   Skill-capable hosts resolve each stage through their skill metadata; the CLI
@@ -218,7 +218,7 @@ bash scripts/test-guards.sh
 ```
 
 This repository is the source of the binary and skills. Edit workflow procedures
-in `skills/workflow/<stage>/references/`. Edit the managed router in
+in `skills/stages/<stage>/references/`. Edit the managed router in
 `cli/docs/embedded/WORKFLOW.md`, then copy it to `docs/WORKFLOW.md`. Machine-wide Claude Code bootstrap is `setup/install.sh`;
 that is not how a consumer app repo receives zharness.
 

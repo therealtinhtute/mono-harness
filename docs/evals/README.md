@@ -5,7 +5,7 @@ Maintainer-owned behavioral evaluation surfaces. The routing suite — the case 
 `docs/evals/evidence/` — is opt-in: no playbook, guard, CI job, or installer reads it, and the
 protocol below runs only when a maintainer explicitly requests a comparison for a routing
 instruction change. `docs/evals/failures.md` is a separate surface: when it exists, it is read by durable gate/full
-and appended only on a durable `REQUEST_CHANGES` (`skills/workflow/check/references/check-durable.md` steps 4 and 10).
+and appended only on a durable `REQUEST_CHANGES` (`skills/stages/check/references/check-durable.md` steps 4 and 10).
 
 | Path | Role |
 |---|---|
@@ -13,7 +13,7 @@ and appended only on a durable `REQUEST_CHANGES` (`skills/workflow/check/referen
 | `docs/evals/runs.md` | run log; one row per case per trial |
 | `docs/evals/lean-workflow.md` | lean-workflow B/C protocol: case set lean-v1 (D01–D04), predeclared predicates and metrics, evidence layout checked by `scripts/verify-lean-eval.sh` |
 | `docs/evals/evidence/` | retained generators, fixtures, traces, snapshots, and scorers |
-| `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; read by durable gate/full, appended on durable `REQUEST_CHANGES` (`skills/workflow/check/references/check-durable.md` steps 4/10) |
+| `docs/evals/failures.md` | optional failure ledger per `docs/decisions/0010-local-failure-ledger.md`; read by durable gate/full, appended on durable `REQUEST_CHANGES` (`skills/stages/check/references/check-durable.md` steps 4/10) |
 
 ## Contract
 

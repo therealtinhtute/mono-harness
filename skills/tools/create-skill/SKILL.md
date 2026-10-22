@@ -56,7 +56,7 @@ Skillmark weights accuracy 80%, security 20% (`references/benchmark-optimization
 - Sacrifice grammar for brevity
 
 ## Output Format
-Save to: `skills/{workflow,craft,extras}/{skill-name}/`.
+Save to: `skills/{router,stages,reason,tools,extras}/{skill-name}/`.
 
 Frontmatter: name, description, version, argument-hint.
 

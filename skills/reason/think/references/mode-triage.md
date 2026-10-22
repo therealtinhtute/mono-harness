@@ -16,4 +16,4 @@ Output the classification table first. Implement the subset already covered by e
 
 **Negative-user feedback is not automatic scope.** Refund, churn, and "competitor X is more intuitive" complaints often land on deliberate product differentiation, not an oversight. Before converting the complaint into a rework plan, read the project's own docs for the criticized behavior named as a deliberate choice; if it is, the verdict is **Keep**, with one sentence on why the differentiation matters and a note that the maintainer can override. Do not write a "fix the friction" plan that quietly removes the differentiator.
 
-Boundary: this mode classifies asks that are not yet implemented. Existing issues or PRs in a tracker (label, reply, close, write an agent brief) belong to `hunt` triage mode (`skills/workflow/hunt/references/triage.md`).
+Boundary: this mode classifies asks that are not yet implemented. Existing issues or PRs in a tracker (label, reply, close, write an agent brief) belong to `hunt` triage mode (`skills/reason/hunt/references/triage.md`).

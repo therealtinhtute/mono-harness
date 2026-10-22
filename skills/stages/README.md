@@ -1,12 +1,12 @@
 # Workflow Harness — Concept
 
-The `workflow/` skill chain (`watzup, brainstorm, to-plan, work, check, git, handoff`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to references inside their installed skill directories. This doc locks the mental model.
+The lifecycle skill chain (`watzup, brainstorm, to-plan, work, check, git, handoff`; `git` lives in `tools/`) is a markdown-first lifecycle. The 6 spine skills are thin triggers that defer to references inside their installed skill directories. This doc locks the mental model.
 
 ## 4-Layer Model
 
 - **harness** — gone as a runtime since v0.15. Markdown plus git is the system of record; the archive trail lives in the root CHANGELOG and git history (`git show 3bab3c0:docs/plans/completed/` for the pre-prune plans).
 - **workflows** — the lifecycle contract itself: `Intent → Plan → Trace → Proof → Handoff/Resume`. Tool-independent; describes what must happen, not how.
-- **skills** — the 10 `SKILL.md` files under `skills/workflow/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route to their own `references/{stage}.md`. Companions resolve within that skill; cross-stage transitions use host metadata and repository data paths use the consumer root. No binary sits between the skill and its references — `zharness` installs and updates the managed doc set and plays no part in running a stage.
+- **skills** — the 10 `SKILL.md` files under `skills/stages/`. The 6 spine skills (`brainstorm`, `to-plan`, `work`, `check`, `handoff`, `watzup`) route to their own `references/{stage}.md`. Companions resolve within that skill; cross-stage transitions use host metadata and repository data paths use the consumer root. No binary sits between the skill and its references — `zharness` installs and updates the managed doc set and plays no part in running a stage.
 - **cli** — `zharness`, the Rust binary reduced to install / update / uninstall for the managed doc set. Lifecycle enforcement lives in repo scripts plus the pre-commit hook.
 
 ## Lifecycle
@@ -68,7 +68,7 @@ Defer to: {one line naming the skills this stage hands off to or resumes from}
 | `handoff` | Current State and Next Action, phase closure | skill reference + absorb line + `git mv` on completion |
 | `watzup` | console recap | git + plan reads only |
 | `git` | no plan sections | enrichment optional, never blocking |
-| `retro` | no plan sections, except an experiment-mode `docs/plans/active/harness-improvement-{slug}.md` | non-spine; logic `skills/workflow/retro/references/retro.md`, digest `skills/workflow/retro/scripts/session-digest.py`, guard mode `skills/workflow/retro/references/encoding-invariants.md`, experiment mode `skills/workflow/retro/references/harness-improvement.md`; never blocking on a missing binary |
-| `hunt` | no plan sections | non-spine; loop and hypotheses in `skills/workflow/hunt/SKILL.md`, fix/sweep `skills/workflow/hunt/references/fix.md`, bisect/regression `skills/workflow/hunt/references/bisect-regression.md`, triage mode `skills/workflow/hunt/references/triage.md`; report-only unless a fix is requested |
-| `think` | no plan sections, zero writes | non-spine; lenses `skills/workflow/think/references/lenses.md`; hands off to `brainstorm lock`, `to-plan`, or `hunt` |
-| `mono-mode` | no plan sections, zero writes | non-spine entry router; playbooks `skills/workflow/mono-mode/playbooks/*.md` compose the skills above by name |
+| `retro` | no plan sections, except an experiment-mode `docs/plans/active/harness-improvement-{slug}.md` | non-spine; logic `skills/stages/retro/references/retro.md`, digest `skills/stages/retro/scripts/session-digest.py`, guard mode `skills/stages/retro/references/encoding-invariants.md`, experiment mode `skills/stages/retro/references/harness-improvement.md`; never blocking on a missing binary |
+| `hunt` | no plan sections | non-spine; loop and hypotheses in `skills/reason/hunt/SKILL.md`, fix/sweep `skills/reason/hunt/references/fix.md`, bisect/regression `skills/reason/hunt/references/bisect-regression.md`, triage mode `skills/reason/hunt/references/triage.md`; report-only unless a fix is requested |
+| `think` | no plan sections, zero writes | non-spine; lenses `skills/reason/think/references/lenses.md`; hands off to `brainstorm lock`, `to-plan`, or `hunt` |
+| `mono-mode` | no plan sections, zero writes | non-spine entry router; playbooks `skills/router/mono-mode/playbooks/*.md` compose the skills above by name |

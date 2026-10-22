@@ -84,7 +84,7 @@ with Goal, Phases and Verification, append-only Log and Validation, and
 Current State and Next Action sections; ADRs under
 `docs/decisions/`; session memory as plain files under `docs/memory/`
 (convention). The twelve canonical procedures live under
-`skills/workflow/<stage>/references/` and are independently installed into
+`skills/stages/<stage>/references/` and are independently installed into
 the host. Consumer data stays in the consumer repository. Retained legacy
 files are not a fallback for missing skills.
 
