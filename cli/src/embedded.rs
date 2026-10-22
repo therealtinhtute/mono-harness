@@ -499,7 +499,7 @@ mod tests {
         for c in &contracts {
             let data = fs::read_to_string(
                 Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .join("../skills/workflow")
+                    .join("../skills/stages")
                     .join(c.path),
             )
             .unwrap_or_else(|e| panic!("skill reference {}: {e}", c.path));

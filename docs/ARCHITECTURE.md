@@ -25,7 +25,7 @@ uninstall                        removes proven managed copies, restores proven 
 
 State lives in `.zharness/base/`: a `manifest.json` of `{path, sha256}` entries (the bytes zharness last wrote) and the ownership ledger `ownership.tsv`. Update refuses before any write when the on-disk AGENTS block no longer matches its recorded hash, printing the diff; `--force` replaces it (`cli/src/installer/update.rs`, ADR 0011). Uninstall deletes only wholly-created files, restores captured pre-install originals, and keeps anything locally modified with a warning.
 
-The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`skills/workflow/brainstorm/references/brainstorm-lock.md` step 6).
+The installer is also the onboarding probe: `install` prints a deterministic, read-only brownfield report (active-plan count, present consumer inputs, foreign state files) and exits 0 without writing outside the managed set. `docs/PROJECT.md` is the identity record; filling it is the single forced write step at brainstorm lock (`skills/stages/brainstorm/references/brainstorm-lock.md` step 6).
 
 ## The fail-closed guards
 
@@ -44,7 +44,7 @@ Tool allow/deny is the host runtime’s job, not zharness: READ files by default
 
 ## Embedded doc set and projection
 
-The binary carries `AGENTS.md`, `WORKFLOW.md` and the PROJECT template from `cli/docs/embedded/`. Only `docs/WORKFLOW.md` is a byte-identical projection checked by projection parity. The twelve procedures live in the six owning `skills/workflow/<stage>/references/` directories and are installed independently; `zharness` neither embeds nor installs them. WORKFLOW resolves the selected skill through host metadata, companions from that installed skill and data from the consumer root. Missing dependencies stop execution rather than invoking retained old procedures.
+The binary carries `AGENTS.md`, `WORKFLOW.md` and the PROJECT template from `cli/docs/embedded/`. Only `docs/WORKFLOW.md` is a byte-identical projection checked by projection parity. The twelve procedures live in the six owning `skills/stages/<stage>/references/` directories and are installed independently; `zharness` neither embeds nor installs them. WORKFLOW resolves the selected skill through host metadata, companions from that installed skill and data from the consumer root. Missing dependencies stop execution rather than invoking retained old procedures.
 
 ## Markdown-only lifecycle state
 
@@ -55,7 +55,7 @@ The binary carries `AGENTS.md`, `WORKFLOW.md` and the PROJECT template from `cli
 | `docs/memory/*.md` | memory as files; agents grep directly (`docs/memory/{id}.md`) |
 | `docs/decisions/`, `docs/research/` | authoritative records |
 | `docs/WORKFLOW.md` | projected; edit `cli/docs/embedded/WORKFLOW.md` instead |
-| `skills/workflow/<stage>/references/` | authored procedure source; independently installed into the host |
+| `skills/stages/<stage>/references/` | authored procedure source; independently installed into the host |
 | `.zharness/` | installer bookkeeping (active base manifest, ownership ledger, original payloads and interrupted-restoration intent) and `cache/` per-machine scratch; gitignored |
 
 Task execution status lives only in append-only `## Log`; task definitions carry no status fields. Bookkeeping is hand-appended — the binary writes no plan rows.

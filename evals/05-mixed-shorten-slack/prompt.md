@@ -4,7 +4,7 @@ timeout_seconds: 180
 allowed_tools: [Skill, Read, Glob]
 model: sonnet
 runs: 3
-plugins: [../../skills/craft/write]
+plugins: [../../skills/tools/write]
 ---
 Rút gọn tin Slack này còn khoảng một nửa giúp mình:
 

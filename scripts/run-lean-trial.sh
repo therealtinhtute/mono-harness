@@ -23,11 +23,11 @@ trap 'rm -rf "$WORK"' EXIT
 # 1. fixture, then the arm overlay (source SHA, never a moving ref)
 bash "$EVD/lean-fixture-generator-v1.txt" "$CASE" "$FIX" >/dev/null
 FIXTURE_HASH="$(git -C "$FIX" rev-parse 'HEAD^{tree}')"
-(cd "$ROOT" && git archive "$SHA" AGENTS.md docs/WORKFLOW.md $(for s in $SKILLS; do echo "skills/workflow/$s"; done)) | tar -x -C "$FIX"
+(cd "$ROOT" && git archive "$SHA" AGENTS.md docs/WORKFLOW.md $(for s in $SKILLS; do echo "skills/stages/$s"; done)) | tar -x -C "$FIX"
 mkdir -p "$FIX/.claude/skills"
-for s in $SKILLS; do mv "$FIX/skills/workflow/$s" "$FIX/.claude/skills/$s"; done
+for s in $SKILLS; do mv "$FIX/skills/stages/$s" "$FIX/.claude/skills/$s"; done
 rm -rf "$FIX/skills"
-INSTR_HASH="$(cd "$ROOT" && git ls-tree -r "$SHA" -- AGENTS.md docs/WORKFLOW.md $(for s in $SKILLS; do echo "skills/workflow/$s"; done) | sha256sum | cut -d' ' -f1)"
+INSTR_HASH="$(cd "$ROOT" && git ls-tree -r "$SHA" -- AGENTS.md docs/WORKFLOW.md $(for s in $SKILLS; do echo "skills/stages/$s"; done) | sha256sum | cut -d' ' -f1)"
 
 snap() { (cd "$FIX" && { git status --porcelain -uall; echo "--- sha256 ---"; find . -path ./.git -prune -o -type f -print0 | sort -z | xargs -0 sha256sum; }); }
 

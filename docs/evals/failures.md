@@ -4,15 +4,15 @@ Observed harness failures in this repository, one row per incident, append-only.
 
 Authority: `docs/decisions/0010-local-failure-ledger.md`. This file is maintainer-owned and local.
 It is not synced, not scaffolded by `zharness install` or `update`, and not required by any
-playbook. Its two consumers are conditional on its existence: `skills/workflow/check/references/check-durable.md`
+playbook. Its two consumers are conditional on its existence: `skills/stages/check/references/check-durable.md`
 (Review and Gate Steps, step 4) reads it and, for every class recorded two or more times, states whether the diff under
-review is clean of that class; `skills/workflow/check/references/check-durable.md` (Review and Gate Steps, step 10) appends one row per finding
+review is clean of that class; `skills/stages/check/references/check-durable.md` (Review and Gate Steps, step 10) appends one row per finding
 when a durable `gate` or `full` returns `REQUEST_CHANGES`. Deleting this file returns the
 repository to the behavior it had before the file existed.
 
 ## Conventions
 
-- **class** — one of the seven tokens in `skills/workflow/work/references/work-full.md` (Full-Mode Execution, step 6):
+- **class** — one of the seven tokens in `skills/stages/work/references/work-full.md` (Full-Mode Execution, step 6):
   `MISSING_CONTEXT`, `WRONG_TOOL`, `BAD_OUTPUT`, `REPEATED_LOOP`, `UNSAFE_ACTION`,
   `LOST_DECISION`, `UNKNOWN`. No other token is admissible. A row that fits none of them is
   `UNKNOWN` with a stated rationale, never a new token — a private vocabulary would make the

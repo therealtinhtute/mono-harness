@@ -4,7 +4,7 @@ timeout_seconds: 180
 allowed_tools: [Skill, Read, Glob]
 model: sonnet
 runs: 3
-plugins: [../../skills/craft/write]
+plugins: [../../skills/tools/write]
 ---
 Sửa đoạn email này cho tự nhiên hơn, em gửi sếp:
 

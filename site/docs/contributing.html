@@ -83,10 +83,10 @@
             <span class="terminal-dot"></span>
           </div>
           <span class="terminal-title">bash — validate skills</span>
-          <button class="copy-btn" data-copy data-cmd="bash scripts/validate-skill.sh skills/workflow/work/SKILL.md">COPY</button>
+          <button class="copy-btn" data-copy data-cmd="bash scripts/validate-skill.sh skills/stages/work/SKILL.md">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># Validate a single skill</span>
-<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> skills/workflow/work/SKILL.md
+<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> skills/stages/work/SKILL.md
 
 <span class="tok-cmt"># Validate all skills in repository</span>
 <span class="tok-prm">$</span><span class="tok-kw">for</span> skill <span class="tok-kw">in</span> skills/*/*/SKILL.md; <span class="tok-kw">do</span> <span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> <span class="tok-str">"$skill"</span>; <span class="tok-kw">done</span></code></pre>

@@ -6,7 +6,7 @@ on:
     paths:
       - "cli/**"
       - "docs/plans/**"
-      - "skills/workflow/**"
+      - "skills/stages/**"
       - "docs/WORKFLOW.md"
       - "scripts/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
@@ -14,7 +14,7 @@ on:
     paths:
       - "cli/**"
       - "docs/plans/**"
-      - "skills/workflow/**"
+      - "skills/stages/**"
       - "docs/WORKFLOW.md"
       - "scripts/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
