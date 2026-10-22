@@ -19,8 +19,8 @@ claude-code add-dir /path/to/your/local/skill
 
 ## Repository layout
 
-- `skills/` — installable agent skills, grouped under `workflow/`, `shipping/`,
-  `craft/`. Each skill directory has a required `SKILL.md` and optional
+- `skills/` — installable agent skills, grouped under `workflow/`, `craft/`,
+  `extras/`. Each skill directory has a required `SKILL.md` and optional
   `references/` and `scripts/` subdirectories.
 - `rules/` — source of truth for global Claude Code rules installed to
   `~/.claude/rules/`.
