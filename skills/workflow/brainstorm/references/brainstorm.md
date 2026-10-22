@@ -16,6 +16,8 @@ A leading subcommand sets the mode; else infer it (grill/interview/stress-test â
 
 `grill`/`raw`: read [brainstorm-grill.md](brainstorm-grill.md) now. `lock`/`refine`: read [brainstorm-lock.md](brainstorm-lock.md) and [brainstorm-grill.md](brainstorm-grill.md) now.
 
+A reference implementation the user names is read before any shape is recommended.
+
 **Zero-write rule:** explore creates no plans, reports, changesets, or markdown artifacts; neither do `raw` and an unapproved `grill`. Switch modes explicitly before writing.
 
 ## Lanes
