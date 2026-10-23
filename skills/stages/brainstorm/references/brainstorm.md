@@ -1,6 +1,6 @@
 # Playbook: brainstorm
 
-Owns only the plan's `## Goal` at `docs/plans/active/{slug}.md`; a `high-risk` plan's phases belong to `to-plan`, code to `work`.
+Owns only the plan's `## Goal` at `.harness/plans/active/{slug}.md`; a `high-risk` plan's phases belong to `to-plan`, code to `work`.
 
 ## Modes
 

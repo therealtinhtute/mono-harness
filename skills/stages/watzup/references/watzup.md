@@ -1,10 +1,10 @@
 # Playbook: watzup
 
-Read-only recap from Git and the plan at `docs/plans/active/{slug}.md`.
+Read-only recap from Git and the plan at `.harness/plans/active/{slug}.md`.
 
 ## Preconditions
 
-1. Select the active plan by name: exactly one non-empty file may exist under `docs/plans/active/*.md`; IF more → name every candidate and stop.
+1. Select the active plan by name: exactly one non-empty file may exist under `.harness/plans/active/*.md`; IF more → name every candidate and stop.
 2. Remain read-only: no writes, commits, gates, or code changes.
 
 ## Steps

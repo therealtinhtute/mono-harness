@@ -1,7 +1,7 @@
 ---
 name: to-plan
 version: "1.4.2"
-description: Generate the approach, phases, waves, and checks inside the locked `docs/plans/active/{slug}.md`. Use after `brainstorm` for a `high-risk` plan; a `normal` plan goes straight to `work`.
+description: Generate the approach, phases, waves, and checks inside the locked `.harness/plans/active/{slug}.md`. Use after `brainstorm` for a `high-risk` plan; a `normal` plan goes straight to `work`.
 argument-hint: "[mode:full|phase] [phase-name?]"
 compatibility: Designed for Claude Code
 ---
@@ -10,7 +10,7 @@ Prefix your first line with `🥷` inline. Be direct: executable steps, not plan
 
 Ask the user only through the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): ≤4 per call, recommended option first and labelled `(Recommended)`; plain text only without one.
 
-Resolve the mode, then follow [references/to-plan.md](references/to-plan.md) (`docs/WORKFLOW.md` IF routing is unclear).
+Resolve the mode, then follow [references/to-plan.md](references/to-plan.md) (`.harness/WORKFLOW.md` IF routing is unclear).
 
 Resolve cross-stage transitions through the host's skill metadata; do not assume a shared installation parent. Resolve data paths from the consumer repository root. If a required skill or reference is unavailable, report the missing dependency and stop; retained legacy playbooks are not a fallback.
 

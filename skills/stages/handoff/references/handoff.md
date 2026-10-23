@@ -1,6 +1,6 @@
 # Playbook: handoff
 
-A handoff preserves session continuity; it does not imply business acceptance or deployment. Persist resumable state in the active plan's `## Current State and Next Action`, close every cleanly checked phase, and at final closure compact the plan and move `docs/plans/active/{slug}.md` to `docs/plans/completed/{slug}.md`.
+A handoff preserves session continuity; it does not imply business acceptance or deployment. Persist resumable state in the active plan's `## Current State and Next Action`, close every cleanly checked phase, and at final closure compact the plan and move `.harness/plans/active/{slug}.md` to `.harness/plans/completed/{slug}.md`.
 
 ## Owned Plan State
 
@@ -21,5 +21,5 @@ The closing phase's `status:` line (only to `done`), `## Current State and Next 
    - Close it via step 5. Only after the plan shows every phase `done`, set `active_phase: none`, `lifecycle_status: completed`, `blockers: none`, `open_items: none`.
    - **Absorb** — append exactly one `decision` entry: `absorb: none`, or any of `absorb: adr <path>`, `absorb: guard <path>`, `absorb: memory <id>`, each naming an existing artifact. A hard-to-reverse decision or failure class with no ADR or guard → stop and write it first.
    - **Compact** — in `## Log`, drop `start` and `done` entries (and legacy `task_status=` lines); keep `blocked` and `decision` byte-identical. In `## Validation`, keep the last entry per phase byte-identical and drop the rest.
-   - Set frontmatter `status: completed`, then `git mv docs/plans/active/{slug}.md docs/plans/completed/{slug}.md`. Never copy: exactly one file may represent the initiative afterwards. Commit through the hook; it must pass. Cite the ADR or guard, never the completed plan; never delete it in this close.
+   - Set frontmatter `status: completed`, then `git mv .harness/plans/active/{slug}.md .harness/plans/completed/{slug}.md`. Never copy: exactly one file may represent the initiative afterwards. Commit through the hook; it must pass. Cite the ADR or guard, never the completed plan; never delete it in this close.
 7. **Verify** — statuses match, blockers are specific, one exact next action ("continue work" is not one), no secrets, no second continuity markdown.

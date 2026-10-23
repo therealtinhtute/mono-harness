@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.31.0] — 2026-10-23
+
+### Changed
+
+- **BREAKING:** managed files move from `docs/` to `.harness/`:
+  `.harness/WORKFLOW.md`, `.harness/PROJECT.md` and
+  `.harness/plans/{active,completed}/`. `zharness update` renames the old
+  paths in place, so plan bytes stay identical; it refuses when both the old
+  and the new copy exist. Stage skills, the pre-commit plan guards and the
+  AGENTS block name only the new paths. Upgrade in this order: install this
+  binary, run `zharness update`, reinstall the git hook
+  (`bash setup/install-git-hooks.sh --force`), then refresh skills.
+- `zharness update --check` reports a repository on the old layout as drift.
+- The pre-commit plan guards treat a plan moved from `docs/plans/` to
+  `.harness/plans/` as the same plan, so committing the move re-runs only
+  entries it adds.
+- Repository layout: gate scripts live in `scripts/ci/`, stage helpers in
+  `scripts/workflow/`, machine setup (`CLAUDE.md`, rules, hooks, installers,
+  statusline) in `setup/`, and guides in `docs/guides/`.
+
 ### Removed
 
 - Lean eval: `docs/evals/` and its scripts (`run-lean-trial.sh`,

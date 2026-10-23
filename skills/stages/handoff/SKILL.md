@@ -10,7 +10,7 @@ Prefix your first line with `🥷` inline. Be direct: branch, blocker, next acti
 
 Ask the user only through the agent's question tool (Claude Code `AskUserQuestion`, Codex `request_user_input`, Pi `ask_user_question`, Gemini CLI `ask_user`, omp `ask`): ≤4 per call, recommended option first and labelled `(Recommended)`; plain text only without one.
 
-Follow [references/handoff.md](references/handoff.md) (`docs/WORKFLOW.md` IF routing is unclear).
+Follow [references/handoff.md](references/handoff.md) (`.harness/WORKFLOW.md` IF routing is unclear).
 
 Resolve cross-stage transitions through the host's skill metadata; do not assume a shared installation parent. Resolve data paths from the consumer repository root. If a required skill or reference is unavailable, report the missing dependency and stop; retained legacy playbooks are not a fallback.
 

@@ -5,17 +5,17 @@ on:
     branches: [master]
     paths:
       - "cli/**"
-      - "docs/plans/**"
+      - ".harness/plans/**"
       - "skills/stages/**"
-      - "docs/WORKFLOW.md"
+      - ".harness/WORKFLOW.md"
       - "setup/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
   pull_request:
     paths:
       - "cli/**"
-      - "docs/plans/**"
+      - ".harness/plans/**"
       - "skills/stages/**"
-      - "docs/WORKFLOW.md"
+      - ".harness/WORKFLOW.md"
       - "setup/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
 
@@ -154,7 +154,7 @@ jobs:
           tmpdir=$(mktemp -d)
           zhuards_guard_plans "$plans" "$gbase" "$ghead" "$tmpdir" || failed=1
           while IFS= read -r f; do
-            case "$f" in docs/plans/completed/*) ;; *) continue ;; esac
+            case "$f" in .harness/plans/completed/*) ;; *) continue ;; esac
             git show "$ghead:$f" > /tmp/completed.md
             zharness_guard_completed_plan_phases_done "$f" /tmp/completed.md || failed=1
           done <<< "$plans"

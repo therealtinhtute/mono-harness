@@ -10,7 +10,7 @@ use std::path::Path;
 
 use super::write_file_atomic;
 
-pub const ACTIVE_PLANS_DIR: &str = "docs/plans/active";
+pub const ACTIVE_PLANS_DIR: &str = ".harness/plans/active";
 
 /// The 9-section plan format that predates the 5-section one.
 const LEGACY_PLAN_SECTIONS: [&str; 9] = [
@@ -199,7 +199,13 @@ pub struct PlanMigration {
 /// Decide what update does to the active plan before anything is written:
 /// migrate it, leave it with a notice, or refuse.
 pub fn prepare_plan_migration(root: &Path) -> Result<PlanMigration, String> {
-    let entries = match fs::read_dir(root.join(ACTIVE_PLANS_DIR)) {
+    prepare_plan_migration_in(root, ACTIVE_PLANS_DIR)
+}
+
+/// [`prepare_plan_migration`] over `dir`, for an update that has not yet moved
+/// the plans into place.
+pub fn prepare_plan_migration_in(root: &Path, dir: &str) -> Result<PlanMigration, String> {
+    let entries = match fs::read_dir(root.join(dir)) {
         Ok(e) => e,
         Err(_) => return Ok(PlanMigration::default()),
     };
@@ -209,7 +215,7 @@ pub fn prepare_plan_migration(root: &Path) -> Result<PlanMigration, String> {
         if e.path().is_dir() || !name.ends_with(".md") || name.starts_with('.') {
             continue;
         }
-        plans.push(format!("{ACTIVE_PLANS_DIR}/{name}"));
+        plans.push(format!("{dir}/{name}"));
     }
     plans.sort();
     match plans.len() {
@@ -412,7 +418,7 @@ mod tests {
         let repo = temp_repo();
         let root = repo.path();
         install_ok(root);
-        let plan = "docs/plans/active/p.md";
+        let plan = ".harness/plans/active/p.md";
         write_file(root, plan, &legacy_plan(&LEGACY_PLAN_SECTIONS));
 
         let out = update_ok(root);
@@ -440,7 +446,7 @@ mod tests {
         let repo = temp_repo();
         let root = repo.path();
         install_ok(root);
-        let plan = "docs/plans/active/p.md";
+        let plan = ".harness/plans/active/p.md";
         let input = format!("{}## Notes\nx\n", legacy_plan(&LEGACY_PLAN_SECTIONS));
         write_file(root, plan, &input);
 

@@ -1,6 +1,6 @@
 # Playbook: to-plan
 
-Turn the locked `## Goal` of `docs/plans/active/{slug}.md` into `## Phases and Verification` in that same file. `to-plan` runs only for `high-risk`; a `normal` plan → stop and route to `work full phase main` (lock already wrote its phase). Requires exactly one non-empty active plan with a complete Goal; ambiguous → `brainstorm refine`. Arguments: `full` (whole plan) or `phase {slug}` (add one phase).
+Turn the locked `## Goal` of `.harness/plans/active/{slug}.md` into `## Phases and Verification` in that same file. `to-plan` runs only for `high-risk`; a `normal` plan → stop and route to `work full phase main` (lock already wrote its phase). Requires exactly one non-empty active plan with a complete Goal; ambiguous → `brainstorm refine`. Arguments: `full` (whole plan) or `phase {slug}` (add one phase).
 
 ## Section Shape
 

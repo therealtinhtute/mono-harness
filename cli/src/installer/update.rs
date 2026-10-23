@@ -1,7 +1,7 @@
 //! `update`: refresh the managed set (ADR 0011).
 //!
-//! WORKFLOW.md is overwritten, `docs/PROJECT.md` is written
-//! only when absent, and the AGENTS block is replaced between its markers
+//! A pre-0.31 `docs/` layout is first moved into `.harness/`. WORKFLOW.md is
+//! overwritten, `.harness/PROJECT.md` is written only when absent, and the AGENTS block is replaced between its markers
 //! unless it was edited by hand since the last write. A single active plan in
 //! the older 9-section format is migrated. Every refusal is decided before the
 //! first write, so a refused update leaves every file as it was.
@@ -9,6 +9,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use super::layout;
 use super::migrate::{self, PlanMigration};
 use super::{
     agents_block_of, all_targets, apply_agents_block, canonical_agents_block, ensure_lines,
@@ -73,7 +74,21 @@ pub fn run_update(o: UpdateOptions, out: &mut String) -> Result<(), String> {
         }
     }
 
-    let mig: PlanMigration = match migrate::prepare_plan_migration(root) {
+    let moves = match layout::prepare(root) {
+        Ok(m) => m,
+        Err(e) => {
+            out.push_str(&format!(
+                "refused    layout move: {e}. Nothing was written.\n"
+            ));
+            return Err(e);
+        }
+    };
+    let plans_dir = if moves.iter().any(|(o, _)| o == "docs/plans") {
+        "docs/plans/active"
+    } else {
+        migrate::ACTIVE_PLANS_DIR
+    };
+    let mut mig: PlanMigration = match migrate::prepare_plan_migration_in(root, plans_dir) {
         Ok(m) => m,
         Err(e) => {
             out.push_str(&format!(
@@ -83,9 +98,17 @@ pub fn run_update(o: UpdateOptions, out: &mut String) -> Result<(), String> {
         }
     };
 
+    layout::apply(root, &moves, &mut base_files)?;
+    if let Some(rest) = mig.path.strip_prefix("docs/plans/") {
+        mig.path = format!("{}/plans/{rest}", layout::HARNESS_DIR);
+    }
+    let mut planned: Vec<(String, String)> = moves
+        .iter()
+        .map(|(old, new)| (format!("{old} -> {new}"), "moved".to_string()))
+        .collect();
+
     let mut own = super::retirement::load_ownership(root, &base_files)?;
     super::retirement::retire(root, &o.version, &mut base_files, &mut own, out)?;
-    let mut planned: Vec<(String, String)> = Vec::new();
     for t in &targets {
         let up = src_bytes(t)?;
         let dst_p = root.join(&t.dst);
@@ -215,7 +238,7 @@ mod tests {
         IsolatedEnv,
     };
 
-    /// docs/PROJECT.md is write-once (ADR 0011): update scaffolds it when
+    /// .harness/PROJECT.md is write-once (ADR 0011): update scaffolds it when
     /// absent and never touches an existing one, whatever the template does.
     #[test]
     fn update_project_write_once() {
