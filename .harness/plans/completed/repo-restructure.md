@@ -95,10 +95,9 @@ lane: high-risk
   - judge: independent (first pass CHANGES_REQUESTED, a doc-link `find` on a missing `.harness`; fixed and re-run)
   - tested source: HEAD e069038 + tracked diff sha256 e20d57e709ad; `.harness/` untracked, must be staged with the `docs/` deletions
 - 2026-10-23T05:00:00Z — phase `p3-rollout` — verdict: APPROVED — mode: full
-  - `zharness --version` — exit 0; zharness version 0.31.0
-  - `zharness update --check --all` — exit 0; current for mono-harness, TTDVKH, Mono
-  - `gh release view cli/v0.31.0` — exit 0; published, not draft
-  - `for r in /home/tinhpt/Lab/mono-harness /home/tinhpt/Work/TTDVKH /home/tinhpt/Work/Mono; do test -f $r/.harness/WORKFLOW.md && test ! -e $r/docs/WORKFLOW.md; done` — exit 0; new layout in all three repos
+  - `grep -q '^version = "0.31.0"' cli/Cargo.toml` — exit 0
+  - `test -f .harness/WORKFLOW.md && test ! -e docs/WORKFLOW.md` — exit 0
+  - machine-local, observed by the judge, not re-executable in CI: zharness --version → 0.31.0; zharness update --check --all → current for mono-harness, TTDVKH, Mono; gh release view cli/v0.31.0 → published; TTDVKH and Mono have .harness/WORKFLOW.md and no docs/WORKFLOW.md
   - judge: independent
   - tested source: master d146824
 
