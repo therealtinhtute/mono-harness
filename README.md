@@ -86,13 +86,20 @@ read-only and bounded work.
 Start a task with `/mono-mode <task>`. The router matches one playbook, copies
 its steps into a todo list, and calls the skill each step names.
 
-![mono-mode routes a task to one of its playbooks, each a chain of skills](site/assets/workflow.png)
+![mono-mode routes a task to one of twelve playbooks, each a chain of skills](site/assets/workflow.png)
 
 | Playbook | Steps |
 |---|---|
 | feature | brainstorm → to-plan (high-risk only) → work → check → git (on request) → handoff |
 | bug-fix | hunt → failing test → work (bounded) → check → git (on request) |
+| refactoring | think → pin behavior → work (subtract, then reshape) → check |
+| perf | baseline → hunt → mantras, cheapest first → work → check before/after |
+| prototype | throwaway variants → observe in the real app → decide |
+| fanout | separate → spawn sub-agents → aggregate → check |
 | investigation | think or hunt; read-only, changes nothing |
+| research | read (search, fetch) → learn → write; notes only |
+| babysit | `/loop` over review threads and CI until the PR is ready |
+| ship | watzup → security-review → check → land → changelog → tag → verify → rollback |
 | session-pickup | watzup → reconcile → route to the next playbook |
 | retro | watzup → retro → save approved lessons |
 
