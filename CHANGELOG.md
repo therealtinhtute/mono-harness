@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v0.30.0] — 2026-10-23
+
+### Added
+
+- `mono-mode` fanout playbook with an orchestrate-lite section for long
+  multi-unit runs.
+- `arena` reason skill: a design bakeoff that picks a base and grafts on the
+  best parts of the other candidates.
+- `work-fanout.md` companion: separate writers, brief and verify handbacks,
+  integrate one branch at a time; pinned by a `zharness` contract.
+
+### Changed
+
+- Install warns when an older `zharness` shadows the new one on `PATH`.
+
 ## [v0.29.0] — 2026-10-22
 
 ### Added
