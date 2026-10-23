@@ -1,4 +1,4 @@
-# Justified exceptions for scripts/verify-doc-links.sh.
+# Justified exceptions for scripts/ci/verify-doc-links.sh.
 # Format: <substring>  # <reason>
 # Every non-comment line MUST carry a `# reason`, or the gate exits 2.
 # Do not add an entry to silence a real broken link - fix the link.

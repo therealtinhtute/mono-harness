@@ -220,8 +220,8 @@ remain. Pin `v0.14.x` if you still need that binary.
 
 ```bash
 cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
-bash scripts/verify-doc-links.sh
-bash scripts/test-guards.sh
+bash scripts/ci/verify-doc-links.sh
+bash scripts/ci/test-guards.sh
 ```
 
 This repository is the source of the binary and skills. Edit workflow procedures

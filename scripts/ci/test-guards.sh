@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Fixture tests for the ZGUARD-CORE guard (guard-v3 plan R1/R2; keeps the v2
 # hardening semantics honest). Extracts the core exactly like CI does, then
-# asserts observable guard behavior. Run: bash scripts/test-guards.sh
+# asserts observable guard behavior. Run: bash scripts/ci/test-guards.sh
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 # Run from inside a Git hook, the caller's GIT_DIR/GIT_INDEX_FILE/... would
 # steer every fixture's git command into the calling repository.
 # shellcheck disable=SC2046
@@ -610,12 +610,12 @@ rm -rf "$pd"
 
 # record-check.sh: convenience runner, not the guarantee. Pass/fail keep the
 # proof's exit code; timeout → gtimeout → unbounded (stock macOS has neither).
-rc_out=$(bash scripts/record-check.sh -- true 2>&1)
+rc_out=$(bash scripts/workflow/record-check.sh -- true 2>&1)
 rc=$?
 [ "$rc" -eq 0 ] && printf '%s' "$rc_out" | grep -q "PASS" &&
 	ok "record-check true exits 0" ||
 	bad "record-check true expected 0, got $rc"
-rc_out=$(bash scripts/record-check.sh -- false 2>&1)
+rc_out=$(bash scripts/workflow/record-check.sh -- false 2>&1)
 rc=$?
 [ "$rc" -eq 1 ] &&
 	ok "record-check false exits 1" ||
@@ -624,7 +624,7 @@ rc_bin=$(mktemp -d)
 ln -s "$(command -v sh)" "$rc_bin/sh"
 ln -s "$(command -v tail)" "$rc_bin/tail"
 ln -s "$(command -v sed)" "$rc_bin/sed"
-rc_out=$(PATH="$rc_bin" /bin/bash scripts/record-check.sh -- true 2>&1)
+rc_out=$(PATH="$rc_bin" /bin/bash scripts/workflow/record-check.sh -- true 2>&1)
 rc=$?
 [ "$rc" -eq 0 ] && printf '%s' "$rc_out" | grep -q "no timeout/gtimeout" &&
 	ok "record-check isolated PATH warns and exits 0" ||
@@ -898,20 +898,20 @@ rm -rf "$st"
 
 # TRIP: each validator has a committed bad fixture that must make it fail.
 tl=$(mktemp -d)
-mkdir -p "$tl/scripts" "$tl/docs" "$tl/cli" "$tl/skills" "$tl/rules" "$tl/setup"
+mkdir -p "$tl/scripts/ci" "$tl/docs" "$tl/cli" "$tl/skills" "$tl/rules" "$tl/setup"
 gfix "$tl"
-cp scripts/verify-doc-links.sh "$tl/scripts/"
-( cd "$tl" && bash scripts/verify-doc-links.sh ) >/dev/null 2>&1 &&
+cp scripts/ci/verify-doc-links.sh "$tl/scripts/ci/"
+( cd "$tl" && bash scripts/ci/verify-doc-links.sh ) >/dev/null 2>&1 &&
 	ok "TRIP verify-doc-links control tree is clean" ||
 	bad "TRIP verify-doc-links control tree must pass"
-cp scripts/fixtures/doc-links-bad.md "$tl/docs/"
-tl_out=$( cd "$tl" && bash scripts/verify-doc-links.sh 2>&1 )
+cp scripts/ci/fixtures/doc-links-bad.md "$tl/docs/"
+tl_out=$( cd "$tl" && bash scripts/ci/verify-doc-links.sh 2>&1 )
 tl_rc=$?
 [ "$tl_rc" -eq 1 ] && printf '%s' "$tl_out" | grep -q "broken doc cross-reference" &&
 	ok "TRIP verify-doc-links fails on a broken link" ||
 	bad "TRIP verify-doc-links must fail on its bad fixture (rc $tl_rc)"
 rm -rf "$tl"
-vs_out=$(bash scripts/validate-skill.sh scripts/fixtures/bad-skill/SKILL.md 2>&1)
+vs_out=$(bash scripts/ci/validate-skill.sh scripts/ci/fixtures/bad-skill/SKILL.md 2>&1)
 vs_rc=$?
 [ "$vs_rc" -ne 0 ] && printf '%s' "$vs_out" | grep -q "they must match" &&
 	ok "TRIP validate-skill fails on a name/directory mismatch" ||
@@ -926,7 +926,7 @@ if [ -z "${ZHARNESS_GUARDS_NESTED:-}" ]; then
 	gfix "$nest"
 	git -C "$nest" config user.email outer@test
 	git -C "$nest" config core.hooksPath "$nest/.git/hooks"
-	printf '#!/bin/sh\nZHARNESS_GUARDS_NESTED=1 bash "%s/scripts/test-guards.sh" > "%s/log" 2>&1\n' \
+	printf '#!/bin/sh\nZHARNESS_GUARDS_NESTED=1 bash "%s/scripts/ci/test-guards.sh" > "%s/log" 2>&1\n' \
 		"$PWD" "$nest" > "$nest/.git/hooks/pre-commit"
 	chmod +x "$nest/.git/hooks/pre-commit"
 	nest_cfg=$(git -C "$nest" config --local --list)

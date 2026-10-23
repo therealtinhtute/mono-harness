@@ -30,7 +30,7 @@
 - lint: `cd cli && cargo clippy --all-targets -- -D warnings`
 - build: `cd cli && cargo build`
 - format: `cd cli && cargo fmt --check`
-- also required: `bash scripts/verify-doc-links.sh`
+- also required: `bash scripts/ci/verify-doc-links.sh`
 - Phase gates per plan: doc links, cargo tests, S4 `rg -i "sqlite|harness\.db" cli/`
   = 0, kill-list bounded scan = 0 actionable, kill-switch smoke.
 

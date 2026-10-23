@@ -99,7 +99,7 @@ jobs:
           grep -q '^zharness_guard_plan_paths()' /tmp/guard.sh
 
       - name: Guard fixture tests (guard-v3)
-        run: bash scripts/test-guards.sh
+        run: bash scripts/ci/test-guards.sh
       - name: At most one active plan
         run: |
           source /tmp/guard.sh

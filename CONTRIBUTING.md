@@ -38,7 +38,7 @@ skill, but you can run them directly:
 ```bash
 # Doc link integrity — fails on broken repo-relative cross-references.
 # Exceptions live in .claimignore and each one requires a `# reason`.
-bash scripts/verify-doc-links.sh
+bash scripts/ci/verify-doc-links.sh
 
 # Rust CLI test suite.
 cd cli && cargo test
@@ -52,7 +52,7 @@ cd cli && cargo test
 - Read `docs/prompt-engineering-principles.md` before writing or editing a
   `SKILL.md`, a rule, or any other agent instruction file. It covers context
   engineering, formatting conventions, and cross-model considerations.
-- Run `bash scripts/validate-skill.sh` against new or changed skills if
+- Run `bash scripts/ci/validate-skill.sh` against new or changed skills if
   applicable.
 
 ## Submitting changes

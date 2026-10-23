@@ -83,13 +83,13 @@
             <span class="terminal-dot"></span>
           </div>
           <span class="terminal-title">bash — validate skills</span>
-          <button class="copy-btn" data-copy data-cmd="bash scripts/validate-skill.sh skills/stages/work/SKILL.md">COPY</button>
+          <button class="copy-btn" data-copy data-cmd="bash scripts/ci/validate-skill.sh skills/stages/work/SKILL.md">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># Validate a single skill</span>
-<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> skills/stages/work/SKILL.md
+<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/ci/validate-skill.sh</span> skills/stages/work/SKILL.md
 
 <span class="tok-cmt"># Validate all skills in repository</span>
-<span class="tok-prm">$</span><span class="tok-kw">for</span> skill <span class="tok-kw">in</span> skills/*/*/SKILL.md; <span class="tok-kw">do</span> <span class="tok-cmd">bash</span> <span class="tok-path">scripts/validate-skill.sh</span> <span class="tok-str">"$skill"</span>; <span class="tok-kw">done</span></code></pre>
+<span class="tok-prm">$</span><span class="tok-kw">for</span> skill <span class="tok-kw">in</span> skills/*/*/SKILL.md; <span class="tok-kw">do</span> <span class="tok-cmd">bash</span> <span class="tok-path">scripts/ci/validate-skill.sh</span> <span class="tok-str">"$skill"</span>; <span class="tok-kw">done</span></code></pre>
       </div>
 
       <div class="prose reveal">
@@ -130,10 +130,10 @@
             <span class="terminal-dot"></span>
           </div>
           <span class="terminal-title">bash — verify documentation links</span>
-          <button class="copy-btn" data-copy data-cmd="bash scripts/verify-doc-links.sh">COPY</button>
+          <button class="copy-btn" data-copy data-cmd="bash scripts/ci/verify-doc-links.sh">COPY</button>
         </div>
         <pre><code><span class="tok-cmt"># Verify all documentation cross-references and claims</span>
-<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/verify-doc-links.sh</span></code></pre>
+<span class="tok-prm">$</span><span class="tok-cmd">bash</span> <span class="tok-path">scripts/ci/verify-doc-links.sh</span></code></pre>
       </div>
 
       <div class="prose reveal">
@@ -168,7 +168,7 @@
         <h2>Pull Request Checklist<i>.</i></h2>
         <p>Before opening a pull request on GitHub, verify:</p>
         <ul>
-          <li>Run targeted checks for changed components (skills validator, <code>cargo test</code>, <code>scripts/test-guards.sh</code>, or doc link checker).</li>
+          <li>Run targeted checks for changed components (skills validator, <code>cargo test</code>, <code>scripts/ci/test-guards.sh</code>, or doc link checker).</li>
           <li>Ensure all commit messages adhere to Conventional Commits format (e.g. <code>feat(cli): ...</code>, <code>fix(skills): ...</code>, <code>docs(site): ...</code>).</li>
           <li>Never commit API keys, personal auth tokens, or private settings files.</li>
         </ul>

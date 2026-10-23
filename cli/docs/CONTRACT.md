@@ -73,9 +73,9 @@ clean Validation entries.
 Repository scripts:
 
 - `scripts/install-git-hooks.sh` — installs the hooks (also embeds the guard core)
-- `scripts/record-check.sh` — optional convenience runner for proof commands;
+- `scripts/workflow/record-check.sh` — optional convenience runner for proof commands;
   it holds no guarantee
-- `scripts/plan-slice.sh` — optional plan-section reader; holds no guarantee
+- `scripts/workflow/plan-slice.sh` — optional plan-section reader; holds no guarantee
 
 ## What carries the state
 

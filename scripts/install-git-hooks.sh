@@ -552,8 +552,8 @@ while IFS= read -r skill_file; do
   if [ -f "$skill_file" ]; then
     echo "Checking: $skill_file"
     skill_dir=$(dirname "$skill_file")
-    if [ -f "scripts/validate-skill.sh" ]; then
-      if ! bash scripts/validate-skill.sh "$skill_file"; then
+    if [ -f "scripts/ci/validate-skill.sh" ]; then
+      if ! bash scripts/ci/validate-skill.sh "$skill_file"; then
         echo "❌ Validation failed: $skill_file"
         ((failed++))
       fi
