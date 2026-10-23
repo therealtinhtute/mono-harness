@@ -163,6 +163,35 @@ scenario_s4_explicit_tag_skips_resolution() {
   return "$failures"
 }
 
+invoke_install_with_path() {
+  (
+    export PATH="$1:$BIN_DIR:/usr/bin:/bin"
+    export ZHARNESS_INSTALL_DIR="$INSTALL_TARGET_DIR"
+    bash "$SCRIPT_UNDER_TEST" v0.13.0
+  )
+}
+
+scenario_s5_shadowed_binary_warns() {
+  local failures=0 exit_code=0 stale_dir="$ROOT/s5-stale"
+  begin_scenario "s5"
+  mkdir -p "$stale_dir"
+  printf '#!/usr/bin/env bash\necho "zharness 0.0.1-stale"\n' >"$stale_dir/zharness"
+  chmod +x "$stale_dir/zharness"
+  invoke_install_with_path "$stale_dir:$INSTALL_TARGET_DIR" >"$INSTALL_OUT" 2>"$INSTALL_ERR" || exit_code=$?
+  expect_eq "exit code" 0 "$exit_code" || failures=1
+  expect_file_has "warns about shadowing binary" "$INSTALL_ERR" "warning: zharness on PATH is $stale_dir/zharness (zharness 0.0.1-stale)" || failures=1
+  return "$failures"
+}
+
+scenario_s6_unshadowed_binary_silent() {
+  local failures=0 exit_code=0
+  begin_scenario "s6"
+  invoke_install_with_path "$INSTALL_TARGET_DIR" >"$INSTALL_OUT" 2>"$INSTALL_ERR" || exit_code=$?
+  expect_eq "exit code" 0 "$exit_code" || failures=1
+  expect_file_lacks "no shadow warning" "$INSTALL_ERR" "warning: zharness on PATH" || failures=1
+  return "$failures"
+}
+
 run_scenario() {
   local label="$1" scenario_fn="$2" rc=0
   printf -- '-- %s\n' "$label"
@@ -191,6 +220,8 @@ main() {
   run_scenario "S2 stale draft older than newest published -> install proceeds" scenario_s2_stale_draft_installs_newest_published
   run_scenario "S3 no drafts -> install newest published" scenario_s3_no_draft_installs_newest_published
   run_scenario "S4 explicit tag -> skip resolution, download requested tag" scenario_s4_explicit_tag_skips_resolution
+  run_scenario "S5 older zharness earlier on PATH -> warn with its path" scenario_s5_shadowed_binary_warns
+  run_scenario "S6 installed zharness first on PATH -> no shadow warning" scenario_s6_unshadowed_binary_silent
   printf 'summary: %d passed, %d failed\n' "$PASSED" "$FAILED"
   [ "$FAILED" -eq 0 ]
 }
