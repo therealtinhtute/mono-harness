@@ -16,7 +16,7 @@ Durable `gate` runs automated checks and records the verdict in `## Validation`;
 
 1. **Load scope** — the diff and verification commands; gate/full also the phase and the `## Log`/`## Validation` tails.
 2. **Classify** — depth by blast radius; scope on target, drift, or incomplete (a surface violation blocks a clean verdict).
-3. **Run the automated gate** — tests, types, lint, build, in repository order. IF `scripts/record-check.sh` exists → `bash scripts/record-check.sh -- "cmd1" "cmd2"`; else keep each exit code (never let a pipe hide it). Cite the raw commands.
+3. **Run the automated gate** — tests, types, lint, build, in repository order. IF `scripts/workflow/record-check.sh` exists → `bash scripts/workflow/record-check.sh -- "cmd1" "cmd2"`; else keep each exit code (never let a pipe hide it). Cite the raw commands.
 4. **Plan alignment** (gate/full) — `check-durable.md` step 4.
 5. **Manual review** — `gate` does not perform that complete manual review. `full`, or `bounded` on a diff: read [check-review.md](check-review.md) now.
 6. **Proof classes** — `tiny`: output; `normal`: + unit; `high-risk`: + integration, manual review. Name gaps.

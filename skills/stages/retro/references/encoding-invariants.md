@@ -36,8 +36,8 @@ Keep adjacent preferences outside the check.
 
 Find this repository's existing validation owner. Typical owners here:
 
-- `bash scripts/test-guards.sh` and `scripts/install-git-hooks.sh` (ZGUARD-CORE)
-- `bash scripts/verify-doc-links.sh`
+- `bash scripts/ci/test-guards.sh` and `scripts/install-git-hooks.sh` (ZGUARD-CORE)
+- `bash scripts/ci/verify-doc-links.sh`
 - `cd cli && cargo test`
 
 Implement the smallest deterministic check at the lowest layer that can inspect

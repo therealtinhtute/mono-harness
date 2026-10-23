@@ -9,7 +9,7 @@
 # exit 0 required.
 #
 # Usage:
-#   scripts/record-check.sh [-t SECONDS] -- "cmd1" "cmd2" ...
+#   scripts/workflow/record-check.sh [-t SECONDS] -- "cmd1" "cmd2" ...
 #   echo '"cmd1\ncmd2"' | jq -r .[] | ...   # not supported; pass commands as args
 #
 # Exit codes: 0 all proofs pass; 1 at least one failed; 2 usage error.

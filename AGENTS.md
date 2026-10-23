@@ -27,14 +27,14 @@ cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && carg
 cd cli && cargo build --release --target x86_64-unknown-linux-musl && test "$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)" -le 1850000
 
 # [CI] Guard fixture tests for the pre-commit hook's ZGUARD-CORE block — .github/workflows/cli-ci.yml, job `hook-guard`
-bash scripts/test-guards.sh
+bash scripts/ci/test-guards.sh
 
 # [CI] Doc link integrity (broken repo-relative cross-references) — .github/workflows/docs-ci.yml, job `doc-links`, on any tracked *.md change.
 # Exceptions live in .claimignore, each one requires a `# reason`.
-bash scripts/verify-doc-links.sh
+bash scripts/ci/verify-doc-links.sh
 ```
 
-`scripts/validate-skill.sh` is `Optional hook`: it runs on changed skills from
+`scripts/ci/validate-skill.sh` is `Optional hook`: it runs on changed skills from
 the pre-commit hook only, which requires `bash scripts/install-git-hooks.sh --force`.
 
 Run a single Rust test: `cd cli && cargo test --lib installer::registry::tests::registry_update_registers`.
