@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- Lean eval: `docs/evals/` and its scripts (`run-lean-trial.sh`,
+  `lean-replay-score.sh`, `verify-lean-eval.sh`, `test-lean-eval.sh`,
+  `generate-dashboard.sh`, `probes/`). Recover them from the
+  `archive/lean-eval-v1` tag.
+
 ## [v0.30.0] — 2026-10-23
 
 ### Added

@@ -35,3 +35,8 @@ docs/playbooks/work-full.md  # ADR 0010 Context taxonomy record; source at 156bc
 docs/playbooks/brainstorm.md  # ADR 0012 historical plan-shape record; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
 docs/playbooks/handoff.md  # ADR 0012 historical plan-shape record; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
 docs/playbooks/check-validation.md  # 2026-10-12 playbook audit evidence; source at 156bc96b15715ddd8b43e69bbeaa4bcd0fff8c1a, no live routing exception
+
+# Lean eval removed (tag archive/lean-eval-v1). These immutable ADR and research
+# citations name its files as they were; read them at that tag.
+docs/evals/  # frozen ADR 0010 and research audit citations of the removed lean-eval tree; source at tag archive/lean-eval-v1, no live routing
+../evals/lean-workflow.md  # frozen ADR 0016 link to the removed lean-eval protocol; source at tag archive/lean-eval-v1
