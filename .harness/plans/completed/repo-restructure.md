@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 lane: high-risk
 ---
 # Repo restructure: purpose roots and `.harness/` managed paths
@@ -32,7 +32,7 @@ lane: high-risk
 - recovery: each task is its own commit; revert that commit. p3 recovery: TTDVKH and Mono are git repos — `git checkout -- .` and `git clean` the `.harness/` folder restores them before commit; the lean-eval tag keeps the removed history.
 - seams: AGENTS.md gate commands; `cli/tests/projection_parity.rs`, `cli/tests/skill_reference_resolution.rs`; `cli/src/installer` update path (`zharness update`); `scripts/test-install-zharness.sh`; `setup/install.sh`.
 - phase_slug: `p1-tidy`
-  status: checked
+  status: done
   - goal: R1, R2, R3, R4, R5 | depends_on: none
   - surfaces: `docs/evals`, `scripts/`, `rules/`, `setup/`, `docs/{templates,patterns,workflow-harness}`, `docs/prompt-engineering-principles.md`, `assets/`, `site/assets`, `.github/workflows`, `.claimignore`, AGENTS.md, README.md, CONTRIBUTING.md, `site/docs/*.html`, skill references naming moved paths | avoided: `docs/WORKFLOW.md`, `docs/PROJECT.md`, `docs/plans/`, `cli/src`, `skills/` paths, `scripts/install-zharness.sh`
   - escalate_when: a moved file is referenced by something outside this repo besides the installed git hook; or a gate fails for a reason not caused by a path change.
@@ -47,7 +47,7 @@ lane: high-risk
     - T5 Move `assets/diagrams/*` (PNG + `.tldraw`) and `assets/*` into `site/assets/`, drop duplicate PNGs, fix README and site image paths (owner: main agent, writes `assets/`, `site/assets/`, README, `site/**/*.html` image refs only) — output: R5 tree — check: `test ! -e assets && bash scripts/ci/verify-doc-links.sh`
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cd .. && bash scripts/ci/test-guards.sh && bash scripts/ci/test-install-zharness.sh && bash scripts/ci/verify-doc-links.sh && test ! -e rules && test ! -e assets && test ! -e docs/evals`
 - phase_slug: `p2-harness-paths`
-  status: checked
+  status: done
   - goal: R6, R7 | depends_on: p1-tidy
   - surfaces: `cli/src/installer/**`, `cli/src/embedded.rs`, `cli/docs/**` (CONTRACT, embedded WORKFLOW and templates), `cli/tests/**`, `cli/Cargo.toml`, stage skill references, plan guards in the pre-commit hook and `scripts/ci/test-guards.sh`, AGENTS.md, README, CHANGELOG, this repo's own `docs/WORKFLOW.md`, `docs/PROJECT.md`, `docs/plans/` | avoided: skill directory paths, `scripts/install-zharness.sh`
   - escalate_when: the migration cannot keep plan bytes identical; or the CLI size gate (1,850,000 bytes) fails.
@@ -66,7 +66,7 @@ lane: high-risk
     - T3 Run the new binary's `update` on this repo (moves its own plan files), bump the CLI version, add a BREAKING CHANGELOG entry (owner: main agent, writes `.harness/**`, `docs/` removals, `cli/Cargo.toml`, `cli/Cargo.lock`, CHANGELOG) — output: this repo on the new layout — check: `cargo run --manifest-path cli/Cargo.toml -- update --check` prints current; CHANGELOG has `BREAKING`
   - phase check: `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test && cargo build --release --target x86_64-unknown-linux-musl && test "$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)" -le 1850000 && cd .. && bash scripts/ci/test-guards.sh && bash scripts/ci/verify-doc-links.sh`
 - phase_slug: `p3-rollout`
-  status: planned
+  status: done
   - goal: R8 | depends_on: p2-harness-paths
   - surfaces: the published release, `~/.local/bin/zharness`, TTDVKH and Mono working trees | avoided: those repos' product code
   - escalate_when: always before pushing the release tag, and before committing in TTDVKH or Mono (owner repos).
@@ -76,18 +76,14 @@ lane: high-risk
 
 ## Log
 - 2026-10-23T03:36:17Z — p1-tidy — decision — Log reconciled after the fact: T1–T5 landed as 55dc61e, 0ecb241, 5d738ed, 7340230, e069038 (rebased onto master 3ed429f); the plan file was untracked, so no entries were written then.
-- 2026-10-23T03:36:17Z — p1-tidy — done — phase check run on HEAD e069038, clean tree except untracked plan: fmt/clippy clean, cargo test 85 pass 0 fail, guards 74/0, install test 6/0, doc links 0 findings, `rules`/`assets`/`docs/evals` absent → pass. Status set to checked.
-- 2026-10-23T03:36:17Z — p2-harness-paths — start — scope locked by owner (hard switch, new-path guards, 0.31.0, docs yes/site no); baseline = p1 phase check above, green.
-- 2026-10-23T03:39:21Z — p2-harness-paths/T1 — done — `cd cli && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test` → 88 pass, 0 fail. Red first: `installer::layout_tests` failed at the `WORKFLOW_TARGET == .harness/WORKFLOW.md` assert and on missing dual-copy refusal before implementation. Changed: new `cli/src/installer/{layout.rs,layout_tests.rs}`; `mod.rs` (targets → `.harness/`, brownfield advisory), `migrate.rs` (`ACTIVE_PLANS_DIR`, `prepare_plan_migration_in`), `update.rs` (move before plan migration; re-keys manifest/ownership/originals), `check.rs` (`layout` drift line), `ownership.rs`/`migrate.rs`/`mod.rs` test fixtures to new paths, `lib.rs` doc. Mutation: dropping the plan-path rewrite fails `update_moves_then_migrates_a_legacy_plan_in_its_new_place`. E2E on a temp repo: install writes `.harness/{WORKFLOW,PROJECT}.md`, `update --check` current, uninstall removes `.harness/`. Tested source: HEAD e069038 + dirty diff sha256 7e2282c4741a.
 - 2026-10-23T03:39:21Z — p2-harness-paths/T1 — decision — The migration test is a lib test (`src/installer/layout_tests.rs`), not `cli/tests/`: the fixture helpers (`test_support`) are crate-private. Uninstall leaving `.zharness/base/{original,ownership.tsv}` is pre-existing (same on released 0.29.0), not in scope.
-- 2026-10-23T03:40:42Z — p2-harness-paths/T2 — done — 136 lines in 44 files swapped by a rerunnable script (skips `3bab3c0` history pointers and the historical `test-guards.sh:766` floor case). Check: `cargo test` 88/0 (incl. `projection_parity`, `skill_reference_resolution`), `bash scripts/ci/test-guards.sh` 74/0; residual `git grep` = migration code + legacy fixtures in `update.rs` (87, 102, 418, 468, 520), `test-guards.sh:766`, and historical `docs/guides/workflow-harness/migration.md` only. Tested source: HEAD e069038 + dirty diff sha256 5a8f9d5dc0a9.
 - 2026-10-23T03:40:42Z — p2-harness-paths/T2 — decision — `verify-doc-links.sh` reports 8 broken links, all in this repo's `docs/plans/completed/` (no longer skipped now that the exclusion is `.harness/plans/*`). T3 moves them, so the doc-link check runs at the T3 / phase check. `projection_parity` still reads `../docs/WORKFLOW.md`; it changes in T3 along with this repo's own move. Kept intentionally: the historical `migration.md` (0.14 harness) and `.claimignore` entries pointing at `git show` history.
-- 2026-10-23T03:42:17Z — p2-harness-paths/T3 — done — New binary's `update` on this repo moved `docs/{WORKFLOW,PROJECT}.md` and `docs/plans/` to `.harness/` (`update --check` → `current`); `projection_parity` reads `../.harness`; `cli/Cargo.toml`/`Cargo.lock` 0.31.0; CHANGELOG `[v0.31.0]` with a **BREAKING** entry (lean-eval Removed folded in). Phase check: fmt ok, clippy ok, cargo test 88/0, musl release 819920 ≤ 1850000 bytes, guards 74/0, doc links 0 findings. Tested source: HEAD e069038 + dirty diff and untracked `.harness`/`cli/src` sha256 69f23836815e.
 - 2026-10-23T03:42:17Z — p2-harness-paths/T3 — decision — Doc links: `.harness` added to the scan roots (the live router and PROJECT were otherwise unchecked; `.harness/plans/*` stays excluded). Frozen ADRs/research cite `docs/WORKFLOW.md`, `docs/PROJECT.md`, `docs/plans/completed/` → three `.claimignore` entries with reasons, matching how prior moves were handled. `update` output lines now read `moved  docs/X -> .harness/X`. The `KEPT docs/playbooks/*` notices during this repo's update are pre-existing retirement records in its own `.zharness` (retirement code untouched).
 - 2026-10-23T03:44:44Z — p2-harness-paths — blocked — independent gate CHANGES_REQUESTED: `test-guards.sh` 71/3. `verify-doc-links.sh` added `.harness` to the `find` roots, so `find` exits 1 in any tree without `.harness` (TRIP fixture, consumers). failure_class: BAD_OUTPUT. Correction: the T3 `done` entry's "guards 74/0" was measured before that script edit, so it did not cover the edited script.
 - 2026-10-23T03:44:44Z — p2-harness-paths — decision — Fix: scan `.harness` only when it exists. After the fix, `test-guards.sh` → 74/0 and `verify-doc-links.sh` → 0 findings. Gate finding 2 (untracked `.harness/`) is a commit-time action: the phase commit stages `.harness/` together with the `docs/` deletions. Tested source: HEAD e069038 + diff sha256 e20d57e709ad.
 - 2026-10-23T03:58:00Z — p2-harness-paths — blocked — first commit attempt rejected by the reinstalled pre-commit hook: (1) the Validation entry cited no backticked proof commands; (2) `zharness_guard_old_blob` found no predecessor for plans renamed `docs/plans/` → `.harness/plans/`, so every historical entry in `completed/` re-ran against pre-restructure script paths. failure_class: BAD_OUTPUT. (2) hits every consumer committing the move.
 - 2026-10-23T03:58:00Z — p2-harness-paths — decision — Fix: Validation entry lists its proof commands; `old_blob` also tries `docs/plans/<same subpath>` (and `docs/plans/active/<name>` for completed). New guard case S6b; `bash scripts/ci/test-guards.sh` → 76/0; mutation (drop the `docs/plans` fallback) → S6b fails. Post-gate change limited to the hook fallback and its test.
+- 2026-10-23T05:00:00Z — p3-rollout — decision — absorb: guard scripts/ci/test-guards.sh (S6b pins the `docs/plans` → `.harness/plans` old-blob fallback; R6/R7 migration is pinned by `cli/src/installer/layout_tests.rs`).
 
 ## Validation
 - 2026-10-23T03:45:14Z — phase `p2-harness-paths` — verdict: APPROVED — mode: gate
@@ -98,10 +94,18 @@ lane: high-risk
   - R6 residual grep, R7 temp-repo probes (old layout, dual copy, partial, unrelated docs/ files kept) — ok
   - judge: independent (first pass CHANGES_REQUESTED, a doc-link `find` on a missing `.harness`; fixed and re-run)
   - tested source: HEAD e069038 + tracked diff sha256 e20d57e709ad; `.harness/` untracked, must be staged with the `docs/` deletions
+- 2026-10-23T05:00:00Z — phase `p3-rollout` — verdict: APPROVED — mode: full
+  - `zharness --version` — exit 0; zharness version 0.31.0
+  - `zharness update --check --all` — exit 0; current for mono-harness, TTDVKH, Mono
+  - `gh release view cli/v0.31.0` — exit 0; published, not draft
+  - `for r in /home/tinhpt/Lab/mono-harness /home/tinhpt/Work/TTDVKH /home/tinhpt/Work/Mono; do test -f $r/.harness/WORKFLOW.md && test ! -e $r/docs/WORKFLOW.md; done` — exit 0; new layout in all three repos
+  - judge: independent
+  - tested source: master d146824
+
 
 ## Current State and Next Action
-- active_phase: p2-harness-paths
-- lifecycle_status: checked
+- active_phase: none
+- lifecycle_status: completed
 - blockers: none
 - open_items: none
-- exact_next_action: owner: reinstall hook (`bash setup/install-git-hooks.sh --force`), commit p2 with `.harness/` staged, push + PR; then p3 rollout
+- exact_next_action: none — initiative complete; owner commits the `.harness/` move in TTDVKH and Mono
