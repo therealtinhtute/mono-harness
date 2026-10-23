@@ -86,7 +86,7 @@ read-only and bounded work.
 Start a task with `/mono-mode <task>`. The router matches one playbook, copies
 its steps into a todo list, and calls the skill each step names.
 
-![mono-mode routes a task to one of five playbooks, each a chain of skills](assets/diagrams/workflow.png)
+![mono-mode routes a task to one of five playbooks, each a chain of skills](site/assets/workflow.png)
 
 | Playbook | Steps |
 |---|---|
@@ -101,9 +101,9 @@ A typo does not need a plan. A migration spanning sessions does: it gets one
 validation. When a request leaves a material product choice open, the agent
 stops before mutation and asks.
 
-![zharness installs the doc set; skills are installed separately and read it](assets/diagrams/architecture.png)
+![zharness installs the doc set; skills are installed separately and read it](site/assets/architecture.png)
 
-Diagram sources are tldraw files in [`assets/diagrams/`](assets/diagrams/).
+Diagram sources are tldraw files in [`site/assets/diagrams/`](site/assets/diagrams/).
 
 ## What gets installed
 
