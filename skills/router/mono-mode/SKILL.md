@@ -1,7 +1,7 @@
 ---
 name: mono-mode
 version: "1.0.0"
-description: "Entry router: match a task to a playbook (feature, bug-fix, investigation, session-pickup) and run its skill steps as a todo list. Use when the route is unclear."
+description: "Entry router: match a task to a playbook (feature, bug-fix, investigation, session-pickup, retro, fanout) and run its skill steps as a todo list. Use when the route is unclear."
 argument-hint: "[task]"
 compatibility: Designed for Claude Code
 ---
@@ -17,6 +17,7 @@ Ask the user only through the agent's question tool (Claude Code `AskUserQuestio
 | Question, review, diagnosis; nothing to change | [playbooks/investigation.md](playbooks/investigation.md) |
 | Resume, "where was I", an active plan exists | [playbooks/session-pickup.md](playbooks/session-pickup.md) |
 | Learn from recent sessions, retrospective | [playbooks/retro.md](playbooks/retro.md) |
+| Run several sub-agents in parallel, swarm, orchestrate | [playbooks/fanout.md](playbooks/fanout.md) |
 
 Read the matched playbook. Open a todo list whose first items are its steps copied verbatim, in order. A step you choose not to do stays in the list as `skip: <reason>`; never drop it silently. No playbook fits → say so and ask which one applies.
 
