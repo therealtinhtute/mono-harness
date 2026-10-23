@@ -1,7 +1,7 @@
 ---
 name: read
 version: "1.0.0"
-description: "Search the web and fetch URLs or PDFs as clean Markdown through a privacy-first cascade: local, gh/raw, connected MCP readers (TinyFish, Firecrawl, Exa), then opt-in proxies. Use to read, fetch, quote, cite or save a URL, or to find sources. Not for local repo files."
+description: "Search the web and fetch URLs or PDFs as clean Markdown via a privacy-first cascade (local, gh, TinyFish/Firecrawl/Exa, opt-in proxy). Use to read, cite or save a URL. Not for repo files."
 argument-hint: "[url | pdf path | search query]"
 compatibility: Designed for Claude Code
 ---

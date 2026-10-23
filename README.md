@@ -86,7 +86,7 @@ read-only and bounded work.
 Start a task with `/mono-mode <task>`. The router matches one playbook, copies
 its steps into a todo list, and calls the skill each step names.
 
-![mono-mode routes a task to one of five playbooks, each a chain of skills](site/assets/workflow.png)
+![mono-mode routes a task to one of its playbooks, each a chain of skills](site/assets/workflow.png)
 
 | Playbook | Steps |
 |---|---|
