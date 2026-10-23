@@ -192,11 +192,11 @@ To reinstall rules and skills from scratch, from this repository:
 
 ```bash
 cp setup/CLAUDE.md ~/.claude/CLAUDE.md
-cp rules/*.md ~/.claude/rules/
+cp setup/rules/*.md ~/.claude/rules/
 npx skills add git@github.com:therealtinhtute/mono-harness.git -a claude-code -g -y
 ```
 
-`cp` never removes a rule that was dropped from `rules/`; `bash setup/install.sh`
+`cp` never removes a rule that was dropped from `setup/rules/`; `bash setup/install.sh`
 retires the known ones. `npx skills add` never removes a skill that was dropped from this repository.
 Trash each dropped skill by name from `~/.claude/skills/` and `~/.agents/skills/`
 before reinstalling.

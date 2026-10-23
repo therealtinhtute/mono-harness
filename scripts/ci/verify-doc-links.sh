@@ -50,7 +50,7 @@ trap 'rm -f "$LIST"' EXIT
 # docs/plans/** is excluded by category, not by exception: a plan artifact must be
 # able to name a file it will create, and a completed plan is an immutable record
 # of paths as they were. Neither is a live cross-reference.
-find docs cli skills rules setup -name '*.md' -type f \
+find docs cli skills setup -name '*.md' -type f \
   -not -path 'docs/plans/*' >"$LIST"
 for extra in AGENTS.md README.md; do
   if [ -f "$extra" ]; then

@@ -8,7 +8,7 @@ on:
       - "docs/plans/**"
       - "skills/stages/**"
       - "docs/WORKFLOW.md"
-      - "scripts/install-git-hooks.sh"
+      - "setup/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
   pull_request:
     paths:
@@ -16,7 +16,7 @@ on:
       - "docs/plans/**"
       - "skills/stages/**"
       - "docs/WORKFLOW.md"
-      - "scripts/install-git-hooks.sh"
+      - "setup/install-git-hooks.sh"
       - ".github/workflows/cli-ci.yml"
 
 jobs:
@@ -91,7 +91,7 @@ jobs:
 
       - name: Extract guard core from installer
         run: |
-          awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' scripts/install-git-hooks.sh > /tmp/guard.sh
+          awk '$0=="# ZGUARD-CORE-BEGIN"{on=1;next} $0=="# ZGUARD-CORE-END"{on=0} on' setup/install-git-hooks.sh > /tmp/guard.sh
           grep -q '^zharness_guard_entries_of_file()' /tmp/guard.sh
           grep -q '^zharness_guard_at_most_one_active_plan()' /tmp/guard.sh
           grep -q '^zharness_guard_completed_plan_phases_done()' /tmp/guard.sh

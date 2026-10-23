@@ -6,7 +6,7 @@
 #   bash setup/install.sh
 #
 # What this does:
-#   1. Copies CLAUDE.md, rules/, hooks/ to ~/.claude/
+#   1. Copies CLAUDE.md, rules/, hooks/ (all under setup/) to ~/.claude/
 #   2. Installs statusline
 #   3. Handles settings.json (copy if new, show diff if existing)
 #   4. Installs all skills via npx skills add
@@ -56,7 +56,7 @@ sync_file "$REPO_DIR/setup/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 green "✓ CLAUDE.md installed"
 
 # --- Step 3: Rules ---
-for f in "$REPO_DIR/rules/"*.md; do
+for f in "$REPO_DIR/setup/rules/"*.md; do
   [ -f "$f" ] || continue
   sync_file "$f" "$CLAUDE_DIR/rules/$(basename "$f")"
 done
@@ -106,8 +106,8 @@ else
 fi
 
 # --- Step 6: Statusline ---
-if [ -f "$REPO_DIR/scripts/setup-statusline.sh" ]; then
-  bash "$REPO_DIR/scripts/setup-statusline.sh"
+if [ -f "$REPO_DIR/setup/statusline/setup-statusline.sh" ]; then
+  bash "$REPO_DIR/setup/statusline/setup-statusline.sh"
   green "✓ Statusline installed"
 fi
 

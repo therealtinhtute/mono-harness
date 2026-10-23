@@ -17,7 +17,9 @@ After install: edit `~/.claude/settings.json` → set `ANTHROPIC_AUTH_TOKEN`.
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Voice, hard rules, working style |
 | `hooks/` | `~/.claude/hooks/` | 2 hook scripts + 2 lib modules |
 | `settings.json` | `~/.claude/settings.json` | Template; only copied if file doesn't exist |
-| `../rules/*.md` | `~/.claude/rules/` | English coaching; retires rules folded into `CLAUDE.md` |
+| `statusline/` | `~/.claude/statusline.{sh,py}` | Statusline installers, run by `install.sh` (slim) or by hand (`setup-pulse.sh`) |
+| `install-git-hooks.sh` | `.git/hooks/` of this repo | Pre-commit/pre-push guards; not run by `install.sh` |
+| `rules/*.md` | `~/.claude/rules/` | English coaching; retires rules folded into `CLAUDE.md` |
 
 ## Prerequisites
 
