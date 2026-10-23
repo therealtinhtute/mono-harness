@@ -416,7 +416,7 @@ zharness_guard_staged_secrets() {          # <repo-root>
    $f  secret-bearing filename" ;;
     esac
     d=$(set -o pipefail; git -C "$root" --literal-pathspecs -c diff.interHunkContext=0 diff --cached -U0 --no-color \
-      --no-ext-diff --no-textconv --text -- "$f" | tr -d '\000') || { hits="$hits
+      --no-ext-diff --no-textconv --text -- "$f" | LC_ALL=C tr -d '\000') || { hits="$hits
    $f  diff failed, not scanned"; continue; }
     while IFS="$(printf '\t')" read -r n line; do
       [ -n "$n" ] || continue
