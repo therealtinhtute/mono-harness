@@ -101,7 +101,7 @@ are removed; proven saved originals are restored. Edited, unknown or conflicting
 files retain their recovery records. Failure returns nonzero with retry evidence;
 missing base means keep, and corrupt base refuses before writes. The active base
 manifest, ownership ledger and original payloads have distinct roles.
-See the [migration guide](../../docs/workflow-harness/skill-procedure-migration.md)
+See the [migration guide](../../docs/guides/workflow-harness/skill-procedure-migration.md)
 for snapshots, supported hosts and required consumer verification.
 
 ## Historical breaking changes

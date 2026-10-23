@@ -78,7 +78,7 @@ Before finalizing, check the upgraded prompt against the Upgrade Rubric in `refe
 Return upgraded prompt directly in response.
 
 **Template mode:**
-Save to: `docs/templates/prompt-{slug}.md`
+Save to: `docs/guides/templates/prompt-{slug}.md`
 
 Frontmatter:
 ```yaml

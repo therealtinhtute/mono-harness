@@ -150,7 +150,7 @@ zharness uninstall
 with the latest bytes. Legacy procedures are retired only using recorded hashes
 and ownership. Matching installer-created copies are removed; matching copies
 with proven pre-install originals are restored. Edited or uncertain files and
-their recovery data are retained with notices. See the [migration guide](docs/workflow-harness/skill-procedure-migration.md). `docs/PROJECT.md` is written only
+their recovery data are retained with notices. See the [migration guide](docs/guides/workflow-harness/skill-procedure-migration.md). `docs/PROJECT.md` is written only
 when absent; after that it belongs to the project. The marked `AGENTS.md` block
 is replaced between its markers; if it was edited since zharness last wrote it,
 update prints the diff, writes nothing, and exits non-zero until you move the

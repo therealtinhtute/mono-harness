@@ -9,7 +9,7 @@ references/api-endpoints-users.md     # illustrative example in create-skill/ref
 references/api-patterns.md            # illustrative example in create-skill/references/writing-effective-instructions.md, not a file in this repo
 references/ffmpeg-encoding.md         # illustrative example in create-skill/SKILL.md showing a hypothetical skill layout
 
-docs/playbooks/git.md  # deliberately deprojected (docs-architecture R13); this repo correctly has no such file, but docs/workflow-harness/migration.md must name the exact path so consumers upgrading past the deprojection can delete their stale copy. Permanent, not a deferral.
+docs/playbooks/git.md  # deliberately deprojected (docs-architecture R13); this repo correctly has no such file, but docs/guides/workflow-harness/migration.md must name the exact path so consumers upgrading past the deprojection can delete their stale copy. Permanent, not a deferral.
 
 CLAUDE.md  # global path `~/.claude/CLAUDE.md` cited by setup/README.md and skills/rules prose; not a repo file
 
@@ -40,3 +40,7 @@ docs/playbooks/check-validation.md  # 2026-10-12 playbook audit evidence; source
 # citations name its files as they were; read them at that tag.
 docs/evals/  # frozen ADR 0010 and research audit citations of the removed lean-eval tree; source at tag archive/lean-eval-v1, no live routing
 ../evals/lean-workflow.md  # frozen ADR 0016 link to the removed lean-eval protocol; source at tag archive/lean-eval-v1
+# ADR 0004 records the two docs it restored at the paths they held then; both
+# moved under docs/guides in the docs-restructure. The record is not rewritten.
+docs/prompt-engineering-principles.md  # ADR 0004 Decision table, historical path before the move to docs/guides/
+docs/workflow-harness/migration.md     # ADR 0004 Decision table, historical path before the move to docs/guides/

@@ -26,7 +26,7 @@ claude-code add-dir /path/to/your/local/skill
   `~/.claude/rules/`.
 - `cli/` — the Rust CLI (`zharness`) that backs the workflow harness.
 - `docs/` — repo-wide reference docs, including
-  `docs/prompt-engineering-principles.md`.
+  `docs/guides/prompt-engineering-principles.md`.
 
 See `AGENTS.md` for the full structure and architecture notes.
 
@@ -49,7 +49,7 @@ cd cli && cargo test
 - Follow the `skills.sh` standard: YAML frontmatter with `name` and
   `description`, imperative instructions, optional `references/` and
   `scripts/` directories.
-- Read `docs/prompt-engineering-principles.md` before writing or editing a
+- Read `docs/guides/prompt-engineering-principles.md` before writing or editing a
   `SKILL.md`, a rule, or any other agent instruction file. It covers context
   engineering, formatting conventions, and cross-model considerations.
 - Run `bash scripts/ci/validate-skill.sh` against new or changed skills if

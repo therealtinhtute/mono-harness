@@ -96,7 +96,7 @@ one question: fix `Next` now, in the mode named? Stop until the user answers.
 ## 6. Fix the approved finding
 
 Before writing any steering, review rule, doc, or skill text, read
-`docs/prompt-engineering-principles.md` when the repo has it.
+`docs/guides/prompt-engineering-principles.md` when the repo has it.
 
 Pick the mode from the finding, not from preference:
 

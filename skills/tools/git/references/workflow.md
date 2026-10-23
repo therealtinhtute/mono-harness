@@ -4,7 +4,7 @@
 > is not part of the embedded doc set and `zharness install` never writes it.
 > Edit it here — the binary does not ship workflow procedures. A stale `git.md` under a repository's `docs/playbooks/` is a
 > leftover projection from before the deprojection; see
-> `docs/workflow-harness/migration.md`.
+> `docs/guides/workflow-harness/migration.md`.
 
 ## Purpose
 

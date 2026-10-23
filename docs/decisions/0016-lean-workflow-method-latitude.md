@@ -6,7 +6,7 @@ Accepted owner decision, 2026-10-13 and 2026-10-20 (`docs/plans/completed/lean-s
 
 ## Context
 
-After the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration, six workflow skills own their procedures. Several rules in those procedures limit how the model does the work, not what it may change. Examples: a numeric bounded cap (`skills/workflow/work/references/work.md:8`), a second-failure stop (`skills/workflow/work/references/work-full.md:20`, `skills/workflow/work/references/work.md:20`), forced model metadata (`skills/workflow/work/SKILL.md:3`) and a mid-phase model-switch ban (`docs/WORKFLOW.md:22`). `docs/prompt-engineering-principles.md:13`, `:15`, `:53` and `:82` state numeric or model-family generalizations without sources. The owner wants fewer of these method rules and still requires every authority and proof boundary.
+After the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration, six workflow skills own their procedures. Several rules in those procedures limit how the model does the work, not what it may change. Examples: a numeric bounded cap (`skills/workflow/work/references/work.md:8`), a second-failure stop (`skills/workflow/work/references/work-full.md:20`, `skills/workflow/work/references/work.md:20`), forced model metadata (`skills/workflow/work/SKILL.md:3`) and a mid-phase model-switch ban (`docs/WORKFLOW.md:22`). `docs/guides/prompt-engineering-principles.md:13`, `:15`, `:53` and `:82` state numeric or model-family generalizations without sources. The owner wants fewer of these method rules and still requires every authority and proof boundary.
 
 ## Decision
 
@@ -28,15 +28,15 @@ After the [0015](0015-skill-owned-procedures-and-safe-retirement.md) migration, 
    | Same verification failed twice → stop (`skills/workflow/work/references/work-full.md:20`, `skills/workflow/work/references/work.md:20`) | method | change: no-progress rule; a repeat without new evidence blocks | prompt only |
    | `model:` frontmatter on six core skills (`skills/workflow/{brainstorm,to-plan,work,check,handoff,watzup}/SKILL.md`) | method | remove; describe capability roles. no validator or contract test references `model:` | prompt only |
    | Tier table and "Do not switch model mid-phase" (`docs/WORKFLOW.md:22`, `cli/docs/embedded/WORKFLOW.md:22`) | method | change: capability roles plus a transfer brief | `projection_parity` keeps the two copies equal |
-   | Instruction budget ~150–200 (`docs/prompt-engineering-principles.md:13`) | claim | remove, or source and qualify | none |
-   | Exponential vs linear degradation (`docs/prompt-engineering-principles.md:15`) | claim | remove, or source and qualify | none |
-   | Vietnamese ~50% token penalty (`docs/prompt-engineering-principles.md:53`) | claim | remove, or source and qualify | none |
-   | Negative instructions cause the banned behavior (`docs/prompt-engineering-principles.md:82`) | claim | qualify; keep the positive-phrasing advice | none |
-   | Degradation is uniform across all instructions (`docs/prompt-engineering-principles.md:14`) | claim | qualify as a test-before-keeping practice | none |
-   | Dash vs numbered-list token counts (`docs/prompt-engineering-principles.md:43`) | claim | remove | none |
-   | English has highest compliance and lowest token cost (`docs/prompt-engineering-principles.md:49`) | claim | qualify | none |
-   | n² attention budget and context rot (`docs/prompt-engineering-principles.md:11`) | claim | source to Anthropic's context-engineering post (2025-09-29) | none |
-   | Undated model-family prompting table, "Latest Claude" (`docs/prompt-engineering-principles.md:119-123`) | claim | date as observation; not product policy | none |
+   | Instruction budget ~150–200 (`docs/guides/prompt-engineering-principles.md:13`) | claim | remove, or source and qualify | none |
+   | Exponential vs linear degradation (`docs/guides/prompt-engineering-principles.md:15`) | claim | remove, or source and qualify | none |
+   | Vietnamese ~50% token penalty (`docs/guides/prompt-engineering-principles.md:53`) | claim | remove, or source and qualify | none |
+   | Negative instructions cause the banned behavior (`docs/guides/prompt-engineering-principles.md:82`) | claim | qualify; keep the positive-phrasing advice | none |
+   | Degradation is uniform across all instructions (`docs/guides/prompt-engineering-principles.md:14`) | claim | qualify as a test-before-keeping practice | none |
+   | Dash vs numbered-list token counts (`docs/guides/prompt-engineering-principles.md:43`) | claim | remove | none |
+   | English has highest compliance and lowest token cost (`docs/guides/prompt-engineering-principles.md:49`) | claim | qualify | none |
+   | n² attention budget and context rot (`docs/guides/prompt-engineering-principles.md:11`) | claim | source to Anthropic's context-engineering post (2025-09-29) | none |
+   | Undated model-family prompting table, "Latest Claude" (`docs/guides/prompt-engineering-principles.md:119-123`) | claim | date as observation; not product policy | none |
 
 3. **Escalation.** If a candidate edit changes plan grammar, a guard, the independent-review policy, outward permission or the unsupported-host scope, stop and amend authority first. Do not drop the assertion that protects it.
 

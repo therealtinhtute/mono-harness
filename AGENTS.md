@@ -16,7 +16,7 @@ Plans are committed markdown (`docs/plans/active/{slug}.md`); pre-commit guards 
 
 `check` runs these at a phase gate or before a PR; a plain commit needs only the
 pre-commit hook. They sit at two different levels of the
-ladder in `docs/patterns/encoding-invariants.md` — declare the level, do not
+ladder in `docs/guides/patterns/encoding-invariants.md` — declare the level, do not
 assert enforcement the repository does not have.
 
 ```bash
@@ -41,7 +41,7 @@ Run a single Rust test: `cd cli && cargo test --lib installer::registry::tests::
 
 ## Architecture Notes
 
-- **Prompt engineering:** before writing or editing skills (SKILL.md), rules (rules/*.md), or any agent instruction file, read `docs/prompt-engineering-principles.md` — context engineering, formatting syntax, language rules, few-shot patterns, anti-patterns, cross-model awareness.
+- **Prompt engineering:** before writing or editing skills (SKILL.md), rules (rules/*.md), or any agent instruction file, read `docs/guides/prompt-engineering-principles.md` — context engineering, formatting syntax, language rules, few-shot patterns, anti-patterns, cross-model awareness.
 - **Skill format:** All skills follow the `skills.sh` standard — YAML frontmatter with `name` and `description`, imperative instructions, optional `references/` and `scripts/` directories.
 - **rules/ directory:** Source-of-truth for rules installed to `~/.claude/rules/`. Keep in sync with installed versions.
 - **`site/` is hand-authored, not generated.** A static GitHub Pages site (`.github/workflows/pages.yml` deploys on push to `site/**`) that narrates the same architecture/workflow story as `docs/`; it does not regenerate from `docs/*.md` and can drift — it was last brought in line with v0.24.0.
