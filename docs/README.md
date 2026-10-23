@@ -9,8 +9,8 @@ Start here. Every document in this repository is reachable from this page, and e
 | Understand how the harness works | [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Know why something is built the way it is | [`docs/decisions/README.md`](decisions/README.md) |
 | Run a workflow stage | [`docs/WORKFLOW.md`](WORKFLOW.md), then the installed skill it names |
-| Adopt the harness on an existing project | [`docs/workflow-harness/skill-procedure-migration.md`](workflow-harness/skill-procedure-migration.md) (current skill migration); [legacy adoption history](workflow-harness/migration.md) |
-| Write or edit a skill or a rule | [`docs/prompt-engineering-principles.md`](prompt-engineering-principles.md) |
+| Adopt the harness on an existing project | [`docs/guides/workflow-harness/skill-procedure-migration.md`](guides/workflow-harness/skill-procedure-migration.md) (current skill migration); [legacy adoption history](guides/workflow-harness/migration.md) |
+| Write or edit a skill or a rule | [`docs/guides/prompt-engineering-principles.md`](guides/prompt-engineering-principles.md) |
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
 | See what is being built right now | the one plan under [`docs/plans/active/`](plans/active) — empty means nothing is in flight |
 | See what was built before | [`docs/decisions/`](decisions/) for durable decisions; completed-plan run logs were pruned and live in git history (`git show 3bab3c0:docs/plans/completed/` lists the pre-prune tree) |
@@ -31,13 +31,13 @@ Three classes, and the class determines who is allowed to edit the file.
 | `docs/ARCHITECTURE.md` | authored | how the system works |
 | `docs/decisions/` | authored | numbered ADRs, an index, and `templates/decision.md` to copy for the next one |
 | `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the skill procedures; nothing generates these files |
-| `docs/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
-| `docs/workflow-harness/` | authored | legacy-adoption guide |
+| `docs/guides/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
+| `docs/guides/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
 | `docs/research/` | authored | external-literature evidence that requirements cite as authority; describes the outside world, not this repository |
 | `docs/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
-| `docs/patterns/` | authored | how to encode an accepted rule as a native guard |
-| `docs/templates/` | authored | copy-from templates (not the installer `templates/`) |
+| `docs/guides/patterns/` | authored | how to encode an accepted rule as a native guard |
+| `docs/guides/templates/` | authored | copy-from templates (not the installer `templates/`) |
 | `docs/memory/` | authored | optional session memory files |
 
 An existing path under `docs/` that is missing from this table is a defect in this table.

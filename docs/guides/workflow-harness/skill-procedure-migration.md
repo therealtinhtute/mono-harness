@@ -1,6 +1,6 @@
 # Migrating workflow procedures into installed skills
 
-**Candidate implemented; consumer verification pending.** This guide records the accepted migration in [ADR 0015](../decisions/0015-skill-owned-procedures-and-safe-retirement.md). It does not identify a released migration binary or claim that consumer smoke has passed. Pin the accepted source and binary identities from the completed migration evidence before using these instructions on a real repository.
+**Candidate implemented; consumer verification pending.** This guide records the accepted migration in [ADR 0015](../../decisions/0015-skill-owned-procedures-and-safe-retirement.md). It does not identify a released migration binary or claim that consumer smoke has passed. Pin the accepted source and binary identities from the completed migration evidence before using these instructions on a real repository.
 
 ## Compatibility and prerequisites
 
@@ -10,7 +10,7 @@
 | Reference-copy bridge | Skill references available; existing WORKFLOW still routes to projections | Same old inventory and bytes; safe to pause here |
 | Completed transition | Six installed workflow skills and their selected references | WORKFLOW, AGENTS block, PROJECT scaffold; conservative legacy retirement |
 
-Install **brainstorm, to-plan, work, check, handoff and watzup** independently using the [existing skills distribution instructions](../../README.md). Verify the host exposes each skill's metadata and reads references from its installed directory. Binary installation does not install skills. A host without this dependency set cannot execute the workflow; report the missing dependency rather than reading a leftover playbook or installing skills implicitly.
+Install **brainstorm, to-plan, work, check, handoff and watzup** independently using the [existing skills distribution instructions](../../../README.md). Verify the host exposes each skill's metadata and reads references from its installed directory. Binary installation does not install skills. A host without this dependency set cannot execute the workflow; report the missing dependency rather than reading a leftover playbook or installing skills implicitly.
 
 References resolve companions from their own skill directory and consumer data from the consumer root. Cross-stage routing uses host metadata, without assuming all skills share an installation parent. Migration preserves existing stage behavior: normal work remains Goal plus `main`, skips `to-plan`, and has one independent final check.
 

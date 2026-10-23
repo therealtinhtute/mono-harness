@@ -91,7 +91,7 @@ clause to a surface that decision deliberately left unwired.
   the file exists. A durable `gate` or `full` that returns `REQUEST_CHANGES` now has an append
   obligation it did not have before, and step 4 now has a file to read. Nothing enforces either:
   both are authoring discipline at the `Optional hook` level of
-  `docs/patterns/encoding-invariants.md` unless a guard is later written for them.
+  `docs/guides/patterns/encoding-invariants.md` unless a guard is later written for them.
 - The ledger will drift toward stale if nobody prunes it, and pruning is a judgment call this ADR
   does not automate. An append-only file whose rows are never revisited is a cost with no
   benefit, and the "two or more times" clause makes a stale row actively misleading rather than

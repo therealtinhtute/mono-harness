@@ -34,7 +34,7 @@ Rejected: removing embedding before retirement, deleting any file equal to today
 
 Consumers must install the six-skill dependency set independently. Conservative retirement can leave edited or uncertain legacy files and backups; notices explain why they remain, while canonical routing stops using them. The compatibility phase temporarily duplicates procedures and therefore requires byte parity until the atomic transition.
 
-Source rollback does not recover consumer files already removed or restored. Before upgrade, capture the full consumer tree, hidden metadata and host configuration. Restore that snapshot offline when necessary; do not run an old fresh-overwriting updater over retained edits. Source recovery reverses dependent changes in reverse order, restoring the compatibility bridge before the original layout. See the [consumer migration guide](../workflow-harness/skill-procedure-migration.md).
+Source rollback does not recover consumer files already removed or restored. Before upgrade, capture the full consumer tree, hidden metadata and host configuration. Restore that snapshot offline when necessary; do not run an old fresh-overwriting updater over retained edits. Source recovery reverses dependent changes in reverse order, restoring the compatibility bridge before the original layout. See the [consumer migration guide](../guides/workflow-harness/skill-procedure-migration.md).
 
 ## Authority
 
