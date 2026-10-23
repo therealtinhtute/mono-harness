@@ -169,9 +169,9 @@ skills and can read their installed references. A missing dependency is unsuppor
 for workflow execution; retained legacy files are not a fallback. Other skills
 are optional extensions.
 
-Skills live in five groups under `skills/`: `router` (mono-mode), `stages`
-(the six workflow skills plus retro), `reason` (think, hunt, arena), `tools` (git,
-create-skill, librarian, prompt-leverage, tldraw-diagram, write) and `extras` (create-cli,
+`mono-mode` sits at `skills/mono-mode`; the other skills live in four groups: `stages`
+(the six workflow skills plus retro), `reason` (think, hunt, arena, learn), `tools` (git,
+create-skill, librarian, prompt-leverage, read, tldraw-diagram, write) and `extras` (create-cli,
 turbo-mono-platform). `retro`, `create-cli` and
 `turbo-mono-platform` are gated: they run only from a mono-mode playbook step or
 when the user names them.
