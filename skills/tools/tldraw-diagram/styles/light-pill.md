@@ -12,7 +12,8 @@ High-level topology only: the main components and how they connect. One idea per
 
 - White rectangle with a black `draw` border; 2–4 short lines of body text, no sentences.
 - Each card carries one pill tag straddling its top border, left-aligned: `[ ● title ]`.
-- Pill: oval, border and text in the card's color, background the light tint of the same color (`fill:'solid'`). Height 30, text scale 0.9 — small, never taller than one body line.
+- Pill: oval, border and text in the card's color, background the light tint of the same color (`fill:'solid'`). Height 34, width `tag.length * 10 + 52`, text size `s` at scale 0.9, centered both ways — small, never taller than one body line.
+- Pill text is a separate fixed-width text shape (`textAlign:'middle'`) over the oval, not the oval's label: geo labels ignore `scale` and need ≈50px height, so a 34px oval would raise a `growY-on-shape` lint.
 - Card width fits the longest line without wrapping (≈ 13px per char at size `m`); height ≈ 50 + 25 per line.
 - Keep the left 200px clear for band labels.
 
@@ -41,4 +42,4 @@ One color per role or flow; the same color on the pill, its band dot and the arr
 ## Checks before delivery
 
 - Export the PNG and look at it: no wrapped pill text, no card overlap, every arrowhead visible.
-- `lints` from `tl.sh draw` is empty.
+- `lints` from `tl.sh draw` holds at most `overlapping-text` from pills straddling card borders.

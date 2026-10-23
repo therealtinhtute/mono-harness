@@ -8,9 +8,10 @@ const line=(n,x,y,w)=>S.push({id:id(n),type:'line',x,y,props:{color:'grey',dash:
 // card: white box with a pill tag (border + text in `color`, light fill)
 const card=(n,x,y,w,h,tag,color,lines)=>{
   S.push({id:id(n),type:'geo',x,y,props:{geo:'rectangle',w,h,color:'black',fill:'semi',dash:'draw',size:'m',font:'draw',align:'start',verticalAlign:'start',labelColor:'black',richText:rt(['',...lines])}});
-  const tw=tag.length*10+40;
-  S.push({id:id(n+'_tag'),type:'geo',x:x+12,y:y-16,props:{geo:'oval',w:tw,h:30,color,fill:'solid',dash:'solid',size:'s'}});
-  S.push({id:id(n+'_tl'),type:'text',x:x+24,y:y-14,props:{richText:rt('● '+tag),color,size:'s',font:'draw',autoSize:true,scale:0.9}});
+  const tw=tag.length*10+52;
+  S.push({id:id(n+'_tag'),type:'geo',x:x+14,y:y-17,props:{geo:'oval',w:tw,h:34,color,fill:'solid',dash:'solid',size:'s'}});
+  // separate text shape: geo labels ignore scale and need ~50px height (growY lint)
+  S.push({id:id(n+'_tl'),type:'text',x:x+20,y:y-11,props:{w:tw-12,richText:rt('● '+tag),color,size:'s',font:'draw',autoSize:false,textAlign:'middle',scale:0.9}});
 };
 const band=(n,y,label,color,W)=>{line(n+'_l',40,y,W);dot(n+'_d',48,y+30,color,16);text(n+'_t',74,y+18,label,{size:'m'});};
 const A=[];
