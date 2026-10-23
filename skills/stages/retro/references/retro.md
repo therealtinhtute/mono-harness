@@ -106,7 +106,7 @@ Pick the mode from the finding, not from preference:
 - **experiment** — anything else: a judgement call, a steering or navigation
   change, or a mechanical rule nobody has accepted yet. Copy
   `harness-improvement.md` (next to this file) to
-  `docs/plans/active/harness-improvement-{slug}.md`, make the one change, record
+  `.harness/plans/active/harness-improvement-{slug}.md`, make the one change, record
   native proof, and leave `Decision: pending fresh rerun`. If another plan is
   already active, ask before creating a second one — the repo guard allows one.
 - **human** — the fix needs authority, access, or a policy call you lack. Say

@@ -4,7 +4,7 @@ Loaded by [check.md](check.md) step 2 for `gate`/`full`; numbering follows it.
 
 ## Preflight
 
-2. **Read-only preflight** — count every non-empty markdown plan under `docs/plans/active/` before matching the requested initiative. Require exactly one active plan in total, matching the request; IF several → list them and stop even when only one matches the request. Read only its selected phase and `## Current State and Next Action`, re-reading after any compaction; both must read `in-progress`. A missing or ambiguous phase, any other status (including unstarted, `checked`, or `done`), or a conflict → stop before checks or writes and report the exact mismatch. Never change phase status to pass preflight.
+2. **Read-only preflight** — count every non-empty markdown plan under `.harness/plans/active/` before matching the requested initiative. Require exactly one active plan in total, matching the request; IF several → list them and stop even when only one matches the request. Read only its selected phase and `## Current State and Next Action`, re-reading after any compaction; both must read `in-progress`. A missing or ambiguous phase, any other status (including unstarted, `checked`, or `done`), or a conflict → stop before checks or writes and report the exact mismatch. Never change phase status to pass preflight.
 
 ## Owned Plan State
 

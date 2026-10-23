@@ -4,7 +4,7 @@ Convert an accepted architecture, reliability, security, or quality rule into
 repository-native validation. The repository remains the system of record; a
 check enforces policy but does not create it.
 
-Follow `docs/WORKFLOW.md` and the host-resolved `handoff` skill's absorb rules before
+Follow `.harness/WORKFLOW.md` and the host-resolved `handoff` skill's absorb rules before
 editing. Do not invent product policy.
 
 ## 1. Establish Authority

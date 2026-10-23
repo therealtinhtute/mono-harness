@@ -4,7 +4,7 @@
 
 1. Resolve mode:
    - `auto` (default) — `full` IF the request names or continues a durable initiative; else `bounded` unless rejected below; else route to `brainstorm`. An active plan's existence never selects `full`.
-   - `full [phase {slug}]` — execute the next phase of the one non-empty plan under `docs/plans/active/`; IF several → list them and stop.
+   - `full [phase {slug}]` — execute the next phase of the one non-empty plan under `.harness/plans/active/`; IF several → list them and stop.
    - `bounded` (alias: `simple`) — a direct change with a known verification path. Decide from uncertainty, impact, dependency and recoverability, not size: a large mechanical change with a known check stays bounded. Reject IF the intent or a product choice is unresolved, the change is hard to reverse or touches a public contract, security or data, or it needs ordered dependent steps; a small change can still be rejected.
 2. Before reading any plan, print the resolved mode as your first output line: `mode: {resolved} ({reason})`.
 3. IF context was compacted since you read the plan → re-read it.

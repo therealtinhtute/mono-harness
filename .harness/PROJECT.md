@@ -39,7 +39,7 @@
   update / uninstall; everything else is git-committed markdown under `docs/`
   plus fail-closed pre-commit guards (proof re-execution, high-risk and full
   independent-judge, at most one active plan).
-- where state lives: `docs/plans/active/*.md` (append-only Log /
+- where state lives: `.harness/plans/active/*.md` (append-only Log /
   Validation) and `.zharness/base/` (sha256 manifest + ownership
   ledger), plus the repo registry `~/.config/zharness/repos` — no SQLite anywhere.
 - entrypoints: `cli/src/cli.rs`; embedded doc set under

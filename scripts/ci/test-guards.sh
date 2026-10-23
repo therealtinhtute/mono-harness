@@ -361,28 +361,28 @@ else
 	ok "S5 untouched entry is not re-executed when a sibling is appended"
 fi
 
-# R5: at most one non-empty docs/plans/active/*.md. Zero is idle. Empty files
+# R5: at most one non-empty .harness/plans/active/*.md. Zero is idle. Empty files
 # do not count. No `local -A`.
 r5=$(mktemp -d)
-mkdir -p "$r5/docs/plans/active"
+mkdir -p "$r5/.harness/plans/active"
 if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
 	ok "R5 zero active plans accepted"
 else
 	bad "R5 zero must accept"
 fi
-printf 'one\n' > "$r5/docs/plans/active/one.md"
+printf 'one\n' > "$r5/.harness/plans/active/one.md"
 if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
 	ok "R5 one active plan accepted"
 else
 	bad "R5 one must accept"
 fi
-printf 'two\n' > "$r5/docs/plans/active/two.md"
+printf 'two\n' > "$r5/.harness/plans/active/two.md"
 if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
 	bad "R5 two active plans must reject"
 else
 	ok "R5 two active plans rejected"
 fi
-: > "$r5/docs/plans/active/two.md"
+: > "$r5/.harness/plans/active/two.md"
 if zharness_guard_at_most_one_active_plan "$r5" 2>/dev/null; then
 	ok "R5 empty second file does not count"
 else
@@ -419,11 +419,11 @@ EOF
 # and the entries it already carried must not be re-executed.
 s6=$(mktemp -d)
 gfix "$s6"
-gplan "$s6/docs/plans/active/p.md" MARKER-S6-OLD
+gplan "$s6/.harness/plans/active/p.md" MARKER-S6-OLD
 git -C "$s6" add -A >/dev/null && git -C "$s6" commit -qm base
-mkdir -p "$s6/docs/plans/completed"
-git -C "$s6" mv docs/plans/active/p.md docs/plans/completed/p.md
-cat >> "$s6/docs/plans/completed/p.md" <<'EOF'
+mkdir -p "$s6/.harness/plans/completed"
+git -C "$s6" mv .harness/plans/active/p.md .harness/plans/completed/p.md
+cat >> "$s6/.harness/plans/completed/p.md" <<'EOF'
 
 - `2026-09-02T00:00:00Z` — closing gate, verdict `APPROVED`
   - `false`
@@ -433,9 +433,9 @@ s6rev=$( cd "$s6" && zharness_guard_revspec staged )
 s6base=$(printf '%s' "$s6rev" | cut -f1)
 s6head=$(printf '%s' "$s6rev" | cut -f2)
 s6paths=$( cd "$s6" && zharness_guard_plan_paths "$s6base" "$s6head" )
-[ "$s6paths" = "docs/plans/completed/p.md" ] &&
+[ "$s6paths" = ".harness/plans/completed/p.md" ] &&
 	ok "S6 selector sees a plan renamed into completed/" ||
-	bad "S6 selector returned '$s6paths', want docs/plans/completed/p.md"
+	bad "S6 selector returned '$s6paths', want .harness/plans/completed/p.md"
 
 s6tmp=$(mktemp -d)
 s6out=$( cd "$s6" && zhuards_guard_plans "$s6paths" "$s6base" "$s6head" "$s6tmp" 2>&1 )
@@ -450,6 +450,36 @@ else
 fi
 rm -rf "$s6" "$s6tmp"
 
+# S6b: v0.31.0 moves docs/plans/ to .harness/plans/. Entries the moved plans
+# already carried must not be re-executed; one added in the move still is.
+s6b=$(mktemp -d)
+gfix "$s6b"
+gplan "$s6b/docs/plans/completed/q.md" MARKER-S6B-DONE
+gplan "$s6b/docs/plans/active/p.md" MARKER-S6B-ACTIVE
+git -C "$s6b" add -A >/dev/null && git -C "$s6b" commit -qm base
+mkdir -p "$s6b/.harness"
+git -C "$s6b" mv docs/plans .harness/plans
+cat >> "$s6b/.harness/plans/active/p.md" <<'EOF'
+
+- `2026-09-02T00:00:00Z` — move gate, verdict `APPROVED`
+  - `false`
+EOF
+git -C "$s6b" add -A >/dev/null
+s6brev=$( cd "$s6b" && zharness_guard_revspec staged )
+s6bpaths=$( cd "$s6b" && zharness_guard_plan_paths "$(printf '%s' "$s6brev" | cut -f1)" "$(printf '%s' "$s6brev" | cut -f2)" )
+s6btmp=$(mktemp -d)
+s6bout=$( cd "$s6b" && zhuards_guard_plans "$s6bpaths" "$(printf '%s' "$s6brev" | cut -f1)" "$(printf '%s' "$s6brev" | cut -f2)" "$s6btmp" 2>&1 )
+s6brc=$?
+[ "$s6brc" -ne 0 ] &&
+	ok "S6b an entry added in the layout move is guarded" ||
+	bad "S6b the move's new entry must be guarded, guard exited $s6brc"
+if printf '%s' "$s6bout" | grep -q 'MARKER-S6B'; then
+	bad "S6b moved plans' pre-existing entries were re-executed"
+else
+	ok "S6b docs/plans -> .harness/plans resolves to the predecessor"
+fi
+rm -rf "$s6b" "$s6btmp"
+
 # S7: a push carrying two commits. The entry lands in the first of them, so a
 # HEAD~1..HEAD window never sees it; the range base does.
 s7=$(mktemp -d)
@@ -457,8 +487,8 @@ gfix "$s7"
 printf 'seed\n' > "$s7/seed.txt"
 git -C "$s7" add -A >/dev/null && git -C "$s7" commit -qm seed
 s7base=$(git -C "$s7" rev-parse HEAD)
-gplan "$s7/docs/plans/active/p.md" MARKER-S7
-cat >> "$s7/docs/plans/active/p.md" <<'EOF'
+gplan "$s7/.harness/plans/active/p.md" MARKER-S7
+cat >> "$s7/.harness/plans/active/p.md" <<'EOF'
 
 - `2026-09-02T00:00:00Z` — second gate, verdict `APPROVED`
   - `false`
@@ -474,7 +504,7 @@ s7prev=$( cd "$s7" && zharness_guard_plan_paths "$s7head~1" "$s7head" )
 	bad "S7 fixture is not exercising the gap: HEAD~1 window saw '$s7prev'"
 
 s7paths=$( cd "$s7" && zharness_guard_plan_paths "$s7base" "$s7head" )
-[ "$s7paths" = "docs/plans/active/p.md" ] &&
+[ "$s7paths" = ".harness/plans/active/p.md" ] &&
 	ok "S7 the range selector sees the plan across both commits" ||
 	bad "S7 range selector returned '$s7paths'"
 
@@ -511,10 +541,10 @@ rm -rf "$s7" "$s7tmp"
 # staged blobs. An unstaged second plan is worktree noise, not a claim.
 s8=$(mktemp -d)
 gfix "$s8"
-mkdir -p "$s8/docs/plans/active"
-printf 'one\n' > "$s8/docs/plans/active/one.md"
+mkdir -p "$s8/.harness/plans/active"
+printf 'one\n' > "$s8/.harness/plans/active/one.md"
 git -C "$s8" add -A >/dev/null && git -C "$s8" commit -qm one
-printf 'two\n' > "$s8/docs/plans/active/two.md"
+printf 'two\n' > "$s8/.harness/plans/active/two.md"
 if zharness_guard_at_most_one_active_plan "$s8" staged 2>/dev/null; then
 	ok "S8 an unstaged second plan does not gate the commit"
 else
@@ -531,7 +561,7 @@ if zharness_guard_at_most_one_active_plan "$s8" staged 2>/dev/null; then
 else
 	ok "S8 two staged plans rejected"
 fi
-: > "$s8/docs/plans/active/two.md"
+: > "$s8/.harness/plans/active/two.md"
 git -C "$s8" add -A >/dev/null
 if zharness_guard_at_most_one_active_plan "$s8" staged 2>/dev/null; then
 	ok "S8 an empty staged second file does not count"
@@ -677,8 +707,8 @@ git -C "$pp/w" push -q origin master 2>/dev/null
 pp_git() { ( cd "$pp/w" && git "$@" ) >/dev/null 2>&1; }
 pp_git checkout -qb feat
 printf 'x\n' > "$pp/w/flag.txt"
-mkdir -p "$pp/w/docs/plans/active"
-cat > "$pp/w/docs/plans/active/p.md" <<'EOF'
+mkdir -p "$pp/w/.harness/plans/active"
+cat > "$pp/w/.harness/plans/active/p.md" <<'EOF'
 ---
 lane: normal
 ---
@@ -724,13 +754,13 @@ rm -rf "$pp"
 # pre-cutover range whose proofs cannot run at this HEAD is accepted; an
 # unresolvable floor appends nothing and changes no behavior.
 ftmp=$(mktemp -d)
-mkdir -p "$ftmp/repo/docs/plans/active"
+mkdir -p "$ftmp/repo/.harness/plans/active"
 (
 	cd "$ftmp/repo" || exit 1
 	git init -q .
 	git config user.email t@example.com
 	git config user.name t
-	cat > docs/plans/active/p.md <<'EOF'
+	cat > .harness/plans/active/p.md <<'EOF'
 ---
 status: active
 lane: normal
@@ -741,20 +771,20 @@ lane: normal
 EOF
 	git add -A && git commit -qm floor
 	git rev-parse HEAD > "$ftmp/floor"
-	cat >> docs/plans/active/p.md <<'EOF'
+	cat >> .harness/plans/active/p.md <<'EOF'
 - `2026-01-02T00:00:00Z` — phase `p2` — verdict: APPROVED — mode: gate
   - `false`
 EOF
 	git add -A && git commit -qm after
 )
 : > "$ftmp/hashes"
-zharness_guard_historical_floor_hashes "$ftmp/repo" docs/plans/active/p.md "$ftmp/hashes" "$(cat "$ftmp/floor")"
+zharness_guard_historical_floor_hashes "$ftmp/repo" .harness/plans/active/p.md "$ftmp/hashes" "$(cat "$ftmp/floor")"
 [ "$(wc -l < "$ftmp/hashes" | tr -d " ")" = 1 ] &&
 	ok "FLOOR emits the floor commit's entry hashes" ||
 	bad "FLOOR expected 1 hash, got $(wc -l < "$ftmp/hashes")"
 
 : > "$ftmp/hashes2"
-zharness_guard_historical_floor_hashes "$ftmp/repo" docs/plans/active/p.md "$ftmp/hashes2" deadbeef
+zharness_guard_historical_floor_hashes "$ftmp/repo" .harness/plans/active/p.md "$ftmp/hashes2" deadbeef
 [ ! -s "$ftmp/hashes2" ] &&
 	ok "FLOOR unresolvable floor appends nothing" ||
 	bad "FLOOR unresolvable floor appended $(wc -l < "$ftmp/hashes2") hash(es)"

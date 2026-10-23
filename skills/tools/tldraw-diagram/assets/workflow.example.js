@@ -7,7 +7,7 @@ const P=[['feature','green',['brainstorm → to-plan','work → check','git → 
 const names={feature:'feature',bugfix:'bug-fix',invest:'investigation',pickup:'session-pickup',retro:'retro'};
 P.forEach(([n,c,l],i)=>{card(n,230+i*300,590,275,150,names[n],c,l);arrow('router',n,c,{elbow:true,from:{x:.5,y:1},to:{x:.5,y:0}});});
 band('b3',810,'Repository','orange',W);
-card('repo',230,860,575,120,'Evidence','light-red',['docs/plans/active → completed','Proofs re-run by pre-commit + CI']);
+card('repo',230,860,575,120,'Evidence','light-red',['.harness/plans/active → completed','Proofs re-run by pre-commit + CI']);
 arrow('entry','router','black');
 arrow('feature','repo','green',{label:'plan + log',from:{x:.5,y:1},to:{x:.24,y:0}});
 arrow('bugfix','repo','orange',{label:'test',from:{x:.5,y:1},to:{x:.76,y:0}});

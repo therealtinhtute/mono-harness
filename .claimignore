@@ -14,7 +14,7 @@ docs/playbooks/git.md  # deliberately deprojected (docs-architecture R13); this 
 CLAUDE.md  # global path `~/.claude/CLAUDE.md` cited by setup/README.md and skills/rules prose; not a repo file
 
 docs/research/cli-config-patterns.md  # illustrative example in librarian/references/examples.md showing where a cited research report is saved, not a file in this repo
-docs/plans/active/cli-orkit.md        # illustrative example in create-cli/references/examples.md showing where a CLI spec plan is saved, not a file in this repo
+.harness/plans/active/cli-orkit.md        # illustrative example in create-cli/references/examples.md showing where a CLI spec plan is saved, not a file in this repo
 
 # Frozen ADR sections (Context/Consequences are immutable records — 0006 forbids
 # rewriting them). Each names a doc pruned in the historical-docs cleanup; the
@@ -44,3 +44,8 @@ docs/evals/  # frozen ADR 0010 and research audit citations of the removed lean-
 # moved under docs/guides in the docs-restructure. The record is not rewritten.
 docs/prompt-engineering-principles.md  # ADR 0004 Decision table, historical path before the move to docs/guides/
 docs/workflow-harness/migration.md     # ADR 0004 Decision table, historical path before the move to docs/guides/
+# v0.31.0 moved the managed files from docs/ to .harness/. Frozen ADRs, research
+# and the 0.14 migration guide cite them at the paths they held then.
+docs/WORKFLOW.md        # historical path; now .harness/WORKFLOW.md (v0.31.0), cited by frozen ADRs/research
+docs/PROJECT.md         # historical path; now .harness/PROJECT.md (v0.31.0), cited by frozen ADRs
+docs/plans/completed/   # historical path; now .harness/plans/completed/ (v0.31.0), cited by frozen ADRs/research

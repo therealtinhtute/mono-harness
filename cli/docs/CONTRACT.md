@@ -30,7 +30,7 @@ got from `-X main.version` at link time, by a different mechanism.
 | Verb | Behavior |
 |---|---|
 | `install` | Projects the managed doc set (WORKFLOW, AGENTS block, PROJECT identity scaffold, ignore entries), records upstream hashes under `.zharness/base/`, and prints a deterministic read-only brownfield report. Idempotent; exits 0. |
-| `update` | Overwrites `WORKFLOW.md`; conservatively retires allowlisted legacy procedures using recorded hashes, ownership and saved originals (ADR 0015); writes `docs/PROJECT.md` only when absent; replaces the marked `AGENTS.md` block unless its sha256 differs from the one recorded in `.zharness/base/manifest.json`, in which case it prints the diff, writes nothing, and exits non-zero (`--force` replaces it). `--check [--all]` reports drift read-only and exits 1 on drift. Other consumer files are untouched; retained retired files stop being active targets (ADRs 0011/0015). |
+| `update` | Overwrites `WORKFLOW.md`; conservatively retires allowlisted legacy procedures using recorded hashes, ownership and saved originals (ADR 0015); writes `.harness/PROJECT.md` only when absent; replaces the marked `AGENTS.md` block unless its sha256 differs from the one recorded in `.zharness/base/manifest.json`, in which case it prints the diff, writes nothing, and exits non-zero (`--force` replaces it). `--check [--all]` reports drift read-only and exits 1 on drift. Other consumer files are untouched; retained retired files stop being active targets (ADRs 0011/0015). |
 | `uninstall` | Removes managed files only. A file locally modified beyond both its base and upstream is left in place with a warning; consumer-owned bytes are never deleted (R12). |
 
 Shared flags: `--root <dir>` overrides the target repository (default: git toplevel of the working directory). The root command also registers `-v, --version`, which prints `zharness version <v>` and exits 0.
@@ -52,7 +52,7 @@ reads staged bytes and trusts no marker an agent writes:
    line declares `mode: full` and which also carries a same-session judge is
    rejected, on every lane.
 4. **At most one active plan** — more than one non-empty file under
-   `docs/plans/active/` is rejected; zero is a valid idle state.
+   `.harness/plans/active/` is rejected; zero is a valid idle state.
 
 Handoff absorb is playbook protocol, not a hook: close cannot `git mv`
 without an `absorb:` line. Missing absorb is not a commit rejection.
@@ -79,7 +79,7 @@ Repository scripts:
 
 ## What carries the state
 
-Git-committed markdown alone: plans under `docs/plans/{active,completed}/*.md`
+Git-committed markdown alone: plans under `.harness/plans/{active,completed}/*.md`
 with Goal, Phases and Verification, append-only Log and Validation, and
 Current State and Next Action sections; ADRs under
 `docs/decisions/`; session memory as plain files under `docs/memory/`

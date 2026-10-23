@@ -8,11 +8,11 @@ Start here. Every document in this repository is reachable from this page, and e
 |---|---|
 | Understand how the harness works | [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) |
 | Know why something is built the way it is | [`docs/decisions/README.md`](decisions/README.md) |
-| Run a workflow stage | [`docs/WORKFLOW.md`](WORKFLOW.md), then the installed skill it names |
+| Run a workflow stage | [`.harness/WORKFLOW.md`](WORKFLOW.md), then the installed skill it names |
 | Adopt the harness on an existing project | [`docs/guides/workflow-harness/skill-procedure-migration.md`](guides/workflow-harness/skill-procedure-migration.md) (current skill migration); [legacy adoption history](guides/workflow-harness/migration.md) |
 | Write or edit a skill or a rule | [`docs/guides/prompt-engineering-principles.md`](guides/prompt-engineering-principles.md) |
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
-| See what is being built right now | the one plan under [`docs/plans/active/`](plans/active) — empty means nothing is in flight |
+| See what is being built right now | the one plan under [`.harness/plans/active/`](plans/active) — empty means nothing is in flight |
 | See what was built before | [`docs/decisions/`](decisions/) for durable decisions; completed-plan run logs were pruned and live in git history (`git show 3bab3c0:docs/plans/completed/` lists the pre-prune tree) |
 | Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md) |
 
@@ -20,22 +20,22 @@ Start here. Every document in this repository is reachable from this page, and e
 
 Three classes, and the class determines who is allowed to edit the file.
 
-- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/`. Edit the embedded source and cut a release. `docs/WORKFLOW.md` is a pure mirror: the updater always overwrites it with upstream bytes, discarding any local edit with no conflict. `docs/PROJECT.md` is written only when absent and then belongs to the project; the updater never overwrites it (ADR 0011).
+- **managed** — shipped in the installer's embedded doc set (`cli/docs/embedded/`), projected into `docs/` by the managed-set installer and hash-tracked under `.zharness/base/`. Edit the embedded source and cut a release. `.harness/WORKFLOW.md` is a pure mirror: the updater always overwrites it with upstream bytes, discarding any local edit with no conflict. `.harness/PROJECT.md` is written only when absent and then belongs to the project; the updater never overwrites it (ADR 0011).
 - **authored** — written by hand, never embedded, never regenerated. The consumer owns the content; repository scripts (not a binary verdict) watch whether any authored markdown remains, and semantic correctness belongs to the author or external tooling.
 - **scaffold-once** — written by the managed-set installer only when absent, then owned by the consumer. The binary never refreshes, overwrites, or deletes one. In a consumer repository the class covers `docs/README.md`, `docs/decisions/README.md`, and `docs/decisions/templates/decision.md`; in this repository those three paths were authored by hand before the scaffold existed, so they are listed below as authored.
 
 | Path | Class | Notes |
 |---|---|---|
-| `docs/WORKFLOW.md` | managed | stage router; names the installed skill to resolve |
+| `.harness/WORKFLOW.md` | managed | stage router; names the installed skill to resolve |
 | `docs/README.md` | authored | this page |
 | `docs/ARCHITECTURE.md` | authored | how the system works |
 | `docs/decisions/` | authored | numbered ADRs, an index, and `templates/decision.md` to copy for the next one |
-| `docs/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the skill procedures; nothing generates these files |
+| `.harness/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the skill procedures; nothing generates these files |
 | `docs/guides/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/guides/workflow-harness/` | authored | legacy-adoption guide |
 | `docs/audit/` | authored | findings that requirements cite as authority |
 | `docs/research/` | authored | external-literature evidence that requirements cite as authority; describes the outside world, not this repository |
-| `docs/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
+| `.harness/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
 | `docs/guides/patterns/` | authored | how to encode an accepted rule as a native guard |
 | `docs/guides/templates/` | authored | copy-from templates (not the installer `templates/`) |
 | `docs/memory/` | authored | optional session memory files |

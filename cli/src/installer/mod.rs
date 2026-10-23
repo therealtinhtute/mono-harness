@@ -1,11 +1,12 @@
 //! The managed-set verbs: install, update, uninstall.
 //!
-//! This module owns exactly the managed doc set — `docs/WORKFLOW.md`,
-//! the marked AGENTS block, the `docs/PROJECT.md`
+//! This module owns exactly the managed doc set — `.harness/WORKFLOW.md`,
+//! the marked AGENTS block, the `.harness/PROJECT.md`
 //! scaffold, `.zharness` bookkeeping and the `.gitignore` entries. Nothing
 //! else in a repository is created, modified, or deleted.
 
 pub mod check;
+pub mod layout;
 pub mod migrate;
 pub mod ownership;
 pub mod registry;
@@ -13,6 +14,8 @@ mod retirement;
 pub mod uninstall;
 pub mod update;
 
+#[cfg(test)]
+mod layout_tests;
 #[cfg(test)]
 mod retirement_tests;
 
@@ -40,8 +43,8 @@ pub const BLOCK_BEGIN: &str = "<!-- ZHARNESS:BEGIN -->";
 pub const BLOCK_END: &str = "<!-- ZHARNESS:END -->";
 pub const GITIGNORE_MARKER: &str = "# zharness v0.15 managed set";
 pub const PLAYBOOK_DIR_TGT: &str = "docs/playbooks";
-pub const WORKFLOW_TARGET: &str = "docs/WORKFLOW.md";
-pub const PROJECT_TARGET: &str = "docs/PROJECT.md";
+pub const WORKFLOW_TARGET: &str = ".harness/WORKFLOW.md";
+pub const PROJECT_TARGET: &str = ".harness/PROJECT.md";
 pub const AGENTS_TARGET: &str = "AGENTS.md";
 pub const GITIGNORE_TARGET: &str = ".gitignore";
 
@@ -389,7 +392,7 @@ struct BrownfieldReport {
 
 fn detect_brownfield(root: &Path, r: &mut BrownfieldReport) {
     r.active_plans = 0;
-    if let Ok(entries) = fs::read_dir(root.join("docs/plans/active")) {
+    if let Ok(entries) = fs::read_dir(root.join(migrate::ACTIVE_PLANS_DIR)) {
         for e in entries.flatten() {
             let name = e.file_name().to_string_lossy().into_owned();
             if !e.path().is_dir() && name.ends_with(".md") && !name.starts_with('.') {
@@ -419,7 +422,8 @@ fn detect_brownfield(root: &Path, r: &mut BrownfieldReport) {
 fn write_report(out: &mut String, r: &BrownfieldReport) {
     out.push_str("\nbrownfield scan (read-only)\n");
     out.push_str(&format!(
-        "- active plans under docs/plans/active: {}",
+        "- active plans under {}: {}",
+        migrate::ACTIVE_PLANS_DIR,
         r.active_plans
     ));
     if r.active_plans >= 2 {
@@ -685,7 +689,7 @@ mod tests {
     /// A fresh-overwrite target (WORKFLOW.md) that already exists
     /// with drifted content — e.g. hand-edited before zharness ever ran — is
     /// overwritten with upstream bytes unconditionally. Only the write-once
-    /// docs/PROJECT.md is left as found.
+    /// .harness/PROJECT.md is left as found.
     #[test]
     fn install_fresh_overwrite_targets_drifted_local_file_overwritten() {
         let _env = IsolatedEnv::new();
@@ -801,8 +805,8 @@ mod tests {
         write_file(root, "CLAUDE.md", claude);
         write_file(root, "README.md", "readme");
         write_file(root, "workflow-state.yml", "state: legacy");
-        write_file(root, "docs/plans/active/aaa.md", "# plan a");
-        write_file(root, "docs/plans/active/bbb.md", "# plan b");
+        write_file(root, ".harness/plans/active/aaa.md", "# plan a");
+        write_file(root, ".harness/plans/active/bbb.md", "# plan b");
 
         let out = install_ok(root);
 
@@ -812,7 +816,7 @@ mod tests {
             "consumer CLAUDE.md rewritten — forbidden by R10/R18"
         );
         assert!(
-            out.contains("active plans under docs/plans/active: 2")
+            out.contains("active plans under .harness/plans/active: 2")
                 && out.contains("reconcile which plan stays live"),
             "missing plan-reconcile advisory:\n{out}"
         );

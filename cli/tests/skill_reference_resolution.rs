@@ -87,8 +87,12 @@ fn installed_references_resolve_without_source_or_shared_parent() {
     let temp = tempfile::tempdir().unwrap();
     let metadata = install_fixture(temp.path());
     let consumer = temp.path().join("consumer");
-    fs::create_dir_all(consumer.join("docs/plans/active")).unwrap();
-    fs::write(consumer.join("docs/plans/active/task.md"), b"consumer plan").unwrap();
+    fs::create_dir_all(consumer.join(".harness/plans/active")).unwrap();
+    fs::write(
+        consumer.join(".harness/plans/active/task.md"),
+        b"consumer plan",
+    )
+    .unwrap();
     for (stage, refs) in STAGES {
         let installed = &metadata[*stage];
         let wrapper = fs::read_to_string(installed.join("SKILL.md")).unwrap();
@@ -104,10 +108,10 @@ fn installed_references_resolve_without_source_or_shared_parent() {
         let next = &metadata["check"];
         assert!(next.join("references/check.md").is_file());
         assert_eq!(
-            fs::read(consumer.join("docs/plans/active/task.md")).unwrap(),
+            fs::read(consumer.join(".harness/plans/active/task.md")).unwrap(),
             b"consumer plan"
         );
-        assert!(!installed.join("docs/plans/active/task.md").exists());
+        assert!(!installed.join(".harness/plans/active/task.md").exists());
     }
 }
 

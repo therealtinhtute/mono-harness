@@ -21,6 +21,11 @@ pub fn check(root: &Path) -> Result<Vec<String>, String> {
             "conflict {LEGACY_CONFLICTS_FILE} (unresolved pre-0011 update)"
         ));
     }
+    for (old, new) in super::layout::legacy_moves() {
+        if fs::symlink_metadata(root.join(old)).is_ok() {
+            drift.push(format!("layout   {old} -> {new}"));
+        }
+    }
     for t in &targets {
         if t.once {
             continue;
