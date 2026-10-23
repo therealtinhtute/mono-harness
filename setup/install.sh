@@ -114,7 +114,7 @@ fi
 # --- Step 7: Skills ---
 echo ""
 echo "Installing skills..."
-npx skills add "git@github.com:therealtinhtute/mono-harness.git" -a claude-code -g -y
+npx skills add "git@github.com:therealtinhtute/mono-harness.git" -a claude-code codex pi -g -y
 green "✓ Skills installed"
 
 # --- Step 8: Version stamp ---
