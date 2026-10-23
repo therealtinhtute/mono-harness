@@ -1,7 +1,7 @@
 ---
 name: learn
 version: "1.0.0"
-description: "Research an unfamiliar domain from primary sources into notes, a reference or a publish-ready draft, keeping contradictions visible. Use for deep dives and compiling sources. Not for one-URL lookups (use read)."
+description: "Research an unfamiliar domain from primary sources into notes or a publish-ready draft, keeping contradictions visible. Use for deep dives. Not for one-URL lookups (use read)."
 argument-hint: "[quick|deep|write|canonical] [topic or source dir]"
 compatibility: Designed for Claude Code
 ---

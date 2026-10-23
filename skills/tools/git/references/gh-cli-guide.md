@@ -16,13 +16,20 @@ gh pr create --base main --head feature-branch --title "feat: add login" --body 
 
 # With HEREDOC body
 gh pr create --base main --title "feat(auth): add OAuth" --body "$(cat <<'EOF'
-## Summary
-- Added OAuth2 provider support
-- Implemented token refresh
+## Why
+Users sign in with an existing Google account instead of a new password.
 
-## Test plan
-- [ ] Unit tests pass
-- [ ] Manual login test
+## What changed
+- Add the OAuth2 provider and token refresh in `auth/oauth.ts`
+
+## Scope
+- Google only; other providers are a follow-up
+
+## Blast Radius
+Touches the login flow; password login is unchanged.
+
+## Verification
+- `npm test auth` — 42 passed
 EOF
 )"
 

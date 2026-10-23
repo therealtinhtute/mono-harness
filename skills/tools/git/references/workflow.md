@@ -32,15 +32,24 @@ git log "origin/$BASE...origin/$HEAD" --oneline
 git diff origin/$BASE...origin/$HEAD --stat
 ```
 
-If the branch isn't on remote yet, push first and retry. Title: conventional-commit format, <72 chars, no version numbers. Body: summary bullets + test-plan checklist. Create with:
+If the branch isn't on remote yet, push first and retry. Title: conventional-commit format, <72 chars, no version numbers. Body: a one-minute briefing for a reviewer who has the diff, under 40 lines, short sentences; full SHAs and long logs go in a linked artifact. `## Tradeoffs` only when a reviewer would ask about a rejected alternative. Create with:
 
 ```bash
 gh pr create --base $BASE --head $HEAD --title "..." --body "$(cat <<'EOF'
-## Summary
-- Bullet points
+## Why
+1-3 sentences: the problem and the approach.
 
-## Test plan
-- [ ] Test item
+## What changed
+- 1-3 bullets; name a path only when it carries the change
+
+## Scope
+- What it covers and what it deliberately leaves out
+
+## Blast Radius
+1-2 sentences: who or what it touches, and why that is safe or risky.
+
+## Verification
+- Each command run and its outcome
 EOF
 )"
 ```
@@ -64,5 +73,5 @@ Merge from `origin/{FROM_BRANCH}`, never the local branch — this ensures only 
 
 ## Exit Conditions
 
-- `pr`: remote branch pushed, PR created from the remote diff with a conventional title and summary/test-plan body.
+- `pr`: remote branch pushed, PR created from the remote diff with a conventional title and Why / What changed / Scope / Blast Radius / Verification body.
 - `merge`: target branch fetched and merged from the remote source branch with `--no-ff`, conflicts resolved or reported, result pushed.
