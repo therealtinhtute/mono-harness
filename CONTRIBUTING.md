@@ -22,8 +22,9 @@ claude-code add-dir /path/to/your/local/skill
 - `skills/` — installable agent skills, grouped under `router/` (mono-mode), `stages/`
   (lifecycle chain), `reason/` (think, hunt), `tools/`, `extras/`. Each skill directory has a required `SKILL.md` and optional
   `references/` and `scripts/` subdirectories.
-- `rules/` — source of truth for global Claude Code rules installed to
-  `~/.claude/rules/`.
+- `setup/` — machine setup: `CLAUDE.md`, `rules/` (source of truth for global Claude Code rules
+  installed to `~/.claude/rules/`), `hooks/`, `settings.json`, `statusline/`, `install.sh`, and
+  `install-git-hooks.sh`.
 - `cli/` — the Rust CLI (`zharness`) that backs the workflow harness.
 - `docs/` — repo-wide reference docs, including
   `docs/guides/prompt-engineering-principles.md`.

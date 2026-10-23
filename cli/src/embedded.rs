@@ -555,7 +555,6 @@ mod tests {
             .expect("crate lives one level below the repository root");
         for rel in [
             "skills",
-            "rules",
             "scripts",
             "setup",
             "site",
