@@ -30,4 +30,5 @@ guidance and work carried through verification.
 
 # Web Access
 
-- MANDATORY: use TinyFish (`search`, `fetch_content`, `run_web_automation`) for all web search, fetch, and browser automation; never WebSearch, WebFetch, or curl.
+- Search: TinyFish `search` first; Exa or Firecrawl when TinyFish is not connected.
+- Fetch: follow the `read` skill cascade (local → gh/raw → TinyFish/Firecrawl/Exa → opt-in proxy); browser automation via TinyFish `run_web_automation`. Never send private or internal URLs to a third party.
