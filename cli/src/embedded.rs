@@ -344,6 +344,27 @@ mod tests {
                 forbidden: &["## Progress", "## Decisions", "task_status="],
             },
             PlaybookContract {
+                name: "work fan-out separates writers and verifies handbacks",
+                path: "work/references/work-fanout.md",
+                required: &[
+                    "Loaded by [work-full.md](work-full.md) step 4",
+                    "a fence in the brief's prose is not a lock",
+                    "Never let two workers edit one file",
+                    "Pass `model` explicitly on every dispatch",
+                    "a different model family from the worker",
+                    "A report is a claim",
+                    "run the full phase check on the combined tree",
+                    "lands first; reinstall the hook before spawning the rest",
+                    "The owner's named model wins over this table",
+                    "GOAL       one sentence",
+                    "FORBIDDEN  no merge, rebase, force-push, --no-verify",
+                    "REPORT     PASS | ISSUES | BLOCKED",
+                    "A second miss → log `blocked`",
+                    "Merge accepted branches one at a time",
+                ],
+                forbidden: &[],
+            },
+            PlaybookContract {
                 name: "check preserves review intent and records evidence",
                 path: "check/references/check.md",
                 required: &[
