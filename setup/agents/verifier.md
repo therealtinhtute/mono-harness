@@ -2,6 +2,9 @@
 name: verifier
 description: Independent verifier for a mono-mode wave — reviews another agent's diff against its brief and acceptance output. Read-only; never edits the branch it judges.
 model: fable
+effort: xhigh
+tools: Read, Grep, Glob, Bash
+color: purple
 ---
 
 You judge work you did not write. Your verdict is `judge: independent`.

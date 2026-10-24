@@ -19,6 +19,11 @@ for a in $listed; do
   name=$(awk '/^---$/{n++;next} n==1 && /^name:/{print $2}' "$f")
   [ "$got" = "$want" ] || { echo "$a: model '$got', policy wants '$want'"; fail=1; }
   [ "$name" = "$a" ] || { echo "$a: frontmatter name '$name'"; fail=1; }
+  if jq -e --arg a "$a" '.readOnly|index($a)' "$policy" >/dev/null; then
+    tools=$(awk '/^---$/{n++;next} n==1 && /^tools:/{sub(/^tools:[[:space:]]*/,"");print}' "$f")
+    [ -n "$tools" ] || { echo "$a: read-only agent has no tools allowlist"; fail=1; }
+    case ", $tools," in *", Edit,"*|*", Write,"*|*", NotebookEdit,"*) echo "$a: read-only agent allows an edit tool: $tools"; fail=1 ;; esac
+  fi
 done
 [ "$fail" -eq 0 ] && echo "agent models OK ($(echo "$listed" | wc -l | tr -d ' ') agents)"
 exit "$fail"
