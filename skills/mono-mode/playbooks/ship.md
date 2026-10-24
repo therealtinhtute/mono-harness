@@ -1,6 +1,23 @@
 # Playbook: ship
 
-Land and release what is verified. Merge, tag, publish and deploy run only on the owner's explicit request; each landing is confirmed before the next starts.
+Optional add-on, outside the core lifecycle: the lifecycle (`brainstorm` → `work` → `check` → `git`) ends at a commit or an opened PR, and "ship" here means landing verified PRs and then tagging, publishing, or deploying (see [SDLC Stage Coverage](../../stages/README.md#sdlc-stage-coverage)). `work`, `check`, and `git` never release on their own. Merge, tag, publish and deploy run only on the owner's explicit request; each landing is confirmed before the next starts.
+
+## Stacked or not
+
+Git/PR workflow and release are separate: opening, stacking, and merging PRs is `git`; steps 7-10 (changelog, tag, delivery check, rollback) are the release. Stack PRs only when one of these holds:
+
+- a later change needs code from an earlier PR that is not merged yet (dependency ordering);
+- the layers are independently reviewable, for example a schema migration, then the API, then the UI;
+- parallel work must proceed on top of an unmerged base.
+
+Otherwise do not stack: one bounded change is one branch and one PR, and no extra branch or PR exists only for ceremony. Independent small changes each get their own PR from the base branch, or land as one PR when they are one change.
+
+- Small change: a README typo fix is one branch and one PR; run `check` and `git`, then step 6 for that PR.
+- Dependent sequence: PR 1 adds a database column, PR 2 (based on PR 1) reads it in the API, PR 3 (based on PR 2) shows it in the UI; each is reviewed on its own diff and landed bottom-up per steps 3-6.
+
+In the steps below, "bottom of the stack" and "contiguous run" collapse to the single PR when nothing is stacked.
+
+## Steps
 
 1. `watzup` — list commits since the last published tag (the tag is the baseline, not a local version file); verdict release / skip, bump patch (fixes) / minor (feat) / major (breaking), and the key risk in one sentence.
 2. `security-review` (Claude Code built-in) — the diff since that tag; a high-severity finding blocks the release until fixed or explicitly waived by the owner.
