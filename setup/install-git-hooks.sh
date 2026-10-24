@@ -35,6 +35,11 @@ HOOKS_DIR="$REPO_ROOT/.git/hooks"
 #   select or shadow the entry's own; and an entry STARTS at any unindented
 #   `- ` line, the leading timestamp being optional, so undated entries are
 #   visible to both guards.
+#   R4: an approvable new entry on a plan whose frontmatter names a lane must
+#       list every proof class that lane requires (check.md § Lane Matrix) in
+#       its `proof_classes:` line; a missing class rejects, naming it.
+#       zharness_lane_required_proof mirrors the matrix; test-guards.sh
+#       fails when the two disagree.
 #   FLOOR: entries already committed at ZHARNESS_GUARD_HISTORICAL_FLOOR are
 #       never re-executed. A push whose before-SHA predates the v0.24 cutover
 #       makes the pre-cutover entries look new, and their proofs cannot run at
@@ -104,6 +109,28 @@ zharness_entry_has_full_mode() {           # first line only, backticks stripped
   printf '%s\n' "$1" | head -1 | sed 's/[`]//g' | grep -qE 'mode:[[:blank:]]*full|[[:space:]]mode[[:blank:]]+full'
 }
 
+zharness_lane_required_proof() {          # <lane> -> classes; unknown lane -> 1
+  # Mirror of check.md § Lane Matrix "Required proof" column.
+  case "$1" in
+    tiny) echo "output" ;;
+    normal) echo "output unit" ;;
+    high-risk) echo "output unit integration" ;;
+    *) return 1 ;;
+  esac
+}
+
+zharness_entry_missing_proof() {           # <lane> <entry-body> -> missing classes
+  local req declared c missing=""
+  req=$(zharness_lane_required_proof "$1") || return 0
+  declared=$(printf '%s\n' "$2" | sed 's/[`]//g' \
+    | grep -E '^[[:space:]]{2,}- proof_classes:' | head -1 \
+    | sed -E 's/^.*proof_classes:[[:space:]]*//; s/\(.*//' | tr ',' ' ' || true)
+  for c in $req; do
+    case " $declared " in *" $c "*) ;; *) missing="$missing $c" ;; esac
+  done
+  printf '%s' "${missing# }"
+}
+
 zharness_run_proof() {                     # <command>
   # The 300s bound is defensive, not load-bearing. Resolve the wrapper at call
   # time so the guard's verdict depends on the proof's own exit code: GNU
@@ -151,7 +178,7 @@ zharness_guard_historical_floor_hashes() {  # <root> <path> <out-file> <floor>
 }
 
 zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
-  local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out body verdict cmds scratch h efile header line
+  local path="$1" old="$2" new="$3" failed=0 rc_cmd cmd out body verdict cmds scratch h efile header line missing
   # Old-side entry hashes live in a file, not an associative array: `local -A`
   # needs bash 4+, and macOS ships bash 3.2 as /bin/bash. There the declaration
   # fails, the hex subscript is then evaluated as arithmetic, and the shell dies
@@ -217,6 +244,17 @@ zharness_guard_entries_of_file() {         # <path> <old-file> <new-file>
       echo "" >&2
       echo "❌ R2 PROOF GUARD REJECTED: $path" >&2
       echo "   malformed entry: verdict \`$verdict\` cites no proof commands at all" >&2
+      echo "   offending entry starts: $header" >&2
+      continue
+    fi
+
+    missing=$(zharness_entry_missing_proof "$(zharness_lane_of "$new")" "$body")
+    if [ -n "$missing" ]; then
+      failed=$((failed + 1))
+      echo "" >&2
+      echo "❌ R4 PROOF-CLASS GUARD REJECTED: $path" >&2
+      echo "   lane $(zharness_lane_of "$new") requires proof: $(zharness_lane_required_proof "$(zharness_lane_of "$new")")" >&2
+      echo "   missing from proof_classes: $missing" >&2
       echo "   offending entry starts: $header" >&2
       continue
     fi

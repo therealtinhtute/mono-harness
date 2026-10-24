@@ -78,6 +78,7 @@ lane: high-risk
 ## Validation
 
 - undated APPROVED entry for the fixture, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `true`
 
 - `2026-08-28T00:00:00Z` — dated sibling entry
@@ -123,6 +124,7 @@ lane: high-risk
   - `true`
 
 - `2026-08-28T00:00:00Z` — new gate verdict `APPROVED` with a sabotaged proof
+  - proof_classes: output, unit, integration
   - `echo sabotaged-proof && false`
 EOF
 if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-fail.md" 2>/dev/null; then
@@ -142,6 +144,7 @@ lane: high-risk
   - `true`
 
 - `2026-08-28T00:00:00Z` — new gate verdict `APPROVED` with a clean proof
+  - proof_classes: output, unit, integration
   - `true`
 EOF
 if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-pass.md" 2>/dev/null; then
@@ -161,6 +164,7 @@ lane: high-risk
   - `true`
 
 - `2026-08-28T00:00:00Z` — gate verdict `APPROVED` judged same-session
+  - proof_classes: output, unit, integration
   - judge: `same-session`
   - `true`
 EOF
@@ -181,6 +185,7 @@ lane: normal
   - `true`
 
 - [2026-08-30 (initiative close)] mode `full` verdict `APPROVED` — judge: `same-session`
+  - proof_classes: output, unit, integration
   - `true`
 EOF
 if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-full-ss.md" 2>/dev/null; then
@@ -200,6 +205,7 @@ lane: normal
   - `true`
 
 - [2026-08-30 (gate)] mode `gate` verdict `APPROVED` — judge: `same-session`
+  - proof_classes: output, unit, integration
   - `true`
 EOF
 if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-gate-ss.md" 2>/dev/null; then
@@ -219,6 +225,7 @@ lane: normal
   - `true`
 
 - [2026-08-30 (gate)] mode `gate` verdict `APPROVED` — judge: `same-session`
+  - proof_classes: output, unit, integration
   - prior close quoted: mode: full
   - `true`
 EOF
@@ -241,6 +248,7 @@ lane: high-risk
   - `true`
 
 - undated entry, verdict `APPROVED`, invisible to the v2 guard
+  - proof_classes: output, unit, integration
   - `echo undated-sabotage && false`
 EOF
 if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-undated-fail.md" 2>/dev/null; then
@@ -248,6 +256,63 @@ if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/new-undated-fail.md" 
 else
 	ok "S2 undated APPROVED entry is now guarded (fail-case rejects)"
 fi
+
+# LANE: check.md § Lane Matrix is the single source of truth. Its "Required
+# proof" and "Judge" columns must agree with the guard, and each lane has a
+# positive and a missing-proof case. Changing one side alone fails here.
+matrix=$(awk '/^## Lane Matrix/{on=1} on && /^\| `/{print}' skills/stages/check/references/check.md)
+[ "$(printf '%s\n' "$matrix" | grep -c .)" = 3 ] &&
+	ok "LANE matrix has exactly three lane rows" ||
+	bad "LANE matrix rows not found in check.md"
+for lane in tiny normal high-risk; do
+	row=$(printf '%s\n' "$matrix" | awk -F'|' -v l="\`$lane\`" '{g=$2; gsub(/ /,"",g)} g==l')
+	doc=$(printf '%s\n' "$row" | awk -F'|' '{print $3}' | tr -d '`,' | xargs)
+	judge=$(printf '%s\n' "$row" | awk -F'|' '{print $6}' | tr -d '`' | xargs)
+	[ "$doc" = "$(zharness_lane_required_proof "$lane")" ] &&
+		ok "LANE $lane required proof matches guard ($doc)" ||
+		bad "LANE $lane doc proof '$doc' != guard '$(zharness_lane_required_proof "$lane")'"
+	req=$(zharness_lane_required_proof "$lane" | sed 's/ /, /g')
+	for kind in pos miss ss; do
+		classes="$req"; j=independent
+		[ "$kind" = miss ] && classes=$(printf '%s' "$req" | sed -E 's/(, )?[a-z]+$//')
+		[ "$kind" = ss ] && j=same-session
+		printf -- '---\nlane: %s\n---\n\n## Validation\n\n- `2026-08-27T00:00:00Z` — older entry, already on record\n  - `true`\n\n- `2026-09-03T00:00:00Z` — phase `main` — verdict: APPROVED — mode: gate\n  - `true`\n  - proof_classes: %s\n  - judge: %s\n' \
+			"$lane" "$classes" "$j" > "$tmp/lane-$kind.md"
+	done
+	zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/lane-pos.md" >/dev/null 2>&1 &&
+		ok "LANE $lane positive case accepts" || bad "LANE $lane positive case must accept"
+	if err=$(zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/lane-miss.md" 2>&1 >/dev/null); then
+		bad "LANE $lane missing-proof case must reject"
+	else
+		want=$(zharness_lane_required_proof "$lane" | awk '{print $NF}')
+		printf '%s' "$err" | grep -q "missing from proof_classes: $want" &&
+			ok "LANE $lane missing proof rejects naming '$want'" ||
+			bad "LANE $lane rejection does not name '$want': $err"
+	fi
+	if zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/lane-ss.md" >/dev/null 2>&1; then
+		got="same-session allowed"
+	else
+		got=independent
+	fi
+	[ "$got" = "$judge" ] &&
+		ok "LANE $lane judge rule matches guard ($judge)" ||
+		bad "LANE $lane doc judge '$judge' but guard behaves as '$got'"
+done
+
+# PATH: final-mode rule. A normal single-phase plan closes on a same-session
+# gate; high-risk and explicit full both demand an independent judge.
+mk_final() {
+	printf -- '---\nlane: %s\n---\n\n## Validation\n\n- `2026-08-27T00:00:00Z` — older entry, already on record\n  - `true`\n\n- `2026-09-03T00:00:00Z` — phase `main` — verdict: APPROVED — mode: %s\n  - `true`\n  - proof_classes: output, unit, integration\n  - judge: same-session\n' "$1" "$2" > "$3"
+}
+mk_final normal gate "$tmp/path-normal.md"
+mk_final high-risk full "$tmp/path-hr.md"
+mk_final normal full "$tmp/path-explicit.md"
+zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/path-normal.md" >/dev/null 2>&1 &&
+	ok "PATH normal single-phase final gate (same-session) accepts" || bad "PATH normal final gate must accept"
+zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/path-hr.md" >/dev/null 2>&1 &&
+	bad "PATH high-risk final full must require independent judge" || ok "PATH high-risk final full requires independent judge"
+zharness_guard_entries_of_file p.md "$tmp/old.md" "$tmp/path-explicit.md" >/dev/null 2>&1 &&
+	bad "PATH explicit full must require independent judge" || ok "PATH explicit full requires independent judge"
 
 # S4 portability: the pre-commit hook's shebang is `#!/bin/bash`, which on
 # macOS is bash 3.2 — no associative arrays, and a hex array subscript there is
@@ -285,6 +350,7 @@ lane: high-risk
   - `true`
 
 - `2026-08-28T00:00:00Z` — honest work, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `true`
 EOF
 	cat > "$tmp/legacy-fail.md" <<'EOF'
@@ -298,6 +364,7 @@ lane: high-risk
   - `true`
 
 - `2026-08-28T00:00:00Z` — verdict `APPROVED` with a sabotaged proof
+  - proof_classes: output, unit, integration
   - `echo legacy-sabotage && false`
 EOF
 	legacy_run() {                            # <new-file>; echoes the guard exit code
@@ -334,6 +401,7 @@ lane: normal
 ## Validation
 
 - `2026-08-27T00:00:00Z` — entry already on record, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `echo MARKER-OLD-ENTRY-RERUN`
 EOF
 cat > "$tmp/tail-new.md" <<'EOF'
@@ -344,9 +412,11 @@ lane: normal
 ## Validation
 
 - `2026-08-27T00:00:00Z` — entry already on record, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `echo MARKER-OLD-ENTRY-RERUN`
 
 - `2026-08-28T00:00:00Z` — newly appended entry, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `true`
 EOF
 s5out=$(zharness_guard_entries_of_file p.md "$tmp/tail-old.md" "$tmp/tail-new.md" 2>&1)
@@ -410,6 +480,7 @@ lane: normal
 ## Validation
 
 - \`2026-09-01T00:00:00Z\` — first gate, verdict \`APPROVED\`
+  - proof_classes: output, unit, integration
   - \`echo $2\`
 EOF
 }
@@ -426,6 +497,7 @@ git -C "$s6" mv .harness/plans/active/p.md .harness/plans/completed/p.md
 cat >> "$s6/.harness/plans/completed/p.md" <<'EOF'
 
 - `2026-09-02T00:00:00Z` — closing gate, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `false`
 EOF
 git -C "$s6" add -A >/dev/null
@@ -462,6 +534,7 @@ git -C "$s6b" mv docs/plans .harness/plans
 cat >> "$s6b/.harness/plans/active/p.md" <<'EOF'
 
 - `2026-09-02T00:00:00Z` — move gate, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `false`
 EOF
 git -C "$s6b" add -A >/dev/null
@@ -491,6 +564,7 @@ gplan "$s7/.harness/plans/active/p.md" MARKER-S7
 cat >> "$s7/.harness/plans/active/p.md" <<'EOF'
 
 - `2026-09-02T00:00:00Z` — second gate, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `false`
 EOF
 git -C "$s7" add -A >/dev/null && git -C "$s7" commit -qm "plan lands here"
@@ -716,6 +790,7 @@ lane: normal
 ## Validation
 
 - `2026-09-01T00:00:00Z` — gate, verdict `APPROVED`
+  - proof_classes: output, unit, integration
   - `test -f flag.txt`
 EOF
 pp_git add -A && pp_git commit -qm "feat: land plan"
@@ -767,12 +842,14 @@ lane: normal
 ---
 ## Validation
 - `2026-01-01T00:00:00Z` — phase `p1` — verdict: APPROVED — mode: gate
+  - proof_classes: output, unit, integration
   - `false`
 EOF
 	git add -A && git commit -qm floor
 	git rev-parse HEAD > "$ftmp/floor"
 	cat >> .harness/plans/active/p.md <<'EOF'
 - `2026-01-02T00:00:00Z` — phase `p2` — verdict: APPROVED — mode: gate
+  - proof_classes: output, unit, integration
   - `false`
 EOF
 	git add -A && git commit -qm after

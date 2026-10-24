@@ -340,6 +340,8 @@ mod tests {
                     "A phase with no task list: work each requirement in turn",
                     "Do not add or update task-definition `status` fields",
                     "`## Log` is the sole task execution-status source",
+                    "`normal` → this gate is the final check",
+                    "`high-risk` or an owner's explicit `check full` → keep `in-progress`",
                     "**Stop gates (fail-closed):**",
                     "A condition you cannot evaluate from current evidence counts as matched",
                     "On a match, stop at once: no further edits, task, or `done` in this run",
@@ -351,7 +353,8 @@ mod tests {
                     "a stop condition is a planned `stop_if:`",
                     "an owner escalation is a planned `escalate_when:`",
                 ],
-                forbidden: &["## Progress", "## Decisions", "task_status="],
+                forbidden: &[
+                    "single-phase plan skips this gate and goes straight there","## Progress", "## Decisions", "task_status="],
             },
             PlaybookContract {
                 name: "work fan-out separates writers and verifies handbacks",
@@ -395,8 +398,19 @@ mod tests {
                     "depth: quick | standard | deep",
                     "read [check-durable.md](check-durable.md) now",
                     "read [check-review.md](check-review.md) now",
+                    // #151/#152: one lane matrix; scripts/ci/test-guards.sh pins
+                    // its proof and judge columns to the commit-time guard.
+                    "## Lane Matrix",
+                    "single source of truth for lane → proof, review depth, and judge",
+                    "| `tiny` | `output` | `bounded` |",
+                    "| `normal` | `output`, `unit` | `gate` | gate plus scoped review of the diff |",
+                    "| `high-risk` | `output`, `unit`, `integration` | `full` | complete four-area review | `independent` |",
+                    "`full` IF the plan's lane is `high-risk` or the owner explicitly invoked `check full`",
+                    "A plan's existence or its phase count never selects `full`",
+                    "record the classes you proved in the entry's `proof_classes:` line",
                 ],
                 forbidden: &[
+                    "which goes straight to `full`",
                     "## Progress",
                     "receipt:",
                     "mode: gate | full | review",
