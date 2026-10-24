@@ -30,7 +30,11 @@ On the high-risk lane, `to-plan` writes the locked plan's Phases and Verificatio
 
 ## SDLC Stage Coverage
 
-The workflow chain covers plan → code → verify → commit/PR. Deployment, release management, and production monitoring are explicitly **out of scope** for this chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (G1 of the SDLC gap analysis; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`): revisit only if a real deploy target materializes, at which point the extension point is a future `ship` skill, not a retrofit onto `work` or `check`.
+The workflow chain covers plan → code → verify → commit/PR, and the core lifecycle ends there: at a committed change, or an opened PR when the work calls for one. Deployment, release management, and production monitoring are explicitly **out of scope** for the chain: `check`'s automated gate and manual review end at a clean local verdict — nothing in `work`, `check`, or `git` merges to a release line, ships a build artifact, runs a release, or watches one in production. This is a declared non-goal, not an ambient gap (G1 of the SDLC gap analysis; see `docs/decisions/0004-docs-directory-deletion-655c6ac.md`).
+
+"Ship" means one thing in this repository: the optional `mono-mode` [ship playbook](../mono-mode/playbooks/ship.md), which lands already-verified PRs and then tags, publishes, or deploys, each step only on the owner's explicit request. It is an add-on that composes the skills above by name, not a stage of the chain and not a skill; preparing a branch or PR is `git`, not shipping. A real deploy target still needs its own agreed scope before the playbook grows past tag-and-publish.
+
+A single bounded change needs one branch and one PR (or just a commit). Stack PRs only when a later change depends on an earlier unmerged one, or when the layers are independently reviewable; see the playbook's [Stacked or not](../mono-mode/playbooks/ship.md#stacked-or-not) section.
 
 ## No Version Gate
 
