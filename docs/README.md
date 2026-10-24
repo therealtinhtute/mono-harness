@@ -14,6 +14,7 @@ Start here. Every document in this repository is reachable from this page, and e
 | Know what outside evidence says about documenting a repo for agents | [`docs/research/`](research) |
 | See what is being built right now | the one plan under [`.harness/plans/active/`](plans/active) — empty means nothing is in flight |
 | See what was built before | [`docs/decisions/`](decisions/) for durable decisions; completed-plan run logs were pruned and live in git history (`git show 3bab3c0:docs/plans/completed/` lists the pre-prune tree) |
+| Know what the repo registry and `--all` do, and how hosts resolve root vs nested `AGENTS.md` | [`docs/guides/workspace-boundaries.md`](guides/workspace-boundaries.md) |
 | Look up a CLI command, flag, or table | [`cli/docs/CONTRACT.md`](../cli/docs/CONTRACT.md) |
 
 ## Ownership
@@ -33,6 +34,7 @@ Three classes, and the class determines who is allowed to edit the file.
 | `.harness/plans/` | authored | initiative records; `active/` is the live plan, `completed/` is history. Sessions append by hand per the skill procedures; nothing generates these files |
 | `docs/guides/prompt-engineering-principles.md` | authored | required reading before editing any `SKILL.md` or rule |
 | `docs/guides/workflow-harness/` | authored | legacy-adoption guide |
+| `docs/guides/workspace-boundaries.md` | authored | repository vs registry inventory; host precedence for nested instruction files, with a manual test |
 | `docs/audit/` | authored | findings that requirements cite as authority |
 | `docs/research/` | authored | external-literature evidence that requirements cite as authority; describes the outside world, not this repository |
 | `.harness/PROJECT.md` | authored | identity; scaffold-once in consumer repos |
