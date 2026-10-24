@@ -82,6 +82,14 @@ done
 find "$CLAUDE_DIR/hooks" -maxdepth 1 -type f \( -name "*.sh" -o -name "*.cjs" \) -exec chmod +x {} +
 green "✓ Hooks installed"
 
+# --- Step 4b: Agents (role -> model policy: setup/models.json) ---
+mkdir -p "$CLAUDE_DIR/agents"
+for f in "$REPO_DIR/setup/agents/"*.md; do
+  [ -f "$f" ] || continue
+  sync_file "$f" "$CLAUDE_DIR/agents/$(basename "$f")"
+done
+green "✓ Agents installed"
+
 # --- Step 5: settings.json ---
 if [ -f "$CLAUDE_DIR/settings.json" ]; then
   yellow ""
@@ -134,6 +142,7 @@ SKILLS_COUNT="$(ls -d "$CLAUDE_DIR/skills/"*/ 2>/dev/null | wc -l | tr -d ' ')"
 echo "  CLAUDE.md     : $([ -f "$CLAUDE_DIR/CLAUDE.md" ] && echo present || echo MISSING)"
 echo "  rules/        : $RULES_COUNT files"
 echo "  hooks/        : $HOOKS_COUNT scripts"
+echo "  agents/       : $(ls "$CLAUDE_DIR/agents/"mono-*.md 2>/dev/null | wc -l | tr -d ' ') mono-* definitions"
 echo "  skills/       : $SKILLS_COUNT installed"
 echo "  settings.json : $([ -f "$CLAUDE_DIR/settings.json" ] && echo present || echo MISSING)"
 echo "  version       : $([ -f "$CLAUDE_DIR/.bootstrap-version" ] && cat "$CLAUDE_DIR/.bootstrap-version" || echo unknown)"

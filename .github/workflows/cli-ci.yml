@@ -9,6 +9,9 @@ on:
       - "skills/stages/**"
       - ".harness/WORKFLOW.md"
       - "setup/install-git-hooks.sh"
+      - "setup/agents/**"
+      - "setup/models.json"
+      - "scripts/ci/test-agent-models.sh"
       - ".github/workflows/cli-ci.yml"
   pull_request:
     paths:
@@ -17,6 +20,9 @@ on:
       - "skills/stages/**"
       - ".harness/WORKFLOW.md"
       - "setup/install-git-hooks.sh"
+      - "setup/agents/**"
+      - "setup/models.json"
+      - "scripts/ci/test-agent-models.sh"
       - ".github/workflows/cli-ci.yml"
 
 jobs:
@@ -76,6 +82,14 @@ jobs:
           size=$(wc -c < target/x86_64-unknown-linux-musl/release/zharness)
           echo "linux/amd64 stripped binary: $size bytes"
           test "$size" -le 1850000
+
+  agent-models:
+    # setup/models.json role -> model policy matches setup/agents/*.md frontmatter.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check agent model policy
+        run: bash scripts/ci/test-agent-models.sh
 
   hook-guard:
     # R4: re-run the v0.15 fail-closed guards (R2 proof re-execution + R3
