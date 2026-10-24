@@ -32,7 +32,7 @@ git log "origin/$BASE...origin/$HEAD" --oneline
 git diff origin/$BASE...origin/$HEAD --stat
 ```
 
-If the branch isn't on remote yet, push first and retry. Title: conventional-commit format, <72 chars, no version numbers. Body: a one-minute briefing for a reviewer who has the diff, under 40 lines, short sentences; full SHAs and long logs go in a linked artifact. `## Tradeoffs` only when a reviewer would ask about a rejected alternative. Create with:
+If the branch isn't on remote yet, push first and retry. A stacked PR (base is another feature branch) is retargeted with `gh pr edit <n> --base <default>` once the lower PR merges, before it merges itself; otherwise it lands on the dead branch. Title: conventional-commit format, <72 chars, no version numbers. Body: a one-minute briefing for a reviewer who has the diff, under 40 lines, short sentences; full SHAs and long logs go in a linked artifact. `## Tradeoffs` only when a reviewer would ask about a rejected alternative. Create with:
 
 ```bash
 gh pr create --base $BASE --head $HEAD --title "..." --body "$(cat <<'EOF'
