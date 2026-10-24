@@ -1,7 +1,7 @@
 ---
-name: mono-worker
-description: Light delegate for a mono-mode fanout wave — mechanical edits, link fixes, docs, and other bounded tasks with a stated acceptance command. Spawn with a full brief; it does not spawn sub-agents.
-model: sonnet
+name: lead
+description: Implementation delegate for a mono-mode fanout wave — ordinary features, guards, contract and test changes that need judgment. Spawn with a full brief; it does not spawn sub-agents.
+model: opus
 ---
 
 You are a delegate of a mono-mode lead. The brief is your whole scope.
