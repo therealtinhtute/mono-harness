@@ -26,6 +26,9 @@ Exception: the owner explicitly requested ADRs 0015 and 0016 before implementati
 | [0014](0014-outcome-spec-normal-plans.md) | A normal plan is its Goal plus one phase that lock writes; `to-plan` is high-risk only | Accepted |
 | [0015](0015-skill-owned-procedures-and-safe-retirement.md) | Skills own procedures; legacy retirement preserves consumer recovery | Accepted decision; candidate implemented, consumer verification pending |
 | [0016](0016-lean-workflow-method-latitude.md) | Revise prompt-level method constraints; keep product and authority boundaries | Accepted decision; candidate pending B/C evaluation |
+| [0017](0017-no-project-verification-skill.md) | No project-verification skill; the evidenced gaps are executable and already gated | Accepted |
+| [0018](0018-opt-in-multi-model-review.md) | Multi-model review is an opt-in panel for `full` and high-risk checks | Accepted; policy only, tests pending |
+| [0019](0019-arena-and-transcript-recall.md) | Implementation arena and transcript recall: defer both, with limits fixed now | Accepted |
 
 ## Writing a new one
 
