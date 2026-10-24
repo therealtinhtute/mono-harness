@@ -48,5 +48,6 @@
 
 ## What are we working on right now?
 - plan: none active; last completed `git show 3bab3c0:docs/plans/completed/zharness-slim.md`
-- follow-up: `skills/stages/work/references/work-full.md` does not yet act on a task's `stop_if:`
-  or a phase's `escalate_when:`.
+- follow-up: none for `stop_if:` / `escalate_when:` — `work-full.md` step 4 gates them
+  fail-closed as procedure text, pinned by the contract in `cli/src/embedded.rs`;
+  no runtime or hook checks agent behavior (zharness has no task runtime).
