@@ -23,4 +23,4 @@ Resolve the selected stage through the host's skill metadata. Read only its prim
 
 ## Execution boundary
 
-Reduced modes write nothing durable; durable stages write only the plan sections their procedure names. Every proof claim names real output. Cite procedures by section and step number, never line number. IF tooling and a procedure disagree → trust the repository and report the mismatch.
+Reduced modes write nothing durable; durable stages write only the plan sections their procedure names. Every proof claim names real output. Lane → required proof, final check mode, and judge independence come from `check.md` § Lane Matrix alone. Cite procedures by section and step number, never line number. IF tooling and a procedure disagree → trust the repository and report the mismatch.
